@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["id", "display_name"],
+  "properties": {
+    "id": { "type": "string" },
+    "display_name": { "type": "string" },
+    "persona": {
+      "type": "object",
+      "properties": {
+        "tone": { "type": "string" },
+        "style": { "type": "string" },
+        "risk": { "type": "string" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "git": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "ssh": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "key_path": { "type": "string" }
+      }
+    },
+    "webhooks": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "allowed_events": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

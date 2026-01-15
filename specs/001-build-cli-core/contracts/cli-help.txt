@@ -1,0 +1,17 @@
+APS - Agent Profile System
+
+Usage:
+  aps [command]
+
+Available Commands:
+  action      Manage and execute profile actions
+  docs        Generate documentation
+  help        Help about any command
+  profile     Manage agent profiles
+  run         Run a command in a profile context
+  webhook     Manage webhook server
+
+Flags:
+  -h, --help   help for aps
+
+Use "aps [command] --help" for more information about a command.

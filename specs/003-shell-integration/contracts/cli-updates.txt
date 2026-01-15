@@ -1,0 +1,8 @@
+APS Shell Integration Commands
+
+Usage:
+  aps completion [bash|zsh|fish|powershell]
+  aps alias
+
+Profile Shorthand:
+  aps <profile> [command...]   # Equivalent to: aps run <profile> -- [command...]
