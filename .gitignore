@@ -1,0 +1,14 @@
+# Go
+bin/
+*.exe
+*.test
+vendor/
+*.out
+go.sum
+
+# General
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
