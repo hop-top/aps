@@ -34,17 +34,17 @@ func TestWebhookServer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start server
-	// We need a random port. We can rely on system picking one if we pass :0, 
+	// We need a random port. We can rely on system picking one if we pass :0,
 	// but we need to know it to send request.
 	// APS CLI logs "listening on ..." to stderr/stdout.
 	// We can parse it?
 	// Or we can just pick a fixed high port (e.g. 18080) but that risks collision in parallel tests.
 	// Better: Bind a listener, get port, close listener, pass port to APS. Race condition possible but rare.
 	// Or use --addr 127.0.0.1:0 and parse output.
-	
+
 	// Let's use 127.0.0.1:0 and parse output.
-	cmd := prepareAPS(t, home, "webhook", "serve", "--addr", "127.0.0.1:0", "--event-map", "test.event="+profileID+":hook", "--secret", "supersecret")
-	
+	cmd := prepareAPS(t, home, nil, "webhook", "serve", "--addr", "127.0.0.1:0", "--event-map", "test.event="+profileID+":hook", "--secret", "supersecret")
+
 	// We need to capture stdout/stderr to find the port.
 	// But cmd.Start() doesn't block. We need to read the output stream.
 	var stderr bytes.Buffer
@@ -109,7 +109,7 @@ func TestWebhookServer(t *testing.T) {
 	req, _ = http.NewRequest("POST", baseURL, bytes.NewBuffer(payload))
 	req.Header.Set("X-APS-Event", "test.event")
 	req.Header.Set("X-APS-Signature", "sha256="+sig)
-	
+
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

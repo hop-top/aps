@@ -28,12 +28,15 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	env := os.Environ()
 
 	// 2. Inject APS specific variables
+	config, _ := LoadConfig()
+	prefix := config.Prefix
+
 	apsEnv := map[string]string{
-		"AGENT_PROFILE_ID":        profile.ID,
-		"AGENT_PROFILE_DIR":       profileDir,
-		"AGENT_PROFILE_YAML":      profileYaml,
-		"AGENT_PROFILE_SECRETS":   secretsPath,
-		"AGENT_PROFILE_DOCS_DIR":  docsDir,
+		fmt.Sprintf("%s_PROFILE_ID", prefix):        profile.ID,
+		fmt.Sprintf("%s_PROFILE_DIR", prefix):       profileDir,
+		fmt.Sprintf("%s_PROFILE_YAML", prefix):      profileYaml,
+		fmt.Sprintf("%s_PROFILE_SECRETS", prefix):   secretsPath,
+		fmt.Sprintf("%s_PROFILE_DOCS_DIR", prefix):  docsDir,
 	}
 
 	for k, v := range apsEnv {

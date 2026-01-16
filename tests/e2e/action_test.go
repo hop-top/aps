@@ -42,7 +42,7 @@ func TestActionRun(t *testing.T) {
 	// Create script
 	actionsDir := filepath.Join(home, ".agents", "profiles", profileID, "actions")
 	scriptPath := filepath.Join(actionsDir, "greet.sh")
-	err = os.WriteFile(scriptPath, []byte("#!/bin/sh\necho Greetings $AGENT_PROFILE_ID"), 0755)
+	err = os.WriteFile(scriptPath, []byte("#!/bin/sh\necho Greetings $APS_PROFILE_ID"), 0755)
 	require.NoError(t, err)
 
 	// Run action
