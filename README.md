@@ -54,3 +54,17 @@ To invoke profiles directly by their ID, add this to your shell config:
 eval "$(aps alias)"
 ```
 This generates aliases like `alias <profile-id>='aps <profile-id>'`.
+
+## Configuration
+
+APS supports a global configuration file located at `$XDG_CONFIG_HOME/aps/config.yaml` (defaults to `~/.config/aps/config.yaml` on Linux/macOS).
+
+### Environment Variable Prefix
+
+You can customize the prefix used for profile environment variables:
+
+```yaml
+prefix: MYTOOL
+```
+
+This will inject variables like `MYTOOL_PROFILE_ID` instead of the default `APS_PROFILE_ID`.

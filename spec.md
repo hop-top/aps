@@ -289,11 +289,13 @@ If `ssh.key` is missing while SSH is enabled:
 
 Whenever APS runs a command or an action within a profile, it must inject:
 
-- `AGENT_PROFILE_ID=<profile-id>`
-- `AGENT_PROFILE_DIR=<absolute profile dir>`
-- `AGENT_PROFILE_YAML=<absolute path to profile.yaml>`
-- `AGENT_PROFILE_SECRETS=<absolute path to secrets.env (even if missing)>`
-- `AGENT_PROFILE_DOCS_DIR=<absolute docs dir>`
+- `<PREFIX>_PROFILE_ID=<profile-id>`
+- `<PREFIX>_PROFILE_DIR=<absolute profile dir>`
+- `<PREFIX>_PROFILE_YAML=<absolute path to profile.yaml>`
+- `<PREFIX>_PROFILE_SECRETS=<absolute path to secrets.env (even if missing)>`
+- `<PREFIX>_PROFILE_DOCS_DIR=<absolute docs dir>`
+
+The default `<PREFIX>` is `APS`. This can be overridden in the global configuration file at `$XDG_CONFIG_HOME/aps/config.yaml`.
 
 APS must preserve the parent environment and then apply overrides for injected variables and secrets.
 

@@ -23,8 +23,8 @@ func TestExecutionInjection(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify standard injections
-	assert.Contains(t, stdout, "AGENT_PROFILE_ID=exec-agent")
-	assert.Contains(t, stdout, fmt.Sprintf("AGENT_PROFILE_DIR=%s", filepath.Join(home, ".agents", "profiles", "exec-agent")))
+	assert.Contains(t, stdout, "APS_PROFILE_ID=exec-agent")
+	assert.Contains(t, stdout, fmt.Sprintf("APS_PROFILE_DIR=%s", filepath.Join(home, ".agents", "profiles", "exec-agent")))
 }
 
 func TestSecretInjection(t *testing.T) {
@@ -64,5 +64,5 @@ func TestShorthandExecution(t *testing.T) {
 	stdout, _, err := runAPS(t, home, "short-agent", "env")
 	require.NoError(t, err)
 
-	assert.Contains(t, stdout, "AGENT_PROFILE_ID=short-agent")
+	assert.Contains(t, stdout, "APS_PROFILE_ID=short-agent")
 }
