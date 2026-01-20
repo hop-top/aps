@@ -1,3 +1,152 @@
-# APS Documentation
+# Getting Started with APS
 
-Welcome to the Agent Profile System documentation.
+APS (Agent Profile System) is a local-first tool that lets you run commands and agent workflows under isolated profiles.
+
+## Quick Start
+
+### 1. Install APS
+
+```bash
+# Build from source
+git clone https://github.com/IdeaCraftersLabs/oss-aps-cli.git
+cd oss-aps-cli
+make build
+```
+
+### 2. Create Your First Profile
+
+```bash
+# Create a new profile
+./aps profile new myagent --display-name "My AI Agent" --email "agent@example.com"
+```
+
+This creates a profile at `~/.agents/profiles/myagent/` with:
+- `profile.yaml` - Profile configuration
+- `secrets.env` - Environment variables (tokens, keys)
+- `gitconfig` - Git configuration (if email provided)
+- `notes.md` - Notes for this profile
+- `actions/` - Directory for custom action scripts
+
+### 3. Run Commands Under Your Profile
+
+```bash
+# Run a simple command
+./aps myagent -- echo "Hello from agent!"
+
+# Run an interactive shell
+./aps myagent
+
+# Run git commands with the profile's git config
+./aps myagent -- git status
+```
+
+### 4. List Your Profiles
+
+```bash
+./aps profile list
+```
+
+### 5. View Profile Details
+
+```bash
+./aps profile show myagent
+```
+
+## What is a Profile?
+
+A profile is an isolated environment that contains:
+
+- **Identity**: Git config, GitHub username, etc.
+- **Credentials**: API tokens, SSH keys, etc.
+- **Preferences**: Language, timezone, shell
+- **Capabilities**: What the agent can do
+- **Actions**: Custom scripts the agent can run
+
+## Environment Variables
+
+APS automatically injects profile-specific environment variables when running commands:
+
+- `APS_PROFILE_ID` - The profile ID
+- `APS_PROFILE_DIR` - Path to the profile directory
+- `APS_PROFILE_YAML` - Path to profile.yaml
+- `APS_PROFILE_SECRETS` - Path to secrets.env
+- `APS_PROFILE_DOCS_DIR` - Path to docs directory
+
+Plus any secrets you define in `secrets.env`.
+
+## Next Steps
+
+- Read [CLI.md](CLI.md) for complete command reference
+- Read [PROFILES.md](PROFILES.md) for detailed profile management
+- Read [EXAMPLES.md](EXAMPLES.md) for practical use cases
+- Read [WEBHOOKS.md](WEBHOOKS.md) to set up webhooks
+- Read [SECURITY.md](SECURITY.md) for security best practices
+
+## Shell Integration
+
+### Auto-completion
+
+```bash
+# For zsh
+echo 'source <(./aps completion zsh)' >> ~/.zshrc
+
+# For bash
+echo 'source <(./aps completion bash)' >> ~/.bashrc
+```
+
+### Profile Aliases
+
+Create aliases for quick access:
+
+```bash
+eval "$(./aps alias)"
+```
+
+This lets you run:
+```bash
+myagent echo "Hello!"
+myagent git status
+```
+
+## Configuration
+
+APS supports global configuration at `~/.config/aps/config.yaml`:
+
+```yaml
+prefix: MYTOOL
+```
+
+This changes environment variables from `APS_*` to `MYTOOL_*`.
+
+## Directory Structure
+
+All APS data lives under `~/.agents/`:
+
+```
+~/.agents/
+  profiles/
+    myagent/
+      profile.yaml
+      secrets.env
+      gitconfig
+      actions/
+      notes.md
+  docs/
+    README.md
+    CLI.md
+    ...
+```
+
+## TUI Mode
+
+Run APS without arguments to launch the interactive Terminal UI:
+
+```bash
+./aps
+```
+
+The TUI provides:
+- Profile selection
+- Profile details
+- Action list and execution
+- Log output viewer
