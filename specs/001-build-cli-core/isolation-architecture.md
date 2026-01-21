@@ -1209,7 +1209,8 @@ aps run agent-a -- env | grep APS_
 
 ## References
 
-- **SandVault**: `/tmp/sandvault/` - macOS user account isolation reference
+- APS macOS user account isolation implementation
+
 - **Go Build Tags**: https://pkg.go.dev/cmd/go#hdr-Build_constraints
 - **Docker SDK**: https://github.com/docker/docker-client
 - **Linux Namespaces**: https://man7.org/linux/man-pages/man7/namespaces.7.html
