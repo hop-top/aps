@@ -9,7 +9,14 @@ import (
 
 // Config represents the global configuration for APS
 type Config struct {
-	Prefix string `yaml:"prefix"`
+	Prefix    string                `yaml:"prefix"`
+	Isolation GlobalIsolationConfig `yaml:"isolation,omitempty"`
+}
+
+// GlobalIsolationConfig represents global isolation settings
+type GlobalIsolationConfig struct {
+	DefaultLevel    IsolationLevel `yaml:"default_level"`
+	FallbackEnabled bool           `yaml:"fallback_enabled"`
 }
 
 // DefaultPrefix is the default prefix for environment variables
@@ -34,6 +41,10 @@ func GetConfigDir() (string, error) {
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		Prefix: DefaultPrefix,
+		Isolation: GlobalIsolationConfig{
+			DefaultLevel:    IsolationProcess,
+			FallbackEnabled: true,
+		},
 	}
 
 	configDir, err := GetConfigDir()
@@ -56,5 +67,84 @@ func LoadConfig() (*Config, error) {
 		config.Prefix = DefaultPrefix
 	}
 
+	if config.Isolation.DefaultLevel == "" {
+		config.Isolation.DefaultLevel = IsolationProcess
+	} else {
+		switch config.Isolation.DefaultLevel {
+		case IsolationProcess:
+		case IsolationPlatform:
+		case IsolationContainer:
+		default:
+			config.Isolation.DefaultLevel = IsolationProcess
+		}
+	}
+
 	return config, nil
+}
+
+// SaveConfig saves the global configuration to disk
+func SaveConfig(config *Config) error {
+	configDir, err := GetConfigDir()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return err
+	}
+
+	configPath := filepath.Join(configDir, "config.yaml")
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// MigrateConfig updates an existing config file to include isolation settings
+// Returns true if migration was performed, false if no migration needed
+func MigrateConfig() (bool, error) {
+	configDir, err := GetConfigDir()
+	if err != nil {
+		return false, err
+	}
+
+	configPath := filepath.Join(configDir, "config.yaml")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // No existing config to migrate
+		}
+		return false, err
+	}
+
+	var oldConfig struct {
+		Prefix string `yaml:"prefix"`
+	}
+
+	if err := yaml.Unmarshal(data, &oldConfig); err != nil {
+		return false, err
+	}
+
+	var newConfig Config
+	newConfig.Prefix = oldConfig.Prefix
+	if newConfig.Prefix == "" {
+		newConfig.Prefix = DefaultPrefix
+	}
+	newConfig.Isolation = GlobalIsolationConfig{
+		DefaultLevel:    IsolationProcess,
+		FallbackEnabled: true,
+	}
+
+	if err := SaveConfig(&newConfig); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

@@ -64,7 +64,7 @@ func ServeWebhooks(config WebhookServerConfig) error {
 				http.Error(w, "Unauthorized: Invalid signature format", http.StatusUnauthorized)
 				return
 			}
-			
+
 			if !CheckSignature(config.Secret, body, parts[1]) {
 				http.Error(w, "Unauthorized: Invalid signature", http.StatusUnauthorized)
 				return
@@ -133,17 +133,17 @@ func ServeWebhooks(config WebhookServerConfig) error {
 		// Run Action
 		// We pass body as payload
 		// How to handle response? Spec says "return action exit code" for CLI, but for webhook?
-		// Spec says "Success response: status 200 OK". 
+		// Spec says "Success response: status 200 OK".
 		// It implies async dispatch mostly, but implementation is sync here via RunAction.
 		// If action fails, should we return 500?
 		// Spec 14.8: "Failure response: appropriate 4xx/5xx"
-		
+
 		err = RunAction(profileID, actionID, body)
-		
-		// TODO: RunAction currently streams stdout/err to os.Stdout/Stderr. 
+
+		// TODO: RunAction currently streams stdout/err to os.Stdout/Stderr.
 		// Webhook might want to capture it? Spec doesn't require capturing output in response, just status.
 		// Logging rules: "execution result".
-		
+
 		if err != nil {
 			log.Printf("Execution failed: %v", err)
 			respondJSON(w, http.StatusInternalServerError, map[string]string{

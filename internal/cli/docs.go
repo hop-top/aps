@@ -19,13 +19,13 @@ var docsCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error getting agents dir: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		docsDest := filepath.Join(agentsDir, "docs")
 		if err := core.GenerateDocs(docsDest); err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating docs: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		fmt.Printf("Documentation generated at: %s\n", docsDest)
 	},
 }
@@ -33,4 +33,3 @@ var docsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(docsCmd)
 }
-

@@ -70,7 +70,7 @@ var actionRunCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		profileID := args[0]
 		actionID := args[1]
-		
+
 		payloadFile, _ := cmd.Flags().GetString("payload-file")
 		payloadStdin, _ := cmd.Flags().GetBool("payload-stdin")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -97,7 +97,7 @@ var actionRunCmd = &cobra.Command{
 			}
 			payload = data
 		} else if payloadStdin {
-			// Read from stdin? 
+			// Read from stdin?
 			// But wait, Cobra might have consumed stdin? No.
 			// Actually, `exec.Command` inherits stdin by default if we set it.
 			// core.RunAction handles stdin if payload is empty.

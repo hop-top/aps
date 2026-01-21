@@ -36,18 +36,18 @@ var rootCmd = &cobra.Command{
 		// Check if first arg is a profile ID
 		profileID := args[0]
 		profile, err := core.LoadProfile(profileID)
-		
+
 		if err == nil {
 			// It is a valid profile!
 			// Dispatch as shorthand execution
-			
+
 			// Case 1: Session (no other args) -> aps run <profile> -- <shell>
 			if len(args) == 1 {
 				shell := profile.Preferences.Shell
 				if shell == "" {
 					shell = core.DetectShell()
 				}
-				
+
 				fmt.Printf("Starting session for %s using %s...\n", profileID, shell)
 				if err := core.RunCommand(profileID, shell, nil); err != nil {
 					fmt.Fprintf(os.Stderr, "Session ended with error: %v\n", err)
@@ -60,7 +60,7 @@ var rootCmd = &cobra.Command{
 			// args[1] is the command, args[2:] are args
 			commandName := args[1]
 			commandArgs := args[2:]
-			
+
 			if err := core.RunCommand(profileID, commandName, commandArgs); err != nil {
 				// We might want to pass through exit code here
 				if exitErr, ok := err.(*exec.ExitError); ok {
@@ -73,11 +73,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Not a profile, and not a valid subcommand (or Cobra would have routed it)
-		// Cobra handles "unknown command" usually, but since we use ArbitraryArgs, 
+		// Cobra handles "unknown command" usually, but since we use ArbitraryArgs,
 		// we are intercepting everything that isn't a defined subcommand.
 		// If LoadProfile failed, it means it's not a profile.
 		// So we should print help or error.
-		
+
 		fmt.Fprintf(os.Stderr, "Error: unknown command or profile '%s'\n", profileID)
 		cmd.Help()
 		os.Exit(1)

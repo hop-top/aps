@@ -22,7 +22,7 @@ var webhookServeCmd = &cobra.Command{
 		addr, _ := cmd.Flags().GetString("addr")
 		secret, _ := cmd.Flags().GetString("secret")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		
+
 		eventMapFlags, _ := cmd.Flags().GetStringSlice("event-map")
 		allowEvents, _ := cmd.Flags().GetStringSlice("allow-event")
 

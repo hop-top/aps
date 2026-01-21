@@ -18,15 +18,15 @@ const (
 )
 
 type Model struct {
-	state          State
-	profiles       []string
+	state           State
+	profiles        []string
 	selectedProfile int
-	actions        []core.Action
-	selectedAction int
-	output         string
-	err            error
-	width          int
-	height         int
+	actions         []core.Action
+	selectedAction  int
+	output          string
+	err             error
+	width           int
+	height          int
 }
 
 func InitialModel() Model {
