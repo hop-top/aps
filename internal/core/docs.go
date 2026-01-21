@@ -25,7 +25,7 @@ func GenerateDocs(dest string) error {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		srcPath := "assets/docs/" + entry.Name()
 		data, err := docsFS.ReadFile(srcPath)
 		if err != nil {

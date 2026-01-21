@@ -32,11 +32,11 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	prefix := config.Prefix
 
 	apsEnv := map[string]string{
-		fmt.Sprintf("%s_PROFILE_ID", prefix):        profile.ID,
-		fmt.Sprintf("%s_PROFILE_DIR", prefix):       profileDir,
-		fmt.Sprintf("%s_PROFILE_YAML", prefix):      profileYaml,
-		fmt.Sprintf("%s_PROFILE_SECRETS", prefix):   secretsPath,
-		fmt.Sprintf("%s_PROFILE_DOCS_DIR", prefix):  docsDir,
+		fmt.Sprintf("%s_PROFILE_ID", prefix):       profile.ID,
+		fmt.Sprintf("%s_PROFILE_DIR", prefix):      profileDir,
+		fmt.Sprintf("%s_PROFILE_YAML", prefix):     profileYaml,
+		fmt.Sprintf("%s_PROFILE_SECRETS", prefix):  secretsPath,
+		fmt.Sprintf("%s_PROFILE_DOCS_DIR", prefix): docsDir,
 	}
 
 	for k, v := range apsEnv {
@@ -80,32 +80,79 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	return nil
 }
 
-// RunCommand executes a command within a profile's context
+// RunCommand executes a command within a profile's context using configured isolation
 func RunCommand(profileID string, command string, args []string) error {
 	profile, err := LoadProfile(profileID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 	}
 
+	// Check if requested isolation level is supported
+	requestedLevel := profile.Isolation.Level
+	if requestedLevel == "" {
+		requestedLevel = IsolationProcess
+	}
+
+	switch requestedLevel {
+	case IsolationProcess:
+		// Process isolation is always available
+		return runCommandWithProcessIsolation(profile, command, args)
+	case IsolationPlatform:
+		return fmt.Errorf("platform isolation not yet implemented")
+	case IsolationContainer:
+		return fmt.Errorf("container isolation not yet implemented")
+	default:
+		return fmt.Errorf("unsupported isolation level: %s", requestedLevel)
+	}
+}
+
+// runCommandWithProcessIsolation executes a command using process-level isolation
+func runCommandWithProcessIsolation(profile *Profile, command string, args []string) error {
 	cmd := exec.Command(command, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := InjectEnvironment(cmd, profile); err != nil {
-		return err
+		return fmt.Errorf("failed to setup environment: %w", err)
 	}
 
 	return cmd.Run()
 }
 
-// RunAction executes a defined action
+// RunAction executes a defined action using configured isolation
 func RunAction(profileID string, actionID string, payload []byte) error {
-	action, err := GetAction(profileID, actionID)
+	profile, err := LoadProfile(profileID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 	}
 
+	action, err := GetAction(profileID, actionID)
+	if err != nil {
+		return fmt.Errorf("failed to get action %s: %w", actionID, err)
+	}
+
+	// Check if requested isolation level is supported
+	requestedLevel := profile.Isolation.Level
+	if requestedLevel == "" {
+		requestedLevel = IsolationProcess
+	}
+
+	switch requestedLevel {
+	case IsolationProcess:
+		// Process isolation is always available
+		return runActionWithProcessIsolation(profile, action, payload)
+	case IsolationPlatform:
+		return fmt.Errorf("platform isolation not yet implemented")
+	case IsolationContainer:
+		return fmt.Errorf("container isolation not yet implemented")
+	default:
+		return fmt.Errorf("unsupported isolation level: %s", requestedLevel)
+	}
+}
+
+// runActionWithProcessIsolation executes an action using process-level isolation
+func runActionWithProcessIsolation(profile *Profile, action *Action, payload []byte) error {
 	// Prepare command based on type
 	var cmd *exec.Cmd
 	switch action.Type {
@@ -125,7 +172,7 @@ func RunAction(profileID string, actionID string, payload []byte) error {
 		// If payload provided, pipe it
 		pipe, err := cmd.StdinPipe()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create stdin pipe: %w", err)
 		}
 		go func() {
 			defer pipe.Close()
@@ -140,13 +187,8 @@ func RunAction(profileID string, actionID string, payload []byte) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	profile, err := LoadProfile(profileID)
-	if err != nil {
-		return err
-	}
-
 	if err := InjectEnvironment(cmd, profile); err != nil {
-		return err
+		return fmt.Errorf("failed to setup environment: %w", err)
 	}
 
 	return cmd.Run()
