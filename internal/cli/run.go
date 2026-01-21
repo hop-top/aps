@@ -15,10 +15,10 @@ var runCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1), // At least profile
 	Run: func(cmd *cobra.Command, args []string) {
 		profileID := args[0]
-		
-		// Cobra parses flags before "--". Everything after "--" is in args if we configure it right, 
+
+		// Cobra parses flags before "--". Everything after "--" is in args if we configure it right,
 		// OR we have to rely on cmd.ArgsLenAtDash()
-		
+
 		dashIdx := cmd.ArgsLenAtDash()
 		if dashIdx == -1 {
 			fmt.Fprintln(os.Stderr, "Error: missing '--' separator")
@@ -29,7 +29,7 @@ var runCmd = &cobra.Command{
 		// args[0] is profile
 		// args[dashIdx] is the first arg after --? No, Cobra usage is tricky here.
 		// If command is `aps run profile -- cmd arg`, args will be `[profile, cmd, arg]` and dashIdx will be 1.
-		
+
 		commandArgs := args[dashIdx:]
 		if len(commandArgs) == 0 {
 			fmt.Fprintln(os.Stderr, "Error: no command specified")

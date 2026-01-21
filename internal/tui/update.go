@@ -60,14 +60,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.state == StateActionList {
 				if len(m.actions) > 0 {
 					action := m.actions[m.selectedAction]
-					
+
 					// Construct command to run "aps action run <profile> <action>"
 					// using the current binary
 					binary, _ := os.Executable()
 					if binary == "" {
 						binary = os.Args[0]
 					}
-					
+
 					c := exec.Command(binary, "action", "run", m.profiles[m.selectedProfile], action.ID)
 					return m, tea.ExecProcess(c, func(err error) tea.Msg {
 						if err != nil {

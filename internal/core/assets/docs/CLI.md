@@ -241,6 +241,69 @@ echo '{"name": "John"}' | aps action run myagent greet.py --payload-stdin
 aps action run myagent hello-world.sh --dry-run
 ```
 
+## Session Commands
+
+### `aps session list`
+
+List active and recent sessions.
+
+```bash
+aps session list [flags]
+```
+
+**Flags:**
+
+- `--profile <id>` - Filter sessions by profile ID
+- `--status <status>` - Filter sessions by status (active, inactive, errored)
+- `--tier <tier>` - Filter sessions by tier (basic, standard, premium)
+
+**Examples:**
+
+```bash
+# List all sessions
+aps session list
+
+# List sessions for a specific profile
+aps session list --profile myagent
+
+# List active sessions
+aps session list --status active
+
+# List premium tier sessions
+aps session list --tier premium
+
+# Combine filters
+aps session list --profile myagent --status active --tier premium
+```
+
+**Output:**
+```
+ID          PROFILE   PID   STATUS   TIER      CREATED              LAST SEEN
+session-123 myagent   12345 active   basic     2026-01-21 10:30:00  10:35:00
+session-124 prod      12346 active   standard  2026-01-21 10:32:00  10:34:00
+session-125 dev       0     inactive basic     2026-01-21 09:00:00  09:15:00
+```
+
+### `aps session attach`
+
+Attach to a running session.
+
+```bash
+aps session attach <session-id>
+```
+
+**Note:** Full attach functionality is coming soon. Currently displays session information.
+
+### `aps session detach`
+
+Detach from a running session.
+
+```bash
+aps session detach <session-id>
+```
+
+**Note:** Full detach functionality is coming soon. Currently displays session information.
+
 ## Webhook Commands
 
 ### `aps webhook serve`
@@ -326,6 +389,8 @@ aps docs
 Generated /home/user/.agents/docs/README.md
 Generated /home/user/.agents/docs/CLI.md
 Generated /home/user/.agents/docs/PROFILES.md
+Generated /home/user/.agents/docs/ISOLATION.md
+Generated /home/user/.agents/docs/SESSIONS.md
 Generated /home/user/.agents/docs/SECURITY.md
 Generated /home/user/.agents/docs/EXAMPLES.md
 Generated /home/user/.agents/docs/WEBHOOKS.md

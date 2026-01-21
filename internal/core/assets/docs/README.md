@@ -78,6 +78,8 @@ Plus any secrets you define in `secrets.env`.
 
 - Read [CLI.md](CLI.md) for complete command reference
 - Read [PROFILES.md](PROFILES.md) for detailed profile management
+- Read [ISOLATION.md](ISOLATION.md) for isolation levels and security
+- Read [SESSIONS.md](SESSIONS.md) for session management
 - Read [EXAMPLES.md](EXAMPLES.md) for practical use cases
 - Read [WEBHOOKS.md](WEBHOOKS.md) to set up webhooks
 - Read [SECURITY.md](SECURITY.md) for security best practices
@@ -114,13 +116,29 @@ APS supports global configuration at `~/.config/aps/config.yaml`:
 
 ```yaml
 prefix: MYTOOL
+isolation:
+  default_level: process  # process | platform | container
+  fallback_enabled: true   # Allow fallback to lower isolation levels
 ```
 
-This changes environment variables from `APS_*` to `MYTOOL_*`.
+This changes environment variables from `APS_*` to `MYTOOL_*` and configures default isolation behavior.
+
+### Profile Isolation
+
+Profiles can also specify isolation settings in `profile.yaml`:
+
+```yaml
+isolation:
+  level: process  # process | platform | container
+  strict: false   # Fail if requested level is unavailable
+  fallback: true  # Allow fallback to lower isolation levels
+```
+
+See [ISOLATION.md](ISOLATION.md) for details.
 
 ## Directory Structure
 
-All APS data lives under `~/.agents/`:
+All APS data lives under `~/.agents/` and `~/.aps/`:
 
 ```
 ~/.agents/
@@ -134,7 +152,21 @@ All APS data lives under `~/.agents/`:
   docs/
     README.md
     CLI.md
-    ...
+    PROFILES.md
+    ISOLATION.md
+    SESSIONS.md
+    SECURITY.md
+    EXAMPLES.md
+    WEBHOOKS.md
+
+~/.aps/
+  sessions/
+    registry.json
+  keys/
+    <session-id>/
+      admin_key
+      admin_key.pub
+  tmux.conf
 ```
 
 ## TUI Mode

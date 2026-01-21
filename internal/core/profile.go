@@ -8,18 +8,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	ApsHomeDir = ".aps"
+)
+
+type IsolationLevel string
+
+const (
+	IsolationProcess   IsolationLevel = "process"
+	IsolationPlatform  IsolationLevel = "platform"
+	IsolationContainer IsolationLevel = "container"
+)
+
 // Profile represents an agent profile configuration
 type Profile struct {
-	ID           string              `yaml:"id"`
-	DisplayName  string              `yaml:"display_name"`
-	Persona      Persona             `yaml:"persona,omitempty"`
-	Capabilities []string            `yaml:"capabilities,omitempty"`
-	Accounts     map[string]Account  `yaml:"accounts,omitempty"`
-	Preferences  Preferences         `yaml:"preferences,omitempty"`
-	Limits       Limits              `yaml:"limits,omitempty"`
-	Git          GitConfig           `yaml:"git,omitempty"`
-	SSH          SSHConfig           `yaml:"ssh,omitempty"`
-	Webhooks     WebhookConfig       `yaml:"webhooks,omitempty"`
+	ID           string             `yaml:"id"`
+	DisplayName  string             `yaml:"display_name"`
+	Persona      Persona            `yaml:"persona,omitempty"`
+	Capabilities []string           `yaml:"capabilities,omitempty"`
+	Accounts     map[string]Account `yaml:"accounts,omitempty"`
+	Preferences  Preferences        `yaml:"preferences,omitempty"`
+	Limits       Limits             `yaml:"limits,omitempty"`
+	Git          GitConfig          `yaml:"git,omitempty"`
+	SSH          SSHConfig          `yaml:"ssh,omitempty"`
+	Webhooks     WebhookConfig      `yaml:"webhooks,omitempty"`
+	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
 }
 
 type Persona struct {
@@ -39,8 +52,8 @@ type Preferences struct {
 }
 
 type Limits struct {
-	MaxConcurrency     int `yaml:"max_concurrency,omitempty"`
-	MaxRuntimeMinutes  int `yaml:"max_runtime_minutes,omitempty"`
+	MaxConcurrency    int `yaml:"max_concurrency,omitempty"`
+	MaxRuntimeMinutes int `yaml:"max_runtime_minutes,omitempty"`
 }
 
 type GitConfig struct {
@@ -55,6 +68,31 @@ type SSHConfig struct {
 type WebhookConfig struct {
 	Enabled       bool     `yaml:"enabled,omitempty"`
 	AllowedEvents []string `yaml:"allowed_events,omitempty"`
+}
+
+type IsolationConfig struct {
+	Level     IsolationLevel  `yaml:"level"`
+	Strict    bool            `yaml:"strict"`
+	Fallback  bool            `yaml:"fallback"`
+	Platform  PlatformConfig  `yaml:"platform,omitempty"`
+	Container ContainerConfig `yaml:"container,omitempty"`
+}
+
+type PlatformConfig struct {
+	SandboxID string `yaml:"sandbox_id,omitempty"`
+	Name      string `yaml:"name,omitempty"`
+}
+
+type ContainerConfig struct {
+	Image     string             `yaml:"image,omitempty"`
+	Network   string             `yaml:"network,omitempty"`
+	Volumes   []string           `yaml:"volumes,omitempty"`
+	Resources ContainerResources `yaml:"resources,omitempty"`
+}
+
+type ContainerResources struct {
+	MemoryMB int `yaml:"memory_mb,omitempty"`
+	CPUQuota int `yaml:"cpu_quota,omitempty"`
 }
 
 // GetAgentsDir returns the root directory for agents (~/.agents)
@@ -105,7 +143,35 @@ func LoadProfile(id string) (*Profile, error) {
 		return nil, fmt.Errorf("profile ID mismatch: path=%s, content=%s", id, profile.ID)
 	}
 
+	if err := profile.ValidateIsolation(); err != nil {
+		return nil, fmt.Errorf("invalid isolation config for profile %s: %w", id, err)
+	}
+
 	return &profile, nil
+}
+
+// ValidateIsolation validates the isolation configuration
+func (p *Profile) ValidateIsolation() error {
+	if p.Isolation.Level == "" {
+		p.Isolation.Level = IsolationProcess
+		return nil
+	}
+
+	switch p.Isolation.Level {
+	case IsolationProcess:
+	case IsolationPlatform:
+	case IsolationContainer:
+	default:
+		return fmt.Errorf("invalid isolation level: %s", p.Isolation.Level)
+	}
+
+	if p.Isolation.Level == IsolationContainer {
+		if p.Isolation.Container.Image == "" {
+			return fmt.Errorf("container isolation requires an image")
+		}
+	}
+
+	return nil
 }
 
 // SaveProfile saves a profile to disk
@@ -158,7 +224,7 @@ func CreateProfile(id string, config Profile) error {
 	// Spec 12.4 says "Refuse overwrite unless --force is provided"
 	// CreateProfile returns error if exists.
 	// But actually, we are in core package here. The logic logic is inside CreateProfile.
-	
+
 	// Set default shell if not provided
 	if config.Preferences.Shell == "" {
 		config.Preferences.Shell = DetectShell()
