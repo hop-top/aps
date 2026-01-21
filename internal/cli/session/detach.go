@@ -2,29 +2,92 @@ package session
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	"oss-aps-cli/internal/core/session"
 )
 
 func NewDetachCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "detach <session-id>",
+	var all bool
+
+	cmd := &cobra.Command{
+		Use:   "detach [session-id]",
 		Short: "Detach from a running session",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sessionID := args[0]
 			registry := session.GetRegistry()
 
-			sess, err := registry.Get(sessionID)
-			if err != nil {
-				return fmt.Errorf("session not found: %w", err)
+			if all {
+				return detachAll(registry)
 			}
 
-			fmt.Printf("Detaching from session %s (PID: %d)\n", sessionID, sess.PID)
-			fmt.Println("Detach functionality not yet implemented")
+			if len(args) == 0 {
+				return fmt.Errorf("session ID required or use --all flag")
+			}
 
-			return nil
+			sessionID := args[0]
+			return detachFromSession(registry, sessionID)
 		},
 	}
+
+	cmd.Flags().BoolVarP(&all, "all", "a", false, "Detach from all sessions")
+
+	return cmd
+}
+
+func detachFromSession(registry *session.SessionRegistry, sessionID string) error {
+	sess, err := registry.Get(sessionID)
+	if err != nil {
+		return fmt.Errorf("session not found: %w", err)
+	}
+
+	if sess.TmuxSocket == "" {
+		return fmt.Errorf("session does not have a tmux socket")
+	}
+
+	tmuxPath, err := exec.LookPath("tmux")
+	if err != nil {
+		return fmt.Errorf("tmux not found: %w", err)
+	}
+
+	if sess.Status != session.SessionActive {
+		return fmt.Errorf("session %s is not active (status: %s)", sessionID, sess.Status)
+	}
+
+	fmt.Printf("Detaching from session %s\n", sessionID)
+
+	cmd := exec.Command(tmuxPath, "-S", sess.TmuxSocket, "detach-client", "-s", sess.ID)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to detach: %w", err)
+	}
+
+	return nil
+}
+
+func detachAll(registry *session.SessionRegistry) error {
+	sessions := registry.List()
+	if len(sessions) == 0 {
+		fmt.Println("No active sessions")
+		return nil
+	}
+
+	tmuxPath, err := exec.LookPath("tmux")
+	if err != nil {
+		return fmt.Errorf("tmux not found: %w", err)
+	}
+
+	var detached int
+	for _, sess := range sessions {
+		if sess.Status == session.SessionActive && sess.TmuxSocket != "" {
+			cmd := exec.Command(tmuxPath, "-S", sess.TmuxSocket, "detach-client", "-s", sess.ID)
+			if err := cmd.Run(); err == nil {
+				detached++
+				fmt.Printf("Detached from session %s\n", sess.ID)
+			}
+		}
+	}
+
+	fmt.Printf("Detached from %d session(s)\n", detached)
+	return nil
 }

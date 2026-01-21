@@ -84,10 +84,18 @@ type PlatformConfig struct {
 }
 
 type ContainerConfig struct {
-	Image     string             `yaml:"image,omitempty"`
-	Network   string             `yaml:"network,omitempty"`
-	Volumes   []string           `yaml:"volumes,omitempty"`
-	Resources ContainerResources `yaml:"resources,omitempty"`
+	Image      string             `yaml:"image,omitempty"`
+	Network    string             `yaml:"network,omitempty"`
+	Volumes    []string           `yaml:"volumes,omitempty"`
+	Resources  ContainerResources `yaml:"resources,omitempty"`
+	BuildSteps []BuildStep        `yaml:"build_steps,omitempty"`
+	Packages   []string           `yaml:"packages,omitempty"`
+}
+
+type BuildStep struct {
+	Type    string `yaml:"type"`
+	Run     string `yaml:"run"`
+	Content string `yaml:"content,omitempty"`
 }
 
 type ContainerResources struct {

@@ -13,5 +13,12 @@ func init() {
 	}
 
 	sessionCmd.AddCommand(session.NewListCmd())
+	sessionCmd.AddCommand(session.NewAttachCmd())
+	sessionCmd.AddCommand(session.NewDetachCmd())
+	sessionCmd.AddCommand(session.NewInspectCmd())
+	sessionCmd.AddCommand(session.NewLogsCmd())
+	sessionCmd.AddCommand(session.NewTerminateCmd())
+	sessionCmd.AddCommand(session.NewDeleteCmd())
+
 	rootCmd.AddCommand(sessionCmd)
 }
