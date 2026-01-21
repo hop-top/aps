@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// InjectEnvironment prepares the environment variables for a command
+// InjectEnvironment prepares environment variables for a command
 func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	profileDir, err := GetProfileDir(profile.ID)
 	if err != nil {
@@ -64,10 +64,9 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	if profile.SSH.Enabled && profile.SSH.KeyPath != "" {
 		// Resolve relative paths (like ~) if necessary, simplified here to use raw or absolute
 		// Ideally we expand ~, but for now we assume valid path or let ssh handle it if absolute
-		// Actually the spec says "If ssh.key exists in the profile directory... APS may inject"
+		// Actually, spec says "If ssh.key exists in profile directory... APS may inject"
 		// The spec example shows: GIT_SSH_COMMAND=ssh -i <profile-dir>/ssh.key -F /dev/null
-		// But T008 goal is generic environment. Let's stick to the spec's module logic if we were implementing modules fully.
-		// For T008 scope "InjectEnvironment", we'll stick to spec section 9 and 8.
+		// But T008 goal is generic environment. Let's stick to spec section 9 and 8.
 		// Spec 8.2 says: "If ssh.key exists... and SSH is enabled... inject GIT_SSH_COMMAND"
 		// Let's check for ssh.key in profile dir as per spec 8.2 logic
 		internalKeyPath := filepath.Join(profileDir, "ssh.key")

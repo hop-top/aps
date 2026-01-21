@@ -5,12 +5,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"oss-aps-cli/internal/core"
+	"oss-aps-cli/internal/core/session"
 )
 
 type ProcessIsolation struct {
-	context *ExecutionContext
+	context     *ExecutionContext
+	tmuxSocket  string
+	tmuxSession string
+	useTmux     bool
 }
 
 func NewProcessIsolation() *ProcessIsolation {
@@ -115,6 +121,10 @@ func (p *ProcessIsolation) SetupEnvironment(cmd interface{}) error {
 }
 
 func (p *ProcessIsolation) Execute(command string, args []string) error {
+	p.tmuxSocket = filepath.Join(os.TempDir(), fmt.Sprintf("aps-tmux-%s-socket", p.context.ProfileID))
+	p.tmuxSession = fmt.Sprintf("aps-%s-%d", p.context.ProfileID, time.Now().Unix())
+	p.useTmux = true
+
 	cmd := exec.Command(command, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -124,11 +134,81 @@ func (p *ProcessIsolation) Execute(command string, args []string) error {
 		return err
 	}
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%w: %v", ErrExecutionFailed, err)
+	if err := p.setupTmuxSession(command, args); err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func (p *ProcessIsolation) setupTmuxSession(command string, args []string) error {
+	fullCommand := strings.Join(append([]string{command}, args...), " ")
+
+	tmuxNewCmd := exec.Command("tmux", "-S", p.tmuxSocket, "new-session", "-d", "-s", p.tmuxSession, "-n", "aps", fullCommand)
+	tmuxNewCmd.Stdout = os.Stdout
+	tmuxNewCmd.Stderr = os.Stderr
+
+	if err := tmuxNewCmd.Run(); err != nil {
+		return fmt.Errorf("failed to create tmux session: %w", err)
+	}
+
+	if err := p.registerSession(); err != nil {
+		p.cleanupTmux()
+		return fmt.Errorf("failed to register session: %w", err)
+	}
+
+	fmt.Printf("Session started: %s\n", p.tmuxSession)
+	fmt.Printf("Tmux socket: %s\n", p.tmuxSocket)
+	fmt.Printf("Attach with: aps session attach %s\n", p.tmuxSession)
+
+	return nil
+}
+
+func (p *ProcessIsolation) registerSession() error {
+	cmd := exec.Command("tmux", "-S", p.tmuxSocket, "display-message", "-p", "'#{pid}'")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to get tmux session PID: %w", err)
+	}
+
+	pidStr := strings.Trim(strings.TrimSpace(string(output)), "'")
+	var pid int
+	_, err = fmt.Sscanf(pidStr, "%d", &pid)
+	if err != nil {
+		return fmt.Errorf("failed to parse PID: %w", err)
+	}
+
+	registry := session.GetRegistry()
+	sess := &session.SessionInfo{
+		ID:         p.tmuxSession,
+		ProfileID:  p.context.ProfileID,
+		ProfileDir: p.context.ProfileDir,
+		Command:    strings.Join(append([]string{"tmux"}, "-S", p.tmuxSocket, "new-session"), " "),
+		PID:        pid,
+		Status:     session.SessionActive,
+		Tier:       session.TierStandard,
+		TmuxSocket: p.tmuxSocket,
+		CreatedAt:  time.Now(),
+		LastSeenAt: time.Now(),
+		Environment: map[string]string{
+			"tmux_socket":  p.tmuxSocket,
+			"tmux_session": p.tmuxSession,
+		},
+	}
+
+	return registry.Register(sess)
+}
+
+func (p *ProcessIsolation) cleanupTmux() {
+	if p.tmuxSocket == "" || p.tmuxSession == "" {
+		return
+	}
+
+	cmd := exec.Command("tmux", "-S", p.tmuxSocket, "kill-session", "-t", p.tmuxSession)
+	_ = cmd.Run()
+
+	registry := session.GetRegistry()
+	_ = registry.Unregister(p.tmuxSession)
 }
 
 func (p *ProcessIsolation) ExecuteAction(actionID string, payload []byte) error {
@@ -177,6 +257,9 @@ func (p *ProcessIsolation) ExecuteAction(actionID string, payload []byte) error 
 }
 
 func (p *ProcessIsolation) Cleanup() error {
+	if p.useTmux {
+		p.cleanupTmux()
+	}
 	p.context = nil
 	return nil
 }
