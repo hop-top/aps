@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  test-env:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    image: aps-test-env:latest
+    container_name: aps-test-container
+    volumes:
+      # Mount project source for access to built binaries
+      - ./:/host-src:ro
+      # Mount test fixtures
+      - ./tests/fixtures:/test-fixtures:ro
+      # Persistent home directory for test state
+      - test-home:/home/testuser
+      # Persistent config directory
+      - test-config:/home/testuser/.config/aps
+    environment:
+      # Ensure non-interactive mode
+      - DEBIAN_FRONTEND=noninteractive
+      # Set timezone
+      - TZ=UTC
+    working_dir: /home/testuser
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+volumes:
+  test-home:
+    driver: local
+  test-config:
+    driver: local

@@ -1,0 +1,11 @@
+id: basic-profile
+display_name: Basic Test Profile
+description: A simple profile for basic testing
+isolation:
+  mode: process
+capabilities:
+  - shell
+  - execution
+tools:
+  - name: git
+    enabled: true

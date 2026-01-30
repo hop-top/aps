@@ -1,0 +1,17 @@
+id: dev-profile
+display_name: Development Test Profile
+description: Profile with development tools
+isolation:
+  mode: process
+capabilities:
+  - shell
+  - execution
+  - development
+tools:
+  - name: git
+    enabled: true
+  - name: docker
+    enabled: false
+environment:
+  NODE_ENV: development
+  DEBUG: true

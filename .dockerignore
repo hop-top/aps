@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+vendor/
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.test
+*.out
+
+# Test artifacts
+coverage.out
+coverage-*.out
+coverage.html
+
+# Documentation
+*.md
+!README.md
+
+# Development tools
+.mise/
+.tlc/
+.workplans/
+.gemini/
+.specify/
+.agent/
+
+# CI/CD
+.github/
+
+# Docker files
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+*.tmp
+*.log
+.env*
+
+# Documentation (exclude all except Docker testing guide)
+docs/
+!docs/agent/
+!docs/agent/docker-testing.md
+
+# Test data that shouldn't be copied
+tests/fixtures/secrets/*.env
