@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oss-aps-cli/internal/core"
 	"oss-aps-cli/internal/core/session"
 )
 
-func configureContainerSSH(engine ContainerEngine, containerID, profileID string) error {
+func ConfigureContainerSSH(engine ContainerEngine, containerID, profileID string) error {
 	adminKeysDir := filepath.Join(os.Getenv("HOME"), ".aps/keys")
 	adminPubKeyPath := filepath.Join(adminKeysDir, "admin_pub")
 
@@ -50,7 +49,7 @@ func configureContainerSSH(engine ContainerEngine, containerID, profileID string
 	return nil
 }
 
-func attachToContainer(engine ContainerEngine, session *session.SessionInfo, mode string) error {
+func AttachToContainer(engine ContainerEngine, session *session.SessionInfo, mode string) error {
 	keyPath := filepath.Join(os.Getenv("HOME"), ".aps/keys/admin_key")
 
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -79,9 +78,9 @@ func attachToContainer(engine ContainerEngine, session *session.SessionInfo, mod
 
 	var tmuxCmd string
 	if mode == "view" {
-		tmuxCmd = fmt.Sprintf("tmux -S %s attach -t %s -r", session.TmuxSocket, session.TmuxSession)
+		tmuxCmd = fmt.Sprintf("tmux attach -t %s -r", session.TmuxSession)
 	} else {
-		tmuxCmd = fmt.Sprintf("tmux -S %s attach -t %s", session.TmuxSocket, session.TmuxSession)
+		tmuxCmd = fmt.Sprintf("tmux attach -t %s", session.TmuxSession)
 	}
 
 	sshArgs := []string{
@@ -101,7 +100,7 @@ func attachToContainer(engine ContainerEngine, session *session.SessionInfo, mod
 	return sshCmd.Run()
 }
 
-func getContainerSSHConfig(containerID, username string) (string, int, error) {
+func GetContainerSSHConfig(containerID, username string) (string, int, error) {
 	cmd := exec.Command("docker", "port", containerID, "22")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -125,10 +124,10 @@ func getContainerSSHConfig(containerID, username string) (string, int, error) {
 	return host, port, nil
 }
 
-func verifySSHConnection(containerID, username string) error {
+func VerifySSHConnection(containerID, username string) error {
 	keyPath := filepath.Join(os.Getenv("HOME"), ".aps/keys/admin_key")
 
-	host, port, err := getContainerSSHConfig(containerID, username)
+	host, port, err := GetContainerSSHConfig(containerID, username)
 	if err != nil {
 		return err
 	}

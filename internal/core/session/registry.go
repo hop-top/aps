@@ -40,6 +40,8 @@ type SessionInfo struct {
 	Status      SessionStatus     `json:"status"`
 	Tier        SessionTier       `json:"tier,omitempty"`
 	TmuxSocket  string            `json:"tmux_socket,omitempty"`
+	TmuxSession string            `json:"tmux_session,omitempty"`
+	ContainerID string            `json:"container_id,omitempty"`
 	CreatedAt   time.Time         `json:"created_at"`
 	LastSeenAt  time.Time         `json:"last_seen_at"`
 	Environment map[string]string `json:"environment,omitempty"`

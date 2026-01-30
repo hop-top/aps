@@ -1,0 +1,96 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    # Note: This job runs independently. Coverage files come from CI workflow artifacts.
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: coverage-artifacts
+
+      - name: Merge coverage reports
+        run: |
+          go install github.com/wadey/gocovmerge@latest
+          
+          if [ -f coverage-artifacts/coverage-Linux/coverage.out ]; then
+            cp coverage-artifacts/coverage-Linux/coverage.out coverage-merged.out
+          fi
+          
+          if [ -f coverage-artifacts/coverage-macOS/coverage.out ]; then
+            if [ -f coverage-merged.out ]; then
+              gocovmerge coverage-merged.out coverage-artifacts/coverage-macOS/coverage.out > coverage-temp.out
+              mv coverage-temp.out coverage-merged.out
+            else
+              cp coverage-artifacts/coverage-macOS/coverage.out coverage-merged.out
+            fi
+          fi
+          
+          if [ -f coverage-artifacts/coverage-Windows/coverage.out ]; then
+            if [ -f coverage-merged.out ]; then
+              gocovmerge coverage-merged.out coverage-artifacts/coverage-Windows/coverage.out > coverage-final.out
+            else
+              cp coverage-artifacts/coverage-Windows/coverage.out coverage-final.out
+            fi
+          fi
+          
+          if [ ! -f coverage-final.out ]; then
+            mv coverage-merged.out coverage-final.out 2>/dev/null || echo "No coverage files found"
+          fi
+
+      - name: Generate coverage report
+        run: |
+          go tool cover -func=coverage-final.out > coverage-report.txt
+          go tool cover -html=coverage-final.out -o coverage.html
+
+      - name: Display coverage
+        run: cat coverage-report.txt
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: github.event_name == 'push'
+        with:
+          files: ./coverage-final.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage.html
+          retention-days: 30
+
+      - name: Upload coverage text report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report.txt
+          retention-days: 30
+
+      - name: Coverage summary
+        run: |
+          TOTAL=$(grep -E '^total:' coverage-report.txt | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${TOTAL}%"
+          
+          if (( $(echo "$TOTAL < 70" | bc -l) )); then
+            echo "::warning::Coverage is below 70%: ${TOTAL}%"
+          fi

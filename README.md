@@ -64,13 +64,13 @@ Documentation will be generated at `~/.agents/docs/`.
 - `~/.agents/docs/SECURITY.md` - Security best practices
 
 **Additional documentation available in the repository:**
-- `docs/MIGRATION.md` - Migration guide from process to platform/container isolation
-- `docs/PERFORMANCE.md` - Performance benchmarks and optimization
-- `docs/SECURITY_AUDIT.md` - Comprehensive security audit report
-- `docs/RELEASE_NOTES.md` - Release notes and version history
-- `docs/platforms/macos.md` - macOS platform isolation setup
-- `docs/platforms/linux.md` - Linux platform isolation setup
-- `docs/isolation/container.md` - Container isolation setup and configuration
+- `docs/dev/implementation/guides/migration-guide.md` - Migration guide from process to platform/container isolation
+- `docs/dev/testing/performance-benchmarks.md` - Performance benchmarks and optimization
+- `docs/dev/security/security-audit.md` - Comprehensive security audit report
+- `docs/dev/operations/releases/release-notes.md` - Release notes and version history
+- `docs/dev/platforms/macos/overview.md` - macOS platform isolation setup
+- `docs/dev/platforms/linux/overview.md` - Linux platform isolation setup
+- `docs/dev/platforms/container/overview.md` - Container isolation setup and configuration
 
 ## Features
 
@@ -167,7 +167,7 @@ isolation:
   fallback: true  # Allow fallback to lower isolation levels
   platform:
     # macOS/Linux specific settings
-    # See docs/platforms/macos.md or docs/platforms/linux.md
+    # See docs/dev/platforms/macos/overview.md or docs/dev/platforms/linux/overview.md
   container:
     # Container specific settings
     image: "ubuntu:22.04"    # Base Docker image
@@ -182,7 +182,13 @@ isolation:
 ## Build Instructions
 
 ### Prerequisites
-- Go 1.22+
+- Go 1.25.5+
+- [mise](https://mise.jdx.dev) (recommended for dev tools)
+
+```bash
+# Install all required tools (go, goreleaser, act, etc.)
+mise install
+```
 
 ### Platform Requirements
 
@@ -261,9 +267,9 @@ See `~/.agents/docs/EXAMPLES.md` for detailed examples including:
 - And more
 
 **Platform-specific examples:**
-- `docs/platforms/macos.md` - macOS sandbox examples
-- `docs/platforms/linux.md` - Linux sandbox examples
-- `docs/isolation/container.md` - Container isolation examples
+- `docs/dev/platforms/macos/overview.md` - macOS sandbox examples
+- `docs/dev/platforms/linux/overview.md` - Linux sandbox examples
+- `docs/dev/platforms/container/overview.md` - Container isolation examples
 
 ## Isolation Levels
 
@@ -285,7 +291,7 @@ If the requested isolation level is unavailable, APS can gracefully degrade to a
 
 \*First run includes user account creation. Subsequent runs are cached.
 
-See `docs/PERFORMANCE.md` for detailed benchmarks.
+See `docs/dev/testing/performance-benchmarks.md` for detailed benchmarks.
 
 ### Platform Isolation
 
@@ -300,7 +306,59 @@ See `docs/PERFORMANCE.md` for detailed benchmarks.
 - SSH server and tmux integration for session management
 - Requires: Docker installed
 
-See `docs/isolation/container.md`, `docs/platforms/macos.md`, and `docs/platforms/linux.md` for platform-specific setup guides.
+See `docs/dev/platforms/container/overview.md`, `docs/dev/platforms/macos/overview.md`, and `docs/dev/platforms/linux/overview.md` for platform-specific setup guides.
+
+## Capability Management
+
+APS can manage external tools, configurations, and dotfiles as "Capabilities". These are stored in `~/.aps/capabilities/` and can be linked into your workspace.
+
+### Commands
+
+```bash
+# Install a capability from a directory
+aps capability install ./my-tool --name my-tool
+
+# List installed capabilities
+aps capability list
+
+# Link a capability to your current workspace
+aps capability link my-tool --target ./local/path
+
+# "Smart Link" a known tool (e.g., windsurf, copilot)
+# This automatically resolves the target path based on standard conventions
+aps capability link copilot
+
+# "Adopt" an existing file into APS management
+aps capability adopt ./my-config.yaml --name my-config
+
+# "Watch" an external file (symlink into APS)
+aps capability watch ./external/file --name my-ref
+
+# Delete a capability
+aps capability delete my-tool
+```
+
+### Environment Integration
+
+You can automatically export environment variables for all your capabilities (e.g., `APS_MY_TOOL_PATH`).
+
+Add this to your shell profile (`~/.zshrc` or `~/.bashrc`):
+
+```bash
+eval "$(aps env)"
+```
+
+This ensures that whenever you install or remove a capability, your environment variables are updated (on next shell load or re-eval).
+
+### Configuration
+
+You can configure additional source directories for capabilities in `~/.config/aps/config.yaml`:
+
+```yaml
+capability_sources:
+  - /shared/team/capabilities
+  - ~/personal/capabilities
+```
 
 ## Session Management
 
@@ -347,7 +405,13 @@ go test -v ./tests/e2e
 
 Contributions are welcome! Please read the [specification](spec.md) for detailed implementation requirements.
 
-See `docs/RELEASE_NOTES.md` for recent changes and version history.
+### Documentation Structure
+
+*   **[User Documentation](docs/user/README.md)**: Guides for installing and using APS.
+*   **[Developer Documentation](docs/dev/readme.md)**: Architecture, design specs, and implementation details.
+*   **[Agent Documentation](docs/agent/README.md)**: Context and patterns for AI agents working on the codebase.
+
+See `docs/dev/operations/releases/release-notes.md` for recent changes and version history.
 
 For developers working on the codebase, see `AGENTS.md` for implementation guidance and architecture details.
 

@@ -112,6 +112,8 @@ type ContainerEngine interface {
 	GetContainerLogs(id string, opts LogOptions) (<-chan LogMessage, error)
 	UpdateContainerResources(id string, limits ResourceLimits) error
 	InspectContainer(id string) (map[string]interface{}, error)
+	GetContainerIP(id string) (string, error)
+	GetContainerPortMapping(id string, containerPort string) (string, error)
 }
 
 type ContainerIsolation struct {

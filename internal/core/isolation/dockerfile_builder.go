@@ -110,9 +110,9 @@ func (d *DockerfileBuilder) BuildOptions(profile *core.Profile) ContainerRunOpti
 		image = "ubuntu:22.04"
 	}
 
-	volumes := d.parseVolumes(profile.Isolation.Container.Volumes)
-	network := d.parseNetwork(profile.Isolation.Container.Network)
-	limits := d.parseLimits(profile.Isolation.Container.Resources)
+	volumes := d.ParseVolumes(profile.Isolation.Container.Volumes)
+	network := d.ParseNetwork(profile.Isolation.Container.Network)
+	limits := d.ParseLimits(profile.Isolation.Container.Resources)
 
 	return ContainerRunOptions{
 		Image:      image,
@@ -124,7 +124,7 @@ func (d *DockerfileBuilder) BuildOptions(profile *core.Profile) ContainerRunOpti
 	}
 }
 
-func (d *DockerfileBuilder) parseVolumes(volumeStrs []string) []VolumeMount {
+func (d *DockerfileBuilder) ParseVolumes(volumeStrs []string) []VolumeMount {
 	volumes := make([]VolumeMount, 0, len(volumeStrs))
 
 	for _, volStr := range volumeStrs {
@@ -151,7 +151,7 @@ func (d *DockerfileBuilder) parseVolumes(volumeStrs []string) []VolumeMount {
 	return volumes
 }
 
-func (d *DockerfileBuilder) parseNetwork(networkStr string) NetworkConfig {
+func (d *DockerfileBuilder) ParseNetwork(networkStr string) NetworkConfig {
 	if networkStr == "" {
 		return NetworkConfig{
 			Mode: "bridge",
@@ -163,7 +163,7 @@ func (d *DockerfileBuilder) parseNetwork(networkStr string) NetworkConfig {
 	}
 }
 
-func (d *DockerfileBuilder) parseLimits(resources core.ContainerResources) ResourceLimits {
+func (d *DockerfileBuilder) ParseLimits(resources core.ContainerResources) ResourceLimits {
 	limits := ResourceLimits{}
 
 	if resources.MemoryMB > 0 {

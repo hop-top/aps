@@ -2,10 +2,11 @@ package session
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
+
+	"oss-aps-cli/internal/core/session"
 
 	"github.com/spf13/cobra"
-	"oss-aps-cli/internal/core/session"
 )
 
 func NewDeleteCmd() *cobra.Command {

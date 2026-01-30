@@ -1,0 +1,116 @@
+# GoReleaser configuration for APS CLI
+# Documentation: https://goreleaser.com
+
+version: 2
+
+project_name: aps
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+    # Sync VERSION.txt from git tag (strip 'v' prefix)
+    - sh -c "echo '{{ .Version }}' > VERSION.txt"
+
+builds:
+  - id: aps
+    main: ./cmd/aps
+    binary: aps
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X oss-aps-cli/internal/version.Version={{.Version}}
+      - -X oss-aps-cli/internal/version.Commit={{.Commit}}
+      - -X oss-aps-cli/internal/version.Date={{.Date}}
+      - -X oss-aps-cli/internal/version.BuiltBy=goreleaser
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE*
+      - VERSION.txt
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: "🚀 Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "📚 Documentation"
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "🔧 Other"
+      order: 999
+
+release:
+  github:
+    owner: IdeaCraftersLabs
+    name: oss-aps-cli
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## APS {{ .Tag }}
+    
+    Welcome to this release of the Agent Profile System (APS) CLI!
+  footer: |
+    ---
+    
+    **Full Changelog**: https://github.com/IdeaCraftersLabs/oss-aps-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+  name_template: "{{ .Tag }}"
+
+# Homebrew tap (uncomment when ready for public release)
+# brews:
+#   - name: aps
+#     repository:
+#       owner: IdeaCraftersLabs
+#       name: homebrew-tap
+#     homepage: https://github.com/IdeaCraftersLabs/oss-aps-cli
+#     description: Agent Profile System - Local-first agent workflow isolation
+#     license: MIT
+#     install: |
+#       bin.install "aps"
+#     test: |
+#       system "#{bin}/aps", "--help"

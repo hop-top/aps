@@ -9,8 +9,9 @@ import (
 
 // Config represents the global configuration for APS
 type Config struct {
-	Prefix    string                `yaml:"prefix"`
-	Isolation GlobalIsolationConfig `yaml:"isolation,omitempty"`
+	Prefix            string                `yaml:"prefix"`
+	Isolation         GlobalIsolationConfig `yaml:"isolation,omitempty"`
+	CapabilitySources []string              `yaml:"capability_sources,omitempty"`
 }
 
 // GlobalIsolationConfig represents global isolation settings
