@@ -3,9 +3,11 @@ package session
 import (
 	"fmt"
 	"os"
+	"os/exec"
+
+	"oss-aps-cli/internal/core/session"
 
 	"github.com/spf13/cobra"
-	"oss-aps-cli/internal/core/session"
 )
 
 func NewTerminateCmd() *cobra.Command {
@@ -81,4 +83,14 @@ func terminateProcess(pid int, force bool) error {
 	}
 
 	return nil
+}
+
+func terminateTmuxSession(sess *session.SessionInfo, force bool, timeout int) error {
+	if force {
+		cmd := exec.Command("tmux", "-S", sess.TmuxSocket, "kill-server")
+		return cmd.Run()
+	}
+
+	cmd := exec.Command("tmux", "-S", sess.TmuxSocket, "kill-server")
+	return cmd.Run()
 }

@@ -1,15 +1,13 @@
 package session
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
-	"time"
+
+	"oss-aps-cli/internal/core/session"
 
 	"github.com/spf13/cobra"
-	"oss-aps-cli/internal/core/session"
 )
 
 func NewLogsCmd() *cobra.Command {

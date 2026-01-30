@@ -23,7 +23,6 @@ type Model struct {
 	selectedProfile int
 	actions         []core.Action
 	selectedAction  int
-	output          string
 	err             error
 	width           int
 	height          int

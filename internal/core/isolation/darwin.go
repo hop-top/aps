@@ -24,17 +24,17 @@ const (
 )
 
 type DarwinSandbox struct {
-	context        *ExecutionContext
-	username       string
-	password       string
-	homeDir        string
-	sharedDir      string
-	tmuxSocket     string
-	tmuxSession    string
-	useTmux        bool
-	sessionPID     int
-	configured     bool
-	adminPublicKey []byte
+	context      *ExecutionContext
+	username     string
+	password     string
+	homeDir      string
+	sharedDir    string
+	tmuxSocket   string
+	tmuxSession  string
+	useTmux      bool
+	sessionPID   int
+	configured   bool
+	adminKeyPath string
 }
 
 func NewDarwinSandbox() *DarwinSandbox {
