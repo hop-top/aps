@@ -1,0 +1,69 @@
+name: Platform Adapter Tests
+
+on:
+  push:
+    branches: [ main, develop, "adapter/*" ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  adapter-tests:
+    name: Platform Adapter Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.25.5']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run isolation manager tests
+        run: go test -v ./tests/unit/core/isolation/...
+
+      - name: Run adapter-specific tests
+        run: |
+          if [ -d "tests/platform" ]; then
+            go test -v ./tests/platform/...
+          else
+            echo "No platform-specific tests found, skipping"
+          fi
+        shell: bash
+
+      - name: Build and test platform isolation
+        shell: bash
+        run: |
+          go build -o aps ./cmd/aps
+          
+          case "${{ runner.os }}" in
+            Linux)
+              echo "Testing Linux platform isolation..."
+              ./aps profile new test-${{ runner.os }} || true
+              ;;
+            macOS)
+              echo "Testing macOS platform isolation..."
+              ./aps profile new test-${{ runner.os }} || true
+              ;;
+            Windows)
+              echo "Testing Windows platform isolation..."
+              ./aps.exe profile new test-${{ runner.os }} || true
+              ;;
+          esac

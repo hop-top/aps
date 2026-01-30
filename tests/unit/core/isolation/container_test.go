@@ -109,7 +109,7 @@ func TestDockerfileBuilder_ParseVolumes(t *testing.T) {
 		"/host/path2:/container/path2:ro",
 	}
 
-	volumes := builder.parseVolumes(volumeStrs)
+	volumes := builder.ParseVolumes(volumeStrs)
 
 	if len(volumes) != 2 {
 		t.Fatalf("expected 2 volumes, got %d", len(volumes))

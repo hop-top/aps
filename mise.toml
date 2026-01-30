@@ -1,0 +1,12 @@
+# mise configuration for oss-aps-cli
+# Install tools: mise install
+# Docs: https://mise.jdx.dev
+
+[tools]
+go = "1.25.5"
+goreleaser = "latest"
+golangci-lint = "latest"
+act = "latest"
+
+[env]
+CGO_ENABLED = "0"

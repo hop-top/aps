@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-1.25.5-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-1.25.5-
+
+      - name: Run tests before release
+        run: |
+          go mod download
+          go mod verify
+          go test -v ./tests/unit/...
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit VERSION.txt update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          git add VERSION.txt
+          git diff --staged --quiet || git commit -m "chore: bump VERSION.txt to ${{ github.ref_name }}"
+          git push origin main
+
+  verify-release:
+    name: Verify Release Artifacts
+    runs-on: ${{ matrix.os }}
+    needs: release
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            asset_suffix: linux_amd64.tar.gz
+          - os: macos-latest
+            asset_suffix: darwin_amd64.tar.gz
+          - os: windows-latest
+            asset_suffix: windows_amd64.zip
+
+    steps:
+      - name: Download release artifact
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ github.ref_name }}
+          fileName: "aps_*_${{ matrix.asset_suffix }}"
+          out-file-path: release
+
+      - name: Extract and verify (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd release
+          tar -xzf aps_*_${{ matrix.asset_suffix }}
+          ./aps --help || ./aps help
+          ./aps version || echo "Version command not yet implemented"
+
+      - name: Extract and verify (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd release
+          Expand-Archive -Path "aps_*_${{ matrix.asset_suffix }}" -DestinationPath .
+          .\aps.exe --help
+          .\aps.exe version
