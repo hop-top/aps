@@ -52,6 +52,7 @@ Implementation guides and summaries.
   - [container-isolation-summary.md](implementation/summaries/container-isolation-summary.md) - Container implementation details
   - [linux-sandbox-summary.md](implementation/summaries/linux-sandbox-summary.md) - Linux sandbox implementation
   - [capability-implementation.md](implementation/summaries/capability-implementation.md) - Capability management implementation
+  - [a2a-implementation.md](a2a-implementation.md) - A2A Protocol integration technical details
 
 ### ⚙️ Operations
 CI/CD, releases, and operational documentation.

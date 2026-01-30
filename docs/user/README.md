@@ -13,6 +13,8 @@ Welcome to the APS (Adaptive Platform System) User Documentation. This section c
 *   **Session Management**: How to create, inspect, and manage sessions.
 *   **Capability Management**: How to install and link external tools.
 *   **Environment Integration**: Integrating APS with your shell.
+*   **[A2A Quickstart](a2a-quickstart.md)**: Get started with Agent-to-Agent protocol in 5 minutes.
+*   **[A2A Examples](a2a-examples.md)**: Comprehensive examples for A2A protocol usage.
 
 ### [Reference](reference/)
 *   **CLI Command Reference**: Detailed usage for all `aps` commands.

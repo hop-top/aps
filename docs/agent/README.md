@@ -7,6 +7,7 @@ This documentation is intended for AI Agents (and their human collaborators) wor
 *   **[Codebase Structure](structure.md)**: Overview of the standard package layout (`internal/core`, `internal/cli`, etc.).
 *   **[Design Patterns](patterns.md)**: Standard patterns used (e.g., Capability Manager, Registry, Adapter Pattern for Isolation).
 *   **[Testing Strategy](testing.md)**: How to write and run Unit vs E2E tests.
+*   **[A2A Protocol Integration](a2a-integration.md)**: Agent-to-Agent communication for inter-profile messaging.
 
 ## 🚀 Release Process
 
