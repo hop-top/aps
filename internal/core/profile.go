@@ -33,6 +33,17 @@ type Profile struct {
 	SSH          SSHConfig          `yaml:"ssh,omitempty"`
 	Webhooks     WebhookConfig      `yaml:"webhooks,omitempty"`
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
+	A2A          *A2AConfig         `yaml:"a2a,omitempty"`
+}
+
+// A2AConfig holds A2A protocol configuration for a profile
+type A2AConfig struct {
+	Enabled         bool   `yaml:"enabled,omitempty"`
+	ProtocolBinding string `yaml:"protocol_binding,omitempty"`
+	ListenAddr      string `yaml:"listen_addr,omitempty"`
+	PublicEndpoint  string `yaml:"public_endpoint,omitempty"`
+	SecurityScheme  string `yaml:"security_scheme,omitempty"`
+	IsolationTier   string `yaml:"isolation_tier,omitempty"`
 }
 
 type Persona struct {
@@ -68,6 +79,27 @@ type SSHConfig struct {
 type WebhookConfig struct {
 	Enabled       bool     `yaml:"enabled,omitempty"`
 	AllowedEvents []string `yaml:"allowed_events,omitempty"`
+}
+
+// A2AClient represents an A2A client for profile-to-profile communication
+type A2AClient struct {
+	targetProfileID string
+}
+
+// CreateA2AClient creates an A2A client for communicating with another profile
+func (p *Profile) CreateA2AClient(targetProfileID string) (*A2AClient, error) {
+	if targetProfileID == "" {
+		return nil, fmt.Errorf("target profile ID cannot be empty")
+	}
+
+	return &A2AClient{
+		targetProfileID: targetProfileID,
+	}, nil
+}
+
+// GetTargetProfileID returns the target profile ID
+func (c *A2AClient) GetTargetProfileID() string {
+	return c.targetProfileID
 }
 
 type IsolationConfig struct {
