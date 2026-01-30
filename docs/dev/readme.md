@@ -81,6 +81,7 @@ Test strategies and performance benchmarks.
 
 - [unix-test-strategy.md](testing/unix-test-strategy.md) - Unix platform testing strategy
 - [performance-benchmarks.md](testing/performance-benchmarks.md) - Performance benchmarks across platforms
+- [docker-testing-strategy.md](testing/docker-testing-strategy.md) - Docker testing environment strategy
 
 ### 📚 Documentation
 Additional documentation and tools.

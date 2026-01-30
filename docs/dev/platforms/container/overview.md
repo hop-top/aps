@@ -495,6 +495,114 @@ aps profile new compose-profile
 # Run: aps run compose-profile -- docker-compose up
 ```
 
+## Testing
+
+### Docker Test Environment
+
+APS provides a Docker-based testing environment for testing container isolation and user workflows without affecting your local system.
+
+**Purpose**: Simulate a fresh Linux machine for testing APS installation, setup, and workflows.
+
+**Benefits**:
+- **Isolation**: Clean environment for every test run
+- **Realism**: Simulates actual user machine setup
+- **Reproducibility**: Consistent test conditions across runs
+- **Linux Testing**: Tests on target Linux platform regardless of host OS
+- **No Local Impact**: Keeps local development environment clean
+
+### Test Environment Setup
+
+The test environment uses:
+
+- **Base Image**: Ubuntu 22.04 (matches default container isolation base)
+- **Non-root User**: `testuser` for realistic environment
+- **Essential Tools**: curl, wget, git, vim, openssh-client, etc.
+- **XDG Directories**: Proper configuration structure
+- **No Pre-installed Dependencies**: Simulates fresh install
+
+### Running Container Tests
+
+```bash
+# Quick start - verify Docker test environment
+make docker-quick-start
+
+# Build test image
+make docker-build-test
+
+# Run full container isolation test suite
+make docker-test-e2e-user
+
+# Interactive testing
+make docker-test-shell
+# Inside container:
+aps profile new container-test --isolation-level container
+aps run container-test -- echo "Testing container isolation"
+```
+
+### Test Volumes
+
+The test environment uses three persistent volumes:
+
+1. **test-home**: User home directory (`/home/testuser`)
+2. **test-config**: APS configuration directory (`/home/testuser/.config/aps`)
+3. **test-fixtures**: Read-only test fixtures
+
+### Container Isolation Tests
+
+**Basic Isolation Test**:
+```bash
+# Create container profile
+aps profile new iso-test --isolation-level container
+
+# Verify isolation
+aps run iso-test -- whoami  # Should be 'appuser' or container user
+aps run iso-test -- cat /etc/os-release  # Should show Ubuntu 22.04
+```
+
+**Volume Mount Test**:
+```bash
+# Create profile with volumes
+aps profile new vol-test --isolation-level container
+# Edit: ~/.agents/profiles/vol-test/profile.yaml
+# Add: container.volumes: ["/tmp/test:/workspace"]
+
+# Run with access to workspace
+aps run vol-test -- ls -la /workspace
+```
+
+**Network Isolation Test**:
+```bash
+# Create container profile
+aps profile new net-test --isolation-level container
+
+# Test network (bridge mode - default)
+aps run net-test -- ping -c 2 google.com
+
+# Test host networking (if enabled)
+# Edit: container.network: "host"
+aps run net-test -- curl http://localhost:8080
+```
+
+### Testing Documentation
+
+- [Docker Testing Strategy](../../testing/docker-testing-strategy.md) - Comprehensive Docker testing guide
+- [Docker Testing for Users](../../../agent/docker-testing.md) - User-friendly testing workflows
+- [Makefile Docker Targets](../../../../../) - `make docker-*` commands
+
+### CI/CD Testing
+
+Container isolation is tested automatically in CI/CD:
+
+```bash
+# Run Docker user journey tests
+gh workflow run docker-user-journey.yml
+
+# Or locally:
+make docker-test-e2e-user
+```
+
+The CI/CD workflow builds APS, builds Docker test image, and runs comprehensive container isolation tests.
+
 ## Performance
 
 ### Container Startup Time

@@ -232,7 +232,31 @@ go test -v -tags darwin ./tests/unit/core/isolation
 
 # Platform-specific tests (Linux only)
 go test -v -tags linux ./tests/unit/core/isolation
+
+# Docker user journey tests
+make docker-test-e2e-user
 ```
+
+### Docker Testing
+
+APS includes a Docker-based testing environment for testing in an isolated Linux environment that simulates a user's machine. This is particularly useful for testing installation, setup, and workflows without affecting your local development environment.
+
+```bash
+# Build the test environment
+make docker-build-test
+
+# Run all user journey tests
+make docker-test-e2e-user
+
+# Start an interactive test environment
+make docker-test-up
+make docker-test-shell  # For manual testing
+
+# Cleanup
+make docker-test-cleanup
+```
+
+For detailed documentation, see [Docker testing user guide](docs/agent/docker-testing.md) or [Docker testing strategy for developers](docs/dev/testing/docker-testing-strategy.md).
 
 ## Commands
 

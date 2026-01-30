@@ -1,0 +1,41 @@
+name: Docker User Journey Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  docker-user-journey:
+    name: User Journey Tests (Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build binary
+        run: make build
+
+      - name: Build test environment
+        run: make docker-build-test
+
+      - name: Install binary in test container
+        run: make docker-test-install
+
+      - name: Run user journey tests
+        run: make docker-test-e2e-user
+
+      - name: Cleanup
+        if: always()
+        run: make docker-test-cleanup

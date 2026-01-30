@@ -8,6 +8,7 @@ This documentation is intended for AI Agents (and their human collaborators) wor
 *   **[Design Patterns](patterns.md)**: Standard patterns used (e.g., Capability Manager, Registry, Adapter Pattern for Isolation).
 *   **[Testing Strategy](testing.md)**: How to write and run Unit vs E2E tests.
 *   **[A2A Protocol Integration](a2a-integration.md)**: Agent-to-Agent communication for inter-profile messaging.
+*   **[Docker Testing](docker-testing.md)**: Using Docker for isolated Linux testing and user journey validation.
 
 ## 🚀 Release Process
 

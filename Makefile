@@ -7,7 +7,9 @@ COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS=-ldflags "-X oss-aps-cli/internal/version.Version=$(VERSION) -X oss-aps-cli/internal/version.Commit=$(COMMIT) -X oss-aps-cli/internal/version.Date=$(DATE) -X oss-aps-cli/internal/version.BuiltBy=makefile"
 
-.PHONY: all build test lint run clean release release-snapshot ci help setup
+.PHONY: all build test lint run clean release release-snapshot ci help setup \
+	docker-build-test docker-test-up docker-test-down docker-test-shell \
+	docker-test-install docker-test-e2e-user docker-test-cleanup docker-quick-start
 
 all: build test lint
 
@@ -68,6 +70,69 @@ ci: ## Trigger remote CI workflows on GitHub
 	@gh workflow run security.yml
 
 local-ci: test-workflows ## Alias for test-workflows
+
+## Docker Testing Targets
+
+docker-build-test: ## Build test Docker image
+	@echo "Building test Docker image..."
+	@docker build -t aps-test-env -f Dockerfile.test .
+	@echo "Test image built successfully"
+
+docker-test-up: ## Start test container in background
+	@echo "Starting test container..."
+	@docker compose -f docker-compose.test.yml up -d
+	@echo "Test container started. Use 'make docker-test-shell' to enter."
+
+docker-test-down: ## Stop and remove test containers
+	@echo "Stopping test containers..."
+	@docker compose -f docker-compose.test.yml down
+	@echo "Test containers stopped and removed"
+
+docker-test-shell: ## Start interactive shell in test container
+	@echo "Starting interactive shell in test container..."
+	@docker run -it --rm \
+		-v $(PWD):/host-src:ro \
+		-v $(PWD)/tests/fixtures:/test-fixtures:ro \
+		aps-test-env \
+		/bin/bash
+
+docker-test-install: ## Install built binary in test container
+	@echo "Installing binary in test container..."
+	@if [ ! -f $(BIN_DIR)/$(BINARY_NAME) ]; then \
+		echo "Binary not found. Building..."; \
+		$(MAKE) build; \
+	fi
+	@docker compose -f docker-compose.test.yml run --rm test-env \
+		sh -c "cp /host-src/$(BIN_DIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME) && chmod +x /usr/local/bin/$(BINARY_NAME)"
+	@echo "Binary installed successfully in test container"
+
+docker-test-e2e-user: ## Run user journey E2E tests in Docker
+	@echo "=== Running User Journey E2E Tests ==="
+	@echo "Building binary..."
+	@$(MAKE) build
+	@echo "Building test environment..."
+	@$(MAKE) docker-build-test
+	@echo "Installing binary in test environment..."
+	@$(MAKE) docker-test-install
+	@echo "Running user journey tests..."
+	@docker compose -f docker-compose.test.yml run --rm test-env \
+		/test-fixtures/scripts/run-all-tests.sh
+	@echo "=== User Journey Tests Complete ==="
+
+docker-test-cleanup: ## Clean up Docker test artifacts
+	@echo "Cleaning up Docker test artifacts..."
+	@docker compose -f docker-compose.test.yml down -v
+	@docker rmi aps-test-env 2>/dev/null || true
+	@echo "Cleanup complete"
+
+docker-quick-start: ## Quick start Docker testing environment
+	@echo "=== Docker Quick Start ==="
+	@if command -v docker >/dev/null 2>&1; then \
+		bash tests/fixtures/scripts/quick-start.sh; \
+	else \
+		echo "ERROR: Docker is not installed or not in PATH"; \
+		exit 1; \
+	fi
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
