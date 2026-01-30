@@ -3,6 +3,7 @@
 package isolation_test
 
 import (
+	"os"
 	"os/exec"
 	"testing"
 
@@ -30,7 +31,13 @@ func TestLinuxSandbox_PrepareContext(t *testing.T) {
 		t.Skip("skipping test requiring profile")
 	}
 
-	profileID := "test-linux-profile"
+	tempDir := setupTestProfile(t)
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_CONFIG_HOME", "")
+	defer os.Setenv("HOME", originalHome)
+
+	profileID := "test-profile"
 
 	linux := isolation.NewLinuxSandbox()
 	ctx, err := linux.PrepareContext(profileID)
@@ -49,6 +56,12 @@ func TestLinuxSandbox_PrepareContext(t *testing.T) {
 }
 
 func TestLinuxSandbox_Validate_NotPrepared(t *testing.T) {
+	tempDir := setupTestProfile(t)
+	originalHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_CONFIG_HOME", "")
+	defer os.Setenv("HOME", originalHome)
+
 	linux := isolation.NewLinuxSandbox()
 	err := linux.Validate()
 
