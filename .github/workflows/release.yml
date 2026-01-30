@@ -39,6 +39,10 @@ jobs:
           go mod verify
           go test -v ./tests/unit/...
 
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
