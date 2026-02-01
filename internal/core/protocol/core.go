@@ -44,17 +44,17 @@ func NewAPSAdapter() (*APSAdapter, error) {
 
 func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream StreamWriter) (*RunState, error) {
 	if err := input.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid run input: %w", err)
+		return nil, NewInvalidInputError("run_input", err.Error())
 	}
 
 	profile, loadErr := core.LoadProfile(input.ProfileID)
 	if loadErr != nil {
-		return nil, mapError(loadErr, 404)
+		return nil, NewNotFoundError(input.ProfileID)
 	}
 
 	_, actionErr := core.GetAction(input.ProfileID, input.ActionID)
 	if actionErr != nil {
-		return nil, mapError(actionErr, 404)
+		return nil, NewNotFoundError(input.ActionID)
 	}
 
 	runID := uuid.New().String()
@@ -76,13 +76,15 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 
 	var cmd *exec.Cmd
 	var stdoutPipe *os.File
+	var stdoutReader *os.File
 	var err error
 
 	if stream != nil {
-		stdoutPipe, err = os.CreateTemp("", "aps-stdout-*")
+		stdoutReader, stdoutPipe, err = os.Pipe()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create stdout temp file: %w", err)
+			return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 		}
+		defer stdoutReader.Close()
 		defer stdoutPipe.Close()
 
 		cmd, err = a.createActionCommand(profile, input, stdoutPipe)
@@ -90,7 +92,7 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 			return nil, err
 		}
 
-		go a.streamOutput(ctx, cmd, stdoutPipe, stream, state)
+		go a.streamOutput(ctx, cmd, stdoutReader, stream, state)
 	} else {
 		cmd, err = a.createActionCommand(profile, input, nil)
 		if err != nil {
@@ -184,12 +186,12 @@ func (a *APSAdapter) createActionCommand(profile *core.Profile, input RunInput, 
 	return cmd, nil
 }
 
-func (a *APSAdapter) streamOutput(ctx context.Context, cmd *exec.Cmd, stdoutPipe *os.File, stream StreamWriter, state *RunState) {
+func (a *APSAdapter) streamOutput(ctx context.Context, cmd *exec.Cmd, stdoutReader *os.File, stream StreamWriter, state *RunState) {
 	defer stream.Close()
 
 	buf := make([]byte, 1024)
 	for {
-		n, err := stdoutPipe.Read(buf)
+		n, err := stdoutReader.Read(buf)
 		if n > 0 {
 			data := make([]byte, n)
 			copy(data, buf[:n])
@@ -239,7 +241,7 @@ func (a *APSAdapter) CancelRun(ctx context.Context, runID string) error {
 func (a *APSAdapter) GetAgent(profileID string) (*AgentInfo, error) {
 	profile, err := core.LoadProfile(profileID)
 	if err != nil {
-		return nil, mapError(err, 404)
+		return nil, NewNotFoundError(profileID)
 	}
 
 	return &AgentInfo{
@@ -271,7 +273,7 @@ func (a *APSAdapter) ListAgents() ([]AgentInfo, error) {
 func (a *APSAdapter) GetAgentSchemas(profileID string) ([]ActionSchema, error) {
 	actions, err := core.LoadActions(profileID)
 	if err != nil {
-		return nil, err
+		return nil, NewNotFoundError(profileID)
 	}
 
 	var schemas []ActionSchema
@@ -324,7 +326,7 @@ func (a *APSAdapter) CreateSession(profileID string, metadata map[string]string)
 func (a *APSAdapter) GetSession(sessionID string) (*SessionState, error) {
 	session, err := a.sessionRegistry.Get(sessionID)
 	if err != nil {
-		return nil, mapError(err, 404)
+		return nil, NewNotFoundError(sessionID)
 	}
 
 	return &SessionState{
@@ -486,10 +488,8 @@ func (a *APSAdapter) StoreListNamespaces() ([]string, error) {
 	return namespaces, nil
 }
 
+// mapError converts generic errors to typed errors
+// Deprecated: Use custom error types directly instead
 func mapError(err error, defaultCode int) error {
-	msg := err.Error()
-	if len(msg) >= 4 && msg[:4] == "not " {
-		return fmt.Errorf("not found: %w", err)
-	}
 	return err
 }
