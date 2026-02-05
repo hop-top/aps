@@ -110,13 +110,74 @@ var profileShowCmd = &cobra.Command{
 	},
 }
 
+var profileShareCmd = &cobra.Command{
+	Use:   "share [id]",
+	Short: "Export a shareable profile bundle",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		id := args[0]
+		outPath, _ := cmd.Flags().GetString("out")
+		if outPath == "" {
+			outPath = fmt.Sprintf("%s.aps-profile.yaml", id)
+		}
+
+		bundle, err := core.ExportProfileBundle(id, outPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error exporting profile bundle: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := core.TrackEvent("profile_share_created", map[string]string{
+			"profile_id":     id,
+			"bundle_version": bundle.Version,
+		}); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to record share event: %v\n", err)
+		}
+
+		fmt.Printf("Share bundle created: %s\n", outPath)
+		fmt.Printf("Import with: aps profile import %s\n", outPath)
+	},
+}
+
+var profileImportCmd = &cobra.Command{
+	Use:   "import [bundle]",
+	Short: "Import a shared profile bundle",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		bundlePath := args[0]
+		id, _ := cmd.Flags().GetString("id")
+		force, _ := cmd.Flags().GetBool("force")
+
+		profile, bundle, err := core.ImportProfileBundle(bundlePath, id, force)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error importing profile bundle: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := core.TrackEvent("profile_share_imported", map[string]string{
+			"profile_id":     profile.ID,
+			"source_id":      bundle.SourceID,
+			"bundle_version": bundle.Version,
+		}); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to record import event: %v\n", err)
+		}
+
+		fmt.Printf("Profile '%s' imported successfully.\n", profile.ID)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(profileCmd)
 	profileCmd.AddCommand(profileListCmd)
 	profileCmd.AddCommand(profileNewCmd)
 	profileCmd.AddCommand(profileShowCmd)
+	profileCmd.AddCommand(profileShareCmd)
+	profileCmd.AddCommand(profileImportCmd)
 
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")
+	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
+	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
+	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
 }
