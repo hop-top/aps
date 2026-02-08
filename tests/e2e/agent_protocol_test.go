@@ -96,8 +96,14 @@ func createTestProfileAndAction(t *testing.T, home, profileID, actionID, actionS
 	require.NoError(t, err, "Failed to create profile %s: %v\n%s", profileID, err, stdout)
 	assert.Contains(t, stdout, "created successfully")
 
+	addTestAction(t, home, profileID, actionID, actionScript)
+}
+
+func addTestAction(t *testing.T, home, profileID, actionID, actionScript string) {
+	t.Helper()
+
 	actionsDir := home + "/.agents/profiles/" + profileID + "/actions"
-	err = os.MkdirAll(actionsDir, 0755)
+	err := os.MkdirAll(actionsDir, 0755)
 	require.NoError(t, err)
 
 	actionPath := actionsDir + "/" + actionID + ".sh"
@@ -281,7 +287,7 @@ func TestAgentProtocol_UserStory4_AgentDiscovery(t *testing.T) {
 
 	t.Run("GET /agents/agent-a/schemas returns JSON Schema", func(t *testing.T) {
 		t.Parallel()
-		createTestProfileAndAction(t, home, "agent-a", "test", `#!/bin/sh
+		addTestAction(t, home, "agent-a", "test", `#!/bin/sh
 echo "test"`)
 
 		req, _ := http.NewRequest("GET", baseURL+"/v1/agents/agent-a/schemas", nil)

@@ -62,7 +62,7 @@ func StartTestServer(t *testing.T, config TestServerConfig) *TestServer {
 
 	// Start server in background
 	go func() {
-		if err := server.Start(serverCtx); err != nil {
+		if err := server.Start(serverCtx, nil); err != nil {
 			t.Logf("Server error: %v", err)
 		}
 	}()

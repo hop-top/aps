@@ -34,6 +34,7 @@ type Profile struct {
 	Webhooks     WebhookConfig      `yaml:"webhooks,omitempty"`
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
 	A2A          *A2AConfig         `yaml:"a2a,omitempty"`
+	ACP          *ACPConfig         `yaml:"acp,omitempty"`
 }
 
 // A2AConfig holds A2A protocol configuration for a profile
@@ -44,6 +45,14 @@ type A2AConfig struct {
 	PublicEndpoint  string `yaml:"public_endpoint,omitempty"`
 	SecurityScheme  string `yaml:"security_scheme,omitempty"`
 	IsolationTier   string `yaml:"isolation_tier,omitempty"`
+}
+
+// ACPConfig holds Agent Client Protocol configuration for a profile
+type ACPConfig struct {
+	Enabled    bool   `yaml:"enabled,omitempty"`
+	Transport  string `yaml:"transport,omitempty"` // "stdio", "http", "ws"
+	ListenAddr string `yaml:"listen_addr,omitempty"`
+	Port       int    `yaml:"port,omitempty"`
 }
 
 type Persona struct {

@@ -111,5 +111,8 @@ func GetAction(profileID, actionID string) (*Action, error) {
 			return &a, nil
 		}
 	}
-	return nil, fmt.Errorf("action %s not found in profile %s", actionID, profileID)
+	return nil, &NotFoundError{
+		Resource: actionID,
+		Message:  fmt.Sprintf("action %s not found in profile %s", actionID, profileID),
+	}
 }

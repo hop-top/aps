@@ -1,23 +1,59 @@
 package agentprotocol
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
+	"sync"
 
 	"oss-aps-cli/internal/core/protocol"
 )
 
 type AgentProtocolAdapter struct {
-	core protocol.APSCore
+	core     protocol.APSCore
+	status   string
+	mu       sync.RWMutex
 }
 
+// Verify AgentProtocolAdapter implements the common protocol interface
+var _ protocol.ProtocolServer = (*AgentProtocolAdapter)(nil)
+
+// AgentProtocolAdapter also provides HTTP routing capabilities
+var _ protocol.HTTPProtocolAdapter = (*AgentProtocolAdapter)(nil)
+
 func NewAgentProtocolAdapter() *AgentProtocolAdapter {
-	return &AgentProtocolAdapter{}
+	return &AgentProtocolAdapter{
+		status: "stopped",
+	}
 }
 
 func (a *AgentProtocolAdapter) Name() string {
 	return "agent-protocol"
+}
+
+// Start initializes the Agent Protocol adapter (HTTP-based, so minimal setup)
+func (a *AgentProtocolAdapter) Start(ctx context.Context, config interface{}) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.status = "running"
+	return nil
+}
+
+// Stop gracefully stops the Agent Protocol adapter
+func (a *AgentProtocolAdapter) Stop() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.status = "stopped"
+	return nil
+}
+
+// Status returns the current status of the adapter
+func (a *AgentProtocolAdapter) Status() string {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.status
 }
 
 func (a *AgentProtocolAdapter) RegisterRoutes(mux *http.ServeMux, core protocol.APSCore) error {
@@ -113,7 +149,12 @@ func (a *AgentProtocolAdapter) handleThreadsGet(w http.ResponseWriter, r *http.R
 
 	session, err := a.core.GetSession(path)
 	if err != nil {
-		a.sendError(w, http.StatusNotFound, "thread not found")
+		var notFound *protocol.NotFoundError
+		if errors.As(err, &notFound) {
+			a.sendError(w, http.StatusNotFound, err.Error())
+		} else {
+			a.sendError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 
@@ -239,7 +280,7 @@ func (a *AgentProtocolAdapter) handleAgentsGet(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if strings.HasPrefix(path, "schemas") {
+	if strings.Contains(path, "/schemas") {
 		parts := strings.Split(path, "/")
 		if len(parts) < 2 {
 			a.sendError(w, http.StatusBadRequest, "invalid path")
@@ -252,7 +293,12 @@ func (a *AgentProtocolAdapter) handleAgentsGet(w http.ResponseWriter, r *http.Re
 
 	agent, err := a.core.GetAgent(path)
 	if err != nil {
-		a.sendError(w, http.StatusNotFound, "agent not found")
+		var notFound *protocol.NotFoundError
+		if errors.As(err, &notFound) {
+			a.sendError(w, http.StatusNotFound, err.Error())
+		} else {
+			a.sendError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 
@@ -278,7 +324,12 @@ func (a *AgentProtocolAdapter) handleAgentsGet(w http.ResponseWriter, r *http.Re
 func (a *AgentProtocolAdapter) handleGetAgentSchemas(w http.ResponseWriter, r *http.Request, agentID string) {
 	schemas, err := a.core.GetAgentSchemas(agentID)
 	if err != nil {
-		a.sendError(w, http.StatusNotFound, "agent schemas not found")
+		var notFound *protocol.NotFoundError
+		if errors.As(err, &notFound) {
+			a.sendError(w, http.StatusNotFound, err.Error())
+		} else {
+			a.sendError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 

@@ -13,8 +13,16 @@ import (
 	"github.com/a2aproject/a2a-go/log"
 
 	"oss-aps-cli/internal/core"
+	"oss-aps-cli/internal/core/protocol"
 )
 
+// Verify A2A Server implements the common protocol interface
+var _ protocol.ProtocolServer = (*Server)(nil)
+
+// A2A Server manages its own HTTP server lifecycle
+var _ protocol.StandaloneProtocolServer = (*Server)(nil)
+
+// A2A Server implements the A2A SDK request handler
 var _ a2asrv.RequestHandler = (*Server)(nil)
 
 type Server struct {
@@ -28,6 +36,7 @@ type Server struct {
 	running      bool
 	config       *StorageConfig
 	pushConfigs  map[string]*a2a.TaskPushConfig
+	status       string
 }
 
 func NewServer(profile *core.Profile, config *StorageConfig) (*Server, error) {
@@ -59,11 +68,25 @@ func NewServer(profile *core.Profile, config *StorageConfig) (*Server, error) {
 		queueManager: queueManager,
 		config:       config,
 		running:      false,
+		status:       "stopped",
 		pushConfigs:  make(map[string]*a2a.TaskPushConfig),
 	}, nil
 }
 
-func (s *Server) Start(ctx context.Context) error {
+// Name returns the protocol name
+func (s *Server) Name() string {
+	return "a2a"
+}
+
+// Start initializes and starts the A2A server
+func (s *Server) Start(ctx context.Context, config interface{}) error {
+	s.mu.Lock()
+	if s.running {
+		s.mu.Unlock()
+		return fmt.Errorf("server is already running")
+	}
+	s.mu.Unlock()
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -81,13 +104,14 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.Handle("/", a2asrv.NewJSONRPCHandler(handler))
 	mux.Handle("/.well-known/agent-card", s.getAgentCardHandler())
 
-	addr := s.getAddress()
+	addr := s.GetAddress()
 	s.httpServer = &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
 	s.running = true
+	s.status = "running"
 
 	go func() {
 		<-ctx.Done()
@@ -105,6 +129,21 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
+// Status returns the current status of the A2A server
+func (s *Server) Status() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.status
+}
+
+// GetAddress returns the address where the A2A server is listening
+func (s *Server) GetAddress() string {
+	if s.profile.A2A == nil || s.profile.A2A.ListenAddr == "" {
+		return "127.0.0.1:8081"
+	}
+	return s.profile.A2A.ListenAddr
+}
+
 func (s *Server) Stop() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -119,6 +158,7 @@ func (s *Server) Stop() error {
 	}
 
 	s.running = false
+	s.status = "stopped"
 
 	log.Info(context.Background(), "A2A server stopped", "profile_id", s.profileID)
 
