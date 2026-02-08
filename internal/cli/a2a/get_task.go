@@ -106,7 +106,7 @@ func printTaskDetails(task *a2a.Task) error {
 	if len(task.Artifacts) > 0 {
 		fmt.Printf("\nArtifacts (%d):\n", len(task.Artifacts))
 		for id, artifact := range task.Artifacts {
-			fmt.Printf("  - %s: %d parts\n", id, len(artifact.Parts))
+			fmt.Printf("  - %d: %d parts\n", id, len(artifact.Parts))
 		}
 	}
 

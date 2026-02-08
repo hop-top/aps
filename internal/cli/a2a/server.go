@@ -56,7 +56,7 @@ Example:
 				return fmt.Errorf("failed to create A2A server: %w", err)
 			}
 
-			if err := server.Start(ctx); err != nil {
+			if err := server.Start(ctx, config); err != nil {
 				return fmt.Errorf("failed to start A2A server: %w", err)
 			}
 
