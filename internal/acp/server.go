@@ -239,6 +239,14 @@ func (s *Server) handleRequest(req *JSONRPCRequest) *JSONRPCResponse {
 	case "terminal/release":
 		return s.handleTerminalRelease(req)
 
+	// Skill operations
+	case "skill/list":
+		return s.handleSkillList(req)
+	case "skill/get":
+		return s.handleSkillGet(req)
+	case "skill/invoke":
+		return s.handleSkillInvoke(req)
+
 	default:
 		return s.errorResponse(req.ID, ErrMethodNotFound)
 	}

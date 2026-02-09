@@ -7,6 +7,7 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 
 	"oss-aps-cli/internal/core"
+	"oss-aps-cli/internal/skills"
 )
 
 // GenerateAgentCardFromProfile generates an A2A Agent Card from an APS profile
@@ -56,12 +57,17 @@ func GenerateAgentCardForProfile(profileID string) (*a2a.AgentCard, error) {
 	return GenerateAgentCardFromProfile(profile)
 }
 
-// generateAgentSkills generates agent skills from profile capabilities
+// generateAgentSkills generates agent skills from profile capabilities and Agent Skills
 func generateAgentSkills(profile *core.Profile) []a2a.AgentSkill {
-	skills := make([]a2a.AgentSkill, 0)
+	skillsList := make([]a2a.AgentSkill, 0)
 
+	// Add Agent Skills (from the skills system)
+	agentSkills := GenerateSkillCapabilities(profile.ID)
+	skillsList = append(skillsList, agentSkills...)
+
+	// Add profile capabilities as skills
 	for _, cap := range profile.Capabilities {
-		skills = append(skills, a2a.AgentSkill{
+		skillsList = append(skillsList, a2a.AgentSkill{
 			ID:          cap,
 			Name:        cap,
 			Description: fmt.Sprintf("APS capability: %s", cap),
@@ -69,8 +75,9 @@ func generateAgentSkills(profile *core.Profile) []a2a.AgentSkill {
 		})
 	}
 
-	if len(skills) == 0 {
-		skills = append(skills, a2a.AgentSkill{
+	// If no skills at all, add default
+	if len(skillsList) == 0 {
+		skillsList = append(skillsList, a2a.AgentSkill{
 			ID:          "execute",
 			Name:        "execute",
 			Description: "Execute commands in isolated environment",
@@ -78,7 +85,46 @@ func generateAgentSkills(profile *core.Profile) []a2a.AgentSkill {
 		})
 	}
 
-	return skills
+	return skillsList
+}
+
+// GenerateSkillCapabilities generates A2A AgentSkill entries from the skills registry
+func GenerateSkillCapabilities(profileID string) []a2a.AgentSkill {
+	result := make([]a2a.AgentSkill, 0)
+
+	// Create registry and discover skills
+	registry := skills.NewRegistry(profileID, []string{}, false)
+	if err := registry.Discover(); err != nil {
+		// If discovery fails, return empty list
+		return result
+	}
+
+	// Convert each skill to A2A AgentSkill format
+	for _, skill := range registry.List() {
+		scriptList, _ := skill.ListScripts()
+
+		// Create examples from scripts
+		examples := make([]string, 0)
+		for _, script := range scriptList {
+			examples = append(examples, fmt.Sprintf("Execute %s", script))
+		}
+
+		// If no scripts, provide a generic example
+		if len(examples) == 0 {
+			examples = append(examples, fmt.Sprintf("Use %s skill", skill.Name))
+		}
+
+		agentSkill := a2a.AgentSkill{
+			ID:          skill.Name,
+			Name:        skill.Name,
+			Description: skill.Description,
+			Examples:    examples,
+		}
+
+		result = append(result, agentSkill)
+	}
+
+	return result
 }
 
 // generateAgentInterfaces generates agent interface configurations
