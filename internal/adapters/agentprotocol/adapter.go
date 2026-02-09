@@ -72,6 +72,9 @@ func (a *AgentProtocolAdapter) RegisterRoutes(mux *http.ServeMux, core protocol.
 	mux.HandleFunc("GET /v1/store/", a.handleStoreGet)
 	mux.HandleFunc("DELETE /v1/store/", a.handleStoreDelete)
 	mux.HandleFunc("POST /v1/store/namespaces", a.handleStoreNamespaces)
+	mux.HandleFunc("GET /v1/skills", a.handleSkillsList)
+	mux.HandleFunc("GET /v1/skills/", a.handleSkillsGetOrInvoke)
+	mux.HandleFunc("POST /v1/skills/", a.handleSkillsGetOrInvoke)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
