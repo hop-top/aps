@@ -8,6 +8,7 @@ DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS=-ldflags "-X oss-aps-cli/internal/version.Version=$(VERSION) -X oss-aps-cli/internal/version.Commit=$(COMMIT) -X oss-aps-cli/internal/version.Date=$(DATE) -X oss-aps-cli/internal/version.BuiltBy=makefile"
 
 .PHONY: all build test lint run clean release release-snapshot ci help setup \
+	test-stories \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
 	docker-test-install docker-test-e2e-user docker-test-cleanup docker-quick-start
 
@@ -32,6 +33,9 @@ test-unit: ## Run unit tests
 test-e2e: ## Run E2E tests
 	@echo "Running E2E tests..."
 	@go test -v ./tests/e2e/...
+
+test-stories: ## Run tests linked in docs/stories/
+	@bash scripts/test-stories.sh $(ARGS)
 
 test-workflows: ## Run GitHub Actions locally with act
 	@echo "Running workflows locally with act..."
