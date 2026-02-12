@@ -4,13 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("205"))
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).SetString("> ")
+	"oss-aps-cli/internal/styles"
 )
 
 func (m Model) View() string {
@@ -32,7 +26,13 @@ func (m Model) View() string {
 			}
 			s.WriteString("\n")
 		}
-		s.WriteString("\n(q to quit)")
+		s.WriteString("\n" + footerStyle.Render("(q to quit)"))
+
+	case StateProfileDetail:
+		s.WriteString(m.viewProfileDetail())
+
+	case StateCapabilityList:
+		s.WriteString(m.viewCapabilityList())
 
 	case StateActionList:
 		s.WriteString(titleStyle.Render("Select Action"))
@@ -49,8 +49,101 @@ func (m Model) View() string {
 			}
 			s.WriteString("\n")
 		}
-		s.WriteString("\n(esc to back, q to quit)")
+		s.WriteString("\n" + footerStyle.Render("(esc to back, q to quit)"))
 	}
+
+	return s.String()
+}
+
+func (m Model) viewProfileDetail() string {
+	var s strings.Builder
+
+	if m.profileDetail == nil {
+		return "  Loading..."
+	}
+
+	p := m.profileDetail
+	name := p.DisplayName
+	if name == "" {
+		name = p.ID
+	}
+
+	// Profile info box
+	var content strings.Builder
+	content.WriteString(styles.Bold.Render("Display Name") + ": " + name + "\n")
+	if p.Preferences.Shell != "" {
+		content.WriteString(styles.Bold.Render("Shell") +
+			":        " + p.Preferences.Shell + "\n")
+	}
+	content.WriteString(styles.Bold.Render("Isolation") +
+		":    " + string(p.Isolation.Level) + "\n")
+
+	content.WriteString("\n" + styles.Bold.Render(
+		fmt.Sprintf("Capabilities (%d)", len(p.Capabilities))) + "\n")
+	for _, cap := range m.capabilities {
+		dot := styles.StatusDot(cap.Enabled)
+		kind := styles.KindBadge(cap.Kind)
+		content.WriteString(fmt.Sprintf("%s %-18s %s\n", dot, cap.Name, kind))
+	}
+
+	content.WriteString(fmt.Sprintf("\n"+styles.Bold.Render("Actions")+
+		": %d available\n", len(m.actions)))
+
+	box := boxStyle.
+		BorderForeground(styles.ColorAccent).
+		Width(42).
+		Render(content.String())
+	s.WriteString("  " + titleStyle.Render(p.ID) + "\n\n")
+	s.WriteString(box + "\n\n")
+	s.WriteString(footerStyle.Render(
+		"  [c] capabilities  [a] actions  [esc] back  [q] quit"))
+
+	return s.String()
+}
+
+func (m Model) viewCapabilityList() string {
+	var s strings.Builder
+
+	profileName := ""
+	if m.profileDetail != nil {
+		profileName = m.profileDetail.ID
+	}
+
+	s.WriteString(titleStyle.Render(
+		fmt.Sprintf("Capabilities — %s", profileName)))
+	s.WriteString("\n\n")
+
+	for i, cap := range m.capabilities {
+		dot := styles.StatusDot(cap.Enabled)
+		kind := styles.KindBadge(cap.Kind)
+		typ := ""
+		if cap.Kind == "external" {
+			typ = "  " + styles.TypeBadge(cap.Type)
+		}
+		desc := styles.Dim.Render(cap.Description)
+		line := fmt.Sprintf("%s %-18s %s%s  %s",
+			dot, cap.Name, kind, typ, desc)
+
+		if i == m.selectedCap {
+			s.WriteString(selectedItemStyle.Render(line))
+		} else {
+			s.WriteString(itemStyle.Render(line))
+		}
+		s.WriteString("\n")
+	}
+
+	enabled := 0
+	disabled := 0
+	for _, c := range m.capabilities {
+		if c.Enabled {
+			enabled++
+		} else {
+			disabled++
+		}
+	}
+	s.WriteString("\n" + footerStyle.Render(fmt.Sprintf(
+		"  [space] toggle  [esc] back  [q] quit    %d enabled, %d disabled",
+		enabled, disabled)))
 
 	return s.String()
 }

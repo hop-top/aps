@@ -9,84 +9,148 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Update is implemented in view.go due to shared package but we need to fix the Exec logic there.
-// Actually, I pasted Update in view.go in the previous step (my bad context tracking).
-// I should move Update to update.go or fix it.
-// Let's overwrite view.go with just View and put Update in update.go properly.
-
-// Waiting... I wrote Update in view.go? Yes.
-// Let's split them.
-
-// This file will hold Update
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "up", "k":
-			if m.state == StateProfileList {
-				if m.selectedProfile > 0 {
-					m.selectedProfile--
-				}
-			} else if m.state == StateActionList {
-				if m.selectedAction > 0 {
-					m.selectedAction--
-				}
-			}
-		case "down", "j":
-			if m.state == StateProfileList {
-				if m.selectedProfile < len(m.profiles)-1 {
-					m.selectedProfile++
-				}
-			} else if m.state == StateActionList {
-				if m.selectedAction < len(m.actions)-1 {
-					m.selectedAction++
-				}
-			}
-		case "enter":
-			if m.state == StateProfileList {
-				if len(m.profiles) > 0 {
-					profileID := m.profiles[m.selectedProfile]
-					actions, err := core.LoadActions(profileID)
-					if err != nil {
-						m.err = err
-					} else {
-						m.actions = actions
-						m.state = StateActionList
-						m.selectedAction = 0
-					}
-				}
-			} else if m.state == StateActionList {
-				if len(m.actions) > 0 {
-					action := m.actions[m.selectedAction]
-
-					// Construct command to run "aps action run <profile> <action>"
-					// using the current binary
-					binary, _ := os.Executable()
-					if binary == "" {
-						binary = os.Args[0]
-					}
-
-					c := exec.Command(binary, "action", "run", m.profiles[m.selectedProfile], action.ID)
-					return m, tea.ExecProcess(c, func(err error) tea.Msg {
-						if err != nil {
-							return errMsg{err}
-						}
-						return nil
-					})
-				}
-			}
-		case "esc":
-			if m.state == StateActionList {
-				m.state = StateProfileList
-			}
+		switch m.state {
+		case StateProfileList:
+			return m.updateProfileList(msg)
+		case StateProfileDetail:
+			return m.updateProfileDetail(msg)
+		case StateCapabilityList:
+			return m.updateCapabilityList(msg)
+		case StateActionList:
+			return m.updateActionList(msg)
 		}
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 	case errMsg:
 		m.err = msg.err
+	}
+	return m, nil
+}
+
+func (m Model) updateProfileList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "up", "k":
+		if m.selectedProfile > 0 {
+			m.selectedProfile--
+		}
+	case "down", "j":
+		if m.selectedProfile < len(m.profiles)-1 {
+			m.selectedProfile++
+		}
+	case "enter":
+		if len(m.profiles) > 0 {
+			profileID := m.profiles[m.selectedProfile]
+			profile, err := core.LoadProfile(profileID)
+			if err != nil {
+				m.err = err
+				return m, nil
+			}
+			actions, err := core.LoadActions(profileID)
+			if err != nil {
+				m.err = err
+				return m, nil
+			}
+			m.profileDetail = profile
+			m.actions = actions
+			m.capabilities = loadCapabilities(profile)
+			m.state = StateProfileDetail
+		}
+	}
+	return m, nil
+}
+
+func (m Model) updateProfileDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "c":
+		m.state = StateCapabilityList
+		m.selectedCap = 0
+	case "a", "enter":
+		m.state = StateActionList
+		m.selectedAction = 0
+	case "esc":
+		m.state = StateProfileList
+		m.profileDetail = nil
+	}
+	return m, nil
+}
+
+func (m Model) updateCapabilityList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "up", "k":
+		if m.selectedCap > 0 {
+			m.selectedCap--
+		}
+	case "down", "j":
+		if m.selectedCap < len(m.capabilities)-1 {
+			m.selectedCap++
+		}
+	case " ":
+		if len(m.capabilities) > 0 && m.profileDetail != nil {
+			cap := &m.capabilities[m.selectedCap]
+			profileID := m.profileDetail.ID
+			if cap.Enabled {
+				_ = core.RemoveCapabilityFromProfile(profileID, cap.Name)
+				cap.Enabled = false
+			} else {
+				_ = core.AddCapabilityToProfile(profileID, cap.Name)
+				cap.Enabled = true
+			}
+			// Reload profile to keep in sync
+			if p, err := core.LoadProfile(profileID); err == nil {
+				m.profileDetail = p
+			}
+		}
+	case "esc":
+		m.state = StateProfileDetail
+	}
+	return m, nil
+}
+
+func (m Model) updateActionList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "up", "k":
+		if m.selectedAction > 0 {
+			m.selectedAction--
+		}
+	case "down", "j":
+		if m.selectedAction < len(m.actions)-1 {
+			m.selectedAction++
+		}
+	case "enter":
+		if len(m.actions) > 0 {
+			action := m.actions[m.selectedAction]
+			binary, _ := os.Executable()
+			if binary == "" {
+				binary = os.Args[0]
+			}
+			c := exec.Command(binary, "action", "run",
+				m.profiles[m.selectedProfile], action.ID)
+			return m, tea.ExecProcess(c, func(err error) tea.Msg {
+				if err != nil {
+					return errMsg{err}
+				}
+				return nil
+			})
+		}
+	case "esc":
+		if m.profileDetail != nil {
+			m.state = StateProfileDetail
+		} else {
+			m.state = StateProfileList
+		}
 	}
 	return m, nil
 }
