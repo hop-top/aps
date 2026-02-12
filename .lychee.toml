@@ -1,0 +1,3 @@
+exclude_path = ["vendor/"]
+exclude = ["127\\.0\\.0\\.1", "localhost"]
+accept = [200, 204]
