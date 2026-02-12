@@ -5,6 +5,49 @@ import (
 	"strings"
 )
 
+// BuiltinCapabilities defines all built-in capabilities
+var BuiltinCapabilities = []BuiltinCapability{
+	{Name: "a2a", Description: "Agent-to-Agent protocol"},
+	{Name: "agent-protocol", Description: "Agent Protocol (IDE/stdin client)"},
+	{Name: "webhooks", Description: "Webhook event server"},
+}
+
+// IsBuiltin returns true if the capability name is a builtin
+func IsBuiltin(name string) bool {
+	lower := strings.ToLower(name)
+	for _, b := range BuiltinCapabilities {
+		if strings.ToLower(b.Name) == lower {
+			return true
+		}
+	}
+	return false
+}
+
+// GetBuiltin returns a builtin capability by name
+func GetBuiltin(name string) (BuiltinCapability, error) {
+	lower := strings.ToLower(name)
+	for _, b := range BuiltinCapabilities {
+		if strings.ToLower(b.Name) == lower {
+			return b, nil
+		}
+	}
+	return BuiltinCapability{}, fmt.Errorf("unknown builtin capability: %s", name)
+}
+
+// ListBuiltins returns all builtin capabilities
+func ListBuiltins() []BuiltinCapability {
+	return BuiltinCapabilities
+}
+
+// Exists returns true if a capability exists (builtin or external)
+func Exists(name string) bool {
+	if IsBuiltin(name) {
+		return true
+	}
+	_, err := LoadCapability(name)
+	return err == nil
+}
+
 var SmartPatterns = []SmartPattern{
 	{ToolName: "claude", DefaultPath: ".claude/commands/agent.md", Description: "Claude Code Agent"},
 	{ToolName: "cursor", DefaultPath: ".cursor/commands/agent.md", Description: "Cursor Agent"},

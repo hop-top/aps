@@ -22,6 +22,20 @@ const (
 	TypeReference CapabilityType = "reference" // Watched (System owns it)
 )
 
+// CapabilityKind distinguishes builtin vs external capabilities
+type CapabilityKind string
+
+const (
+	KindBuiltin  CapabilityKind = "builtin"
+	KindExternal CapabilityKind = "external"
+)
+
+// BuiltinCapability represents a built-in capability (a2a, webhooks, etc.)
+type BuiltinCapability struct {
+	Name        string
+	Description string
+}
+
 // SmartPattern defines a known tool configuration pattern
 type SmartPattern struct {
 	ToolName    string
