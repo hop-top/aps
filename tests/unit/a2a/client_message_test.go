@@ -17,8 +17,8 @@ func TestClient_SendMessage_InvalidMessage(t *testing.T) {
 	profile := &core.Profile{
 		ID:          "test-profile",
 		DisplayName: "Test Profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      "127.0.0.1:8081",
 			IsolationTier:   "process",
@@ -40,8 +40,8 @@ func TestClient_SendMessage_ValidMessage(t *testing.T) {
 	profile := &core.Profile{
 		ID:          "test-profile",
 		DisplayName: "Test Profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      "127.0.0.1:8081",
 			IsolationTier:   "process",

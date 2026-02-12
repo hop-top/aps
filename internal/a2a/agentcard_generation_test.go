@@ -12,9 +12,8 @@ func TestGenerateAgentCardFromProfile_Enabled(t *testing.T) {
 	profile := &core.Profile{
 		ID:           "test-profile",
 		DisplayName:  "Test Profile",
-		Capabilities: []string{"deploy", "query"},
+		Capabilities: []string{"a2a", "deploy", "query"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
 			IsolationTier:   "process",
@@ -37,9 +36,7 @@ func TestGenerateAgentCardFromProfile_Disabled(t *testing.T) {
 		ID:           "test-profile",
 		DisplayName:  "Test Profile",
 		Capabilities: []string{"deploy", "query"},
-		A2A: &core.A2AConfig{
-			Enabled: false,
-		},
+		A2A:          &core.A2AConfig{},
 	}
 
 	card, err := GenerateAgentCardFromProfile(profile)

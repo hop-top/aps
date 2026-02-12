@@ -25,9 +25,8 @@ func TestCrossTierCommunication_IPC(t *testing.T) {
 	profile := &core.Profile{
 		ID:           "test-profile",
 		DisplayName:  "Test Profile",
-		Capabilities: []string{"ipc-test"},
+		Capabilities: []string{"a2a", "ipc-test"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      "127.0.0.1:8081",
 			IsolationTier:   "process",
