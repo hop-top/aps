@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // InjectEnvironment prepares environment variables for a command
@@ -72,6 +73,35 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 		internalKeyPath := filepath.Join(profileDir, "ssh.key")
 		if _, err := os.Stat(internalKeyPath); err == nil {
 			env = append(env, fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -F /dev/null", internalKeyPath))
+		}
+	}
+
+	// 6. Inject capability env vars (only for this profile's capabilities)
+	// Uses builtinCaps set to skip built-ins; resolves external cap paths
+	// from ~/.aps/capabilities/ and configured sources.
+	builtinCaps := map[string]bool{
+		"a2a": true, "agent-protocol": true, "webhooks": true,
+	}
+	capRoots := []string{}
+	if usr, e := os.UserHomeDir(); e == nil {
+		capRoots = append(capRoots, filepath.Join(usr, ".aps", "capabilities"))
+	}
+	for _, src := range config.CapabilitySources {
+		if src != "" {
+			capRoots = append(capRoots, src)
+		}
+	}
+	for _, capName := range profile.Capabilities {
+		if builtinCaps[capName] {
+			continue
+		}
+		for _, root := range capRoots {
+			p := filepath.Join(root, capName)
+			if info, e := os.Stat(p); e == nil && info.IsDir() {
+				safeName := strings.ToUpper(strings.ReplaceAll(capName, "-", "_"))
+				env = append(env, fmt.Sprintf("APS_%s_PATH=%s", safeName, p))
+				break
+			}
 		}
 	}
 
