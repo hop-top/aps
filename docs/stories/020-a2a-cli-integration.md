@@ -1,7 +1,7 @@
 # A2A CLI Integration
 
 **ID**: 020
-**Feature**: A2A Protocol (specs/005)
+**Feature**: A2A Protocol
 **Persona**: [User](../personas/user.md)
 **Priority**: P5
 

@@ -1,7 +1,7 @@
 # Execution Environment Tests
 
 **ID**: 007
-**Feature**: E2E Tests (specs/002)
+**Feature**: E2E Tests
 **Persona**: [Maintainer](../personas/maintainer.md)
 **Related Personas**: [User](../personas/user.md) (validates [002](002-command-execution.md))
 **Priority**: P1

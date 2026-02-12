@@ -1,7 +1,7 @@
 # XDG Configuration Discovery
 
 **ID**: 015
-**Feature**: Profile Env Prefix (specs/004)
+**Feature**: Profile Env Prefix
 **Persona**: [User](../personas/user.md)
 **Priority**: P3
 

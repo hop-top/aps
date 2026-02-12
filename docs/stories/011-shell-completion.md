@@ -1,7 +1,7 @@
 # Shell Completion
 
 **ID**: 011
-**Feature**: Shell Integration (specs/003)
+**Feature**: Shell Integration
 **Persona**: [User](../personas/user.md)
 **Priority**: P2
 

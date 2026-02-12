@@ -1,7 +1,7 @@
 # Smart Linking
 
 **ID**: 028
-**Feature**: Capability Management (specs/007)
+**Feature**: Capability Management
 **Persona**: [User](../personas/user.md)
 **Priority**: P1
 

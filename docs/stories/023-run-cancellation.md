@@ -1,7 +1,7 @@
 # Run Cancellation
 
 **ID**: 023
-**Feature**: Agent Protocol Adapter (specs/006)
+**Feature**: Agent Protocol Adapter
 **Persona**: [External Client](../personas/external-client.md)
 **Priority**: P2
 

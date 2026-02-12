@@ -1,7 +1,7 @@
 # Custom Prefix Configuration
 
 **ID**: 014
-**Feature**: Profile Env Prefix (specs/004)
+**Feature**: Profile Env Prefix
 **Persona**: [User](../personas/user.md)
 **Priority**: P2
 

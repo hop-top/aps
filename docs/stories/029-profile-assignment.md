@@ -1,7 +1,7 @@
 # Profile Assignment
 
 **ID**: 029
-**Feature**: Capability Management (specs/007)
+**Feature**: Capability Management
 **Persona**: [User](../personas/user.md)
 **Priority**: P2
 

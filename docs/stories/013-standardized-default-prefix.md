@@ -1,7 +1,7 @@
 # Standardized Default Prefix
 
 **ID**: 013
-**Feature**: Profile Env Prefix (specs/004)
+**Feature**: Profile Env Prefix
 **Persona**: [User](../personas/user.md)
 **Priority**: P1
 

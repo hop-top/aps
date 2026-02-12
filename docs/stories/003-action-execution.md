@@ -1,7 +1,7 @@
 # Action Execution
 
 **ID**: 003
-**Feature**: CLI Core (specs/001)
+**Feature**: CLI Core
 **Persona**: [User](../personas/user.md)
 **Related Personas**: [Maintainer](../personas/maintainer.md) (tested by [008](008-action-discovery-tests.md))
 **Priority**: P2

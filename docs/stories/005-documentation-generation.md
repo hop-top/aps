@@ -1,7 +1,7 @@
 # Documentation Generation
 
 **ID**: 005
-**Feature**: CLI Core (specs/001)
+**Feature**: CLI Core
 **Persona**: [User](../personas/user.md)
 **Priority**: P3
 

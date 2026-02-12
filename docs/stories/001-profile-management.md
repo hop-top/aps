@@ -1,7 +1,7 @@
 # Profile Management
 
 **ID**: 001
-**Feature**: CLI Core (specs/001)
+**Feature**: CLI Core
 **Persona**: [User](../personas/user.md)
 **Related Personas**: [Maintainer](../personas/maintainer.md) (tested by [006](006-profile-lifecycle-tests.md))
 **Priority**: P1

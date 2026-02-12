@@ -1,7 +1,7 @@
 # Thread/Session Management
 
 **ID**: 025
-**Feature**: Agent Protocol Adapter (specs/006)
+**Feature**: Agent Protocol Adapter
 **Persona**: [External Client](../personas/external-client.md)
 **Priority**: P3
 

@@ -1,7 +1,7 @@
 # Action Discovery Tests
 
 **ID**: 008
-**Feature**: E2E Tests (specs/002)
+**Feature**: E2E Tests
 **Persona**: [Maintainer](../personas/maintainer.md)
 **Related Personas**: [User](../personas/user.md) (validates [003](003-action-execution.md))
 **Priority**: P2

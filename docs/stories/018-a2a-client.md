@@ -1,7 +1,7 @@
 # A2A Client
 
 **ID**: 018
-**Feature**: A2A Protocol (specs/005)
+**Feature**: A2A Protocol
 **Persona**: [User](../personas/user.md)
 **Priority**: P3
 

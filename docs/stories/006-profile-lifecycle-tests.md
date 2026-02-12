@@ -1,7 +1,7 @@
 # Profile Lifecycle Tests
 
 **ID**: 006
-**Feature**: E2E Tests (specs/002)
+**Feature**: E2E Tests
 **Persona**: [Maintainer](../personas/maintainer.md)
 **Related Personas**: [User](../personas/user.md) (validates [001](001-profile-management.md))
 **Priority**: P1

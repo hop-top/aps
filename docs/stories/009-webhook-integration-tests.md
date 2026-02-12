@@ -1,7 +1,7 @@
 # Webhook Integration Tests
 
 **ID**: 009
-**Feature**: E2E Tests (specs/002)
+**Feature**: E2E Tests
 **Persona**: [Maintainer](../personas/maintainer.md)
 **Related Personas**: [User](../personas/user.md) (validates [004](004-webhook-server.md))
 **Priority**: P3

@@ -1,7 +1,7 @@
 # Webhook Server
 
 **ID**: 004
-**Feature**: CLI Core (specs/001)
+**Feature**: CLI Core
 **Persona**: [User](../personas/user.md)
 **Related Personas**: [Maintainer](../personas/maintainer.md) (tested by [009](009-webhook-integration-tests.md))
 **Priority**: P3

@@ -1,7 +1,7 @@
 # Install Capability
 
 **ID**: 026
-**Feature**: Capability Management (specs/007)
+**Feature**: Capability Management
 **Persona**: [User](../personas/user.md)
 **Priority**: P1
 

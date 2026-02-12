@@ -1,7 +1,7 @@
 # A2A Server
 
 **ID**: 017
-**Feature**: A2A Protocol (specs/005)
+**Feature**: A2A Protocol
 **Persona**: [User](../personas/user.md)
 **Priority**: P2
 
