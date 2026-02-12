@@ -241,6 +241,128 @@ echo '{"name": "John"}' | aps action run myagent greet.py --payload-stdin
 aps action run myagent hello-world.sh --dry-run
 ```
 
+## Capability Commands
+
+### `aps capability list`
+
+List all capabilities (builtin + external).
+
+```bash
+aps cap list [--profile <id>] [--json]
+```
+
+**Flags:**
+
+- `--profile <id>` - Filter to capabilities on a specific profile
+- `--json` - JSON output
+
+**Output:**
+```
+Capabilities
+
+NAME              KIND      TYPE        LINKS  PROFILES
+a2a               builtin   --          --     work, dev
+webhooks          builtin   --          --     work
+my-vim-config     external  managed     2      work
+windsurf-agent    external  reference   1      dev
+
+4 capabilities (2 builtin, 2 external)
+```
+
+### `aps capability show`
+
+Show capability details.
+
+```bash
+aps cap show <name>
+```
+
+### `aps capability install`
+
+Install a capability from a source directory.
+
+```bash
+aps cap install <source> --name <name>
+```
+
+### `aps capability link`
+
+Symlink a capability to a target path.
+
+```bash
+aps cap link <name> [--target <path>]
+```
+
+Supports smart linking: `aps cap link my-cap windsurf` resolves
+to the Windsurf default path.
+
+### `aps capability delete`
+
+Delete a capability.
+
+```bash
+aps cap delete <name> [--force]
+```
+
+Warns about active links unless `--force` is provided.
+
+### `aps capability adopt`
+
+Move a file/dir into APS and symlink back.
+
+```bash
+aps cap adopt <path> --name <name>
+```
+
+### `aps capability watch`
+
+Watch an external file (symlink into APS).
+
+```bash
+aps cap watch <path> --name <name>
+aps cap watch --tool <tool> --name <name>
+```
+
+### `aps capability patterns`
+
+Show smart patterns and builtin capabilities.
+
+```bash
+aps cap patterns
+```
+
+### `aps capability enable`
+
+Enable a capability on a profile.
+
+```bash
+aps cap enable <profile> <capability>
+```
+
+### `aps capability disable`
+
+Disable a capability on a profile.
+
+```bash
+aps cap disable <profile> <capability>
+```
+
+### `aps profile add-capability`
+
+Add a capability to a profile.
+
+```bash
+aps profile add-capability <profile> <capability>
+```
+
+### `aps profile remove-capability`
+
+Remove a capability from a profile.
+
+```bash
+aps profile remove-capability <profile> <capability>
+```
+
 ## Session Commands
 
 ### `aps session list`
