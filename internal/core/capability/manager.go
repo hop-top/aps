@@ -116,10 +116,8 @@ func Delete(name string) error {
 		return err
 	}
 
-	// Warning about breaking links?
-	if len(cap.Links) > 0 {
-		fmt.Printf("Warning: Capability '%s' has %d active links that will break.\n", name, len(cap.Links))
-	}
+	// Caller is responsible for warning about breaking links
+	_ = cap.Links // checked by callers before calling Delete
 
 	// Safety check: Don't delete root or dangerous paths if something is messed up
 	if cap.Path == "" || cap.Path == "/" || cap.Path == "." {

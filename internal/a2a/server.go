@@ -44,7 +44,7 @@ func NewServer(profile *core.Profile, config *StorageConfig) (*Server, error) {
 		return nil, fmt.Errorf("profile cannot be nil")
 	}
 
-	if profile.A2A == nil || !profile.A2A.Enabled {
+	if !core.ProfileHasCapability(profile, "a2a") {
 		return nil, ErrA2ANotEnabled
 	}
 

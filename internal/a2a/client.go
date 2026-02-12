@@ -28,7 +28,7 @@ func NewClient(targetProfileID string, targetProfile *core.Profile) (*Client, er
 		return nil, fmt.Errorf("target profile cannot be nil")
 	}
 
-	if targetProfile.A2A == nil || !targetProfile.A2A.Enabled {
+	if !core.ProfileHasCapability(targetProfile, "a2a") {
 		return nil, ErrA2ANotEnabled
 	}
 

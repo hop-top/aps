@@ -131,9 +131,8 @@ func CreateTestProfile(id, displayName, addr string) *core.Profile {
 	return &core.Profile{
 		ID:           id,
 		DisplayName:  displayName,
-		Capabilities: []string{"execute", "deploy"},
+		Capabilities: []string{"a2a", "execute", "deploy"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      addr,
 			SecurityScheme:  "none",

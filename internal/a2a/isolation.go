@@ -14,7 +14,7 @@ func MapIsolationToTransport(tier core.IsolationLevel) (transport.TransportType,
 
 // CreateTransportForProfile creates appropriate transport for a profile
 func CreateTransportForProfile(profile *core.Profile, handler transport.MessageHandler) (transport.Transport, error) {
-	if profile.A2A == nil || !profile.A2A.Enabled {
+	if !core.ProfileHasCapability(profile, "a2a") {
 		return nil, ErrA2ANotEnabled
 	}
 

@@ -17,7 +17,7 @@ func loadProfile(profileID string) (*core.Profile, error) {
 		return nil, fmt.Errorf("failed to load profile %s: %w", profileID, err)
 	}
 
-	if profile.A2A == nil || !profile.A2A.Enabled {
+	if !core.ProfileHasCapability(profile, "a2a") {
 		return nil, fmt.Errorf("A2A is not enabled for profile %s", profileID)
 	}
 

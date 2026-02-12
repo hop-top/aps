@@ -18,10 +18,8 @@ func TestNewServer_A2ADisabled(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: false,
-		},
+		ID:  "test-profile",
+		A2A: &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -44,10 +42,9 @@ func TestNewServer_NilProfile(t *testing.T) {
 
 func TestNewServer_NilConfig(t *testing.T) {
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, nil)
@@ -62,10 +59,10 @@ func TestServer_Start(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Profile",
+		ID:           "test-profile",
+		DisplayName:  "Test Profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:8081",
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
@@ -94,9 +91,9 @@ func TestServer_Stop(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:8081",
 			ProtocolBinding: "jsonrpc",
 		},
@@ -123,10 +120,9 @@ func TestServer_GetAddress(t *testing.T) {
 
 	t.Run("default address", func(t *testing.T) {
 		profile := &core.Profile{
-			ID: "test-profile",
-			A2A: &core.A2AConfig{
-				Enabled: true,
-			},
+			ID:           "test-profile",
+			Capabilities: []string{"a2a"},
+			A2A:          &core.A2AConfig{},
 		}
 
 		server, err := NewServer(profile, config)
@@ -136,9 +132,9 @@ func TestServer_GetAddress(t *testing.T) {
 
 	t.Run("custom address", func(t *testing.T) {
 		profile := &core.Profile{
-			ID: "test-profile",
+			ID:           "test-profile",
+			Capabilities: []string{"a2a"},
 			A2A: &core.A2AConfig{
-				Enabled:    true,
 				ListenAddr: "127.0.0.1:9999",
 			},
 		}

@@ -27,9 +27,7 @@ func TestNewClient_A2ADisabled(t *testing.T) {
 	profile := &core.Profile{
 		ID:          "test-profile",
 		DisplayName: "Test Profile",
-		A2A: &core.A2AConfig{
-			Enabled: false,
-		},
+		A2A:         &core.A2AConfig{},
 	}
 
 	client, err := a2a.NewClient(profile.ID, profile)
@@ -41,10 +39,10 @@ func TestNewClient_A2ADisabled(t *testing.T) {
 
 func TestNewClient_ValidProfile(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Profile",
+		ID:           "test-profile",
+		DisplayName:  "Test Profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      "127.0.0.1:8081",
 			IsolationTier:   "process",

@@ -48,9 +48,8 @@ func TestClient_ListTasks(t *testing.T) {
 	profile := &core.Profile{
 		ID:           "test-list-profile",
 		DisplayName:  "Test List Profile",
-		Capabilities: []string{"test"},
+		Capabilities: []string{"a2a", "test"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 			ListenAddr:      "127.0.0.1:8084",
 		},

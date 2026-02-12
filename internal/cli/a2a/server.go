@@ -38,7 +38,7 @@ Example:
 				return err
 			}
 
-			if profile.A2A == nil || !profile.A2A.Enabled {
+			if !core.ProfileHasCapability(profile, "a2a") {
 				return fmt.Errorf("A2A is not enabled for profile %s", profileID)
 			}
 

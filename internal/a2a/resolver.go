@@ -33,7 +33,7 @@ func (r *Resolver) ResolveProfile(ctx context.Context, targetProfileID string) (
 		return nil, fmt.Errorf("failed to load profile %s: %w", targetProfileID, err)
 	}
 
-	if profile.A2A == nil || !profile.A2A.Enabled {
+	if !core.ProfileHasCapability(profile, "a2a") {
 		return nil, ErrA2ANotEnabled
 	}
 
