@@ -11,3 +11,5 @@ An external system or API consumer that interacts with APS through HTTP protocol
 - [023 - Run Cancellation](../stories/023-run-cancellation.md)
 - [024 - Agent Discovery](../stories/024-agent-discovery.md)
 - [025 - Thread/Session Management](../stories/025-thread-session-management.md)
+- [032 - Key-Value Store](../stories/032-key-value-store.md)
+- [033 - Thread-Scoped Runs](../stories/033-thread-scoped-runs.md)

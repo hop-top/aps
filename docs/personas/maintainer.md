@@ -10,6 +10,7 @@ A developer or maintainer of the APS project who writes and runs automated tests
 - [007 - Execution Environment Tests](../stories/007-execution-environment-tests.md)
 - [008 - Action Discovery Tests](../stories/008-action-discovery-tests.md)
 - [009 - Webhook Integration Tests](../stories/009-webhook-integration-tests.md)
+- [031 - Platform Sandbox](../stories/031-platform-sandbox.md)
 
 ## Related Stories
 

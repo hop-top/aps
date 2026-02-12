@@ -26,6 +26,10 @@ The end-user of APS who creates agent profiles, executes commands and actions wi
 - [027 - Symlink Configuration](../stories/027-symlink-configuration.md)
 - [028 - Smart Linking](../stories/028-smart-linking.md)
 - [029 - Profile Assignment](../stories/029-profile-assignment.md)
+- [030 - Execution Isolation](../stories/030-execution-isolation.md)
+- [034 - Custom Profile Tools](../stories/034-custom-profile-tools.md)
+- [035 - Protocol Server](../stories/035-protocol-server.md)
+- [036 - Capability Environment](../stories/036-capability-environment.md)
 
 ## Related Stories
 
