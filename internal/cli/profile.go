@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"oss-aps-cli/internal/core"
+	"oss-aps-cli/internal/core/capability"
+	"oss-aps-cli/internal/styles"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -93,13 +95,37 @@ var profileShowCmd = &cobra.Command{
 		}
 		fmt.Println(string(data))
 
+		// Rich capabilities section
+		if len(profile.Capabilities) > 0 {
+			fmt.Println("capabilities:")
+			for _, capName := range profile.Capabilities {
+				dot := styles.StatusDot(true)
+				kind := "external"
+				desc := ""
+				if b, e := capability.GetBuiltin(capName); e == nil {
+					kind = "builtin"
+					desc = b.Description
+				} else if ext, e := capability.LoadCapability(capName); e == nil {
+					if ext.Description != "" {
+						desc = ext.Description
+					} else {
+						desc = ext.Path
+					}
+				}
+				badge := styles.KindBadge(kind)
+				line := fmt.Sprintf("  %s %-18s %s", dot, capName, badge)
+				if desc != "" {
+					line += "  " + styles.Dim.Render(desc)
+				}
+				fmt.Println(line)
+			}
+		}
+
 		// Show modules status
-		fmt.Println("Modules:")
-		// Secrets
+		fmt.Println("\nModules:")
 		secretsPath, _ := core.GetProfileDir(id)
 		if _, err := os.Stat(secretsPath + "/secrets.env"); err == nil {
 			fmt.Println("- Secrets: present")
-			// Show keys only logic (redacted)
 			secrets, _ := core.LoadSecrets(secretsPath + "/secrets.env")
 			for k := range secrets {
 				fmt.Printf("  - %s: ***redacted***\n", k)
@@ -107,6 +133,39 @@ var profileShowCmd = &cobra.Command{
 		} else {
 			fmt.Println("- Secrets: missing")
 		}
+	},
+}
+
+var profileAddCapCmd = &cobra.Command{
+	Use:   "add-capability <profile> <capability>",
+	Short: "Add a capability to a profile",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profileID, capName := args[0], args[1]
+		if !capability.Exists(capName) {
+			return fmt.Errorf("capability '%s' does not exist", capName)
+		}
+		if err := core.AddCapabilityToProfile(profileID, capName); err != nil {
+			return err
+		}
+		fmt.Printf("%s %s added to %s\n",
+			styles.StatusDot(true), capName, profileID)
+		return nil
+	},
+}
+
+var profileRemoveCapCmd = &cobra.Command{
+	Use:   "remove-capability <profile> <capability>",
+	Short: "Remove a capability from a profile",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profileID, capName := args[0], args[1]
+		if err := core.RemoveCapabilityFromProfile(profileID, capName); err != nil {
+			return err
+		}
+		fmt.Printf("%s %s removed from %s\n",
+			styles.StatusDot(false), capName, profileID)
+		return nil
 	},
 }
 
@@ -173,6 +232,8 @@ func init() {
 	profileCmd.AddCommand(profileShowCmd)
 	profileCmd.AddCommand(profileShareCmd)
 	profileCmd.AddCommand(profileImportCmd)
+	profileCmd.AddCommand(profileAddCapCmd)
+	profileCmd.AddCommand(profileRemoveCapCmd)
 
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for git config")
