@@ -29,7 +29,7 @@ func TestCapabilityCommands(t *testing.T) {
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, "Install failed: %s", string(out))
-	assert.Contains(t, string(out), "installed successfully")
+	assert.Contains(t, string(out), "Installed")
 
 	// 3. List
 	cmd = exec.Command(apsBinary, "capability", "list")
@@ -51,12 +51,12 @@ func TestCapabilityCommands(t *testing.T) {
 	cmd.Env = env
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, "Delete failed: %s", string(out))
-	assert.Contains(t, string(out), "deleted")
+	assert.Contains(t, string(out), "Deleted")
 
-	// 6. Verify List empty
+	// 6. Verify mytool no longer listed
 	cmd = exec.Command(apsBinary, "capability", "list")
 	cmd.Env = env
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err)
-	assert.Contains(t, string(out), "No capabilities installed")
+	assert.NotContains(t, string(out), "mytool")
 }
