@@ -39,7 +39,6 @@ type Profile struct {
 
 // A2AConfig holds A2A protocol configuration for a profile
 type A2AConfig struct {
-	Enabled         bool   `yaml:"enabled,omitempty"`
 	ProtocolBinding string `yaml:"protocol_binding,omitempty"`
 	ListenAddr      string `yaml:"listen_addr,omitempty"`
 	PublicEndpoint  string `yaml:"public_endpoint,omitempty"`
@@ -86,7 +85,6 @@ type SSHConfig struct {
 }
 
 type WebhookConfig struct {
-	Enabled       bool     `yaml:"enabled,omitempty"`
 	AllowedEvents []string `yaml:"allowed_events,omitempty"`
 }
 
@@ -338,4 +336,74 @@ func ListProfiles() ([]string, error) {
 	}
 
 	return profiles, nil
+}
+
+// AddCapabilityToProfile adds a capability to a profile (deduplicates)
+func AddCapabilityToProfile(profileID, capName string) error {
+	profile, err := LoadProfile(profileID)
+	if err != nil {
+		return err
+	}
+
+	if ProfileHasCapability(profile, capName) {
+		return nil // already present
+	}
+
+	profile.Capabilities = append(profile.Capabilities, capName)
+	return SaveProfile(profile)
+}
+
+// RemoveCapabilityFromProfile removes a capability from a profile
+func RemoveCapabilityFromProfile(profileID, capName string) error {
+	profile, err := LoadProfile(profileID)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	caps := make([]string, 0, len(profile.Capabilities))
+	for _, c := range profile.Capabilities {
+		if c == capName {
+			found = true
+			continue
+		}
+		caps = append(caps, c)
+	}
+
+	if !found {
+		return fmt.Errorf("capability '%s' not found on profile '%s'", capName, profileID)
+	}
+
+	profile.Capabilities = caps
+	return SaveProfile(profile)
+}
+
+// ProfileHasCapability checks if a profile has a specific capability
+func ProfileHasCapability(profile *Profile, capName string) bool {
+	for _, c := range profile.Capabilities {
+		if c == capName {
+			return true
+		}
+	}
+	return false
+}
+
+// ProfilesUsingCapability returns profile IDs that have the given capability
+func ProfilesUsingCapability(capName string) ([]string, error) {
+	profileIDs, err := ListProfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, id := range profileIDs {
+		profile, err := LoadProfile(id)
+		if err != nil {
+			continue
+		}
+		if ProfileHasCapability(profile, capName) {
+			result = append(result, id)
+		}
+	}
+	return result, nil
 }
