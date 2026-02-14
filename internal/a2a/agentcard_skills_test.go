@@ -122,7 +122,6 @@ Content.
 		DisplayName:  "Test Agent",
 		Capabilities: []string{"execute", "analyze"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -151,9 +150,7 @@ Content.
 		emptyProfile := &core.Profile{
 			ID:          "empty",
 			DisplayName: "Empty Agent",
-			A2A: &core.A2AConfig{
-				Enabled: true,
-			},
+			A2A: &core.A2AConfig{},
 		}
 
 		skills := generateAgentSkills(emptyProfile)

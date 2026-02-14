@@ -912,7 +912,6 @@ func TestProfileSaveAndLoadWithA2AComprehensive(t *testing.T) {
 		ID:          "a2a-profile",
 		DisplayName: "A2A Test",
 		A2A: &A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "stdio",
 			ListenAddr:      "127.0.0.1:5000",
 			PublicEndpoint:  "http://example.com:5000",
@@ -928,7 +927,6 @@ func TestProfileSaveAndLoadWithA2AComprehensive(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, loaded.A2A)
-	assert.True(t, loaded.A2A.Enabled)
 	assert.Equal(t, "stdio", loaded.A2A.ProtocolBinding)
 	assert.Equal(t, "http://example.com:5000", loaded.A2A.PublicEndpoint)
 }
@@ -1013,7 +1011,6 @@ func TestProfileYAMLRoundtripComprehensive(t *testing.T) {
 		Git: GitConfig{Enabled: true},
 		SSH: SSHConfig{Enabled: true, KeyPath: "id_rsa"},
 		A2A: &A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:5000",
 		},
 		ACP: &ACPConfig{

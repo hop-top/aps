@@ -31,7 +31,7 @@ func CreateTestProfile(t *testing.T, name string, isolationLevel core.IsolationL
 			Style: "concise",
 			Risk:  "low",
 		},
-		Capabilities: []string{"execute", "query", "analyze"},
+		Capabilities: []string{"a2a", "execute", "query", "analyze"},
 		Accounts: map[string]core.Account{
 			"default": {
 				Username: "test-user",
@@ -54,7 +54,6 @@ func CreateTestProfile(t *testing.T, name string, isolationLevel core.IsolationL
 			KeyPath: "/home/user/.ssh/id_rsa",
 		},
 		Webhooks: core.WebhookConfig{
-			Enabled:       true,
 			AllowedEvents: []string{"task.completed", "task.failed"},
 		},
 		Isolation: core.IsolationConfig{
@@ -76,7 +75,6 @@ func CreateTestProfile(t *testing.T, name string, isolationLevel core.IsolationL
 			},
 		},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "grpc",
 			ListenAddr:      "127.0.0.1:8081",
 			PublicEndpoint:  "http://127.0.0.1:8081",

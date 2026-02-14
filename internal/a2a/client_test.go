@@ -16,11 +16,10 @@ func TestNewClient_Success(t *testing.T) {
 		ID:          "target-profile",
 		DisplayName: "Target Agent",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:8081",
 			ProtocolBinding: "jsonrpc",
 		},
-		Capabilities: []string{"execute"},
+		Capabilities: []string{"a2a", "execute"},
 	}
 
 	client, err := NewClient("target-profile", profile)
@@ -31,10 +30,9 @@ func TestNewClient_Success(t *testing.T) {
 
 func TestNewClient_EmptyProfileID(t *testing.T) {
 	profile := &core.Profile{
-		ID: "target-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "target-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	client, err := NewClient("", profile)
@@ -51,10 +49,8 @@ func TestNewClient_NilProfile(t *testing.T) {
 
 func TestNewClient_A2ADisabled(t *testing.T) {
 	profile := &core.Profile{
-		ID: "target-profile",
-		A2A: &core.A2AConfig{
-			Enabled: false,
-		},
+		ID:  "target-profile",
+		A2A: nil,
 	}
 
 	client, err := NewClient("target-profile", profile)
@@ -76,10 +72,10 @@ func TestNewClient_A2AConfigNil(t *testing.T) {
 
 func TestNewClient_GetProfileID(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-target",
-		DisplayName: "Target Agent",
+		ID:           "test-target",
+		DisplayName:  "Target Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -94,10 +90,9 @@ func TestNewClient_GetAgentCard(t *testing.T) {
 		ID:          "test-profile",
 		DisplayName: "Test Agent",
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
-		Capabilities: []string{"execute"},
+		Capabilities: []string{"a2a", "execute"},
 	}
 
 	client, err := NewClient("test-profile", profile)
@@ -167,10 +162,10 @@ func TestValidateAgentCardTransport_NoTransportSetDefault(t *testing.T) {
 
 func TestClient_SendMessage_NilMessage(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -185,10 +180,10 @@ func TestClient_SendMessage_NilMessage(t *testing.T) {
 
 func TestClient_GetTask_EmptyTaskID(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -203,10 +198,10 @@ func TestClient_GetTask_EmptyTaskID(t *testing.T) {
 
 func TestClient_CancelTask_EmptyTaskID(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -221,10 +216,10 @@ func TestClient_CancelTask_EmptyTaskID(t *testing.T) {
 
 func TestClient_SubscribeToTask_EmptyTaskID(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -239,10 +234,10 @@ func TestClient_SubscribeToTask_EmptyTaskID(t *testing.T) {
 
 func TestClient_SubscribeToTask_EmptyWebhookURL(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -258,10 +253,10 @@ func TestClient_SubscribeToTask_EmptyWebhookURL(t *testing.T) {
 
 func TestClient_ListTasks_NotSupported(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
@@ -276,10 +271,10 @@ func TestClient_ListTasks_NotSupported(t *testing.T) {
 
 func TestClient_SendMessageStream_NotSupported(t *testing.T) {
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Agent",
+		ID:           "test-profile",
+		DisplayName:  "Test Agent",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8081",
 		},
 	}
