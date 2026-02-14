@@ -12,7 +12,7 @@ import (
 
 // GenerateAgentCardFromProfile generates an A2A Agent Card from an APS profile
 func GenerateAgentCardFromProfile(profile *core.Profile) (*a2a.AgentCard, error) {
-	if profile.A2A == nil || !profile.A2A.Enabled {
+	if !core.ProfileHasCapability(profile, "a2a") {
 		return nil, ErrA2ANotEnabled
 	}
 
