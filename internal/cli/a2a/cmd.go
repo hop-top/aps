@@ -28,6 +28,7 @@ The a2a command group provides operations for:
 	cmd.AddCommand(NewShowCardCmd())
 	cmd.AddCommand(NewFetchCardCmd())
 	cmd.AddCommand(NewServerCmd())
+	cmd.AddCommand(NewToggleCmd())
 
 	return cmd
 }

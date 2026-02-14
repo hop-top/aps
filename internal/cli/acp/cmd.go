@@ -18,6 +18,7 @@ The acp command group provides operations for:
 	}
 
 	cmd.AddCommand(NewServerCmd())
+	cmd.AddCommand(NewToggleCmd())
 
 	return cmd
 }
