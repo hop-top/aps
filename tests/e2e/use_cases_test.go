@@ -110,7 +110,6 @@ func TestUseCase3_AgentToAgentOrchestration(t *testing.T) {
 		DisplayName:  "Code Analyzer Agent",
 		Capabilities: []string{"analyze", "read"},
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:29081",
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
@@ -187,7 +186,6 @@ func TestUseCase5_UnifiedProtocolManagementDashboard(t *testing.T) {
 	a2aProfile := &core.Profile{
 		ID: "orchestrator",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:29082",
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
@@ -266,7 +264,6 @@ func TestUseCase6_MicroserviceAgentArchitecture(t *testing.T) {
 			DisplayName:  agent.role + " Agent",
 			Capabilities: []string{"process", "execute"},
 			A2A: &core.A2AConfig{
-				Enabled:         true,
 				ListenAddr:      getAvailableAddr(29083 + i),
 				ProtocolBinding: "jsonrpc",
 				SecurityScheme:  "apikey",
@@ -312,7 +309,6 @@ func TestUseCase7_LocalDevelopmentSetup(t *testing.T) {
 	a2aProfile := &core.Profile{
 		ID: "local-orchestrator",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:29084",
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
@@ -475,7 +471,6 @@ func TestUseCase11_ContainerizedAgentDeployment(t *testing.T) {
 	kubernetesTemplate := &core.Profile{
 		ID: "pod-agent",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "0.0.0.0:8081",
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
@@ -522,7 +517,6 @@ func TestUseCase12_TestingMultipleProtocols(t *testing.T) {
 		profile := &core.Profile{
 			ID: "test-a2a",
 			A2A: &core.A2AConfig{
-				Enabled:         true,
 				ListenAddr:      "127.0.0.1:29085",
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
@@ -586,7 +580,6 @@ func TestUseCase14_ProtocolDebugging(t *testing.T) {
 	a2aProfile := &core.Profile{
 		ID: "debug-a2a",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:29086",
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
@@ -639,7 +632,6 @@ func TestUseCase15_ScalingFromSingleToMultiProtocol(t *testing.T) {
 		profile := &core.Profile{
 			ID: "phase2-a2a",
 			A2A: &core.A2AConfig{
-				Enabled:         true,
 				ListenAddr:      "127.0.0.1:29087",
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
@@ -741,7 +733,6 @@ func TestAllUseCasesIntegration(t *testing.T) {
 		profile := &core.Profile{
 			ID: "agent-" + string(rune(i)),
 			A2A: &core.A2AConfig{
-				Enabled:         true,
 				ListenAddr:      "127.0.0.1:" + string(rune(29100+i)),
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
@@ -791,7 +782,6 @@ func BenchmarkUseCase3_A2ATaskCreation(b *testing.B) {
 	profile := &core.Profile{
 		ID: "bench-a2a",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ListenAddr:      "127.0.0.1:29200",
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
