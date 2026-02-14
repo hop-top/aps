@@ -33,13 +33,24 @@ Example:
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			profile, err := loadProfile(profileID)
+			// Load profile (without requiring A2A capability yet)
+			profile, err := core.LoadProfile(profileID)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 			}
 
+			// Auto-enable A2A if not already configured
 			if !core.ProfileHasCapability(profile, "a2a") {
-				return fmt.Errorf("A2A is not enabled for profile %s", profileID)
+				fmt.Printf("A2A not enabled for profile %s, auto-enabling...\n", profileID)
+				if err := enableA2A(profile, "jsonrpc", "127.0.0.1", "8081", ""); err != nil {
+					return fmt.Errorf("failed to auto-enable A2A: %w", err)
+				}
+				// Reload profile with new configuration
+				profile, err = core.LoadProfile(profileID)
+				if err != nil {
+					return fmt.Errorf("failed to reload profile: %w", err)
+				}
+				fmt.Printf("A2A enabled with defaults: jsonrpc/127.0.0.1:8081\n\n")
 			}
 
 			agentsDir, err := core.GetAgentsDir()
