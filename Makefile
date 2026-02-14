@@ -10,7 +10,8 @@ LDFLAGS=-ldflags "-X oss-aps-cli/internal/version.Version=$(VERSION) -X oss-aps-
 .PHONY: all build test lint lint-docs run clean release release-snapshot ci help setup \
 	test-stories \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
-	docker-test-install docker-test-e2e-user docker-test-cleanup docker-quick-start
+	docker-test-install docker-test-e2e-user docker-test-cleanup docker-quick-start \
+	setup-wsm
 
 all: build test lint
 
@@ -55,6 +56,18 @@ setup: ## Install development tools via mise
 	@echo "Setting up development environment..."
 	@mise install
 	@go mod tidy
+
+setup-wsm: ## Set up WSM alongside APS (run from parent directory)
+	@echo "Setting up WSM + APS integration..."
+	@if [ -f "../wsm/scripts/setup-aps-wsm.sh" ]; then \
+		bash ../wsm/scripts/setup-aps-wsm.sh; \
+	else \
+		echo "Error: wsm repository not found at ../wsm"; \
+		echo "Please clone wsm alongside aps in the same parent directory:"; \
+		echo "  cd .."; \
+		echo "  git clone https://github.com/IdeaCraftersLabs/wsm.git"; \
+		exit 1; \
+	fi
 
 clean: ## Remove build artifacts
 	@echo "Cleaning up..."
