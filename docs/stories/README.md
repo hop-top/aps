@@ -42,11 +42,15 @@ Consolidated user stories. Each story is a single source of truth for its requir
 | [034](034-custom-profile-tools.md) | Custom Profile Tools | CLI Core | User | P2 |
 | [035](035-protocol-server.md) | Protocol Server | Agent Protocol Adapter | User | P2 |
 | [036](036-capability-environment.md) | Capability Environment | Capability Management | User | P2 |
+| [037](037-a2a-protocol-toggle.md) | A2A Protocol Toggle | A2A Protocol | User | P2 |
+| [038](038-acp-protocol-toggle.md) | ACP Protocol Toggle | Agent Protocol Adapter | User | P2 |
+| [039](039-webhook-protocol-toggle.md) | Webhook Protocol Toggle | CLI Core | User | P2 |
+| [050](050-multi-device-workspace-access.md) | Multi-Device Workspace Access | Multi-Device Workspace | User | P2 |
 
 ## By Feature
 
 ### CLI Core
-[001](001-profile-management.md), [002](002-command-execution.md), [003](003-action-execution.md), [004](004-webhook-server.md), [005](005-documentation-generation.md), [034](034-custom-profile-tools.md)
+[001](001-profile-management.md), [002](002-command-execution.md), [003](003-action-execution.md), [004](004-webhook-server.md), [005](005-documentation-generation.md), [034](034-custom-profile-tools.md), [039](039-webhook-protocol-toggle.md)
 
 ### E2E Tests
 [006](006-profile-lifecycle-tests.md), [007](007-execution-environment-tests.md), [008](008-action-discovery-tests.md), [009](009-webhook-integration-tests.md)
@@ -58,10 +62,10 @@ Consolidated user stories. Each story is a single source of truth for its requir
 [013](013-standardized-default-prefix.md), [014](014-custom-prefix-configuration.md), [015](015-xdg-configuration-discovery.md)
 
 ### A2A Protocol
-[016](016-sdk-integration-agent-cards.md), [017](017-a2a-server.md), [018](018-a2a-client.md), [019](019-transport-adapters.md), [020](020-a2a-cli-integration.md)
+[016](016-sdk-integration-agent-cards.md), [017](017-a2a-server.md), [018](018-a2a-client.md), [019](019-transport-adapters.md), [020](020-a2a-cli-integration.md), [037](037-a2a-protocol-toggle.md)
 
 ### Agent Protocol Adapter
-[021](021-stateless-run.md), [022](022-streaming-run.md), [023](023-run-cancellation.md), [024](024-agent-discovery.md), [025](025-thread-session-management.md), [032](032-key-value-store.md), [033](033-thread-scoped-runs.md), [035](035-protocol-server.md)
+[021](021-stateless-run.md), [022](022-streaming-run.md), [023](023-run-cancellation.md), [024](024-agent-discovery.md), [025](025-thread-session-management.md), [032](032-key-value-store.md), [033](033-thread-scoped-runs.md), [035](035-protocol-server.md), [038](038-acp-protocol-toggle.md)
 
 ### Capability Management
 [026](026-install-capability.md), [027](027-symlink-configuration.md), [028](028-smart-linking.md), [029](029-profile-assignment.md), [036](036-capability-environment.md)
@@ -69,10 +73,13 @@ Consolidated user stories. Each story is a single source of truth for its requir
 ### Execution Isolation
 [030](030-execution-isolation.md), [031](031-platform-sandbox.md)
 
+### Multi-Device Workspace
+[050](050-multi-device-workspace-access.md)
+
 ## By Persona
 
 ### [User](../personas/user.md)
-001-005, 010-020, 026-030, 034-036
+001-005, 010-020, 026-030, 034-039, 050
 
 ### [Maintainer](../personas/maintainer.md)
 006-009, 031
