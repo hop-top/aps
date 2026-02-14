@@ -315,7 +315,6 @@ func TestProfileWithA2AConfig(t *testing.T) {
 	profile := Profile{
 		DisplayName: "A2A Profile",
 		A2A: &A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "stdio",
 			ListenAddr:      "127.0.0.1:5000",
 		},
@@ -332,7 +331,6 @@ func TestProfileWithA2AConfig(t *testing.T) {
 	err = yaml.Unmarshal(data, &loaded)
 	require.NoError(t, err)
 	assert.NotNil(t, loaded.A2A)
-	assert.True(t, loaded.A2A.Enabled)
 }
 
 // TestProfileWithACPConfig tests profile with ACP configuration
@@ -925,9 +923,7 @@ func TestProfileYAMLMarshaling(t *testing.T) {
 		Persona: Persona{
 			Tone: "professional",
 		},
-		A2A: &A2AConfig{
-			Enabled: true,
-		},
+		A2A: &A2AConfig{},
 		ACP: &ACPConfig{
 			Enabled: true,
 			Port:    8080,

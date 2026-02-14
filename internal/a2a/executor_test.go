@@ -24,9 +24,7 @@ func TestNewExecutor(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -44,9 +42,7 @@ func TestExecutor_GetProfile(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -66,9 +62,7 @@ func TestExecutor_Execute_NoMessage(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -100,9 +94,7 @@ func TestExecutor_Execute_WithMessage(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -137,9 +129,7 @@ func TestExecutor_Execute_WithStoredTask(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -178,9 +168,7 @@ func TestExecutor_Execute_EmitsEvents(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -216,9 +204,7 @@ func TestExecutor_Cancel_NoMessage(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -251,9 +237,7 @@ func TestExecutor_Cancel_WithTask(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -291,9 +275,7 @@ func TestExecutor_Cancel_EmitsEvent(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -332,9 +314,7 @@ func TestExecutor_Execute_MultipleTextParts(t *testing.T) {
 
 	profile := &core.Profile{
 		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)
@@ -375,9 +355,7 @@ func TestExecutor_Execute_ComplexMessage(t *testing.T) {
 		ID:           "test-profile",
 		DisplayName:  "Test Agent",
 		Capabilities: []string{"execute", "search"},
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		A2A: &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)

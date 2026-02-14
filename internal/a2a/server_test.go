@@ -151,10 +151,9 @@ func TestServer_Name(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -168,10 +167,9 @@ func TestServer_ProfileID(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "my-profile-123",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "my-profile-123",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -185,10 +183,9 @@ func TestServer_IsRunning(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -202,10 +199,9 @@ func TestServer_Status(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -219,10 +215,9 @@ func TestServer_GetStorage(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -237,10 +232,10 @@ func TestServer_DoubleStart(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test Profile",
+		ID:           "test-profile",
+		DisplayName:  "Test Profile",
+		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			Enabled:    true,
 			ListenAddr: "127.0.0.1:8082",
 		},
 	}
@@ -265,10 +260,9 @@ func TestServer_StopWhenNotRunning(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -284,10 +278,9 @@ func TestServer_OnGetTaskPushConfig(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -309,10 +302,9 @@ func TestServer_OnSetTaskPushConfig(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -340,10 +332,9 @@ func TestServer_OnDeleteTaskPushConfig(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -381,10 +372,9 @@ func TestServer_OnListTaskPushConfig(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -419,10 +409,9 @@ func TestServer_OnGetExtendedAgentCard(t *testing.T) {
 		ID:          "test-profile",
 		DisplayName: "Test Agent",
 		A2A: &core.A2AConfig{
-			Enabled:         true,
 			ProtocolBinding: "jsonrpc",
 		},
-		Capabilities: []string{"execute", "search"},
+		Capabilities: []string{"a2a", "execute", "search"},
 	}
 
 	server, err := NewServer(profile, config)
@@ -443,10 +432,9 @@ func TestServer_Before(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -467,10 +455,9 @@ func TestServer_After(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -491,10 +478,9 @@ func TestServer_OnGetTask(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -529,10 +515,9 @@ func TestServer_OnGetTask_NotFound(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -554,10 +539,9 @@ func TestServer_OnGetTask_WithHistoryLength(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -594,10 +578,9 @@ func TestServer_OnCancelTask(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -631,10 +614,9 @@ func TestServer_OnCancelTask_NotFound(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -656,10 +638,9 @@ func TestServer_OnSendMessage(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -697,10 +678,9 @@ func TestServer_OnSendMessage_NilMessage(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
@@ -722,10 +702,9 @@ func TestServer_OnSendMessage_WithTaskID(t *testing.T) {
 	}
 
 	profile := &core.Profile{
-		ID: "test-profile",
-		A2A: &core.A2AConfig{
-			Enabled: true,
-		},
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
 	}
 
 	server, err := NewServer(profile, config)
