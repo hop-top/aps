@@ -6,6 +6,8 @@ VERSION=$(shell cat VERSION.txt 2>/dev/null | sed 's/\.$$//' || echo "dev")
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS=-ldflags "-X oss-aps-cli/internal/version.Version=$(VERSION) -X oss-aps-cli/internal/version.Commit=$(COMMIT) -X oss-aps-cli/internal/version.Date=$(DATE) -X oss-aps-cli/internal/version.BuiltBy=makefile"
+CGO_ENABLED=1
+export CGO_ENABLED
 
 .PHONY: all build test lint lint-docs run clean release release-snapshot ci help setup \
 	test-stories \

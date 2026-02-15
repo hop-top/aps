@@ -3,6 +3,7 @@ package webhook
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -56,9 +57,8 @@ Examples:
 			eventMap := make(map[string]string)
 			for _, m := range eventMaps {
 				// Parse event map (event=profile:action)
-				var event, mapping string
-				fmt.Sscanf(m, "%[^=]=%s", &event, &mapping)
-				if event == "" || mapping == "" {
+				event, mapping, ok := strings.Cut(m, "=")
+				if !ok || event == "" || mapping == "" {
 					return fmt.Errorf("invalid event-map format '%s', expected event=profile:action", m)
 				}
 				eventMap[event] = mapping
