@@ -18,5 +18,12 @@ func NewDeviceCmd() *cobra.Command {
 	cmd.AddCommand(newLinkCmd())
 	cmd.AddCommand(newUnlinkCmd())
 
+	// Mobile device pairing commands
+	cmd.AddCommand(newPairCmd())
+	cmd.AddCommand(newRevokeCmd())
+	cmd.AddCommand(newApproveCmd())
+	cmd.AddCommand(newRejectCmd())
+	cmd.AddCommand(newPendingCmd())
+
 	return cmd
 }
