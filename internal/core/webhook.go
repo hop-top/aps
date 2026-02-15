@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"io"
 	"log"
 	"net"
@@ -79,18 +80,9 @@ func ServeWebhooks(config WebhookServerConfig) error {
 		}
 
 		// 4. Check Allowlist
-		if len(config.AllowEvents) > 0 {
-			allowed := false
-			for _, e := range config.AllowEvents {
-				if e == eventType {
-					allowed = true
-					break
-				}
-			}
-			if !allowed {
-				http.Error(w, "Event not allowed", http.StatusForbidden)
-				return
-			}
+		if len(config.AllowEvents) > 0 && !slices.Contains(config.AllowEvents, eventType) {
+			http.Error(w, "Event not allowed", http.StatusForbidden)
+			return
 		}
 
 		// 5. Route Event
@@ -172,22 +164,17 @@ func ServeWebhooks(config WebhookServerConfig) error {
 }
 
 func CheckSignature(secret string, body []byte, signatureHex string) bool {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(body)
-	expectedMAC := mac.Sum(nil)
-	expectedHex := hex.EncodeToString(expectedMAC)
-	return hmac.Equal([]byte(expectedHex), []byte(signatureHex)) // simplistic comparison, but hmac.Equal expects bytes
-	// Wait, hex string comparison is not const time.
-	// But hmac.Equal handles byte slices.
-	// Let's decode the hex signature to bytes first
 	sigBytes, err := hex.DecodeString(signatureHex)
 	if err != nil {
 		return false
 	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	expectedMAC := mac.Sum(nil)
 	return hmac.Equal(expectedMAC, sigBytes)
 }
 
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
