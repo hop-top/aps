@@ -1,4 +1,4 @@
-package workspaces
+package workspace
 
 import (
 	"context"
@@ -50,7 +50,7 @@ func NewLinkCmd() *cobra.Command {
 				fmt.Printf("Error: workspace '%s' not found\n", workspaceName)
 				fmt.Println()
 				fmt.Println("  To create a new workspace:")
-				fmt.Printf("    aps workspaces new %s\n", workspaceName)
+				fmt.Printf("    aps workspace new %s\n", workspaceName)
 				return err
 			}
 
@@ -61,7 +61,7 @@ func NewLinkCmd() *cobra.Command {
 
 			fmt.Printf("%s Linked '%s' to '%s' (%s)\n",
 				styles.Success.Render("Linked"), profileID, workspaceName, scope)
-			fmt.Printf("\n  View workspace:\n    aps workspaces show %s\n", workspaceName)
+			fmt.Printf("\n  View workspace:\n    aps workspace show %s\n", workspaceName)
 
 			return nil
 		},

@@ -1,13 +1,13 @@
-package workspaces
+package workspace
 
 import (
 	"github.com/spf13/cobra"
 )
 
-// NewWorkspacesCmd creates the workspaces command group.
-func NewWorkspacesCmd() *cobra.Command {
+// NewWorkspaceCmd creates the workspace command group.
+func NewWorkspaceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "workspaces",
+		Use:     "workspace",
 		Aliases: []string{"ws"},
 		Short:   "Manage workspaces",
 		Long: `Manage workspaces for organizing agent work.

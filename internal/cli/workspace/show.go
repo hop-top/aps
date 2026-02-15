@@ -1,4 +1,4 @@
-package workspaces
+package workspace
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func NewShowCmd() *cobra.Command {
 			if err != nil {
 				fmt.Printf("Error: workspace '%s' not found\n", name)
 				fmt.Println()
-				fmt.Println("  Run 'aps workspaces list' to see available workspaces.")
+				fmt.Println("  Run 'aps workspace list' to see available workspaces.")
 				return err
 			}
 

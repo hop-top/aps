@@ -1,4 +1,4 @@
-package workspaces
+package workspace
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func NewNewCmd() *cobra.Command {
 				}
 			}
 
-			fmt.Printf("\n  View workspace:\n    aps workspaces show %s\n", name)
+			fmt.Printf("\n  View workspace:\n    aps workspace show %s\n", name)
 
 			return nil
 		},
