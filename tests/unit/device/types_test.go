@@ -18,7 +18,7 @@ func TestDeviceTypeValidation(t *testing.T) {
 		{"messenger is valid and implemented", device.DeviceTypeMessenger, true, true},
 		{"protocol is valid and implemented", device.DeviceTypeProtocol, true, true},
 		{"desktop is valid but not implemented", device.DeviceTypeDesktop, true, false},
-		{"mobile is valid but not implemented", device.DeviceTypeMobile, true, false},
+		{"mobile is valid and implemented", device.DeviceTypeMobile, true, true},
 		{"sense is valid but not implemented", device.DeviceTypeSense, true, false},
 		{"actuator is valid but not implemented", device.DeviceTypeActuator, true, false},
 		{"invalid type is not valid", device.DeviceType("invalid"), false, false},
@@ -36,6 +36,7 @@ func TestImplementedDeviceTypes(t *testing.T) {
 	impl := device.ImplementedDeviceTypes()
 	assert.Contains(t, impl, device.DeviceTypeMessenger)
 	assert.Contains(t, impl, device.DeviceTypeProtocol)
+	assert.Contains(t, impl, device.DeviceTypeMobile)
 	assert.NotContains(t, impl, device.DeviceTypeDesktop)
 	assert.NotContains(t, impl, device.DeviceTypeSense)
 }

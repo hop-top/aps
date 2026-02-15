@@ -59,7 +59,7 @@ var DeviceTypes = map[DeviceType]DeviceTypeMeta{
 	DeviceTypeMessenger: {Type: DeviceTypeMessenger, Description: "Telegram, Slack, etc.", Implemented: true},
 	DeviceTypeProtocol:  {Type: DeviceTypeProtocol, Description: "A2A, ACP, WebSocket", Implemented: true},
 	DeviceTypeDesktop:   {Type: DeviceTypeDesktop, Description: "Desktop applications", Implemented: false},
-	DeviceTypeMobile:    {Type: DeviceTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: false},
+	DeviceTypeMobile:    {Type: DeviceTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: true},
 	DeviceTypeSense:     {Type: DeviceTypeSense, Description: "Camera, microphone", Implemented: false},
 	DeviceTypeActuator:  {Type: DeviceTypeActuator, Description: "Robotics, hardware", Implemented: false},
 }

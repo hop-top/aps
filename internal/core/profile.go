@@ -35,6 +35,7 @@ type Profile struct {
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
 	A2A          *A2AConfig         `yaml:"a2a,omitempty"`
 	ACP          *ACPConfig         `yaml:"acp,omitempty"`
+	Mobile       *MobileDeviceConfig `yaml:"mobile,omitempty"`
 	Workspace    *WorkspaceLink     `yaml:"workspace,omitempty"`
 }
 
@@ -59,6 +60,17 @@ type ACPConfig struct {
 	Transport  string `yaml:"transport,omitempty"` // "stdio", "http", "ws"
 	ListenAddr string `yaml:"listen_addr,omitempty"`
 	Port       int    `yaml:"port,omitempty"`
+}
+
+// MobileDeviceConfig holds mobile device linking configuration for a profile
+type MobileDeviceConfig struct {
+	Enabled             bool     `yaml:"enabled"`
+	Port                int      `yaml:"port,omitempty"`
+	MaxDevices          int      `yaml:"max_devices,omitempty"`
+	DefaultExpiry       string   `yaml:"default_expiry,omitempty"`
+	QRExpiry            string   `yaml:"qr_expiry,omitempty"`
+	ApprovalRequired    bool     `yaml:"approval_required,omitempty"`
+	AllowedCapabilities []string `yaml:"allowed_capabilities,omitempty"`
 }
 
 type Persona struct {
