@@ -1,6 +1,10 @@
 package styles
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Palette — consistent across TUI + CLI
 var (
@@ -139,5 +143,97 @@ func ScopeBadge(scope string) string {
 		return Dim.Render("global")
 	default:
 		return Accent.Render(scope)
+	}
+}
+
+// PresenceBadge renders a colored badge for device presence state.
+func PresenceBadge(state string) string {
+	switch state {
+	case "online":
+		return lipgloss.NewStyle().Foreground(ColorSuccess).Render("* online")
+	case "away":
+		return lipgloss.NewStyle().Foreground(ColorWarn).Render("~ away")
+	case "offline":
+		return lipgloss.NewStyle().Foreground(ColorDim).Render("o offline")
+	case "linking":
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render(". linking")
+	default:
+		return Dim.Render("? " + state)
+	}
+}
+
+// PresenceDot renders just the dot for compact presence display.
+func PresenceDot(state string) string {
+	switch state {
+	case "online":
+		return lipgloss.NewStyle().Foreground(ColorSuccess).Render("*")
+	case "away":
+		return lipgloss.NewStyle().Foreground(ColorWarn).Render("~")
+	case "offline":
+		return lipgloss.NewStyle().Foreground(ColorDim).Render("o")
+	case "linking":
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render(".")
+	default:
+		return Dim.Render("?")
+	}
+}
+
+// EventTypeBadge renders a colored badge for event type category.
+func EventTypeBadge(eventType string) string {
+	switch {
+	case strings.HasPrefix(eventType, "profile."):
+		return lipgloss.NewStyle().Foreground(ColorAccent).Render(eventType)
+	case strings.HasPrefix(eventType, "action."):
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render(eventType)
+	case strings.HasPrefix(eventType, "device."):
+		return lipgloss.NewStyle().Foreground(ColorManaged).Render(eventType)
+	case strings.HasPrefix(eventType, "workspace."):
+		return Dim.Render(eventType)
+	case strings.HasPrefix(eventType, "conflict"):
+		return lipgloss.NewStyle().Foreground(ColorError).Render(eventType)
+	default:
+		return Dim.Render(eventType)
+	}
+}
+
+// ResultBadge renders a colored badge for allow/deny results.
+func ResultBadge(result string) string {
+	switch result {
+	case "allow":
+		return lipgloss.NewStyle().Foreground(ColorSuccess).Render("ALLOW")
+	case "deny":
+		return lipgloss.NewStyle().Foreground(ColorError).Render("DENY")
+	default:
+		return Dim.Render(result)
+	}
+}
+
+// ConflictStatusBadge renders a colored badge for conflict status.
+func ConflictStatusBadge(status string) string {
+	switch status {
+	case "pending":
+		return lipgloss.NewStyle().Foreground(ColorWarn).Render("pending")
+	case "manual":
+		return lipgloss.NewStyle().Foreground(ColorError).Render("manual")
+	case "auto_resolved":
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render("auto-resolved")
+	case "resolved":
+		return lipgloss.NewStyle().Foreground(ColorSuccess).Render("resolved")
+	default:
+		return Dim.Render(status)
+	}
+}
+
+// RoleBadge renders a colored badge for a device role.
+func RoleBadge(role string) string {
+	switch role {
+	case "owner":
+		return lipgloss.NewStyle().Foreground(ColorAccent).Bold(true).Render("owner")
+	case "collaborator":
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render("collaborator")
+	case "viewer":
+		return Dim.Render("viewer")
+	default:
+		return Dim.Render(role)
 	}
 }
