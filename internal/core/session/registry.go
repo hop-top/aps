@@ -45,6 +45,7 @@ type SessionInfo struct {
 	CreatedAt   time.Time         `json:"created_at"`
 	LastSeenAt  time.Time         `json:"last_seen_at"`
 	Environment map[string]string `json:"environment,omitempty"`
+	WorkspaceID string            `json:"workspace_id,omitempty"`
 }
 
 type SessionRegistry struct {

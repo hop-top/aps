@@ -944,6 +944,54 @@ func TestProfileYAMLMarshaling(t *testing.T) {
 	assert.NotNil(t, loaded.ACP)
 }
 
+func TestProfileWithWorkspaceLink(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldHome := os.Getenv("HOME")
+	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	os.Setenv("HOME", tmpDir)
+
+	os.MkdirAll(filepath.Join(tmpDir, ".agents", "profiles", "ws-test"), 0755)
+
+	profile := Profile{
+		ID:          "ws-test",
+		DisplayName: "Workspace Test",
+		Workspace: &WorkspaceLink{
+			Name:  "dev-project",
+			Scope: "global",
+		},
+	}
+
+	err := SaveProfile(&profile)
+	require.NoError(t, err)
+
+	loaded, err := LoadProfile("ws-test")
+	require.NoError(t, err)
+	require.NotNil(t, loaded.Workspace)
+	assert.Equal(t, "dev-project", loaded.Workspace.Name)
+	assert.Equal(t, "global", loaded.Workspace.Scope)
+}
+
+func TestProfileWithoutWorkspaceLink(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldHome := os.Getenv("HOME")
+	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	os.Setenv("HOME", tmpDir)
+
+	os.MkdirAll(filepath.Join(tmpDir, ".agents", "profiles", "no-ws-test"), 0755)
+
+	profile := Profile{
+		ID:          "no-ws-test",
+		DisplayName: "No Workspace",
+	}
+
+	err := SaveProfile(&profile)
+	require.NoError(t, err)
+
+	loaded, err := LoadProfile("no-ws-test")
+	require.NoError(t, err)
+	assert.Nil(t, loaded.Workspace)
+}
+
 // TestGetAgentsDir returns home/.agents
 func TestGetAgentsDir(t *testing.T) {
 	t.Parallel()

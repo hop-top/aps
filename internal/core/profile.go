@@ -35,6 +35,13 @@ type Profile struct {
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
 	A2A          *A2AConfig         `yaml:"a2a,omitempty"`
 	ACP          *ACPConfig         `yaml:"acp,omitempty"`
+	Workspace    *WorkspaceLink     `yaml:"workspace,omitempty"`
+}
+
+// WorkspaceLink associates a profile with a workspace
+type WorkspaceLink struct {
+	Name  string `yaml:"name"`
+	Scope string `yaml:"scope"` // "global" or "profile"
 }
 
 // A2AConfig holds A2A protocol configuration for a profile
