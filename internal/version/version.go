@@ -45,8 +45,11 @@ func Get() Info {
 
 // String returns a human-readable version string
 func (i Info) String() string {
-	return fmt.Sprintf("aps version %s (commit: %s, built: %s by %s, %s %s/%s)",
-		i.Version, i.Commit, i.Date, i.BuiltBy, i.GoVersion, i.OS, i.Arch)
+	commit := i.Commit
+	if len(commit) > 7 {
+		commit = commit[:7]
+	}
+	return fmt.Sprintf("aps v%s (%s)", i.Version, commit)
 }
 
 // Short returns just the version number
