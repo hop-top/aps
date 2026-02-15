@@ -1,4 +1,4 @@
-package workspaces
+package workspace
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func NewListCmd() *cobra.Command {
 				fmt.Println(styles.Dim.Render("No workspaces yet."))
 				fmt.Println()
 				fmt.Println("  Create your first workspace:")
-				fmt.Printf("    aps workspaces new my-project\n")
+				fmt.Printf("    aps workspace new my-project\n")
 				return nil
 			}
 
