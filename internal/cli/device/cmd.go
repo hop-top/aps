@@ -31,5 +31,10 @@ func NewDeviceCmd() *cobra.Command {
 	cmd.AddCommand(newPresenceCmd())
 	cmd.AddCommand(newSetPermissionsCmd())
 
+	// Messenger device integration (Plan 8)
+	cmd.AddCommand(newChannelsCmd())
+	cmd.AddCommand(newLinksCmd())
+	cmd.AddCommand(newTestMessengerCmd())
+
 	return cmd
 }
