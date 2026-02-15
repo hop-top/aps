@@ -24,5 +24,9 @@ Profiles can be linked to workspaces for context awareness.`,
 	cmd.AddCommand(NewArchiveCmd())
 	cmd.AddCommand(NewDeleteCmd())
 
+	// Multi-device workspace commands (Plan 7)
+	cmd.AddCommand(NewActivityCmd())
+	cmd.AddCommand(NewSyncCmd())
+
 	return cmd
 }

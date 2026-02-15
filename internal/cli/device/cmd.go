@@ -25,5 +25,11 @@ func NewDeviceCmd() *cobra.Command {
 	cmd.AddCommand(newRejectCmd())
 	cmd.AddCommand(newPendingCmd())
 
+	// Workspace device management (Plan 7)
+	cmd.AddCommand(newAttachCmd())
+	cmd.AddCommand(newDetachCmd())
+	cmd.AddCommand(newPresenceCmd())
+	cmd.AddCommand(newSetPermissionsCmd())
+
 	return cmd
 }
