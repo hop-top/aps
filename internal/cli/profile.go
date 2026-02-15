@@ -95,6 +95,13 @@ var profileShowCmd = &cobra.Command{
 		}
 		fmt.Println(string(data))
 
+		// Workspace link
+		if profile.Workspace != nil {
+			fmt.Printf("\nWorkspace: %s (%s)\n",
+				styles.Bold.Render(profile.Workspace.Name),
+				profile.Workspace.Scope)
+		}
+
 		// Rich capabilities section
 		if len(profile.Capabilities) > 0 {
 			fmt.Println("capabilities:")
