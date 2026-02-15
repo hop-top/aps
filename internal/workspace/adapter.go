@@ -103,6 +103,11 @@ func (a *Adapter) Archive(ctx context.Context, ref string) error {
 	return translateError(a.manager.Archive(ctx, ref))
 }
 
+// Unarchive restores an archived workspace to active status.
+func (a *Adapter) Unarchive(ctx context.Context, ref string) error {
+	return translateError(a.manager.Unarchive(ctx, ref))
+}
+
 // Delete permanently deletes a workspace.
 func (a *Adapter) Delete(ctx context.Context, ref string) error {
 	return translateError(a.manager.Delete(ctx, ref))
