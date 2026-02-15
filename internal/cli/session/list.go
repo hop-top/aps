@@ -17,6 +17,7 @@ func NewListCmd() *cobra.Command {
 			profileFilter, _ := cmd.Flags().GetString("profile")
 			statusFilter, _ := cmd.Flags().GetString("status")
 			tierFilter, _ := cmd.Flags().GetString("tier")
+			workspaceFilter, _ := cmd.Flags().GetString("workspace")
 
 			registry := session.GetRegistry()
 			sessions := registry.List()
@@ -26,7 +27,7 @@ func NewListCmd() *cobra.Command {
 				return nil
 			}
 
-			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter)
+			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter, workspaceFilter)
 
 			if len(sessions) == 0 {
 				fmt.Println("No sessions match the specified filters")
@@ -34,11 +35,16 @@ func NewListCmd() *cobra.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tPROFILE\tPID\tSTATUS\tTIER\tCREATED\tLAST SEEN")
+			fmt.Fprintln(w, "ID\tPROFILE\tWORKSPACE\tPID\tSTATUS\tTIER\tCREATED\tLAST SEEN")
 			for _, s := range sessions {
-				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
+				wsID := s.WorkspaceID
+				if wsID == "" {
+					wsID = "--"
+				}
+				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
 					s.ID,
 					s.ProfileID,
+					wsID,
 					s.PID,
 					s.Status,
 					s.Tier,
@@ -54,11 +60,12 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().String("profile", "", "Filter sessions by profile ID")
 	cmd.Flags().String("status", "", "Filter sessions by status (active, inactive, errored)")
 	cmd.Flags().String("tier", "", "Filter sessions by tier (basic, standard, premium)")
+	cmd.Flags().StringP("workspace", "w", "", "Filter sessions by workspace ID")
 
 	return cmd
 }
 
-func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter, tierFilter string) []*session.SessionInfo {
+func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter, tierFilter, workspaceFilter string) []*session.SessionInfo {
 	var filtered []*session.SessionInfo
 
 	for _, s := range sessions {
@@ -69,6 +76,9 @@ func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter
 			continue
 		}
 		if tierFilter != "" && string(s.Tier) != tierFilter {
+			continue
+		}
+		if workspaceFilter != "" && s.WorkspaceID != workspaceFilter {
 			continue
 		}
 		filtered = append(filtered, s)
