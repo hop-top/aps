@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -27,7 +28,7 @@ import (
 // TestHTTPTransport_MessageSendingWithValidPayload tests sending a valid message
 func TestHTTPTransport_MessageSendingWithValidPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req map[string]interface{}
+		var req map[string]any
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
 		assert.Equal(t, "SendMessage", req["method"])
@@ -84,7 +85,7 @@ func TestIPCTransport_ConcurrentMessageSending(t *testing.T) {
 	var wg sync.WaitGroup
 	var successCount int32
 
-	for i := 0; i < numMessages; i++ {
+	for i := range numMessages {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
@@ -179,7 +180,7 @@ func TestHTTPTransport_ConnectionReuse(t *testing.T) {
 	defer transport.Close()
 
 	ctx := context.Background()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		msg := createTestMessage(fmt.Sprintf("msg-%d", i), "test")
 		err := transport.Send(ctx, msg)
 		assert.NoError(t, err)
@@ -204,10 +205,11 @@ func TestHTTPTransport_LargeMessageHandling(t *testing.T) {
 	defer transport.Close()
 
 	ctx := context.Background()
-	largeContent := ""
-	for i := 0; i < 100; i++ {
-		largeContent += "This is a large message content that is repeated many times to create a substantial payload. "
+	var lb strings.Builder
+	for range 100 {
+		lb.WriteString("This is a large message content that is repeated many times to create a substantial payload. ")
 	}
+	largeContent := lb.String()
 
 	msg := createTestMessage("large-msg", largeContent)
 	err = transport.Send(ctx, msg)
@@ -232,7 +234,7 @@ func TestIPCTransport_ParallelReadWrite(t *testing.T) {
 	var sendWg sync.WaitGroup
 	sendWg.Add(10)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		go func(idx int) {
 			defer sendWg.Done()
 			msg := createTestMessage(fmt.Sprintf("parallel-%d", idx), "parallel content")
@@ -278,7 +280,7 @@ func TestRetryMechanism_FailsAndRetries(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("retry-test", "content")
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		err := transport.Send(ctx, msg)
 		if err == nil {
 			retryCount = attempt
@@ -311,7 +313,7 @@ func TestRetryLogic_ExponentialBackoff(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("backoff-test", "content")
 
-	for attempt := 0; attempt < 5; attempt++ {
+	for attempt := range 5 {
 		err := transport.Send(ctx, msg)
 		if err == nil {
 			break
@@ -343,7 +345,7 @@ func TestRetryPolicy_MaxRetriesExceeded(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("max-retry-test", "content")
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for range maxRetries {
 		attemptCount++
 		err := transport.Send(ctx, msg)
 		if err != nil {
@@ -377,7 +379,7 @@ func TestRetryMechanism_SuccessfulRecoveryAfterFailure(t *testing.T) {
 	msg := createTestMessage("recovery-test", "content")
 
 	var finalErr error
-	for attempt := 0; attempt < 5; attempt++ {
+	for range 5 {
 		finalErr = transport.Send(ctx, msg)
 		if finalErr == nil {
 			break
@@ -420,7 +422,7 @@ func TestRetryStrategy_CircuitBreakerPattern(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("circuit-breaker", "content")
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if circuitOpen {
 			break
 		}
@@ -448,7 +450,7 @@ func TestRetryLogic_JitterBackoff(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("jitter-test", "content")
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		before := time.Now()
 		err := transport.Send(ctx, msg)
 		after := time.Now()
@@ -467,7 +469,7 @@ func TestRetryLogic_IdempotentMessageHandling(t *testing.T) {
 	var mu sync.Mutex
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req map[string]interface{}
+		var req map[string]any
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -490,7 +492,7 @@ func TestRetryLogic_IdempotentMessageHandling(t *testing.T) {
 	ctx := context.Background()
 	msg := createTestMessage("idempotent-001", "test")
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		err := transport.Send(ctx, msg)
 		assert.NoError(t, err)
 	}
@@ -528,18 +530,18 @@ func TestErrorScenario_NetworkDisconnection(t *testing.T) {
 // TestErrorScenario_RequestTimeout tests request timeout handling
 func TestErrorScenario_RequestTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	config := DefaultHTTPConfig(server.URL)
-	config.Timeout = 1 * time.Second
+	config.Timeout = 100 * time.Millisecond
 	transport, err := NewHTTPTransport(config, nil)
 	require.NoError(t, err)
 	defer transport.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	msg := createTestMessage("timeout-test", "content")
@@ -594,7 +596,7 @@ func TestErrorScenario_HTTPStatusErrors(t *testing.T) {
 // TestErrorScenario_ContextCancellationDuringTransfer tests context cancellation
 func TestErrorScenario_ContextCancellationDuringTransfer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -635,7 +637,7 @@ func TestErrorScenario_ResourceExhaustion(t *testing.T) {
 	ctx := context.Background()
 	numMessages := 500
 
-	for i := 0; i < numMessages; i++ {
+	for i := range numMessages {
 		msg := createTestMessage(fmt.Sprintf("msg-%d", i), "content")
 		err := transport.Send(ctx, msg)
 		if err != nil {
@@ -748,7 +750,7 @@ func TestErrorScenario_ConcurrentAccessErrors(t *testing.T) {
 	successCount := 0
 	var mu sync.Mutex
 
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -793,7 +795,7 @@ func TestTransportHealth_HealthCheckRetry(t *testing.T) {
 	defer transport.Close()
 
 	var healthy bool
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		healthy = transport.IsHealthy()
 		if healthy {
 			break
@@ -825,7 +827,7 @@ func TestTransportResilience_GracefulDegradation(t *testing.T) {
 	ctx := context.Background()
 	successCount := 0
 
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		msg := createTestMessage(fmt.Sprintf("degrade-%d", i), "content")
 		err := transport.Send(ctx, msg)
 		if err == nil {
@@ -856,7 +858,7 @@ func TestTransportResilience_MessageQueueing(t *testing.T) {
 
 	startTime := time.Now()
 
-	for i := 0; i < numMessages; i++ {
+	for i := range numMessages {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -892,7 +894,7 @@ func TestTransportResilience_ConnectionPooling(t *testing.T) {
 	ctx := context.Background()
 	maxConcurrent := int32(0)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		msg := createTestMessage(fmt.Sprintf("pool-%d", i), "test")
 		err := transport.Send(ctx, msg)
 		assert.NoError(t, err)
@@ -909,10 +911,10 @@ func TestTransportResilience_ConnectionPooling(t *testing.T) {
 // TestTransportResilience_ContextTimeoutVariations tests various timeout values
 func TestTransportResilience_ContextTimeoutVariations(t *testing.T) {
 	timeouts := []time.Duration{
+		10 * time.Millisecond,
+		50 * time.Millisecond,
 		100 * time.Millisecond,
-		500 * time.Millisecond,
-		1 * time.Second,
-		5 * time.Second,
+		200 * time.Millisecond,
 	}
 
 	config := DefaultHTTPConfig("http://127.0.0.1:9999")
@@ -968,10 +970,11 @@ func TestTransportResilience_LargePayloadHandling(t *testing.T) {
 			require.NoError(t, err)
 			defer transport.Close()
 
-			largeContent := ""
-			for i := 0; i < size/100; i++ {
-				largeContent += "Large payload test content repeated many times to reach desired size. "
+			var b strings.Builder
+			for range size / 100 {
+				b.WriteString("Large payload test content repeated many times to reach desired size. ")
 			}
+			largeContent := b.String()
 
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -1013,11 +1016,11 @@ func TestTransportResilience_StressTest(t *testing.T) {
 
 	startTime := time.Now()
 
-	for w := 0; w < numWorkers; w++ {
+	for w := range numWorkers {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			for i := 0; i < messagesPerWorker; i++ {
+			for i := range messagesPerWorker {
 				msg := createTestMessage(
 					fmt.Sprintf("stress-w%d-m%d", workerID, i),
 					"stress test content",

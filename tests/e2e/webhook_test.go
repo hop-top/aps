@@ -43,7 +43,7 @@ func TestWebhookServer(t *testing.T) {
 	// Or use --addr 127.0.0.1:0 and parse output.
 
 	// Let's use 127.0.0.1:0 and parse output.
-	cmd := prepareAPS(t, home, nil, "webhook", "serve", "--addr", "127.0.0.1:0", "--event-map", "test.event="+profileID+":hook", "--secret", "supersecret")
+	cmd := prepareAPS(t, home, nil, "webhook", "server", "--addr", "127.0.0.1:0", "--event-map", "test.event="+profileID+":hook", "--secret", "supersecret")
 
 	// We need to capture stdout/stderr to find the port.
 	// But cmd.Start() doesn't block. We need to read the output stream.
