@@ -1,0 +1,11 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    uses: charmbracelet/meta/.github/workflows/build.yml@main

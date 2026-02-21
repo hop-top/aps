@@ -1,3 +1,24 @@
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="#" width="340">
+    <source media="(prefers-color-scheme: light)" srcset="#" width="340">
+    <img src="#" width="340" alt="APS Logo">
+  </picture>
+  <br>
+  <a href="https://github.com/hop-top/aps/releases">
+    <img src="https://img.shields.io/github/release/hop-top/aps.svg" alt="Latest Release">
+  </a>
+  <a href="https://pkg.go.dev/hop.top/aps">
+    <img src="https://godoc.org/hop.top/aps?status.svg" alt="GoDoc">
+  </a>
+  <a href="https://github.com/hop-top/aps/actions">
+    <img src="https://github.com/hop-top/aps/workflows/CI/badge.svg" alt="Build Status">
+  </a>
+  <a href="https://codecov.io/gh/hop-top/aps">
+    <img src="https://codecov.io/gh/hop-top/aps/branch/main/graph/badge.svg" alt="Coverage">
+  </a>
+</p>
+
 # APS (Agent Profile System)
 
 APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.
@@ -8,8 +29,8 @@ APS is a local-first Agent Profile System that enables running commands and agen
 
 ```bash
 # Build from source
-git clone https://github.com/IdeaCraftersLabs/oss-aps-cli.git
-cd oss-aps-cli
+git clone https://github.com/hop-top/aps.git
+cd aps
 make build
 ```
 
@@ -441,10 +462,10 @@ For developers working on the codebase, see `AGENTS.md` for implementation guida
 
 ## License
 
-MIT
+[MIT](https://github.com/hop-top/aps/raw/main/LICENSE)
 
 ## Support
 
 For issues, questions, or contributions, please visit:
-- GitHub: https://github.com/IdeaCraftersLabs/oss-aps-cli
-- Issues: https://github.com/IdeaCraftersLabs/oss-aps-cli/issues
+- GitHub: https://github.com/hop-top/aps
+- Issues: https://github.com/hop-top/aps/issues

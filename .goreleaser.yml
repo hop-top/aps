@@ -1,0 +1,53 @@
+version: 2
+
+includes:
+  - from_url:
+      url: https://raw.githubusercontent.com/charmbracelet/meta/main/goreleaser-lib.yaml
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/aps
+    binary: aps
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: New!
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Fixed
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Deps
+      regexp: '^.*?(deps|chore)(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Docs
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Other
+      order: 999
+
+release:
+  footer: |
+    **Full Changelog**: https://github.com/hop-top/aps/compare/{{ .PreviousTag }}...{{ .Tag }}
