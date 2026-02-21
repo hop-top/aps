@@ -1,0 +1,11 @@
+name: Lint
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    uses: charmbracelet/meta/.github/workflows/lint.yml@main

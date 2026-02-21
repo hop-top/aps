@@ -1,4 +1,4 @@
-module oss-aps-cli
+module hop.top/aps
 
 go 1.25.5
 
