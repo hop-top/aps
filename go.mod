@@ -3,7 +3,7 @@ module hop.top/aps
 go 1.25.5
 
 require (
-	github.com/a2aproject/a2a-go v0.3.4
+	github.com/a2aproject/a2a-go v0.3.6
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v0.4.2

@@ -1,5 +1,7 @@
 github.com/a2aproject/a2a-go v0.3.4 h1:rSMR/IryydWkIjtxDLZCVgSc3RrVF4eHrycKlBC/WE0=
 github.com/a2aproject/a2a-go v0.3.4/go.mod h1:8C0O6lsfR7zWFEqVZz/+zWCoxe8gSWpknEpqm/Vgj3E=
+github.com/a2aproject/a2a-go v0.3.6 h1:VbRoM2MNsfc7o4GkjGt3KZCjbqILAJq846K1z8rpHTc=
+github.com/a2aproject/a2a-go v0.3.6/go.mod h1:I7Cm+a1oL+UT6zMoP+roaRE5vdfUa1iQGVN8aSOuZ0I=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/charmbracelet/bubbletea v1.3.10 h1:otUDHWMMzQSB0Pkc87rm691KZ3SWa4KUlvF9nRvCICw=
