@@ -12,8 +12,10 @@ import (
 	eventqueue "github.com/a2aproject/a2a-go/a2asrv/eventqueue"
 	"github.com/a2aproject/a2a-go/log"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/agntcy/observability"
+	"hop.top/aps/internal/agntcy/trust"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // Verify A2A Server implements the common protocol interface
@@ -181,10 +183,30 @@ func (s *Server) GetStorage() *Storage {
 
 func (s *Server) Before(ctx context.Context, callCtx *a2asrv.CallContext, req *a2asrv.Request) (context.Context, error) {
 	log.Info(ctx, "A2A request received", "method", callCtx.Method(), "profile_id", s.profileID)
+
+	// Trust: verify inbound request if capability is enabled
+	if core.ProfileHasCapability(s.profile, "agntcy-trust") && s.profile.Trust != nil {
+		verifier := trust.NewVerifier(s.profile.Trust)
+		if err := verifier.Verify(ctx, "", "", nil); err != nil {
+			return ctx, fmt.Errorf("trust verification failed: %w", err)
+		}
+	}
+
+	// Observability: start span if capability is enabled
+	if core.ProfileHasCapability(s.profile, "agntcy-observability") {
+		ctx, _ = observability.A2AInterceptorHook(ctx, callCtx.Method())
+	}
+
 	return ctx, nil
 }
 
 func (s *Server) After(ctx context.Context, callCtx *a2asrv.CallContext, resp *a2asrv.Response) error {
+	// End observability span if recording
+	if core.ProfileHasCapability(s.profile, "agntcy-observability") {
+		if span := observability.SpanFromContext(ctx); span != nil && span.IsRecording() {
+			span.End()
+		}
+	}
 	return nil
 }
 

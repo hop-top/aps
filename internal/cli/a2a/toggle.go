@@ -126,9 +126,10 @@ func enableA2A(profile *core.Profile, protocol, host, port, publicURL string) er
 		"jsonrpc": true,
 		"grpc":    true,
 		"http":    true,
+		"slim":    true,
 	}
 	if !validBindings[protocol] {
-		return fmt.Errorf("invalid protocol binding: %s (use: jsonrpc, grpc, http)", protocol)
+		return fmt.Errorf("invalid protocol binding: %s (use: jsonrpc, grpc, http, slim)", protocol)
 	}
 
 	// Create A2A configuration

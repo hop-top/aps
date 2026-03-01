@@ -10,6 +10,10 @@ var BuiltinCapabilities = []BuiltinCapability{
 	{Name: "a2a", Description: "Agent-to-Agent protocol"},
 	{Name: "agent-protocol", Description: "Agent Protocol (IDE/stdin client)"},
 	{Name: "webhooks", Description: "Webhook event server"},
+	{Name: "agntcy-observability", Description: "OpenTelemetry observability"},
+	{Name: "agntcy-directory", Description: "AGNTCY Directory registration and discovery"},
+	{Name: "agntcy-identity", Description: "DID-based agent identity"},
+	{Name: "agntcy-trust", Description: "Inbound trust verification"},
 }
 
 // IsBuiltin returns true if the capability name is a builtin
