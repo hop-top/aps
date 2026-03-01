@@ -34,6 +34,7 @@ they can do. Modes:
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newSetCmd())
 	cmd.AddCommand(newShowCmd())
+	cmd.AddCommand(newTrustCmd())
 
 	return cmd
 }

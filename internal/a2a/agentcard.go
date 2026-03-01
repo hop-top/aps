@@ -156,6 +156,8 @@ func mapProtocolBindingToTransport(binding string) a2a.TransportProtocol {
 		return a2a.TransportProtocolGRPC
 	case "http", "http+json":
 		return a2a.TransportProtocolHTTPJSON
+	case "slim":
+		return a2a.TransportProtocol("slim")
 	default:
 		return a2a.TransportProtocolJSONRPC
 	}

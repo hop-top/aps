@@ -33,10 +33,14 @@ type Profile struct {
 	SSH          SSHConfig          `yaml:"ssh,omitempty"`
 	Webhooks     WebhookConfig      `yaml:"webhooks,omitempty"`
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
-	A2A          *A2AConfig         `yaml:"a2a,omitempty"`
-	ACP          *ACPConfig         `yaml:"acp,omitempty"`
-	Mobile       *MobileDeviceConfig `yaml:"mobile,omitempty"`
-	Workspace    *WorkspaceLink     `yaml:"workspace,omitempty"`
+	A2A           *A2AConfig          `yaml:"a2a,omitempty"`
+	ACP           *ACPConfig          `yaml:"acp,omitempty"`
+	Mobile        *MobileDeviceConfig `yaml:"mobile,omitempty"`
+	Workspace     *WorkspaceLink      `yaml:"workspace,omitempty"`
+	Observability *ObservabilityConfig `yaml:"observability,omitempty"`
+	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
+	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
+	Trust         *TrustConfig         `yaml:"trust,omitempty"`
 }
 
 // WorkspaceLink associates a profile with a workspace
@@ -105,6 +109,33 @@ type SSHConfig struct {
 
 type WebhookConfig struct {
 	AllowedEvents []string `yaml:"allowed_events,omitempty"`
+}
+
+// ObservabilityConfig holds OpenTelemetry observability configuration
+type ObservabilityConfig struct {
+	Exporter     string  `yaml:"exporter,omitempty"`      // "otlp", "stdout", "none"
+	Endpoint     string  `yaml:"endpoint,omitempty"`      // e.g. "http://localhost:4317"
+	SamplingRate float64 `yaml:"sampling_rate,omitempty"` // 0.0–1.0
+}
+
+// DirectoryConfig holds AGNTCY Directory registration configuration
+type DirectoryConfig struct {
+	Endpoint    string `yaml:"endpoint,omitempty"`     // Directory service URL
+	AutoRegister bool  `yaml:"auto_register,omitempty"`
+	AutoRefresh  bool  `yaml:"auto_refresh,omitempty"`
+}
+
+// IdentityConfig holds DID-based agent identity configuration
+type IdentityConfig struct {
+	DID     string   `yaml:"did,omitempty"`
+	KeyPath string   `yaml:"key_path,omitempty"`
+	Badges  []string `yaml:"badges,omitempty"`
+}
+
+// TrustConfig holds inbound trust verification configuration
+type TrustConfig struct {
+	RequireIdentity bool     `yaml:"require_identity,omitempty"`
+	AllowedIssuers  []string `yaml:"allowed_issuers,omitempty"`
 }
 
 // A2AClient represents an A2A client for profile-to-profile communication

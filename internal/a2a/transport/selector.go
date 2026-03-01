@@ -20,6 +20,7 @@ var TransportPriority = []TransportType{
 	TransportIPC,
 	TransportHTTP,
 	TransportGRPC,
+	TransportSLIM,
 }
 
 // SelectTransport chooses the best transport based on isolation tier

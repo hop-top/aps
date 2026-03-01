@@ -10,8 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"oss-aps-cli/internal/core"
-	a2apkg "oss-aps-cli/internal/a2a"
+	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/agntcy/observability"
+	"hop.top/aps/internal/core"
 )
 
 func NewServerCmd() *cobra.Command {
@@ -51,6 +52,17 @@ Example:
 					return fmt.Errorf("failed to reload profile: %w", err)
 				}
 				fmt.Printf("A2A enabled with defaults: jsonrpc/127.0.0.1:8081\n\n")
+			}
+
+			// Initialize observability if enabled
+			if core.ProfileHasCapability(profile, "agntcy-observability") && profile.Observability != nil {
+				if err := observability.InitTracer(profile.Observability, profileID); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init tracer: %v\n", err)
+				}
+				if err := observability.InitMeter(profile.Observability, profileID); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init meter: %v\n", err)
+				}
+				defer observability.Shutdown(ctx)
 			}
 
 			agentsDir, err := core.GetAgentsDir()
