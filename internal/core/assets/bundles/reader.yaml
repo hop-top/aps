@@ -1,0 +1,21 @@
+name: reader
+description: "Read-only research agent — browse files and git history"
+version: "1.0"
+
+capabilities:
+  - bash
+  - git
+
+scope:
+  operations:
+    - git:read
+    - shell:read
+  file_patterns:
+    - "**"
+
+requires:
+  - binary: git
+    missing: warn
+    message: "git not found — git history browsing unavailable"
+  - binary: bash
+    missing: error
