@@ -1,0 +1,27 @@
+name: comms
+description: "Communication-focused agent — messenger, webhooks, A2A"
+version: "1.0"
+
+capabilities:
+  - messenger
+  - webhooks
+  - a2a
+
+scope:
+  operations:
+    - messenger:send
+    - messenger:receive
+    - webhook:send
+    - webhook:receive
+    - a2a:call
+    - a2a:serve
+  networks:
+    - "*"
+
+services:
+  - name: a2a
+    adapter: a2a
+    start: always
+  - name: webhooks
+    adapter: webhooks
+    start: on-demand
