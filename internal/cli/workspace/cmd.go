@@ -16,15 +16,6 @@ Workspaces provide logical groupings with configuration.
 Profiles can be linked to workspaces for context awareness.`,
 	}
 
-	cmd.AddCommand(NewNewCmd())
-	cmd.AddCommand(NewListCmd())
-	cmd.AddCommand(NewShowCmd())
-	cmd.AddCommand(NewLinkCmd())
-	cmd.AddCommand(NewUnlinkCmd())
-	cmd.AddCommand(NewArchiveCmd())
-	cmd.AddCommand(NewUnarchiveCmd())
-	cmd.AddCommand(NewDeleteCmd())
-
 	// Multi-adapter workspace commands (Plan 7)
 	cmd.AddCommand(NewActivityCmd())
 	cmd.AddCommand(NewSyncCmd())
