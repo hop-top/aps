@@ -1,0 +1,22 @@
+name: agntcy
+description: "Full AGNTCY stack — identity, trust, directory, observability"
+version: "1.0"
+
+capabilities:
+  - agntcy-identity
+  - agntcy-trust
+  - agntcy-directory
+  - agntcy-observability
+
+scope:
+  operations:
+    - agntcy:identity
+    - agntcy:trust
+    - agntcy:directory
+    - agntcy:observe
+  networks:
+    - "agntcy.network"
+    - "*.agntcy.network"
+
+env:
+  AGNTCY_PROFILE_ID: "${PROFILE_ID}"
