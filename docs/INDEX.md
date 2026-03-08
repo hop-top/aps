@@ -24,6 +24,7 @@ Quick navigation to all APS documentation.
 - [**Squad Topologies Spec**](dev/squad-topologies-spec.md) — Theory: four squad types, three interaction modes, context load
 - [**Squads Implementation**](dev/squads.md) — What's built: types, manager, contracts, router, evolution, CLI
 - [**Scope System**](dev/scope.md) — Unified scope type, intersection logic, multi-layer resolution
+- [**Capability Bundles**](dev/bundles.md) — Named presets grouping capabilities, scope rules, env vars, and services
 - [**A2A Implementation**](a2a-implementation.md) — Agent-to-agent protocol
 - [**ACP Implementation**](acp-implementation.md) — Agent control protocol
 - [**Protocol Interface Unification**](protocol-interface-unification.md) — Protocol abstraction layer
@@ -75,6 +76,7 @@ docs/
 │   ├── squads.md                  ← implementation
 │   ├── adapters.md                ← implementation
 │   ├── scope.md                   ← implementation
+│   ├── bundles.md                 ← capability bundles
 │   └── configuration.md           ← XDG, config, migration
 ├── plans/
 │   └── 2026-03-01-agntcy-integration-gap-analysis.md
