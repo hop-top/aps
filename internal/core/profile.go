@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -473,6 +474,31 @@ func ProfileHasCapability(profile *Profile, capName string) bool {
 		}
 	}
 	return false
+}
+
+// ExtractBundleNames splits a capabilities list into bundle names and individual capability names.
+// Entries prefixed with "bundle:" are treated as bundle references; all others are individual capabilities.
+//
+// Example:
+//
+//	capabilities:
+//	  - bundle:developer
+//	  - github
+//
+// Returns bundles=["developer"], individual=["github"].
+func ExtractBundleNames(capabilities []string) (bundles []string, individual []string) {
+	const prefix = "bundle:"
+	for _, cap := range capabilities {
+		if strings.HasPrefix(cap, prefix) {
+			name := strings.TrimPrefix(cap, prefix)
+			if name != "" {
+				bundles = append(bundles, name)
+			}
+		} else {
+			individual = append(individual, cap)
+		}
+	}
+	return bundles, individual
 }
 
 // ProfilesUsingCapability returns profile IDs that have the given capability
