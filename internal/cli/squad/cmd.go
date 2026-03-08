@@ -22,6 +22,7 @@ func NewSquadCmd() *cobra.Command {
 	cmd.AddCommand(newDeleteCmd())
 	cmd.AddCommand(newAddMemberCmd())
 	cmd.AddCommand(newRemoveMemberCmd())
+	cmd.AddCommand(newCheckCmd())
 
 	return cmd
 }
