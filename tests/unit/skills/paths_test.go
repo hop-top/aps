@@ -22,7 +22,7 @@ func TestNewSkillPaths(t *testing.T) {
 
 	// Verify profile path format
 	assert.Contains(t, paths.ProfilePath, "test-profile")
-	assert.Contains(t, paths.ProfilePath, ".agents/profiles")
+	assert.Contains(t, paths.ProfilePath, "profiles")
 }
 
 func TestSkillPaths_GlobalPath_Linux(t *testing.T) {

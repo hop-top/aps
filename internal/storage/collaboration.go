@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"hop.top/aps/internal/core"
 	collab "hop.top/aps/internal/core/collaboration"
 
 	"gopkg.in/yaml.v3"
@@ -38,11 +39,11 @@ type CollaborationStorage struct {
 // directory. If root is empty, the default ~/.aps/collaboration/ is used.
 func NewCollaborationStorage(root string) (*CollaborationStorage, error) {
 	if root == "" {
-		home, err := os.UserHomeDir()
+		dataDir, err := core.GetDataDir()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get home directory: %w", err)
+			return nil, fmt.Errorf("failed to get data directory: %w", err)
 		}
-		root = filepath.Join(home, ".aps", "collaboration")
+		root = filepath.Join(dataDir, "collaboration")
 	}
 
 	if err := os.MkdirAll(root, 0755); err != nil {

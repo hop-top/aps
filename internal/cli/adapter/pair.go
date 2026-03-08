@@ -127,8 +127,11 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 	}
 
 	// Setup registry
-	home, _ := os.UserHomeDir()
-	registryDir := home + "/.aps/devices"
+	dataDir, err := core.GetDataDir()
+	if err != nil {
+		return fmt.Errorf("failed to resolve data directory: %w", err)
+	}
+	registryDir := dataDir + "/devices"
 	registry, err := mobile.NewRegistry(registryDir)
 	if err != nil {
 		return fmt.Errorf("failed to initialize registry: %w", err)

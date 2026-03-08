@@ -495,8 +495,11 @@ func (l *LinuxSandbox) distributeSSHKeys() error {
 		return fmt.Errorf("failed to set .ssh ownership: %w\nOutput: %s", err, string(output))
 	}
 
-	adminKeysDir := filepath.Join(os.Getenv("HOME"), ".aps/keys")
-	adminPubKeyPath := filepath.Join(adminKeysDir, "admin_pub")
+	dataDir, err := core.GetDataDir()
+	if err != nil {
+		return fmt.Errorf("failed to get data directory: %w", err)
+	}
+	adminPubKeyPath := filepath.Join(dataDir, "keys", "admin_pub")
 
 	adminPubKey, err := os.ReadFile(adminPubKeyPath)
 	if err != nil {

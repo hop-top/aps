@@ -16,6 +16,8 @@ func TestCapabilityLifecycle(t *testing.T) {
 	// Setup temp home dir
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_DATA_HOME", tmpHome+"/.local/share")
+	t.Setenv("APS_DATA_PATH", "")
 
 	// Create a dummy source capability
 	sourceDir := filepath.Join(tmpHome, "source-cap")
@@ -66,6 +68,8 @@ func TestCapabilityLifecycle(t *testing.T) {
 func TestSmartLinking(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_DATA_HOME", tmpHome+"/.local/share")
+	t.Setenv("APS_DATA_PATH", "")
 
 	// Stub Smart Pattern for testing?
 	// Since GetSmartPattern relies on a hardcoded list or existing registry, we might verify existing known patterns.

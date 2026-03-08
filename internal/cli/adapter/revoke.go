@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/adapter/mobile"
 
 	"github.com/spf13/cobra"
@@ -189,9 +190,9 @@ func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun
 }
 
 func getRegistry() (*mobile.Registry, error) {
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
 		return nil, err
 	}
-	return mobile.NewRegistry(home + "/.aps/devices")
+	return mobile.NewRegistry(dataDir + "/devices")
 }

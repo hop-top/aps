@@ -132,7 +132,7 @@ func TestInjectEnvironment_PerProfileCaps(t *testing.T) {
 	tmpHome := setTempHome(t)
 
 	// Create capability dir
-	capDir := filepath.Join(tmpHome, ".aps", "capabilities", "my-tool")
+	capDir := filepath.Join(tmpHome, ".local", "share", "aps", "capabilities", "my-tool")
 	err := os.MkdirAll(capDir, 0755)
 	require.NoError(t, err)
 
@@ -164,7 +164,7 @@ func TestInjectEnvironment_NonEnabledCapsNotInjected(t *testing.T) {
 	tmpHome := setTempHome(t)
 
 	// Create capability dir for a cap NOT in the profile
-	capDir := filepath.Join(tmpHome, ".aps", "capabilities", "other-tool")
+	capDir := filepath.Join(tmpHome, ".local", "share", "aps", "capabilities", "other-tool")
 	err := os.MkdirAll(capDir, 0755)
 	require.NoError(t, err)
 

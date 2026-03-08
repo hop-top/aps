@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"hop.top/aps/internal/core"
 )
 
 // GetWorkspaceDir returns the base directory for a workspace.
 func GetWorkspaceDir(workspaceID string) (string, error) {
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", fmt.Errorf("failed to get data directory: %w", err)
 	}
-	return filepath.Join(home, ".aps", "workspaces", workspaceID), nil
+	return filepath.Join(dataDir, "workspaces", workspaceID), nil
 }
 
 // GetWorkspaceDevicesDir returns the devices subdirectory for a workspace.

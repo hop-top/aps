@@ -12,7 +12,7 @@ func TestDefaultStorageConfig(t *testing.T) {
 
 	require.NotNil(t, config)
 	assert.NotEmpty(t, config.BasePath)
-	assert.Contains(t, config.BasePath, ".agents")
+	assert.Contains(t, config.BasePath, "aps")
 	assert.Contains(t, config.BasePath, "a2a")
 }
 

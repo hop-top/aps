@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/session"
 )
 
@@ -98,12 +99,12 @@ func attachToPlatformSandbox(sess *session.SessionInfo, mode string, platformTyp
 		return fmt.Errorf("sandbox user not found in session environment")
 	}
 
-	apsDir := os.Getenv("HOME")
-	if apsDir == "" {
-		return fmt.Errorf("HOME environment variable not set")
+	dataDir, err := core.GetDataDir()
+	if err != nil {
+		return fmt.Errorf("failed to get data directory: %w", err)
 	}
 
-	keyPath := filepath.Join(apsDir, ".aps/keys/admin_priv")
+	keyPath := filepath.Join(dataDir, "keys", "admin_priv")
 	if _, err := os.Stat(keyPath); err != nil {
 		return fmt.Errorf("admin private key not found at %s: %w", keyPath, err)
 	}

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"hop.top/aps/internal/core"
 )
 
 // SkillPaths manages hierarchical skill discovery paths
@@ -33,8 +35,11 @@ func NewSkillPaths(profileID string) *SkillPaths {
 
 // getProfileSkillsPath returns profile-specific skills directory
 func getProfileSkillsPath(profileID string) string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".agents", "profiles", profileID, "skills")
+	profileDir, err := core.GetProfileDir(profileID)
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(profileDir, "skills")
 }
 
 // getGlobalSkillsPath returns global APS skills directory using XDG

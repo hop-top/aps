@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"hop.top/aps/internal/core"
 )
 
 // TelemetryEvent represents a skill usage event
@@ -46,9 +48,11 @@ func NewTelemetry(config *TelemetryConfig) (*Telemetry, error) {
 
 	logFile := config.EventLog
 	if logFile == "" {
-		// Default to ~/.agents/skills/usage.jsonl
-		homeDir, _ := os.UserHomeDir()
-		logFile = filepath.Join(homeDir, ".agents", "skills", "usage.jsonl")
+		dataDir, err := core.GetDataDir()
+		if err != nil {
+			dataDir = ""
+		}
+		logFile = filepath.Join(dataDir, "skills", "usage.jsonl")
 	}
 
 	// Ensure directory exists
