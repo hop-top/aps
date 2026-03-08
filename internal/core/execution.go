@@ -2,10 +2,13 @@ package core
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"hop.top/aps/internal/core/bundle"
 )
 
 // InjectEnvironment prepares environment variables for a command
@@ -105,8 +108,88 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 		}
 	}
 
+	// 7. Resolve bundles and inject bundle env vars (T-0052)
+	resolved, err := ResolveBundlesForProfile(profile)
+	if err != nil {
+		return fmt.Errorf("bundle resolution failed: %w", err)
+	}
+	for _, rb := range resolved {
+		for k, v := range rb.Env {
+			env = append(env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
 	cmd.Env = env
 	return nil
+}
+
+// ResolveBundlesForProfile resolves all bundles declared in the profile's capabilities list.
+// It returns the resolved bundles, logs warnings, and returns an error if any bundle has resolution errors.
+func ResolveBundlesForProfile(profile *Profile) ([]*bundle.ResolvedBundle, error) {
+	bundleNames, _ := ExtractBundleNames(profile.Capabilities)
+	if len(bundleNames) == 0 {
+		return nil, nil
+	}
+
+	reg, err := bundle.NewRegistry()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load bundle registry: %w", err)
+	}
+
+	profileDir, _ := GetProfileDir(profile.ID)
+	configDir, _ := os.UserConfigDir()
+	if configDir == "" {
+		configDir = profileDir
+	}
+
+	ctx := bundle.ProfileContext{
+		ID:          profile.ID,
+		DisplayName: profile.DisplayName,
+		Email:       "", // Profile has no Email field
+		ConfigDir:   configDir,
+		DataDir:     profileDir,
+		Runtime:     "",            // auto-detected by resolver
+		Scope:       bundle.BundleScope{}, // populated below if profile has scope
+	}
+
+	// Seed ctx.Scope from the profile's own ScopeConfig (T-0053 bridge).
+	if profile.Scope != nil {
+		ctx.Scope = bundle.BundleScope{
+			Operations:   profile.Scope.Operations,
+			FilePatterns: profile.Scope.FilePatterns,
+			Networks:     profile.Scope.Networks,
+		}
+	}
+
+	var resolved []*bundle.ResolvedBundle
+	for _, name := range bundleNames {
+		b, err := reg.Get(name)
+		if err != nil {
+			return nil, fmt.Errorf("bundle %q not found: %w", name, err)
+		}
+		rb, err := bundle.Resolve(*b, reg, ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve bundle %q: %w", name, err)
+		}
+		// Surface errors collected during resolution.
+		if len(rb.Errors) > 0 {
+			var msgs []string
+			for _, e := range rb.Errors {
+				msgs = append(msgs, e.Error())
+			}
+			return nil, fmt.Errorf("bundle %q: %s", name, strings.Join(msgs, "; "))
+		}
+		// Log warnings.
+		for _, w := range rb.Warnings {
+			log.Printf("bundle %q warning: %s", name, w)
+		}
+		// Log always-services (actual startup is out of scope for now).
+		for _, svc := range rb.AlwaysServices {
+			log.Printf("bundle %q: would start always-service %q (adapter=%s)", name, svc.Name, svc.Adapter)
+		}
+		resolved = append(resolved, rb)
+	}
+	return resolved, nil
 }
 
 // RunCommand executes a command within a profile's context using configured isolation
