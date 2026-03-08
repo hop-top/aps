@@ -86,8 +86,8 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 		"a2a": true, "agent-protocol": true, "webhooks": true,
 	}
 	capRoots := []string{}
-	if usr, e := os.UserHomeDir(); e == nil {
-		capRoots = append(capRoots, filepath.Join(usr, ".aps", "capabilities"))
+	if dataDir, e := GetDataDir(); e == nil {
+		capRoots = append(capRoots, filepath.Join(dataDir, "capabilities"))
 	}
 	for _, src := range config.CapabilitySources {
 		if src != "" {

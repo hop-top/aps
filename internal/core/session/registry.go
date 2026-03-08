@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/core"
 )
 
 const (
@@ -183,13 +185,12 @@ func (r *SessionRegistry) SaveToDisk() error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return fmt.Errorf("failed to get data directory: %w", err)
 	}
 
-	apsDir := filepath.Join(home, APSHomeDir)
-	sessionsDir := filepath.Join(apsDir, SessionsDir)
+	sessionsDir := filepath.Join(dataDir, SessionsDir)
 
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create sessions directory: %w", err)
@@ -213,12 +214,12 @@ func (r *SessionRegistry) LoadFromDisk() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return fmt.Errorf("failed to get data directory: %w", err)
 	}
 
-	registryPath := filepath.Join(home, APSHomeDir, SessionsDir, RegistryFile)
+	registryPath := filepath.Join(dataDir, SessionsDir, RegistryFile)
 
 	data, err := os.ReadFile(registryPath)
 	if err != nil {

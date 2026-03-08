@@ -15,11 +15,11 @@ import (
 
 // TODO: In a real app, inject this via config
 func GetCapabilitiesDir() (string, error) {
-	usr, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr, ".aps", "capabilities"), nil
+	return filepath.Join(dataDir, "capabilities"), nil
 }
 
 func GetCapabilityPath(name string) (string, error) {

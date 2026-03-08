@@ -7,11 +7,23 @@ import (
 	"path/filepath"
 	"strings"
 
+	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/session"
 )
 
+func keysDir() (string, error) {
+	dataDir, err := core.GetDataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dataDir, "keys"), nil
+}
+
 func ConfigureContainerSSH(engine ContainerEngine, containerID, profileID string) error {
-	adminKeysDir := filepath.Join(os.Getenv("HOME"), ".aps/keys")
+	adminKeysDir, err := keysDir()
+	if err != nil {
+		return fmt.Errorf("failed to get keys directory: %w", err)
+	}
 	adminPubKeyPath := filepath.Join(adminKeysDir, "admin_pub")
 
 	adminPubKey, err := os.ReadFile(adminPubKeyPath)
@@ -50,7 +62,11 @@ func ConfigureContainerSSH(engine ContainerEngine, containerID, profileID string
 }
 
 func AttachToContainer(engine ContainerEngine, session *session.SessionInfo, mode string) error {
-	keyPath := filepath.Join(os.Getenv("HOME"), ".aps/keys/admin_key")
+	kd, err := keysDir()
+	if err != nil {
+		return fmt.Errorf("failed to get keys directory: %w", err)
+	}
+	keyPath := filepath.Join(kd, "admin_key")
 
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
 		return fmt.Errorf("admin private key not found at %s", keyPath)
@@ -125,7 +141,11 @@ func GetContainerSSHConfig(containerID, username string) (string, int, error) {
 }
 
 func VerifySSHConnection(containerID, username string) error {
-	keyPath := filepath.Join(os.Getenv("HOME"), ".aps/keys/admin_key")
+	kd, err := keysDir()
+	if err != nil {
+		return fmt.Errorf("failed to get keys directory: %w", err)
+	}
+	keyPath := filepath.Join(kd, "admin_key")
 
 	host, port, err := GetContainerSSHConfig(containerID, username)
 	if err != nil {

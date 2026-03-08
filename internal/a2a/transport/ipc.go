@@ -10,6 +10,7 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/google/uuid"
+	"hop.top/aps/internal/core"
 )
 
 // IPCConfig holds IPC transport configuration
@@ -22,12 +23,12 @@ type IPCConfig struct {
 
 // DefaultIPCConfig returns default IPC configuration
 func DefaultIPCConfig(profileID string) *IPCConfig {
-	homeDir, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
-		homeDir = os.Getenv("HOME")
+		dataDir = ""
 	}
 
-	queuePath := filepath.Join(homeDir, ".agents", "ipc", "queues", profileID, "incoming")
+	queuePath := filepath.Join(dataDir, "ipc", "queues", profileID, "incoming")
 
 	return &IPCConfig{
 		ProfileID:    profileID,

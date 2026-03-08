@@ -2,8 +2,9 @@ package a2a
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+
+	"hop.top/aps/internal/core"
 )
 
 // StorageConfig holds A2A storage configuration
@@ -16,17 +17,17 @@ type StorageConfig struct {
 
 // DefaultStorageConfig returns a default storage configuration
 func DefaultStorageConfig() *StorageConfig {
-	homeDir, err := os.UserConfigDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
-		homeDir = os.Getenv("HOME")
+		dataDir = ""
 	}
-	basePath := filepath.Join(homeDir, ".agents", "a2a")
+	basePath := filepath.Join(dataDir, "a2a")
 
 	return &StorageConfig{
 		BasePath:       basePath,
 		TasksPath:      filepath.Join(basePath, "tasks"),
 		AgentCardsPath: filepath.Join(basePath, "agent-cards"),
-		IPCPath:        filepath.Join(basePath, "..", "ipc", "queues"),
+		IPCPath:        filepath.Join(dataDir, "ipc", "queues"),
 	}
 }
 
