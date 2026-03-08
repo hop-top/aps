@@ -41,6 +41,7 @@ type Profile struct {
 	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
 	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
 	Trust         *TrustConfig         `yaml:"trust,omitempty"`
+	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 }
 
 // WorkspaceLink associates a profile with a workspace
@@ -269,6 +270,34 @@ func (p *Profile) ValidateIsolation() error {
 	}
 
 	return nil
+}
+
+// IsMemberOfSquad returns true if the profile belongs to the given squad.
+func (p *Profile) IsMemberOfSquad(squadID string) bool {
+	for _, s := range p.Squads {
+		if s == squadID {
+			return true
+		}
+	}
+	return false
+}
+
+// AddSquad adds a squad ID to the profile's membership list (deduplicated).
+func (p *Profile) AddSquad(squadID string) {
+	if !p.IsMemberOfSquad(squadID) {
+		p.Squads = append(p.Squads, squadID)
+	}
+}
+
+// RemoveSquad removes a squad ID from the profile's membership list.
+func (p *Profile) RemoveSquad(squadID string) {
+	squads := make([]string, 0, len(p.Squads))
+	for _, s := range p.Squads {
+		if s != squadID {
+			squads = append(squads, s)
+		}
+	}
+	p.Squads = squads
 }
 
 // SaveProfile saves a profile to disk
