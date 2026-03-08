@@ -77,6 +77,13 @@ resolved := scope.Resolve(profileScope, workspaceScope, squadScopes)
 
 The effective rule is what APS enforces when the profile takes an action.
 
+## Bundle Scope
+
+Bundle scope is union-merged into the profile's effective scope before the three-layer intersection
+runs. Bundles expand permissions — they never restrict them. The most permissive value across all
+declared bundles wins for each field. The resulting expanded profile scope then intersects with
+squad and workspace scopes as normal. See [bundles.md](bundles.md) for full bundle details.
+
 ## Key Files
 
 | File | Purpose |
