@@ -168,7 +168,7 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 	}
 
 	// Build endpoint
-	endpoint := fmt.Sprintf("https://%s:%d/aps/device/%s", bindAddr, port, profileID)
+	endpoint := fmt.Sprintf("https://%s:%d/aps/adapter/%s", bindAddr, port, profileID)
 
 	// Create QR payload
 	payload := mobile.NewQRPayload(profileID, endpoint, pairingCode, certFingerprint, capabilities, qrExpiryDuration)

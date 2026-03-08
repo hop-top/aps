@@ -27,7 +27,7 @@ func TestProfileWithContainerIsolation(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	profileDir := filepath.Join(home, ".agents", "profiles", "container-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "container-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestProfileWithPlatformIsolation(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	profileDir := filepath.Join(home, ".agents", "profiles", "platform-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "platform-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -84,7 +84,7 @@ func TestProfileInvalidIsolationLevel(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	profileDir := filepath.Join(home, ".agents", "profiles", "invalid-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "invalid-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -106,7 +106,7 @@ func TestProfileContainerWithoutImage(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	profileDir := filepath.Join(home, ".agents", "profiles", "no-image-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "no-image-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 

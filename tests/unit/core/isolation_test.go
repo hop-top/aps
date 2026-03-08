@@ -170,11 +170,13 @@ func TestIsolationFoundation_ProcessIsolationIntegration(t *testing.T) {
 	t.Run("End-to-end command execution with process isolation", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "e2e-process-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -200,11 +202,13 @@ isolation:
 	t.Run("End-to-end action execution with process isolation", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "e2e-action-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -249,11 +253,13 @@ accepts_stdin: false
 	t.Run("Process isolation environment injection", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "env-inject-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -295,11 +301,13 @@ func TestIsolationFoundation_ConfigIntegration(t *testing.T) {
 	t.Run("Profile with isolation config loads successfully", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "config-integration-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -328,6 +336,8 @@ isolation:
 	t.Run("Global config with isolation settings", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", tempDir)
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
@@ -356,11 +366,13 @@ func TestIsolationFoundation_ErrorHandling(t *testing.T) {
 	t.Run("Invalid isolation level in profile", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "invalid-level-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -385,11 +397,13 @@ isolation:
 	t.Run("Unsupported isolation level during execution", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "unsupported-exec-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -426,11 +440,13 @@ func TestIsolationFoundation_BackwardCompatibility(t *testing.T) {
 	t.Run("Old-style profile without isolation section", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "old-style-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -457,11 +473,13 @@ display_name: Old Style Profile
 	t.Run("InjectEnvironment still works for old code", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "inject-compat-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -502,6 +520,8 @@ func TestIsolationFoundation_AllExistingTests(t *testing.T) {
 	t.Run("Execution injection test still passes", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
@@ -512,11 +532,13 @@ func TestIsolationFoundation_AllExistingTests(t *testing.T) {
 	t.Run("Load profile still works", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "existing-test-profile"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 
@@ -540,11 +562,13 @@ display_name: Existing Test Profile
 	t.Run("RunAction with shell type still works", func(t *testing.T) {
 		tempDir := t.TempDir()
 		os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 		os.Setenv("XDG_CONFIG_HOME", "")
 		defer os.Setenv("HOME", os.Getenv("HOME"))
 
 		profileID := "shell-action-test"
-		profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 		err := os.MkdirAll(profileDir, 0755)
 		require.NoError(t, err)
 

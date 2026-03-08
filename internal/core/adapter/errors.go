@@ -83,7 +83,7 @@ func ErrAdapterTypeNotImplemented(t AdapterType) error {
 func ErrAdapterTypeInvalid(t string) error {
 	return &AdapterError{
 		Name:    t,
-		Message: fmt.Sprintf("invalid device type '%s'", t),
+		Message: fmt.Sprintf("invalid adapter type '%s'", t),
 		Code:    ErrCodeTypeInvalid,
 	}
 }

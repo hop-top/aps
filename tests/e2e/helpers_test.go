@@ -14,21 +14,28 @@ func prepareAPS(t *testing.T, homeDir string, extraEnv map[string]string, args .
 	t.Helper()
 	cmd := exec.Command(apsBinary, args...)
 
+	// Keys overridden by the test harness
+	overridden := map[string]bool{
+		"HOME":          true,
+		"USERPROFILE":   true,
+		"XDG_DATA_HOME": true,
+		"APS_DATA_PATH": true,
+	}
+
 	newEnv := []string{}
 	newEnv = append(newEnv, fmt.Sprintf("HOME=%s", homeDir))
 	newEnv = append(newEnv, fmt.Sprintf("USERPROFILE=%s", homeDir))
+	newEnv = append(newEnv, fmt.Sprintf("XDG_DATA_HOME=%s/.local/share", homeDir))
 
 	// Add extra environment variables
 	for k, v := range extraEnv {
+		overridden[k] = true
 		newEnv = append(newEnv, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	for _, e := range os.Environ() {
 		key := strings.Split(e, "=")[0]
-		if key == "HOME" || key == "USERPROFILE" {
-			continue
-		}
-		if _, ok := extraEnv[key]; ok {
+		if overridden[key] {
 			continue
 		}
 		newEnv = append(newEnv, e)

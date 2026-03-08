@@ -117,12 +117,14 @@ func TestTool_EnsureTool(t *testing.T) {
 func TestTool_ProfileScripts(t *testing.T) {
 	tempDir := t.TempDir()
 	os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", os.Getenv("HOME"))
 	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
 
 	profileID := "tools-test-profile"
-	profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -182,12 +184,14 @@ print("Hello from Python tool")
 func TestTool_ExecuteProfileTool(t *testing.T) {
 	tempDir := t.TempDir()
 	os.Setenv("HOME", tempDir)
+	os.Setenv("XDG_DATA_HOME", "")
+	os.Unsetenv("APS_DATA_PATH")
 	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", os.Getenv("HOME"))
 	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
 
 	profileID := "execute-tool-test"
-	profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)
+	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 

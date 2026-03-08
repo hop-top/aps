@@ -19,7 +19,7 @@ func TestActionDiscovery(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a script
-	actionsDir := filepath.Join(home, ".agents", "profiles", profileID, "actions")
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
 	scriptPath := filepath.Join(actionsDir, "hello.sh")
 	err = os.WriteFile(scriptPath, []byte("#!/bin/sh\necho Hello from Action"), 0755)
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestActionRun(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create script
-	actionsDir := filepath.Join(home, ".agents", "profiles", profileID, "actions")
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
 	scriptPath := filepath.Join(actionsDir, "greet.sh")
 	err = os.WriteFile(scriptPath, []byte("#!/bin/sh\necho Greetings $APS_PROFILE_ID"), 0755)
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestActionPayload(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create script that echoes stdin
-	actionsDir := filepath.Join(home, ".agents", "profiles", profileID, "actions")
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
 	scriptPath := filepath.Join(actionsDir, "echo.sh")
 	// cat command reads from stdin
 	err = os.WriteFile(scriptPath, []byte("#!/bin/sh\ncat"), 0755)
