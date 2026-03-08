@@ -204,13 +204,10 @@ type ContainerResources struct {
 	CPUQuota int `yaml:"cpu_quota,omitempty"`
 }
 
-// GetAgentsDir returns the root directory for agents (~/.agents)
+// GetAgentsDir returns the root directory for agents.
+// Delegates to GetDataDir for XDG-compliant path resolution.
 func GetAgentsDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".agents"), nil
+	return GetDataDir()
 }
 
 // GetProfileDir returns the directory for a specific profile
@@ -496,4 +493,57 @@ func ProfilesUsingCapability(capName string) ([]string, error) {
 		}
 	}
 	return result, nil
+}
+
+// MigrateProfilesFromLegacy migrates profiles from ~/.agents/profiles/ to the XDG data directory.
+// Returns count of migrated profiles and any error.
+func MigrateProfilesFromLegacy() (int, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return 0, err
+	}
+
+	legacyDir := filepath.Join(home, ".agents", "profiles")
+	if _, err := os.Stat(legacyDir); os.IsNotExist(err) {
+		return 0, nil // nothing to migrate
+	}
+
+	newDir, err := GetDataDir()
+	if err != nil {
+		return 0, err
+	}
+	newProfilesDir := filepath.Join(newDir, "profiles")
+
+	if legacyDir == newProfilesDir {
+		return 0, nil // same path, no migration needed
+	}
+
+	entries, err := os.ReadDir(legacyDir)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		src := filepath.Join(legacyDir, entry.Name())
+		dst := filepath.Join(newProfilesDir, entry.Name())
+
+		if _, err := os.Stat(dst); err == nil {
+			continue // already exists at destination
+		}
+
+		if err := os.MkdirAll(newProfilesDir, 0755); err != nil {
+			return count, err
+		}
+
+		if err := os.Rename(src, dst); err != nil {
+			return count, fmt.Errorf("failed to migrate profile %s: %w", entry.Name(), err)
+		}
+		count++
+	}
+
+	return count, nil
 }
