@@ -35,7 +35,7 @@ type Profile struct {
 	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
 	A2A           *A2AConfig          `yaml:"a2a,omitempty"`
 	ACP           *ACPConfig          `yaml:"acp,omitempty"`
-	Mobile        *MobileDeviceConfig `yaml:"mobile,omitempty"`
+	Mobile        *MobileAdapterConfig `yaml:"mobile,omitempty"`
 	Workspace     *WorkspaceLink      `yaml:"workspace,omitempty"`
 	Observability *ObservabilityConfig `yaml:"observability,omitempty"`
 	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
@@ -66,8 +66,8 @@ type ACPConfig struct {
 	Port       int    `yaml:"port,omitempty"`
 }
 
-// MobileDeviceConfig holds mobile device linking configuration for a profile
-type MobileDeviceConfig struct {
+// MobileAdapterConfig holds mobile adapter linking configuration for a profile
+type MobileAdapterConfig struct {
 	Enabled             bool     `yaml:"enabled"`
 	Port                int      `yaml:"port,omitempty"`
 	MaxDevices          int      `yaml:"max_devices,omitempty"`

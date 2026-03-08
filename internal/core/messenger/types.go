@@ -109,7 +109,7 @@ func (t TargetAction) String() string {
 	return t.ProfileID + "=" + t.ActionName
 }
 
-// ProfileMessengerLink represents a link between a profile and a messenger device.
+// ProfileMessengerLink represents a link between a profile and a messenger adapter.
 type ProfileMessengerLink struct {
 	ProfileID      string            `json:"profile_id" yaml:"profile_id"`
 	MessengerName  string            `json:"messenger_name" yaml:"messenger_name"`

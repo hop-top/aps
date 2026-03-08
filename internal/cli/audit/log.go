@@ -81,8 +81,8 @@ func runAuditLog(
 		fmt.Printf(dimStyle.Render("No audit entries for workspace '%s'.")+"\n",
 			workspaceID)
 		fmt.Println()
-		fmt.Println(dimStyle.Render("  Audit entries appear when devices check access."))
-		fmt.Println(dimStyle.Render("  Try running: aps device attach <device> --workspace " +
+		fmt.Println(dimStyle.Render("  Audit entries appear when adapters check access."))
+		fmt.Println(dimStyle.Render("  Try running: aps adapter attach <adapter> --workspace " +
 			workspaceID))
 		return nil
 	}

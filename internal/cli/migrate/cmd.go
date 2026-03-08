@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"oss-aps-cli/internal/core/device"
+	"oss-aps-cli/internal/core/adapter"
 	"oss-aps-cli/internal/styles"
 
 	"github.com/charmbracelet/lipgloss"
@@ -50,7 +50,7 @@ func newMessengersCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "messengers",
-		Short: "Migrate messengers to device framework",
+		Short: "Migrate messengers to adapter framework",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runMessengersMigrate(dryRun, backup, only)
 		},
@@ -73,8 +73,8 @@ func runMessengersMigrate(dryRun, backup bool, only string) error {
 	if _, err := os.Stat(messengersDir); os.IsNotExist(err) {
 		fmt.Println(dimStyle.Render("No messengers directory found"))
 		fmt.Println()
-		fmt.Println("  Create a device instead:")
-		fmt.Println("    aps device create my-telegram --type=messenger")
+		fmt.Println("  Create an adapter instead:")
+		fmt.Println("    aps adapter create my-telegram --type=messenger")
 		return nil
 	}
 
@@ -176,7 +176,7 @@ func splitList(s string) []string {
 }
 
 func renderDryRun(messengers []messengerMigrate) error {
-	fmt.Println(headerStyle.Render("Migration Preview: messengers -> devices"))
+	fmt.Println(headerStyle.Render("Migration Preview: messengers -> adapters"))
 	fmt.Println()
 
 	fmt.Printf("%-16s %-12s %-10s %s\n",
@@ -203,7 +203,7 @@ func renderDryRun(messengers []messengerMigrate) error {
 	fmt.Printf("    %d messengers will be migrated\n", len(messengers))
 	fmt.Printf("    Paths: %s -> %s\n",
 		dimStyle.Render(filepath.Join(home, ".aps", "messengers")),
-		dimStyle.Render(filepath.Join(home, ".aps", "devices")))
+		dimStyle.Render(filepath.Join(home, ".aps", "adapters")))
 	fmt.Println("    Symlinks: created for backward compat")
 	fmt.Println("    Aliases: 'aps messengers' will still work")
 	fmt.Println()
@@ -239,7 +239,7 @@ func createBackup(source, target string) error {
 }
 
 func executeMigration(messengers []messengerMigrate) error {
-	fmt.Println("Migrating messengers to devices...")
+	fmt.Println("Migrating messengers to adapters...")
 
 	success := 0
 	failed := 0
@@ -267,21 +267,21 @@ func executeMigration(messengers []messengerMigrate) error {
 	}
 
 	fmt.Println(headerStyle.Render("Migration complete."))
-	fmt.Printf("  %d messengers migrated to devices\n", success)
-	fmt.Printf("  Verify: aps device list --type=messenger\n")
+	fmt.Printf("  %d messengers migrated to adapters\n", success)
+	fmt.Printf("  Verify: aps adapter list --type=messenger\n")
 
 	return nil
 }
 
 func migrateMessenger(m messengerMigrate) error {
-	dev := &device.Device{
+	dev := &adapter.Adapter{
 		Name:     m.Name,
-		Type:     device.DeviceTypeMessenger,
-		Scope:    device.ScopeGlobal,
-		Strategy: device.StrategySubprocess,
+		Type:     adapter.AdapterTypeMessenger,
+		Scope:    adapter.ScopeGlobal,
+		Strategy: adapter.StrategySubprocess,
 	}
 
-	if err := device.SaveDevice(dev); err != nil {
+	if err := adapter.SaveAdapter(dev); err != nil {
 		return err
 	}
 
