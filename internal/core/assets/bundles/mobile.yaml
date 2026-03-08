@@ -1,0 +1,18 @@
+name: mobile
+description: "Mobile-connected agent — messenger and mobile pairing"
+version: "1.0"
+
+capabilities:
+  - mobile-pairing
+  - messenger
+
+scope:
+  operations:
+    - messenger:send
+    - messenger:receive
+    - mobile:sync
+
+requires:
+  - binary: messenger
+    missing: warn
+    message: "Messenger binary not found — messaging may be limited"
