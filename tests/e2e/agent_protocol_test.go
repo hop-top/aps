@@ -40,9 +40,18 @@ func startTestServer(t *testing.T, home string, port string) *testServer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := exec.CommandContext(ctx, apsBinary, "serve", "--addr", "127.0.0.1:"+port)
-	cmd.Env = append(os.Environ(),
+	filteredEnv := []string{}
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if key == "HOME" || key == "USERPROFILE" || key == "XDG_DATA_HOME" || key == "APS_DATA_PATH" {
+			continue
+		}
+		filteredEnv = append(filteredEnv, e)
+	}
+	cmd.Env = append(filteredEnv,
 		fmt.Sprintf("HOME=%s", home),
 		fmt.Sprintf("USERPROFILE=%s", home),
+		fmt.Sprintf("XDG_DATA_HOME=%s/.local/share", home),
 	)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -102,7 +111,7 @@ func createTestProfileAndAction(t *testing.T, home, profileID, actionID, actionS
 func addTestAction(t *testing.T, home, profileID, actionID, actionScript string) {
 	t.Helper()
 
-	actionsDir := home + "/.agents/profiles/" + profileID + "/actions"
+	actionsDir := home + "/.local/share/aps/profiles/" + profileID + "/actions"
 	err := os.MkdirAll(actionsDir, 0755)
 	require.NoError(t, err)
 

@@ -13,13 +13,27 @@ import (
 
 func setupTestProfile(t *testing.T, id string, content string) string {
 	tempDir := t.TempDir()
-	profileDir := filepath.Join(tempDir, ".agents", "profiles", id)
+	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", id)
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
 	profilePath := filepath.Join(profileDir, "profile.yaml")
 	require.NoError(t, os.WriteFile(profilePath, []byte(content), 0644))
 
 	return tempDir
+}
+
+func overrideXDGDataHome(t *testing.T, dir string) {
+	t.Helper()
+	orig := os.Getenv("XDG_DATA_HOME")
+	origAPS := os.Getenv("APS_DATA_PATH")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(dir, ".local", "share"))
+	os.Unsetenv("APS_DATA_PATH")
+	t.Cleanup(func() {
+		os.Setenv("XDG_DATA_HOME", orig)
+		if origAPS != "" {
+			os.Setenv("APS_DATA_PATH", origAPS)
+		}
+	})
 }
 
 func TestIsolationConfig_DefaultLevel(t *testing.T) {
@@ -31,6 +45,7 @@ display_name: Test Profile
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
 	require.NoError(t, err)
@@ -50,6 +65,7 @@ isolation:
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
 	require.NoError(t, err)
@@ -73,6 +89,7 @@ isolation:
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
 	require.NoError(t, err)
@@ -101,6 +118,7 @@ isolation:
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
 	require.NoError(t, err)
@@ -123,6 +141,7 @@ isolation:
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	_, err := core.LoadProfile("test-profile")
 	assert.Error(t, err)
@@ -142,6 +161,7 @@ isolation:
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	_, err := core.LoadProfile("test-profile")
 	assert.Error(t, err)
@@ -180,6 +200,7 @@ func TestSaveProfileWithIsolation(t *testing.T) {
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
+	overrideXDGDataHome(t, tempDir)
 
 	profile := &core.Profile{
 		ID:          "iso-profile",

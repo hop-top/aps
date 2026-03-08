@@ -16,8 +16,7 @@ func setupTestProfile(t *testing.T) string {
 	tempDir := t.TempDir()
 	profileID := "test-profile"
 
-	agentsDir := filepath.Join(tempDir, ".agents")
-	profileDir := filepath.Join(agentsDir, "profiles", profileID)
+	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
 	profileYaml := `id: test-profile
@@ -29,6 +28,17 @@ display_name: Test Profile
 	secretsPath := filepath.Join(profileDir, "secrets.env")
 	defaultSecrets := "TEST_SECRET=value"
 	require.NoError(t, os.WriteFile(secretsPath, []byte(defaultSecrets), 0600))
+
+	orig := os.Getenv("XDG_DATA_HOME")
+	origAPS := os.Getenv("APS_DATA_PATH")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	os.Unsetenv("APS_DATA_PATH")
+	t.Cleanup(func() {
+		os.Setenv("XDG_DATA_HOME", orig)
+		if origAPS != "" {
+			os.Setenv("APS_DATA_PATH", origAPS)
+		}
+	})
 
 	return tempDir
 }
@@ -88,6 +98,19 @@ func TestProcessIsolation_Validate(t *testing.T) {
 }
 
 func TestProcessIsolation_Cleanup(t *testing.T) {
+	// Use a fresh temp home with no profiles so PrepareContext fails as expected
+	emptyHome := t.TempDir()
+	origXDG := os.Getenv("XDG_DATA_HOME")
+	origAPS := os.Getenv("APS_DATA_PATH")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(emptyHome, ".local", "share"))
+	os.Unsetenv("APS_DATA_PATH")
+	t.Cleanup(func() {
+		os.Setenv("XDG_DATA_HOME", origXDG)
+		if origAPS != "" {
+			os.Setenv("APS_DATA_PATH", origAPS)
+		}
+	})
+
 	process := isolation.NewProcessIsolation()
 
 	err := process.Cleanup()

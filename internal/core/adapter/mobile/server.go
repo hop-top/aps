@@ -235,7 +235,7 @@ func (s *AdapterServer) ActiveConnections() int {
 // --- HTTP routes ---
 
 func (s *AdapterServer) registerRoutes(mux *http.ServeMux) {
-	prefix := fmt.Sprintf("/aps/device/%s", s.profileID)
+	prefix := fmt.Sprintf("/aps/adapter/%s", s.profileID)
 
 	mux.HandleFunc(prefix+"/health", s.handleHealth)
 	mux.HandleFunc(prefix+"/pair", s.handlePair)
@@ -345,7 +345,7 @@ func (s *AdapterServer) handlePair(w http.ResponseWriter, r *http.Request) {
 	if s.tlsCert != nil {
 		scheme = "wss"
 	}
-	wsEndpoint := fmt.Sprintf("%s://%s/aps/device/%s/ws", scheme, r.Host, s.profileID)
+	wsEndpoint := fmt.Sprintf("%s://%s/aps/adapter/%s/ws", scheme, r.Host, s.profileID)
 
 	resp := PairingResponse{
 		AdapterID:   deviceID,

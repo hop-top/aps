@@ -14,7 +14,7 @@ func TestExecutionEngineWithProcessIsolation(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile with process isolation
-	profileDir := filepath.Join(home, ".agents", "profiles", "process-exec-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "process-exec-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -55,7 +55,7 @@ func TestExecutionEngineUnsupportedIsolation(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile with container isolation (not implemented)
-	profileDir := filepath.Join(home, ".agents", "profiles", "container-exec-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "container-exec-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestExecutionEngineActionExecution(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile with process isolation
-	profileDir := filepath.Join(home, ".agents", "profiles", "action-exec-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "action-exec-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -133,7 +133,7 @@ func TestExecutionEngineActionWithPayload(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile
-	profileDir := filepath.Join(home, ".agents", "profiles", "payload-exec-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "payload-exec-profile")
 	err := os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -190,7 +190,7 @@ func TestExecutionEngineBackwardCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add a secret to verify environment injection
-	secretsPath := filepath.Join(home, ".agents", "profiles", "old-style-profile", "secrets.env")
+	secretsPath := filepath.Join(home, ".local", "share", "aps", "profiles", "old-style-profile", "secrets.env")
 	err = os.WriteFile(secretsPath, []byte("OLD_VAR=old_value\n"), 0600)
 	require.NoError(t, err)
 

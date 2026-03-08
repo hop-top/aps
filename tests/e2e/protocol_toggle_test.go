@@ -30,7 +30,7 @@ func TestA2AToggle_Enable(t *testing.T) {
 	assert.Contains(t, stdout, "127.0.0.1:8081")
 
 	// Verify profile has a2a capability and config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- a2a")
@@ -56,7 +56,7 @@ func TestA2AToggle_Disable(t *testing.T) {
 	assert.Contains(t, stdout, "A2A disabled for profile")
 
 	// Verify profile no longer has a2a capability or config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "- a2a")
@@ -79,7 +79,7 @@ func TestA2AToggle_CustomConfig(t *testing.T) {
 	assert.Contains(t, stdout, "0.0.0.0:9000")
 
 	// Verify config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "protocol_binding: grpc")
@@ -105,7 +105,7 @@ func TestA2AToggle_ForceEnable(t *testing.T) {
 	assert.Contains(t, stdout, "9001")
 
 	// Verify new config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "listen_addr: 127.0.0.1:9001")
@@ -136,7 +136,7 @@ func TestA2AServer_AutoEnable(t *testing.T) {
 	}
 
 	// Verify profile now has A2A enabled
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- a2a")
@@ -162,7 +162,7 @@ func TestACPToggle_Enable(t *testing.T) {
 	assert.Contains(t, stdout, "stdio")
 
 	// Verify profile has agent-protocol capability and config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- agent-protocol")
@@ -188,7 +188,7 @@ func TestACPToggle_Disable(t *testing.T) {
 	assert.Contains(t, stdout, "ACP disabled for profile")
 
 	// Verify profile no longer has agent-protocol capability
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "- agent-protocol")
@@ -210,7 +210,7 @@ func TestACPToggle_CustomConfig(t *testing.T) {
 	assert.Contains(t, stdout, "9000")
 
 	// Verify config
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "transport: http")
@@ -241,7 +241,7 @@ func TestACPServer_AutoEnable(t *testing.T) {
 	}
 
 	// Verify profile now has ACP enabled
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- agent-protocol")
@@ -266,7 +266,7 @@ func TestWebhookToggle_Enable(t *testing.T) {
 	assert.Contains(t, stdout, "Webhook enabled for profile")
 
 	// Verify profile has webhooks capability
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- webhooks")
@@ -290,7 +290,7 @@ func TestWebhookToggle_Disable(t *testing.T) {
 	assert.Contains(t, stdout, "Webhook disabled for profile")
 
 	// Verify profile no longer has webhooks capability
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "- webhooks")
@@ -314,7 +314,7 @@ func TestWebhookToggle_ForceDisable(t *testing.T) {
 	assert.Contains(t, stdout, "Webhook disabled")
 
 	// Verify disabled
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(content), "- webhooks")
@@ -344,7 +344,7 @@ func TestWebhookServer_AutoEnable(t *testing.T) {
 	}
 
 	// Verify profile now has webhooks enabled
-	profilePath := filepath.Join(home, ".agents", "profiles", profileID, "profile.yaml")
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- webhooks")

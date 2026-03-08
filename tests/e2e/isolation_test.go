@@ -20,7 +20,7 @@ func TestIsolationManager_ProcessLevel(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout, "APS_PROFILE_ID=iso-agent")
-	assert.Contains(t, stdout, filepath.Join(home, ".agents", "profiles", "iso-agent"))
+	assert.Contains(t, stdout, filepath.Join(home, ".local", "share", "aps", "profiles", "iso-agent"))
 }
 
 func TestIsolationManager_InvalidProfile(t *testing.T) {
@@ -60,7 +60,7 @@ func TestIsolationManager_ActionExecution(t *testing.T) {
 echo "TEST_ACTION_OUTPUT=hello"
 env | grep APS_PROFILE_ID
 `
-	actionPath := filepath.Join(home, ".agents", "profiles", "action-agent", "actions", "test.sh")
+	actionPath := filepath.Join(home, ".local", "share", "aps", "profiles", "action-agent", "actions", "test.sh")
 	err = os.WriteFile(actionPath, []byte(actionScript), 0755)
 	require.NoError(t, err)
 
@@ -78,7 +78,7 @@ func TestIsolationManager_WithSecrets(t *testing.T) {
 	_, _, err := runAPS(t, home, "profile", "new", "secret-agent")
 	require.NoError(t, err)
 
-	secretsPath := filepath.Join(home, ".agents", "profiles", "secret-agent", "secrets.env")
+	secretsPath := filepath.Join(home, ".local", "share", "aps", "profiles", "secret-agent", "secrets.env")
 	err = os.WriteFile(secretsPath, []byte("CUSTOM_VAR=custom_value\n"), 0600)
 	require.NoError(t, err)
 

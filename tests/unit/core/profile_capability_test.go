@@ -12,9 +12,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddCapabilityToProfile(t *testing.T) {
+func setTempHome(t *testing.T) string {
+	t.Helper()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpHome, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
+	return tmpHome
+}
+
+func TestAddCapabilityToProfile(t *testing.T) {
+	setTempHome(t)
 
 	err := core.CreateProfile("test-add", core.Profile{DisplayName: "Test"})
 	require.NoError(t, err)
@@ -43,8 +51,7 @@ func TestAddCapabilityToProfile(t *testing.T) {
 }
 
 func TestRemoveCapabilityFromProfile(t *testing.T) {
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTempHome(t)
 
 	profile := core.Profile{
 		DisplayName:  "Test",
@@ -82,8 +89,7 @@ func TestProfileHasCapability(t *testing.T) {
 }
 
 func TestProfilesUsingCapability(t *testing.T) {
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTempHome(t)
 
 	// Create two profiles
 	err := core.CreateProfile("prof-a", core.Profile{
@@ -123,8 +129,7 @@ func TestProfilesUsingCapability(t *testing.T) {
 }
 
 func TestInjectEnvironment_PerProfileCaps(t *testing.T) {
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	tmpHome := setTempHome(t)
 
 	// Create capability dir
 	capDir := filepath.Join(tmpHome, ".aps", "capabilities", "my-tool")
@@ -156,8 +161,7 @@ func TestInjectEnvironment_PerProfileCaps(t *testing.T) {
 }
 
 func TestInjectEnvironment_NonEnabledCapsNotInjected(t *testing.T) {
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	tmpHome := setTempHome(t)
 
 	// Create capability dir for a cap NOT in the profile
 	capDir := filepath.Join(tmpHome, ".aps", "capabilities", "other-tool")

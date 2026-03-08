@@ -24,7 +24,7 @@ func TestExecutionInjection(t *testing.T) {
 
 	// Verify standard injections
 	assert.Contains(t, stdout, "APS_PROFILE_ID=exec-agent")
-	assert.Contains(t, stdout, fmt.Sprintf("APS_PROFILE_DIR=%s", filepath.Join(home, ".agents", "profiles", "exec-agent")))
+	assert.Contains(t, stdout, fmt.Sprintf("APS_PROFILE_DIR=%s", filepath.Join(home, ".local", "share", "aps", "profiles", "exec-agent")))
 }
 
 func TestSecretInjection(t *testing.T) {
@@ -36,7 +36,7 @@ func TestSecretInjection(t *testing.T) {
 	require.NoError(t, err)
 
 	// Modify secrets.env
-	secretsPath := filepath.Join(home, ".agents", "profiles", "secret-agent", "secrets.env")
+	secretsPath := filepath.Join(home, ".local", "share", "aps", "profiles", "secret-agent", "secrets.env")
 	// Append a secret
 	f, err := os.OpenFile(secretsPath, os.O_APPEND|os.O_WRONLY, 0600)
 	require.NoError(t, err)

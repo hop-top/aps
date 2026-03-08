@@ -29,7 +29,7 @@ isolation:
 
 	// Create profile requesting container (currently not implemented)
 	// In future, this would fall back to process when container is unavailable
-	profileDir := filepath.Join(home, ".agents", "profiles", "fallback-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "fallback-profile")
 	err = os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -76,7 +76,7 @@ isolation:
 	require.NoError(t, err)
 
 	// Create profile with strict mode requesting container
-	profileDir := filepath.Join(home, ".agents", "profiles", "strict-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "strict-profile")
 	err = os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -123,7 +123,7 @@ isolation:
 	require.NoError(t, err)
 
 	// Create profile with fallback disabled
-	profileDir := filepath.Join(home, ".agents", "profiles", "no-fallback-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "no-fallback-profile")
 	err = os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 
@@ -165,7 +165,7 @@ isolation:
 	require.NoError(t, err)
 
 	// Create profile requesting container with profile-level fallback enabled
-	profileDir := filepath.Join(home, ".agents", "profiles", "global-no-fallback-profile")
+	profileDir := filepath.Join(home, ".local", "share", "aps", "profiles", "global-no-fallback-profile")
 	err = os.MkdirAll(profileDir, 0755)
 	require.NoError(t, err)
 

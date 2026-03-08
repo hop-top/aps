@@ -26,7 +26,7 @@ func TestWebhookServer(t *testing.T) {
 	_, _, err := runAPS(t, home, "profile", "new", profileID)
 	require.NoError(t, err)
 
-	actionsDir := filepath.Join(home, ".agents", "profiles", profileID, "actions")
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
 	scriptPath := filepath.Join(actionsDir, "hook.sh")
 	// Create a script that creates a file to prove it ran
 	proofFile := filepath.Join(home, "proof.txt")
