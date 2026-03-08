@@ -1,0 +1,72 @@
+name: developer
+description: "Standard developer agent — git, GitHub, shell access"
+version: "1.0"
+
+# Capabilities this bundle activates
+capabilities:
+  - git
+  - github
+  - bash
+  - docker
+
+# Scope rules merged (union) into the profile's scope
+scope:
+  operations:
+    - git:read
+    - git:write
+    - git:push
+    - github:pr
+    - github:issues
+    - shell:run
+    - docker:build
+    - docker:run
+  file_patterns:
+    - "**"
+  networks:
+    - "github.com"
+    - "api.github.com"
+
+# Env vars injected into every session using this bundle
+env:
+  GIT_AUTHOR_NAME: "${PROFILE_DISPLAY_NAME}"
+  GIT_AUTHOR_EMAIL: "${PROFILE_EMAIL}"
+
+# Services started with the profile or on demand
+services:
+  - name: webhooks
+    adapter: webhooks
+    start: always       # always | on-demand
+
+# Binary requirements checked at profile start
+requires:
+  - binary: git
+    missing: error
+    command: "git -c user.email=${PROFILE_EMAIL} -c user.name=${PROFILE_DISPLAY_NAME}"
+
+  - binary: gh
+    missing: warn
+    message: "GitHub CLI not found — some github:* operations may fail"
+
+  - binary: docker
+    missing: skip       # drops docker scope/env silently; shown in profile status
+
+  - binary: curl
+    blocked: true
+    message: "Use the http capability instead of curl directly"
+
+  - binary: claude
+    missing: warn
+    command: "claude --dangerously-skip-permissions --profile ${PROFILE_ID}"
+    deny_flags:
+      - "--allow-all"
+      - "--no-sandbox"
+    deny_policy: strip  # strip | error
+
+# Runtime-specific overrides (merged on top of base config)
+runtime_overrides:
+  claude:
+    env:
+      CLAUDE_PROFILE: "${PROFILE_ID}"
+  gemini:
+    env:
+      GEMINI_PROFILE: "${PROFILE_ID}"
