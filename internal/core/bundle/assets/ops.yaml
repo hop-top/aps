@@ -1,0 +1,41 @@
+name: ops
+description: "Infrastructure/ops agent — docker, ssh, shell, webhooks"
+version: "1.0"
+
+capabilities:
+  - docker
+  - ssh
+  - bash
+  - webhooks
+
+scope:
+  operations:
+    - docker:build
+    - docker:run
+    - docker:push
+    - ssh:connect
+    - shell:run
+    - webhook:send
+    - webhook:receive
+  networks:
+    - "*"
+
+services:
+  - name: webhooks
+    adapter: webhooks
+    start: always
+
+requires:
+  - binary: docker
+    missing: error
+    message: "docker is required for ops bundle"
+  - binary: ssh
+    missing: warn
+    message: "ssh not found — remote connections unavailable"
+  - binary: bash
+    missing: error
+
+runtime_overrides:
+  claude:
+    env:
+      CLAUDE_PROFILE: "${PROFILE_ID}"
