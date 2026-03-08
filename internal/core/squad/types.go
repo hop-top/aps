@@ -59,8 +59,9 @@ type Squad struct {
 	Domain            string    `json:"domain" yaml:"domain"`
 	Description       string    `json:"description,omitempty" yaml:"description,omitempty"`
 	Members           []string  `json:"members" yaml:"members"` // profile IDs
-	GoldenPathDefined bool      `json:"golden_path_defined,omitempty" yaml:"golden_path_defined,omitempty"`
-	CreatedAt         time.Time `json:"created_at" yaml:"created_at"`
+	GoldenPathDefined bool       `json:"golden_path_defined,omitempty" yaml:"golden_path_defined,omitempty"`
+	Scope             *ScopeRule `json:"scope,omitempty" yaml:"scope,omitempty"`
+	CreatedAt         time.Time  `json:"created_at" yaml:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at" yaml:"updated_at"`
 }
 

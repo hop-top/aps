@@ -42,12 +42,23 @@ type Profile struct {
 	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
 	Trust         *TrustConfig         `yaml:"trust,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
+	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
+}
+
+// ScopeConfig defines access boundaries for a profile.
+type ScopeConfig struct {
+	FilePatterns []string `yaml:"file_patterns,omitempty"`
+	Operations   []string `yaml:"operations,omitempty"`
+	Tools        []string `yaml:"tools,omitempty"`
+	Secrets      []string `yaml:"secrets,omitempty"`
+	Networks     []string `yaml:"networks,omitempty"`
 }
 
 // WorkspaceLink associates a profile with a workspace
 type WorkspaceLink struct {
-	Name  string `yaml:"name"`
-	Scope string `yaml:"scope"` // "global" or "profile"
+	Name       string       `yaml:"name"`
+	Scope      string       `yaml:"scope"`
+	ScopeRules *ScopeConfig `yaml:"scope_rules,omitempty"`
 }
 
 // A2AConfig holds A2A protocol configuration for a profile
