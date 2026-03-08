@@ -3,7 +3,7 @@ package messenger
 import (
 	"testing"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 func TestNormalizer_NormalizeTelegram(t *testing.T) {

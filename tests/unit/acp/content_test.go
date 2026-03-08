@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"oss-aps-cli/internal/acp"
+	"hop.top/aps/internal/acp"
 )
 
 // TestContentBlockValidation tests content block validation

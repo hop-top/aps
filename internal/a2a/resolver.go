@@ -7,7 +7,7 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	a2aclient "github.com/a2aproject/a2a-go/a2aclient"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // Resolver handles resolving Agent Cards for profiles

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // Manager handles messenger-profile linking, channel mapping, and route resolution.

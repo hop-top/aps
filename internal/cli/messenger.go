@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/adapter"
+	"hop.top/aps/internal/cli/adapter"
 )
 
 func init() {

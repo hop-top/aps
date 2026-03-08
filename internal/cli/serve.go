@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"oss-aps-cli/internal/adapters"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/adapters"
+	"hop.top/aps/internal/core/protocol"
 
 	"github.com/spf13/cobra"
 )

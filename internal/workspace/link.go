@@ -3,7 +3,7 @@ package workspace
 import (
 	"fmt"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // LinkProfile associates a profile with a workspace.

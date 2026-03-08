@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/session"
 
 	"github.com/google/uuid"
 )

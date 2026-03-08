@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"oss-aps-cli/internal/core/multidevice"
+	"hop.top/aps/internal/core/multidevice"
 
 	"github.com/spf13/cobra"
 )

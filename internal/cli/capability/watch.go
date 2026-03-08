@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"oss-aps-cli/internal/core/capability"
+	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
 )

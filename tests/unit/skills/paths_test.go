@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 func TestNewSkillPaths(t *testing.T) {

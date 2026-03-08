@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/adapters/agentprotocol"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestProtocolServerInterface tests that all protocols implement ProtocolServer

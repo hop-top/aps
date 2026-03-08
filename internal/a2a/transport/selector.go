@@ -5,7 +5,7 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // IsolationTierMapping maps APS isolation tiers to preferred transports

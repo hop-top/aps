@@ -3,7 +3,7 @@ package acp
 import (
 	"testing"
 
-	"oss-aps-cli/internal/acp"
+	"hop.top/aps/internal/acp"
 )
 
 // TestPermissionManager tests permission request management

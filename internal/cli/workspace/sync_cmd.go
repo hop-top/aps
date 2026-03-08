@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"oss-aps-cli/internal/core/multidevice"
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/core/multidevice"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )

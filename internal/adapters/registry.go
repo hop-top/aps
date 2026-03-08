@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sync"
 
-	"oss-aps-cli/internal/adapters/agentprotocol"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 type ProtocolAdapter interface {

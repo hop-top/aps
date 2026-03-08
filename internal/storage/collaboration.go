@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	collab "oss-aps-cli/internal/core/collaboration"
+	collab "hop.top/aps/internal/core/collaboration"
 
 	"gopkg.in/yaml.v3"
 )

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // AuthType represents the type of authentication

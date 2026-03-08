@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 func setupTestRegistry(t *testing.T) (*skills.Registry, string) {

@@ -3,7 +3,7 @@ package adapter
 import (
 	"fmt"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +35,7 @@ func runLogs(name string, tail int, follow bool, since string) error {
 		return err
 	}
 
-	logs, err := defaultManager.GetDeviceLogs(name, tail, follow)
+	logs, err := defaultManager.GetAdapterLogs(name, tail, follow)
 	if err != nil {
 		return err
 	}

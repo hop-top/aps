@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/migrate"
+import "hop.top/aps/internal/cli/migrate"
 
 func init() {
 	rootCmd.AddCommand(migrate.NewMigrateCmd())

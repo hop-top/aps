@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"oss-aps-cli/internal/a2a"
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/core"
 )
 
 func TestNewClient_InvalidProfileID(t *testing.T) {

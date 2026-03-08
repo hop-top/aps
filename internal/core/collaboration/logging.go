@@ -1,7 +1,7 @@
 package collaboration
 
 import (
-	"oss-aps-cli/internal/logging"
+	"hop.top/aps/internal/logging"
 )
 
 // EventLogger provides structured operational logging for collaboration events.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 // mockResolver implements RouteResolver for testing.

@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"oss-aps-cli/internal/core/protocol"
-	"oss-aps-cli/internal/logging"
+	"hop.top/aps/internal/core/protocol"
+	"hop.top/aps/internal/logging"
 )
 
 type streamingWriter struct {

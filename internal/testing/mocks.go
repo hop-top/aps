@@ -10,9 +10,9 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/a2aproject/a2a-go/a2asrv"
 	eventqueue "github.com/a2aproject/a2a-go/a2asrv/eventqueue"
-	"oss-aps-cli/internal/a2a/transport"
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/a2a/transport"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/session"
 )
 
 // MockTaskStore implements a2asrv.TaskStore interface for testing

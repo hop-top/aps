@@ -61,8 +61,8 @@ func runApprove(deviceID, profileID string, approveAll, jsonOut, quiet bool) err
 
 		approved := 0
 		for _, d := range pending {
-			if err := registry.ApproveDevice(d.DeviceID); err != nil {
-				fmt.Fprintf(os.Stderr, "  Failed to approve %s: %v\n", d.DeviceID, err)
+			if err := registry.ApproveAdapter(d.AdapterID); err != nil {
+				fmt.Fprintf(os.Stderr, "  Failed to approve %s: %v\n", d.AdapterID, err)
 				continue
 			}
 			approved++
@@ -82,7 +82,7 @@ func runApprove(deviceID, profileID string, approveAll, jsonOut, quiet bool) err
 		return nil
 	}
 
-	if err := registry.ApproveDevice(deviceID); err != nil {
+	if err := registry.ApproveAdapter(deviceID); err != nil {
 		return err
 	}
 

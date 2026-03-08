@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ap "oss-aps-cli/internal/adapters/agentprotocol"
-	"oss-aps-cli/internal/core/protocol"
+	ap "hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/core/protocol"
 
 	"github.com/stretchr/testify/assert"
 )

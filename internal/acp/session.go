@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // SessionManager manages ACP sessions

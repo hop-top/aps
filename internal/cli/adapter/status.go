@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
-	"oss-aps-cli/internal/styles"
+	coreadapter "hop.top/aps/internal/core/adapter"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )

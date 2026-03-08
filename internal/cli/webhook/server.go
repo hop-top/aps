@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // NewServerCmd creates the `aps webhook server` command

@@ -11,7 +11,7 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows"
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 type WindowsSandbox struct {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"oss-aps-cli/internal/core"
-	isolation "oss-aps-cli/internal/core/isolation"
+	"hop.top/aps/internal/core"
+	isolation "hop.top/aps/internal/core/isolation"
 )
 
 func TestDockerfileBuilder_Generate_Basic(t *testing.T) {

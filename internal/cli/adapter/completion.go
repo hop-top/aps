@@ -1,7 +1,7 @@
 package adapter
 
 import (
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -39,7 +39,7 @@ func completeRunningDeviceNames(cmd *cobra.Command, args []string, toComplete st
 	}
 
 	mgr := coreadapter.NewManager()
-	running := mgr.ListRunningDevices()
+	running := mgr.ListRunningAdapters()
 
 	var names []string
 	for _, d := range devices {

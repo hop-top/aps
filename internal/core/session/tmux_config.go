@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 const (

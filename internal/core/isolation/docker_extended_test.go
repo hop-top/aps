@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // ============================================================================

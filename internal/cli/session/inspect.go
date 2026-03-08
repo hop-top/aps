@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core/session"
 )
 
 func NewInspectCmd() *cobra.Command {

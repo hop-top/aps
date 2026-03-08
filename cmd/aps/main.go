@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"oss-aps-cli/internal/cli"
+	"hop.top/aps/internal/cli"
 )
 
 func main() {

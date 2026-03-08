@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oss-aps-cli/internal/core/tools"
+	"hop.top/aps/internal/core/tools"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

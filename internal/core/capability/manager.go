@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 
 	"gopkg.in/yaml.v3"
 )

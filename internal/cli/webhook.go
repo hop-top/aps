@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/webhook"
+	"hop.top/aps/internal/cli/webhook"
 )
 
 func init() {

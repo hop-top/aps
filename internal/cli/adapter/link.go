@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	coreadapter "hop.top/aps/internal/core/adapter"
+	msgtypes "hop.top/aps/internal/core/messenger"
 
 	"github.com/spf13/cobra"
 )
@@ -95,7 +95,7 @@ func runLink(opts linkOpts) error {
 
 	// Link the device at the device level
 	if !dev.IsLinkedToProfile(opts.profileID) {
-		err = defaultManager.LinkDevice(opts.deviceName, opts.profileID)
+		err = defaultManager.LinkAdapter(opts.deviceName, opts.profileID)
 		if err != nil {
 			return err
 		}

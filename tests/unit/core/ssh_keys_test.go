@@ -3,7 +3,7 @@ package core_test
 import (
 	"testing"
 
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core/session"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

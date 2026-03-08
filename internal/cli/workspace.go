@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/workspace"
+	"hop.top/aps/internal/cli/workspace"
 )
 
 func init() {

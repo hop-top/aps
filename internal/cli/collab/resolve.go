@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	collab "oss-aps-cli/internal/core/collaboration"
+	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
 )

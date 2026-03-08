@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

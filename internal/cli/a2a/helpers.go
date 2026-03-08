@@ -3,7 +3,7 @@ package a2a
 import (
 	"fmt"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // loadProfile loads a profile by ID

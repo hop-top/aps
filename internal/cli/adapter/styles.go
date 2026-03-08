@@ -1,7 +1,7 @@
 package adapter
 
 import (
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/styles"
 
 	"github.com/charmbracelet/lipgloss"
 )

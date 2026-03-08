@@ -11,8 +11,8 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/spf13/cobra"
 
-	"oss-aps-cli/internal/core"
-	a2apkg "oss-aps-cli/internal/a2a"
+	"hop.top/aps/internal/core"
+	a2apkg "hop.top/aps/internal/a2a"
 )
 
 func NewListTasksCmd() *cobra.Command {

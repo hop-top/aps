@@ -1,7 +1,7 @@
 package acp
 
 import (
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 // SkillListParams represents parameters for skill/list method

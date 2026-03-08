@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -58,7 +58,7 @@ func runCreate(name, deviceType, strategy, profileID string, jsonOut bool) error
 		ls = coreadapter.DefaultStrategyForType(dt)
 	}
 
-	dev, err := defaultManager.CreateDevice(name, dt, ls, scope, profileID)
+	dev, err := defaultManager.CreateAdapter(name, dt, ls, scope, profileID)
 	if err != nil {
 		return err
 	}

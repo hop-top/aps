@@ -273,7 +273,7 @@ func (r *Registry) CountActive(profileID string) (int, error) {
 func (r *Registry) loadLocked() (*MobileAdapterRegistryData, error) {
 	data := &MobileAdapterRegistryData{
 		Version: "1.0",
-		Devices: make([]*MobileAdapter, 0),
+		Adapters: make([]*MobileAdapter, 0),
 	}
 
 	fileData, err := os.ReadFile(r.path)

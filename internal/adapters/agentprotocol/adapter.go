@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 type AgentProtocolAdapter struct {
