@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/device"
+	"oss-aps-cli/internal/cli/adapter"
 )
 
 func init() {
-	rootCmd.AddCommand(device.NewMessengerCmd())
+	rootCmd.AddCommand(adapter.NewMessengerCmd())
 }
