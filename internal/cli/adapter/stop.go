@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -63,7 +63,7 @@ func runStop(ctx context.Context, name string, force, dryRun, jsonOut bool) erro
 		fmt.Printf("Stopping %s... ", name)
 	}
 
-	err = defaultManager.StopDevice(ctx, name, force)
+	err = defaultManager.StopAdapter(ctx, name, force)
 	if err != nil {
 		if !jsonOut {
 			fmt.Println(errorStyle.Render("failed"))

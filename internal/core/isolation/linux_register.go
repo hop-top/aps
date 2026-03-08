@@ -3,7 +3,7 @@
 package isolation
 
 import (
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 func RegisterLinuxSandbox(manager *Manager) error {

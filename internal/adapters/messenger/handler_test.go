@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 // mockLogger implements MessageLogger for testing.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/capability"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/capability"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 type Tool struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/styles"
 )
 
 func (m Model) View() string {

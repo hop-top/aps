@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/skills"
 )
 
 // SkillListResponse represents the response for listing skills

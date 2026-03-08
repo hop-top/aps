@@ -1,7 +1,7 @@
 package adapters
 
 import (
-	"oss-aps-cli/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/adapters/agentprotocol"
 )
 
 func init() {

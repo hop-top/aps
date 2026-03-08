@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

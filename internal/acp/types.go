@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // SessionMode defines how the session handles permissions

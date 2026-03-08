@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 // Normalizer transforms platform-specific webhook events into the unified

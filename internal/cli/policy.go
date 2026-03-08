@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/policy"
+import "hop.top/aps/internal/cli/policy"
 
 func init() {
 	rootCmd.AddCommand(policy.NewPolicyCmd())

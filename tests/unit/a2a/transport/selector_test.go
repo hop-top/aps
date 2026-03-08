@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"oss-aps-cli/internal/a2a/transport"
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/a2a/transport"
+	"hop.top/aps/internal/core"
 )
 
 func TestSelectTransport_ProcessTier(t *testing.T) {

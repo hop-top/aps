@@ -1,6 +1,6 @@
 package protocol
 
-import "oss-aps-cli/internal/core"
+import "hop.top/aps/internal/core"
 
 // Re-export error types from core package
 type NotFoundError = core.NotFoundError

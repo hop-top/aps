@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestHandleSkillList tests the skill/list JSON-RPC method

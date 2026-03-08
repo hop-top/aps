@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // ProtocolRegistry manages all protocol servers (both HTTP adapters and standalone servers)

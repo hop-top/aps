@@ -3,7 +3,7 @@ package adapter_test
 import (
 	"testing"
 
-	"oss-aps-cli/internal/core/adapter"
+	"hop.top/aps/internal/core/adapter"
 
 	"github.com/stretchr/testify/assert"
 )

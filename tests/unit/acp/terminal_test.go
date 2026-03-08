@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"oss-aps-cli/internal/acp"
+	"hop.top/aps/internal/acp"
 )
 
 // TestTerminalManagerCreate tests creating a terminal

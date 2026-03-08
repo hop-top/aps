@@ -3,8 +3,8 @@ package a2a
 import (
 	"fmt"
 
-	"oss-aps-cli/internal/a2a/transport"
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/a2a/transport"
+	"hop.top/aps/internal/core"
 )
 
 // MapIsolationToTransport maps APS isolation tier to A2A transport type

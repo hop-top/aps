@@ -3,8 +3,8 @@ package isolation_test
 import (
 	"testing"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/isolation"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/isolation"
 
 	"github.com/stretchr/testify/assert"
 )

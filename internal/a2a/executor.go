@@ -9,7 +9,7 @@ import (
 	eventqueue "github.com/a2aproject/a2a-go/a2asrv/eventqueue"
 	"github.com/a2aproject/a2a-go/log"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 var _ a2asrv.AgentExecutor = (*Executor)(nil)

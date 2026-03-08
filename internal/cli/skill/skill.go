@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 // NewSkillCmd creates the skill command group

@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/session"
+	"hop.top/aps/internal/cli/session"
 
 	"github.com/spf13/cobra"
 )

@@ -1,7 +1,7 @@
 package acp
 
 import (
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 // CapabilityBuilder builds agent capabilities based on profile and session configuration

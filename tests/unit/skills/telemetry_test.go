@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 func TestTelemetry_Disabled(t *testing.T) {

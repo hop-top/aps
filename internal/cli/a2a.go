@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/a2a"
+	"hop.top/aps/internal/cli/a2a"
 )
 
 func init() {

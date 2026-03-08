@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"testing"
 
-	isolation "oss-aps-cli/internal/core/isolation"
+	isolation "hop.top/aps/internal/core/isolation"
 )
 
 func TestLinuxSandbox_IsAvailable(t *testing.T) {

@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/audit"
+import "hop.top/aps/internal/cli/audit"
 
 func init() {
 	rootCmd.AddCommand(audit.NewAuditCmd())

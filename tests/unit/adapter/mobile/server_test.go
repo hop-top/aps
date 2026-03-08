@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"oss-aps-cli/internal/core/adapter/mobile"
+	"hop.top/aps/internal/core/adapter/mobile"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"

@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/squad"
+import "hop.top/aps/internal/cli/squad"
 
 func init() {
 	rootCmd.AddCommand(squad.NewSquadCmd())

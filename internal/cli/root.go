@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/tui"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/tui"
 
 	"github.com/spf13/cobra"
 )

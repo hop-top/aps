@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"oss-aps-cli/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/adapters/agentprotocol"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

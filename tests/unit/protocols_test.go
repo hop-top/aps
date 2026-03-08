@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"oss-aps-cli/internal/adapters"
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/adapters/agentprotocol"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/adapters"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestProtocolServerInterface tests that all protocols implement ProtocolServer

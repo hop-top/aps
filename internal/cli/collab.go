@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"oss-aps-cli/internal/cli/collab"
+	"hop.top/aps/internal/cli/collab"
 )
 
 func init() {

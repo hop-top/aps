@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"oss-aps-cli/internal/core/adapter/mobile"
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/core/adapter/mobile"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
@@ -62,12 +62,12 @@ func runPending(profileID string, jsonOut bool) error {
 
 	for _, d := range pending {
 		ago := formatTimeAgo(d.RegisteredAt)
-		info := fmt.Sprintf("%s, %s", d.DeviceName, d.DeviceOS)
-		if d.DeviceVersion != "" {
-			info += " " + d.DeviceVersion
+		info := fmt.Sprintf("%s, %s", d.AdapterName, d.AdapterOS)
+		if d.AdapterVersion != "" {
+			info += " " + d.AdapterVersion
 		}
 		fmt.Fprintf(w, "%-24s\t%s\t%s\n",
-			d.DeviceID, dimStyle.Render(ago), info)
+			d.AdapterID, dimStyle.Render(ago), info)
 	}
 	w.Flush()
 
@@ -84,7 +84,7 @@ func runPending(profileID string, jsonOut bool) error {
 	return nil
 }
 
-func renderPendingJSON(devices []*mobile.MobileDevice) error {
+func renderPendingJSON(devices []*mobile.MobileAdapter) error {
 	type pendingDevice struct {
 		DeviceID    string `json:"device_id"`
 		ProfileID   string `json:"profile_id"`
@@ -96,10 +96,10 @@ func renderPendingJSON(devices []*mobile.MobileDevice) error {
 	var out []pendingDevice
 	for _, d := range devices {
 		out = append(out, pendingDevice{
-			DeviceID:    d.DeviceID,
+			DeviceID:    d.AdapterID,
 			ProfileID:   d.ProfileID,
-			DeviceName:  d.DeviceName,
-			DeviceOS:    d.DeviceOS,
+			DeviceName:  d.AdapterName,
+			DeviceOS:    d.AdapterOS,
 			RequestedAt: d.RegisteredAt.Format(time.RFC3339),
 		})
 	}

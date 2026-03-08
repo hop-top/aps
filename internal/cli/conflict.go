@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/conflict"
+import "hop.top/aps/internal/cli/conflict"
 
 func init() {
 	rootCmd.AddCommand(conflict.NewConflictCmd())

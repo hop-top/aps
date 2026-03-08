@@ -1,6 +1,6 @@
 package cli
 
-import "oss-aps-cli/internal/cli/adapter"
+import "hop.top/aps/internal/cli/adapter"
 
 func init() {
 	rootCmd.AddCommand(adapter.NewAdapterCmd())

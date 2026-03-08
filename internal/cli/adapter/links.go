@@ -6,9 +6,9 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"oss-aps-cli/internal/core"
-	coreadapter "oss-aps-cli/internal/core/adapter"
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	"hop.top/aps/internal/core"
+	coreadapter "hop.top/aps/internal/core/adapter"
+	msgtypes "hop.top/aps/internal/core/messenger"
 
 	"github.com/spf13/cobra"
 )

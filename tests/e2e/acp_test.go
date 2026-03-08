@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestACPFullWorkflow tests a complete ACP session workflow

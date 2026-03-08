@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/a2a"
-	"oss-aps-cli/internal/adapters/agentprotocol"
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestUseCase1_EditorIntegrationWithPermissionControl

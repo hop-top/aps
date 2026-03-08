@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // TestSessionManagerCreate tests session creation

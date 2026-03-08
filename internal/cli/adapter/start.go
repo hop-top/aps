@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -37,7 +37,7 @@ func runStart(ctx context.Context, name string, jsonOut bool) error {
 		fmt.Printf("Starting %s... ", name)
 	}
 
-	err = defaultManager.StartDevice(ctx, name)
+	err = defaultManager.StartAdapter(ctx, name)
 	if err != nil {
 		if !jsonOut {
 			fmt.Println(errorStyle.Render("failed"))

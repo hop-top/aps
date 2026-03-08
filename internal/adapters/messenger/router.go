@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 // RouteResolver resolves a messenger channel to its linked profile and action.

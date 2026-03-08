@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"oss-aps-cli/internal/acp"
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/acp"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/protocol"
 	"github.com/spf13/cobra"
 )
 

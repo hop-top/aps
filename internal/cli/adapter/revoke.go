@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"oss-aps-cli/internal/core/adapter/mobile"
+	"hop.top/aps/internal/core/adapter/mobile"
 
 	"github.com/spf13/cobra"
 )
@@ -62,7 +62,7 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 		return revokeAllDevices(registry, profileID, force, dryRun, jsonOut, quiet)
 	}
 
-	device, err := registry.GetDevice(deviceID)
+	device, err := registry.GetAdapter(deviceID)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 
 	if dryRun {
 		fmt.Printf("Dry run: would revoke device '%s'\n\n", deviceID)
-		fmt.Printf("  Device:  %s (%s)\n", device.DeviceName, device.DeviceOS)
+		fmt.Printf("  Device:  %s (%s)\n", device.AdapterName, device.AdapterOS)
 		fmt.Printf("  Status:  %s\n", device.Status)
 		fmt.Printf("  Profile: %s\n\n", profileID)
 		fmt.Println("  Revoking will:")
@@ -85,7 +85,7 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 	}
 
 	if !force {
-		fmt.Printf("  Device: %s\n", device.DeviceName)
+		fmt.Printf("  Device: %s\n", device.AdapterName)
 		fmt.Printf("  Status: %s\n\n", device.Status)
 		fmt.Println("  Revoking will:")
 		fmt.Println("    - Blacklist the device token")
@@ -102,7 +102,7 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 		}
 	}
 
-	if err := registry.RevokeDevice(deviceID); err != nil {
+	if err := registry.RevokeAdapter(deviceID); err != nil {
 		return err
 	}
 
@@ -122,12 +122,12 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 }
 
 func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun, jsonOut, quiet bool) error {
-	devices, err := registry.ListDevices(profileID)
+	devices, err := registry.ListAdapters(profileID)
 	if err != nil {
 		return err
 	}
 
-	var active []*mobile.MobileDevice
+	var active []*mobile.MobileAdapter
 	for _, d := range devices {
 		if d.Status == mobile.PairingStateActive || d.Status == mobile.PairingStatePending {
 			active = append(active, d)
@@ -142,7 +142,7 @@ func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun
 	if dryRun {
 		fmt.Printf("Dry run: would revoke %d devices for profile '%s'\n", len(active), profileID)
 		for _, d := range active {
-			fmt.Printf("  - %s (%s, %s)\n", d.DeviceID, d.DeviceName, d.Status)
+			fmt.Printf("  - %s (%s, %s)\n", d.AdapterID, d.AdapterName, d.Status)
 		}
 		fmt.Println("\n  No changes made.")
 		return nil
@@ -151,7 +151,7 @@ func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun
 	if !force {
 		fmt.Printf("  Revoke ALL %d devices for profile '%s'?\n\n", len(active), profileID)
 		for _, d := range active {
-			fmt.Printf("    %s  %s (%s)\n", dimStyle.Render(string(d.DeviceID)), d.DeviceName, d.Status)
+			fmt.Printf("    %s  %s (%s)\n", dimStyle.Render(string(d.AdapterID)), d.AdapterName, d.Status)
 		}
 		fmt.Printf("\n  Type '%s' to confirm: ", profileID)
 
@@ -166,8 +166,8 @@ func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun
 
 	revoked := 0
 	for _, d := range active {
-		if err := registry.RevokeDevice(d.DeviceID); err != nil {
-			fmt.Fprintf(os.Stderr, "  Failed to revoke %s: %v\n", d.DeviceID, err)
+		if err := registry.RevokeAdapter(d.AdapterID); err != nil {
+			fmt.Fprintf(os.Stderr, "  Failed to revoke %s: %v\n", d.AdapterID, err)
 			continue
 		}
 		revoked++

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"oss-aps-cli/internal/core"
+	"hop.top/aps/internal/core"
 )
 
 type ContainerStatus string

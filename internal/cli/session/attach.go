@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core/session"
 )
 
 func NewAttachCmd() *cobra.Command {

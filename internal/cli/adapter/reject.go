@@ -37,7 +37,7 @@ func runReject(deviceID, profileID string, jsonOut, quiet bool) error {
 		return err
 	}
 
-	if err := registry.RejectDevice(deviceID); err != nil {
+	if err := registry.RejectAdapter(deviceID); err != nil {
 		return err
 	}
 

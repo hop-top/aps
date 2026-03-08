@@ -6,8 +6,8 @@ import (
 	"os"
 	"text/tabwriter"
 
-	collab "oss-aps-cli/internal/core/collaboration"
-	"oss-aps-cli/internal/storage"
+	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/storage"
 
 	"github.com/spf13/cobra"
 )

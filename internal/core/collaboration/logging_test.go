@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"oss-aps-cli/internal/core/collaboration"
+	"hop.top/aps/internal/core/collaboration"
 )
 
 func TestNewEventLogger(t *testing.T) {

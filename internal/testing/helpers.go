@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/session"
 )
 
 // CreateTestProfile creates a test profile with the given name and isolation level

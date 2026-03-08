@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/core/adapter/mobile"
-	"oss-aps-cli/internal/styles"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/adapter/mobile"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
@@ -180,9 +180,9 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 	}
 
 	// Start device server
-	server := mobile.NewDeviceServer(profileID, registry, tokenMgr,
+	server := mobile.NewAdapterServer(profileID, registry, tokenMgr,
 		mobile.WithApprovalRequired(profile.Mobile.ApprovalRequired),
-		mobile.WithMaxDevices(maxDevices),
+		mobile.WithMaxAdapters(maxDevices),
 	)
 
 	serverCtx, cancel := context.WithCancel(ctx)
@@ -266,7 +266,7 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 	return waitForPairing(serverCtx, cancel, server, registry, profileID, qrExpiryDuration)
 }
 
-func waitForPairing(ctx context.Context, cancel context.CancelFunc, server *mobile.DeviceServer,
+func waitForPairing(ctx context.Context, cancel context.CancelFunc, server *mobile.AdapterServer,
 	registry *mobile.Registry, profileID string, qrExpiry time.Duration) error {
 
 	// Signal handling

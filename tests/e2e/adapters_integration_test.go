@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/skills"
 )
 
 // TestAdaptersE2E_CrossPlatformWorkflow tests adapters in a complete workflow

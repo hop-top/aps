@@ -7,7 +7,7 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/spf13/cobra"
 
-	a2apkg "oss-aps-cli/internal/a2a"
+	a2apkg "hop.top/aps/internal/a2a"
 )
 
 func NewCancelTaskCmd() *cobra.Command {

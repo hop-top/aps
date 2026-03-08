@@ -6,8 +6,8 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
 
-	"oss-aps-cli/internal/core"
-	"oss-aps-cli/internal/skills"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/skills"
 )
 
 // GenerateAgentCardFromProfile generates an A2A Agent Card from an APS profile

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	coreadapter "oss-aps-cli/internal/core/adapter"
+	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
 )
@@ -46,7 +46,7 @@ func runUnlink(deviceName, profileID string, jsonOut, dryRun bool) error {
 		return fmt.Errorf("device '%s' is not linked to profile '%s'", deviceName, profileID)
 	}
 
-	err = defaultManager.UnlinkDevice(deviceName, profileID)
+	err = defaultManager.UnlinkAdapter(deviceName, profileID)
 	if err != nil {
 		return err
 	}

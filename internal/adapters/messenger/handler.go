@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	msgtypes "oss-aps-cli/internal/core/messenger"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 // MessageLogger defines the logging interface for messenger message events.

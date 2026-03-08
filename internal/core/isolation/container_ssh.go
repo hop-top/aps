@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core/session"
 )
 
 func ConfigureContainerSSH(engine ContainerEngine, containerID, profileID string) error {

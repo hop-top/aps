@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oss-aps-cli/internal/acp"
+	"hop.top/aps/internal/acp"
 )
 
 // TestFileSystemHandlerRead tests reading a file

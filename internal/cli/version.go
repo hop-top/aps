@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"oss-aps-cli/internal/version"
+	"hop.top/aps/internal/version"
 )
 
 var versionCmd = &cobra.Command{

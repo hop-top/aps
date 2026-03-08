@@ -9,7 +9,7 @@ import (
 	"os"
 	"sync"
 
-	"oss-aps-cli/internal/core/protocol"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // Server implements the ACP (Agent Client Protocol) server

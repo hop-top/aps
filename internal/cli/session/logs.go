@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"oss-aps-cli/internal/core/session"
+	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
 )

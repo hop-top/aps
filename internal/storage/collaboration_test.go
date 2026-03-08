@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	collab "oss-aps-cli/internal/core/collaboration"
-	"oss-aps-cli/internal/storage"
+	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/storage"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

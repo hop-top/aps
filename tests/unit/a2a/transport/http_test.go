@@ -9,7 +9,7 @@ import (
 
 	a2asdk "github.com/a2aproject/a2a-go/a2a"
 
-	"oss-aps-cli/internal/a2a/transport"
+	"hop.top/aps/internal/a2a/transport"
 )
 
 type HTTPMockHandler struct{}

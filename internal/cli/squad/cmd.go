@@ -1,7 +1,7 @@
 package squad
 
 import (
-	coresquad "oss-aps-cli/internal/core/squad"
+	coresquad "hop.top/aps/internal/core/squad"
 
 	"github.com/spf13/cobra"
 )
