@@ -252,7 +252,34 @@ aps bundle validate developer.yaml
 
 ---
 
-## Open Questions
+## Bundle Inheritance
 
-- Should a bundle be able to extend another bundle (`extends: developer`)?
-- Should `deny_flags` apply to all binaries or only the ones declared in the bundle?
+A bundle can extend another bundle using `extends`. The child inherits all fields from the parent and overrides at the field level — whatever the child specifies replaces that entire field; whatever it omits inherits unchanged.
+
+```yaml
+name: developer-strict
+extends: developer
+
+# Overrides developer's "**" entirely
+scope:
+  file_patterns:
+    - "src/**"
+
+# Overrides developer's "skip" policy for docker
+requires:
+  - binary: docker
+    missing: error
+```
+
+Rules:
+- Inheritance is one level deep — a bundle cannot extend a bundle that itself extends another
+- Built-in bundles can be extended; the result is a user-defined bundle
+- `aps bundle show developer-strict --resolved` prints the fully merged definition
+
+---
+
+## `deny_flags` Scope
+
+`deny_flags` declared in any bundle's `requires` entry apply **globally** — they block the flag on that binary regardless of which bundle or capability triggered the invocation. A profile using two bundles that both declare `require: claude` merges their `deny_flags` lists (union).
+
+---
