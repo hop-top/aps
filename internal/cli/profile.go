@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/core/capability"
 	"hop.top/aps/internal/styles"
 
@@ -176,6 +177,133 @@ var profileRemoveCapCmd = &cobra.Command{
 	},
 }
 
+// profileStatusCmd implements `aps profile status <id>` (T-0054, T-0055).
+// It shows per-bundle binary results (skipped/blocked/warned) and, with --verbose,
+// the full resolved scope and injected env var keys for each bundle.
+var profileStatusCmd = &cobra.Command{
+	Use:   "status [id]",
+	Short: "Show bundle resolution status for a profile",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		verbose, _ := cmd.Flags().GetBool("verbose")
+
+		profile, err := core.LoadProfile(id)
+		if err != nil {
+			return fmt.Errorf("failed to load profile %s: %w", id, err)
+		}
+
+		bundleNames, _ := core.ExtractBundleNames(profile.Capabilities)
+
+		fmt.Printf("Profile: %s\n", styles.Bold.Render(id))
+
+		if len(bundleNames) == 0 {
+			fmt.Println("Bundles: (none)")
+			return nil
+		}
+
+		fmt.Printf("Bundles: %s\n\n", styles.Dim.Render(joinStrings(bundleNames, ", ")))
+
+		resolvedBundles, err := core.ResolveBundlesForProfile(profile)
+		if err != nil {
+			// Even on error, show what we can.
+			fmt.Fprintf(os.Stderr, "Warning: bundle resolution error: %v\n", err)
+		}
+
+		// Map bundle name → resolved bundle for display.
+		rbByName := make(map[string]*bundle.ResolvedBundle, len(resolvedBundles))
+		for _, rb := range resolvedBundles {
+			rbByName[rb.Bundle.Name] = rb
+		}
+
+		for _, name := range bundleNames {
+			rb, ok := rbByName[name]
+			if !ok {
+				fmt.Printf("  %s bundle:%s  %s\n",
+					styles.Error.Render("✗"),
+					name,
+					styles.Dim.Render("(not resolved)"),
+				)
+				continue
+			}
+
+			// T-0054 — Binary results.
+			if len(rb.BinaryResults) == 0 {
+				fmt.Printf("  bundle:%s  %s\n", name, styles.Dim.Render("no binary requirements"))
+			} else {
+				for _, br := range rb.BinaryResults {
+					icon, status := binaryResultStatus(br)
+					fmt.Printf("  %s %-20s %s\n", icon, br.Binary, styles.Dim.Render(status))
+				}
+			}
+
+			// Warnings.
+			for _, w := range rb.Warnings {
+				fmt.Printf("  %s %s\n", styles.Warn.Render("!"), styles.Dim.Render(w))
+			}
+
+			// T-0055 — Verbose: show full resolved scope and env var keys.
+			if verbose {
+				fmt.Printf("\n  [bundle:%s — resolved scope]\n", name)
+				if len(rb.Scope.Operations) > 0 {
+					fmt.Printf("    operations:    %s\n", joinStrings(rb.Scope.Operations, ", "))
+				}
+				if len(rb.Scope.FilePatterns) > 0 {
+					fmt.Printf("    file_patterns: %s\n", joinStrings(rb.Scope.FilePatterns, ", "))
+				}
+				if len(rb.Scope.Networks) > 0 {
+					fmt.Printf("    networks:      %s\n", joinStrings(rb.Scope.Networks, ", "))
+				}
+				if len(rb.Env) > 0 {
+					fmt.Printf("    env vars:      ")
+					keys := make([]string, 0, len(rb.Env))
+					for k := range rb.Env {
+						keys = append(keys, k)
+					}
+					fmt.Printf("%s\n", joinStrings(keys, ", "))
+				}
+				fmt.Println()
+			}
+		}
+
+		return nil
+	},
+}
+
+// binaryResultStatus returns a display icon and status string for a BinaryResult.
+func binaryResultStatus(br bundle.BinaryResult) (icon, status string) {
+	switch {
+	case br.Blocked:
+		msg := "blocked"
+		if br.Message != "" {
+			msg = "blocked  (" + br.Message + ")"
+		}
+		return styles.Error.Render("✗"), msg
+	case br.Skipped:
+		return styles.Error.Render("✗"), "skipped  (binary not found)"
+	case !br.Found:
+		msg := "not found"
+		if br.Message != "" {
+			msg = "warning  (" + br.Message + ")"
+		}
+		return styles.Warn.Render("!"), msg
+	default:
+		return styles.Success.Render("✓"), "active"
+	}
+}
+
+// joinStrings joins a slice of strings with sep.
+func joinStrings(ss []string, sep string) string {
+	result := ""
+	for i, s := range ss {
+		if i > 0 {
+			result += sep
+		}
+		result += s
+	}
+	return result
+}
+
 var profileShareCmd = &cobra.Command{
 	Use:   "share [id]",
 	Short: "Export a shareable profile bundle",
@@ -237,6 +365,7 @@ func init() {
 	profileCmd.AddCommand(profileListCmd)
 	profileCmd.AddCommand(profileNewCmd)
 	profileCmd.AddCommand(profileShowCmd)
+	profileCmd.AddCommand(profileStatusCmd)
 	profileCmd.AddCommand(profileShareCmd)
 	profileCmd.AddCommand(profileImportCmd)
 	profileCmd.AddCommand(profileAddCapCmd)
@@ -245,6 +374,7 @@ func init() {
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")
+	profileStatusCmd.Flags().BoolP("verbose", "v", false, "Show full resolved scope and env var keys per bundle")
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
 	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
