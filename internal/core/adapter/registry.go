@@ -7,14 +7,16 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"hop.top/aps/internal/core"
 )
 
 func GetAdaptersDir() (string, error) {
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".aps", "devices"), nil
+	return filepath.Join(dataDir, "devices"), nil
 }
 
 func GetGlobalAdapterPath(name string) (string, error) {
@@ -26,11 +28,11 @@ func GetGlobalAdapterPath(name string) (string, error) {
 }
 
 func GetProfileAdapterPath(profileID, name string) (string, error) {
-	home, err := os.UserHomeDir()
+	profileDir, err := core.GetProfileDir(profileID)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".aps", "profiles", profileID, "devices", name), nil
+	return filepath.Join(profileDir, "devices", name), nil
 }
 
 func GetAdapterManifestPath(devicePath string) string {
@@ -239,12 +241,12 @@ func matchesFilter(device *Adapter, filter *AdapterFilter) bool {
 }
 
 func listProfilesWithAdapters() ([]string, error) {
-	home, err := os.UserHomeDir()
+	dataDir, err := core.GetDataDir()
 	if err != nil {
 		return nil, err
 	}
 
-	profilesDir := filepath.Join(home, ".aps", "profiles")
+	profilesDir := filepath.Join(dataDir, "profiles")
 	entries, err := os.ReadDir(profilesDir)
 	if err != nil {
 		if os.IsNotExist(err) {
