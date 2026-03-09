@@ -1,0 +1,32 @@
+---
+title: hop.top/aps
+description: Local-first Agent Profile System for isolated, reproducible agent workflows.
+template: splash
+hero:
+  tagline: Run AI agents under isolated profiles. Process, platform, or container isolation.
+  actions:
+    - text: Getting Started
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/hop-top/aps
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Isolated profiles" icon="star">
+    Each agent runs under its own profile with separate env, git config, and credentials.
+  </Card>
+  <Card title="Three isolation levels" icon="shield">
+    Process (default), platform sandbox (macOS/Linux), or full container isolation via Docker.
+  </Card>
+  <Card title="Protocol adapters" icon="puzzle">
+    Built-in A2A, ACP, and MCP protocol adapters. Extensible registry for custom protocols.
+  </Card>
+  <Card title="Agent payments" icon="rocket">
+    Native x402 payment support via `cap:payment` capability bundle. Non-custodial wallets per profile.
+  </Card>
+</CardGrid>
