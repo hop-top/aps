@@ -50,7 +50,7 @@ func NewTelemetry(config *TelemetryConfig) (*Telemetry, error) {
 	if logFile == "" {
 		dataDir, err := core.GetDataDir()
 		if err != nil {
-			dataDir = ""
+			return nil, fmt.Errorf("failed to get data directory: %w", err)
 		}
 		logFile = filepath.Join(dataDir, "skills", "usage.jsonl")
 	}

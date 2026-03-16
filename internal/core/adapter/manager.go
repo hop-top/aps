@@ -257,11 +257,11 @@ func (m *Manager) HealthCheck(ctx context.Context, name string) error {
 
 	runtime, exists := m.runtimes[name]
 	if !exists {
-		return ErrHealthCheckFailed(name, fmt.Errorf("device not running"))
+		return ErrHealthCheckFailed(name, fmt.Errorf("adapter not running"))
 	}
 
 	if runtime.State != StateRunning {
-		return ErrHealthCheckFailed(name, fmt.Errorf("device not running (state: %s)", runtime.State))
+		return ErrHealthCheckFailed(name, fmt.Errorf("adapter not running (state: %s)", runtime.State))
 	}
 
 	now := time.Now()
@@ -304,7 +304,7 @@ func (m *Manager) UnlinkAdapter(deviceName, profileID string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("device '%s' is not linked to profile '%s'", deviceName, profileID)
+		return fmt.Errorf("adapter '%s' is not linked to profile '%s'", deviceName, profileID)
 	}
 
 	device.LinkedTo = linked
@@ -354,7 +354,7 @@ func (m *Manager) Shutdown(ctx context.Context) error {
 }
 
 func (m *Manager) findAdapterExecutable(device *Adapter) (string, error) {
-	executableName := fmt.Sprintf("aps-device-%s", device.Name)
+	executableName := fmt.Sprintf("aps-adapter-%s", device.Name)
 	if path, err := exec.LookPath(executableName); err == nil {
 		return path, nil
 	}
@@ -364,17 +364,17 @@ func (m *Manager) findAdapterExecutable(device *Adapter) (string, error) {
 		return localPath, nil
 	}
 
-	return "", fmt.Errorf("device executable not found for %s", device.Name)
+	return "", fmt.Errorf("adapter executable not found for %s", device.Name)
 }
 
 func (m *Manager) buildAdapterEnv(device *Adapter) []string {
 	env := []string{
-		fmt.Sprintf("APS_DEVICE_NAME=%s", device.Name),
-		fmt.Sprintf("APS_DEVICE_TYPE=%s", device.Type),
-		fmt.Sprintf("APS_DEVICE_PATH=%s", device.Path),
+		fmt.Sprintf("APS_ADAPTER_NAME=%s", device.Name),
+		fmt.Sprintf("APS_ADAPTER_TYPE=%s", device.Type),
+		fmt.Sprintf("APS_ADAPTER_PATH=%s", device.Path),
 	}
 	for k, v := range device.Config {
-		env = append(env, fmt.Sprintf("APS_DEVICE_CONFIG_%s=%v", k, v))
+		env = append(env, fmt.Sprintf("APS_ADAPTER_CONFIG_%s=%v", k, v))
 	}
 	return env
 }

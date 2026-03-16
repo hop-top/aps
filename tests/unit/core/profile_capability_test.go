@@ -131,7 +131,7 @@ func TestProfilesUsingCapability(t *testing.T) {
 func TestInjectEnvironment_PerProfileCaps(t *testing.T) {
 	tmpHome := setTempHome(t)
 
-	// Create capability dir
+	// Create capability dir at the XDG data path (XDG_DATA_HOME/aps/capabilities/...)
 	capDir := filepath.Join(tmpHome, ".local", "share", "aps", "capabilities", "my-tool")
 	err := os.MkdirAll(capDir, 0755)
 	require.NoError(t, err)

@@ -554,11 +554,11 @@ func (d *DarwinSandbox) distributeSSHKeys() error {
 		return fmt.Errorf("failed to set .ssh ownership: %w\nOutput: %s", err, string(output))
 	}
 
-	dataDir, err := core.GetDataDir()
+	apsDataDir, err := core.GetDataDir()
 	if err != nil {
-		return fmt.Errorf("failed to resolve data directory: %w", err)
+		return fmt.Errorf("failed to get data directory: %w", err)
 	}
-	adminKeysDir := filepath.Join(dataDir, "keys")
+	adminKeysDir := filepath.Join(apsDataDir, "keys")
 	adminPubKeyPath := filepath.Join(adminKeysDir, "admin_pub")
 
 	adminPubKey, err := os.ReadFile(adminPubKeyPath)

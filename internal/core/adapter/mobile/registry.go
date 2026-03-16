@@ -39,7 +39,7 @@ func (r *Registry) RegisterAdapter(device *MobileAdapter) error {
 	// Check for duplicate device ID
 	for _, d := range data.Adapters {
 		if d.AdapterID == device.AdapterID {
-			return fmt.Errorf("device '%s' already registered", device.AdapterID)
+			return fmt.Errorf("adapter '%s' already registered", device.AdapterID)
 		}
 	}
 
@@ -163,7 +163,7 @@ func (r *Registry) ApproveAdapter(deviceID string) error {
 	for _, d := range data.Adapters {
 		if d.AdapterID == deviceID {
 			if d.Status != PairingStatePending {
-				return fmt.Errorf("device '%s' is not pending approval (status: %s)", deviceID, d.Status)
+				return fmt.Errorf("adapter '%s' is not pending approval (status: %s)", deviceID, d.Status)
 			}
 			d.Status = PairingStateActive
 			now := time.Now()
@@ -188,7 +188,7 @@ func (r *Registry) RejectAdapter(deviceID string) error {
 	for i, d := range data.Adapters {
 		if d.AdapterID == deviceID {
 			if d.Status != PairingStatePending {
-				return fmt.Errorf("device '%s' is not pending approval (status: %s)", deviceID, d.Status)
+				return fmt.Errorf("adapter '%s' is not pending approval (status: %s)", deviceID, d.Status)
 			}
 			d.Status = PairingStateRejected
 			data.Adapters = append(data.Adapters[:i], data.Adapters[i+1:]...)

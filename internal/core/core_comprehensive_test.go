@@ -21,10 +21,7 @@ import (
 // TestLoadProfileSuccess tests successful profile loading
 func TestLoadProfileSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "test-load",
@@ -47,10 +44,7 @@ func TestLoadProfileSuccess(t *testing.T) {
 // TestLoadProfileMissingFile tests LoadProfile with non-existent profile
 func TestLoadProfileMissingFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	loaded, err := LoadProfile("nonexistent-profile")
 	require.Error(t, err)
@@ -61,12 +55,9 @@ func TestLoadProfileMissingFile(t *testing.T) {
 // TestLoadProfileInvalidYAML tests LoadProfile with malformed YAML
 func TestLoadProfileInvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
-	os.Setenv("HOME", tmpDir)
-
-	agentsDir := filepath.Join(tmpDir, ".agents")
+	agentsDir := tmpDir
 	profileDir := filepath.Join(agentsDir, "profiles", "invalid-yaml")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -83,12 +74,9 @@ func TestLoadProfileInvalidYAML(t *testing.T) {
 // TestLoadProfileIDMismatch tests LoadProfile with ID mismatch between path and content
 func TestLoadProfileIDMismatch(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
-	os.Setenv("HOME", tmpDir)
-
-	agentsDir := filepath.Join(tmpDir, ".agents")
+	agentsDir := tmpDir
 	profileDir := filepath.Join(agentsDir, "profiles", "profile-a")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -107,12 +95,9 @@ func TestLoadProfileIDMismatch(t *testing.T) {
 // TestLoadProfileInvalidIsolation tests LoadProfile with invalid isolation config
 func TestLoadProfileInvalidIsolation(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
-	os.Setenv("HOME", tmpDir)
-
-	agentsDir := filepath.Join(tmpDir, ".agents")
+	agentsDir := tmpDir
 	profileDir := filepath.Join(agentsDir, "profiles", "invalid-isolation")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -135,12 +120,9 @@ isolation:
 // TestLoadProfileContainerWithoutImage tests LoadProfile with container isolation but no image
 func TestLoadProfileContainerWithoutImage(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
-	os.Setenv("HOME", tmpDir)
-
-	agentsDir := filepath.Join(tmpDir, ".agents")
+	agentsDir := tmpDir
 	profileDir := filepath.Join(agentsDir, "profiles", "no-image")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -162,10 +144,7 @@ isolation:
 // TestLoadProfileWithCompleteConfig tests LoadProfile with all optional fields
 func TestLoadProfileWithCompleteConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "complete",
@@ -211,10 +190,7 @@ func TestLoadProfileWithCompleteConfig(t *testing.T) {
 // TestLoadProfileCaching tests that profiles are correctly loaded each time
 func TestLoadProfileCaching(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "cache-test",
@@ -243,10 +219,7 @@ func TestLoadProfileCaching(t *testing.T) {
 // TestLoadProfileConcurrentAccess tests concurrent profile loading
 func TestLoadProfileConcurrentAccess(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	// Create multiple profiles
 	for i := 0; i < 5; i++ {
@@ -284,12 +257,9 @@ func TestLoadProfileConcurrentAccess(t *testing.T) {
 // TestLoadProfileDefaultIsolation tests LoadProfile assigns default isolation level
 func TestLoadProfileDefaultIsolation(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
-	os.Setenv("HOME", tmpDir)
-
-	agentsDir := filepath.Join(tmpDir, ".agents")
+	agentsDir := tmpDir
 	profileDir := filepath.Join(agentsDir, "profiles", "default-iso")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -313,16 +283,13 @@ display_name: Test
 // TestLoadActionsSuccessComprehensive tests successful action loading
 func TestLoadActionsSuccessComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "actions-test", DisplayName: "Test"}
 	err := CreateProfile("actions-test", profile)
 	require.NoError(t, err)
 
-	actionsDir := filepath.Join(tmpDir, ".agents", "profiles", "actions-test", "actions")
+	actionsDir := filepath.Join(tmpDir, "profiles", "actions-test", "actions")
 
 	// Create test scripts
 	err = os.WriteFile(filepath.Join(actionsDir, "script1.sh"), []byte("#!/bin/bash\necho hello"), 0755)
@@ -346,10 +313,7 @@ func TestLoadActionsSuccessComprehensive(t *testing.T) {
 // TestLoadActionsEmptyComprehensive tests LoadActions with no actions
 func TestLoadActionsEmptyComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "empty-actions", DisplayName: "Test"}
 	err := CreateProfile("empty-actions", profile)
@@ -363,16 +327,13 @@ func TestLoadActionsEmptyComprehensive(t *testing.T) {
 // TestGetActionByIDComprehensive tests GetAction finds correct action
 func TestGetActionByIDComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "get-action-test", DisplayName: "Test"}
 	err := CreateProfile("get-action-test", profile)
 	require.NoError(t, err)
 
-	actionsDir := filepath.Join(tmpDir, ".agents", "profiles", "get-action-test", "actions")
+	actionsDir := filepath.Join(tmpDir, "profiles", "get-action-test", "actions")
 	err = os.WriteFile(filepath.Join(actionsDir, "myaction.sh"), []byte("#!/bin/bash\necho test"), 0755)
 	require.NoError(t, err)
 
@@ -385,10 +346,7 @@ func TestGetActionByIDComprehensive(t *testing.T) {
 // TestGetActionNotFoundComprehensive tests GetAction returns error for missing action
 func TestGetActionNotFoundComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "missing-action-test", DisplayName: "Test"}
 	err := CreateProfile("missing-action-test", profile)
@@ -405,16 +363,13 @@ func TestGetActionNotFoundComprehensive(t *testing.T) {
 // TestLoadActionsWithManifestComprehensive tests LoadActions reads actions.yaml manifest
 func TestLoadActionsWithManifestComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "manifest-test", DisplayName: "Test"}
 	err := CreateProfile("manifest-test", profile)
 	require.NoError(t, err)
 
-	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "manifest-test")
+	profileDir := filepath.Join(tmpDir, "profiles", "manifest-test")
 	actionsDir := filepath.Join(profileDir, "actions")
 
 	// Create action file
@@ -472,16 +427,13 @@ func TestActionTypeResolutionComprehensive(t *testing.T) {
 // TestActionPathResolutionComprehensive tests action paths are correctly resolved
 func TestActionPathResolutionComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "path-test", DisplayName: "Test"}
 	err := CreateProfile("path-test", profile)
 	require.NoError(t, err)
 
-	actionsDir := filepath.Join(tmpDir, ".agents", "profiles", "path-test", "actions")
+	actionsDir := filepath.Join(tmpDir, "profiles", "path-test", "actions")
 	err = os.WriteFile(filepath.Join(actionsDir, "myscript.py"), []byte("#!/usr/bin/env python3"), 0755)
 	require.NoError(t, err)
 
@@ -496,16 +448,13 @@ func TestActionPathResolutionComprehensive(t *testing.T) {
 // TestLoadActionsImplicitAndExplicitComprehensive tests mixing implicit and manifest actions
 func TestLoadActionsImplicitAndExplicitComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "mixed-actions", DisplayName: "Test"}
 	err := CreateProfile("mixed-actions", profile)
 	require.NoError(t, err)
 
-	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "mixed-actions")
+	profileDir := filepath.Join(tmpDir, "profiles", "mixed-actions")
 	actionsDir := filepath.Join(profileDir, "actions")
 
 	// Create action files
@@ -565,10 +514,7 @@ func TestActionManifestParsingComprehensive(t *testing.T) {
 // TestGetActionLoadingProfileNotFoundComprehensive tests GetAction with missing profile
 func TestGetActionLoadingProfileNotFoundComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	action, err := GetAction("nonexistent-profile", "some-action")
 	require.Error(t, err)
@@ -582,10 +528,7 @@ func TestGetActionLoadingProfileNotFoundComprehensive(t *testing.T) {
 // TestInjectEnvironmentBasicComprehensive tests basic environment injection
 func TestInjectEnvironmentBasicComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "env-basic", DisplayName: "Test"}
 	err := CreateProfile("env-basic", profile)
@@ -607,16 +550,13 @@ func TestInjectEnvironmentBasicComprehensive(t *testing.T) {
 // TestInjectEnvironmentSecretsLoadingComprehensive tests secrets are injected from secrets.env
 func TestInjectEnvironmentSecretsLoadingComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "env-secrets", DisplayName: "Test"}
 	err := CreateProfile("env-secrets", profile)
 	require.NoError(t, err)
 
-	secretsPath := filepath.Join(tmpDir, ".agents", "profiles", "env-secrets", "secrets.env")
+	secretsPath := filepath.Join(tmpDir, "profiles", "env-secrets", "secrets.env")
 	err = os.WriteFile(secretsPath, []byte("DATABASE_URL=postgres://localhost\nAPI_KEY=secret123\n"), 0600)
 	require.NoError(t, err)
 
@@ -635,10 +575,7 @@ func TestInjectEnvironmentSecretsLoadingComprehensive(t *testing.T) {
 // TestInjectEnvironmentGitConfigComprehensive tests git configuration injection
 func TestInjectEnvironmentGitConfigComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		ID:          "env-git",
@@ -662,10 +599,7 @@ func TestInjectEnvironmentGitConfigComprehensive(t *testing.T) {
 // TestInjectEnvironmentGitConfigDisabledComprehensive tests git injection disabled when not enabled
 func TestInjectEnvironmentGitConfigDisabledComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		ID:          "env-no-git",
@@ -689,10 +623,7 @@ func TestInjectEnvironmentGitConfigDisabledComprehensive(t *testing.T) {
 // TestInjectEnvironmentSSHConfigComprehensive tests SSH configuration injection
 func TestInjectEnvironmentSSHConfigComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		ID:          "env-ssh",
@@ -702,7 +633,7 @@ func TestInjectEnvironmentSSHConfigComprehensive(t *testing.T) {
 	err := CreateProfile("env-ssh", profile)
 	require.NoError(t, err)
 
-	sshKeyPath := filepath.Join(tmpDir, ".agents", "profiles", "env-ssh", "ssh.key")
+	sshKeyPath := filepath.Join(tmpDir, "profiles", "env-ssh", "ssh.key")
 	err = os.WriteFile(sshKeyPath, []byte("mock-key"), 0600)
 	require.NoError(t, err)
 
@@ -720,10 +651,7 @@ func TestInjectEnvironmentSSHConfigComprehensive(t *testing.T) {
 // TestInjectEnvironmentSSHConfigMissingKeyComprehensive tests SSH injection skipped when key missing
 func TestInjectEnvironmentSSHConfigMissingKeyComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		ID:          "env-ssh-missing",
@@ -747,17 +675,14 @@ func TestInjectEnvironmentSSHConfigMissingKeyComprehensive(t *testing.T) {
 // TestInjectEnvironmentMissingSecretsFileComprehensive tests handling of missing secrets file
 func TestInjectEnvironmentMissingSecretsFileComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{ID: "env-no-secrets", DisplayName: "Test"}
 	err := CreateProfile("env-no-secrets", profile)
 	require.NoError(t, err)
 
 	// Remove secrets file
-	secretsPath := filepath.Join(tmpDir, ".agents", "profiles", "env-no-secrets", "secrets.env")
+	secretsPath := filepath.Join(tmpDir, "profiles", "env-no-secrets", "secrets.env")
 	os.Remove(secretsPath)
 
 	loaded, err := LoadProfile("env-no-secrets")
@@ -775,15 +700,8 @@ func TestInjectEnvironmentMissingSecretsFileComprehensive(t *testing.T) {
 // TestInjectEnvironmentCustomPrefixComprehensive tests custom prefix from config
 func TestInjectEnvironmentCustomPrefixComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() {
-		os.Setenv("HOME", oldHome)
-		os.Setenv("XDG_CONFIG_HOME", oldXDG)
-	})
-
-	os.Setenv("HOME", tmpDir)
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	config := &Config{
 		Prefix: "CUSTOM",
@@ -883,10 +801,7 @@ func TestErrorCodeStringComprehensive(t *testing.T) {
 // TestErrorWrappingComprehensive tests error wrapping with fmt.Errorf
 func TestErrorWrappingComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	// Try to load non-existent profile which should wrap error
 	_, err := LoadProfile("does-not-exist")
@@ -903,10 +818,7 @@ func TestErrorWrappingComprehensive(t *testing.T) {
 // TestProfileSaveAndLoadWithA2AComprehensive tests profile with A2A configuration
 func TestProfileSaveAndLoadWithA2AComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "a2a-profile",
@@ -934,10 +846,7 @@ func TestProfileSaveAndLoadWithA2AComprehensive(t *testing.T) {
 // TestProfileSaveAndLoadWithACPComprehensive tests profile with ACP configuration
 func TestProfileSaveAndLoadWithACPComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "acp-profile",
@@ -1068,10 +977,7 @@ func TestLoadSecretsValidComprehensive(t *testing.T) {
 // TestListProfilesOrderingComprehensive tests ListProfiles returns profiles
 func TestListProfilesOrderingComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	// Create profiles in non-alphabetical order
 	for _, id := range []string{"zebra", "apple", "middle"} {
@@ -1089,55 +995,39 @@ func TestListProfilesOrderingComprehensive(t *testing.T) {
 	assert.Contains(t, profiles, "middle")
 }
 
-// TestGetProfileDirPathComprehensive tests GetProfileDir returns correct path structure
+// TestGetProfileDirPathComprehensive tests GetProfileDir returns correct XDG path structure
 func TestGetProfileDirPathComprehensive(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	dir, err := GetProfileDir("test-profile")
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents", "profiles", "test-profile")
+	expected := filepath.Join(tmpDir, "profiles", "test-profile")
 	assert.Equal(t, expected, dir)
 }
 
 // TestGetProfilePathComprehensive tests GetProfilePath returns profile.yaml path
 func TestGetProfilePathComprehensive(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	path, err := GetProfilePath("test-profile")
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents", "profiles", "test-profile", "profile.yaml")
+	expected := filepath.Join(tmpDir, "profiles", "test-profile", "profile.yaml")
 	assert.Equal(t, expected, path)
 }
 
-// TestGetAgentsDirPathComprehensive tests GetAgentsDir returns home/.agents
+// TestGetAgentsDirPathComprehensive tests GetAgentsDir delegates to GetDataDir (XDG)
 func TestGetAgentsDirPathComprehensive(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	dir, err := GetAgentsDir()
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents")
-	assert.Equal(t, expected, dir)
+	assert.Equal(t, tmpDir, dir)
 }
 
 // ============================================================================

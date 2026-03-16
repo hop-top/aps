@@ -71,8 +71,8 @@ type MobileAdapter struct {
 	ProfileID        string       `json:"profile_id"`
 	AdapterName       string       `json:"device_name"`
 	AdapterOS         string       `json:"device_os"`
-	AdapterVersion    string       `json:"device_version,omitempty"`
-	AdapterModel      string       `json:"device_model,omitempty"`
+	AdapterVersion    string       `json:"adapter_version,omitempty"`
+	AdapterModel      string       `json:"adapter_model,omitempty"`
 	RegisteredAt     time.Time    `json:"registered_at"`
 	LastSeenAt       time.Time    `json:"last_seen_at"`
 	ExpiresAt        time.Time    `json:"expires_at"`
@@ -86,7 +86,7 @@ type MobileAdapter struct {
 // MobileAdapterRegistry is the on-disk format for the mobile adapter registry
 type MobileAdapterRegistryData struct {
 	Version string          `json:"version"`
-	Adapters []*MobileAdapter `json:"devices"`
+	Adapters []*MobileAdapter `json:"adapters"`
 }
 
 // PairingRequest is sent by the mobile client to pair
@@ -94,8 +94,8 @@ type PairingRequest struct {
 	PairingCode   string `json:"pairing_code"`
 	AdapterName    string `json:"device_name"`
 	AdapterOS      string `json:"device_os"`
-	AdapterVersion string `json:"device_version,omitempty"`
-	AdapterModel   string `json:"device_model,omitempty"`
+	AdapterVersion string `json:"adapter_version,omitempty"`
+	AdapterModel   string `json:"adapter_model,omitempty"`
 }
 
 // PairingResponse is returned after successful pairing

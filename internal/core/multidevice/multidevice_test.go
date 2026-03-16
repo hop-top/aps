@@ -1,7 +1,6 @@
 package multidevice
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -9,13 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// setupTestHome configures HOME and XDG_DATA_HOME to a temporary directory for test isolation.
+// setupTestHome configures APS_DATA_PATH to a temporary directory for test isolation.
 func setupTestHome(t *testing.T) string {
 	t.Helper()
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
-	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpHome, ".local", "share"))
-	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("APS_DATA_PATH", tmpHome)
 	return tmpHome
 }
 

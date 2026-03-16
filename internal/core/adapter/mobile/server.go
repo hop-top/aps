@@ -152,7 +152,7 @@ func (s *AdapterServer) Start(ctx context.Context, config any) error {
 			serveErr = s.server.Serve(s.listener)
 		}
 		if serveErr != nil && serveErr != http.ErrServerClosed {
-			log.Printf("device server error: %v", serveErr)
+			log.Printf("adapter server error: %v", serveErr)
 		}
 		s.mu.Lock()
 		s.status = "stopped"
@@ -296,7 +296,7 @@ func (s *AdapterServer) handlePair(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if activeCount >= s.maxAdapters {
-		writeJSONError(w, fmt.Sprintf("maximum devices reached (%d/%d)", s.maxAdapters, s.maxAdapters), http.StatusConflict)
+		writeJSONError(w, fmt.Sprintf("maximum adapters reached (%d/%d)", s.maxAdapters, s.maxAdapters), http.StatusConflict)
 		return
 	}
 
@@ -336,7 +336,7 @@ func (s *AdapterServer) handlePair(w http.ResponseWriter, r *http.Request) {
 
 	// Register device
 	if err := s.registry.RegisterAdapter(device); err != nil {
-		writeJSONError(w, "failed to register device", http.StatusInternalServerError)
+		writeJSONError(w, "failed to register adapter", http.StatusInternalServerError)
 		return
 	}
 
@@ -379,11 +379,11 @@ func (s *AdapterServer) handleWebSocket(w http.ResponseWriter, r *http.Request) 
 	// Verify device is active
 	device, err := s.registry.GetAdapter(claims.AdapterID)
 	if err != nil {
-		http.Error(w, "device not found", http.StatusNotFound)
+		http.Error(w, "adapter not found", http.StatusNotFound)
 		return
 	}
 	if !device.IsActive() {
-		http.Error(w, fmt.Sprintf("device not active (status: %s)", device.Status), http.StatusForbidden)
+		http.Error(w, fmt.Sprintf("adapter not active (status: %s)", device.Status), http.StatusForbidden)
 		return
 	}
 

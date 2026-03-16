@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-// setupTestProfile creates a minimal profile directory structure under a temp
-// HOME so that core.GetProfileDir, core.ListProfiles, and LinkStore all
-// resolve correctly.
+// setupTestProfile creates a minimal profile directory structure under the data
+// directory (APS_DATA_PATH) so that core.GetProfileDir, core.ListProfiles,
+// and LinkStore all resolve correctly.
 func setupTestProfile(t *testing.T, home, profileID string) {
 	t.Helper()
-	profileDir := filepath.Join(home, ".agents", "profiles", profileID)
+	profileDir := filepath.Join(home, "profiles", profileID)
 	if err := os.MkdirAll(profileDir, 0755); err != nil {
 		t.Fatalf("failed to create profile dir: %v", err)
 	}
@@ -25,7 +25,7 @@ func setupTestProfile(t *testing.T, home, profileID string) {
 // readLinksFile reads and parses the messenger-links.json for a profile.
 func readLinksFile(t *testing.T, home, profileID string) []ProfileMessengerLink {
 	t.Helper()
-	path := filepath.Join(home, ".agents", "profiles", profileID, "messenger-links.json")
+	path := filepath.Join(home, "profiles", profileID, "messenger-links.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -42,7 +42,7 @@ func readLinksFile(t *testing.T, home, profileID string) []ProfileMessengerLink 
 
 func TestManager_LinkMessengerToProfile(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -77,7 +77,7 @@ func TestManager_LinkMessengerToProfile(t *testing.T) {
 
 func TestManager_LinkMessengerToProfile_AlreadyExists(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -102,7 +102,7 @@ func TestManager_LinkMessengerToProfile_AlreadyExists(t *testing.T) {
 
 func TestManager_LinkMessengerToProfile_ValidationErrors(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 
 	mgr := NewManager()
 
@@ -141,7 +141,7 @@ func TestManager_LinkMessengerToProfile_ValidationErrors(t *testing.T) {
 
 func TestManager_UnlinkMessengerFromProfile(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -167,7 +167,7 @@ func TestManager_UnlinkMessengerFromProfile(t *testing.T) {
 
 func TestManager_UnlinkMessengerFromProfile_NotFound(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -183,7 +183,7 @@ func TestManager_UnlinkMessengerFromProfile_NotFound(t *testing.T) {
 
 func TestManager_MappingConflict(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "profile-a")
 	setupTestProfile(t, home, "profile-b")
 
@@ -213,7 +213,7 @@ func TestManager_MappingConflict(t *testing.T) {
 
 func TestManager_MappingConflict_DifferentChannels(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "profile-a")
 	setupTestProfile(t, home, "profile-b")
 
@@ -240,7 +240,7 @@ func TestManager_MappingConflict_DifferentChannels(t *testing.T) {
 
 func TestManager_AddMapping(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -269,7 +269,7 @@ func TestManager_AddMapping(t *testing.T) {
 
 func TestManager_AddMapping_LinkNotFound(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -285,7 +285,7 @@ func TestManager_AddMapping_LinkNotFound(t *testing.T) {
 
 func TestManager_AddMapping_ValidationErrors(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -325,7 +325,7 @@ func TestManager_AddMapping_ValidationErrors(t *testing.T) {
 
 func TestManager_RemoveMapping(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -360,7 +360,7 @@ func TestManager_RemoveMapping(t *testing.T) {
 
 func TestManager_RemoveMapping_UnknownChannel(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -383,7 +383,7 @@ func TestManager_RemoveMapping_UnknownChannel(t *testing.T) {
 
 func TestManager_SetDefaultAction(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -411,7 +411,7 @@ func TestManager_SetDefaultAction(t *testing.T) {
 
 func TestManager_SetDefaultAction_LinkNotFound(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -427,7 +427,7 @@ func TestManager_SetDefaultAction_LinkNotFound(t *testing.T) {
 
 func TestManager_EnableDisable(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -468,7 +468,7 @@ func TestManager_EnableDisable(t *testing.T) {
 
 func TestManager_EnableDisable_LinkNotFound(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -496,7 +496,7 @@ func TestManager_EnableDisable_LinkNotFound(t *testing.T) {
 
 func TestManager_ResolveChannelRoute(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "profile-a")
 
 	mgr := NewManager()
@@ -574,7 +574,7 @@ func TestManager_ResolveChannelRoute(t *testing.T) {
 
 func TestManager_ResolveChannelRoute_DisabledLink(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -605,7 +605,7 @@ func TestManager_ResolveChannelRoute_DisabledLink(t *testing.T) {
 
 func TestManager_ResolveChannelRoute_WithDefaultAction(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -635,7 +635,7 @@ func TestManager_ResolveChannelRoute_WithDefaultAction(t *testing.T) {
 
 func TestManager_GetProfileLinks(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "test-profile")
 
 	mgr := NewManager()
@@ -670,7 +670,7 @@ func TestManager_GetProfileLinks(t *testing.T) {
 
 func TestManager_GetMessengerLinks(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	t.Setenv("APS_DATA_PATH", home)
 	setupTestProfile(t, home, "profile-a")
 	setupTestProfile(t, home, "profile-b")
 

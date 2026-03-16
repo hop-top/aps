@@ -8,11 +8,13 @@ import (
 )
 
 func TestDefaultStorageConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmpDir)
+
 	config := DefaultStorageConfig()
 
 	require.NotNil(t, config)
 	assert.NotEmpty(t, config.BasePath)
-	assert.Contains(t, config.BasePath, "aps")
 	assert.Contains(t, config.BasePath, "a2a")
 }
 
