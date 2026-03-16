@@ -8,7 +8,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"hop.top/aps/internal/voice"
 )
 
 const (
@@ -44,7 +43,7 @@ type Profile struct {
 	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
 	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
 	Trust         *TrustConfig         `yaml:"trust,omitempty"`
-	Voice         *voice.Config        `yaml:"voice,omitempty"`
+	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
 }

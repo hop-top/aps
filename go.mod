@@ -1,6 +1,6 @@
 module hop.top/aps
 
-go 1.25.5
+go 1.26.1
 
 require (
 	github.com/a2aproject/a2a-go v0.3.4
