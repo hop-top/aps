@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -127,11 +128,11 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 	}
 
 	// Setup registry
-	dataDir, err := core.GetDataDir()
+	registryDir, err := core.GetDataDir()
 	if err != nil {
-		return fmt.Errorf("failed to resolve data directory: %w", err)
+		return fmt.Errorf("failed to get data directory: %w", err)
 	}
-	registryDir := dataDir + "/devices"
+	registryDir = filepath.Join(registryDir, "devices")
 	registry, err := mobile.NewRegistry(registryDir)
 	if err != nil {
 		return fmt.Errorf("failed to initialize registry: %w", err)

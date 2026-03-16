@@ -121,10 +121,7 @@ func TestValidateIsolationDefaultLevel(t *testing.T) {
 // TestSaveAndLoadProfile tests saving and loading a profile
 func TestSaveAndLoadProfile(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := &Profile{
 		ID:          "test-profile",
@@ -140,8 +137,7 @@ func TestSaveAndLoadProfile(t *testing.T) {
 	err := SaveProfile(profile)
 	require.NoError(t, err)
 
-	agentsDir := filepath.Join(tmpDir, ".agents")
-	profileDir := filepath.Join(agentsDir, "profiles", "test-profile")
+	profileDir := filepath.Join(tmpDir, "profiles", "test-profile")
 	assert.DirExists(t, profileDir)
 	assert.FileExists(t, filepath.Join(profileDir, "profile.yaml"))
 }
@@ -163,10 +159,7 @@ func TestSaveProfileEmptyID(t *testing.T) {
 // TestCreateProfileWithDefaults tests CreateProfile creates directory structure
 func TestCreateProfileWithDefaults(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	config := Profile{
 		DisplayName: "New Test Profile",
@@ -178,8 +171,7 @@ func TestCreateProfileWithDefaults(t *testing.T) {
 	err := CreateProfile("new-profile", config)
 	require.NoError(t, err)
 
-	agentsDir := filepath.Join(tmpDir, ".agents")
-	profileDir := filepath.Join(agentsDir, "profiles", "new-profile")
+	profileDir := filepath.Join(tmpDir, "profiles", "new-profile")
 	assert.DirExists(t, filepath.Join(profileDir, "actions"))
 	assert.FileExists(t, filepath.Join(profileDir, "profile.yaml"))
 	assert.FileExists(t, filepath.Join(profileDir, "secrets.env"))
@@ -189,10 +181,7 @@ func TestCreateProfileWithDefaults(t *testing.T) {
 // TestCreateProfileWithGit tests CreateProfile with git config
 func TestCreateProfileWithGit(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	config := Profile{
 		DisplayName: "Git Profile",
@@ -204,8 +193,7 @@ func TestCreateProfileWithGit(t *testing.T) {
 	err := CreateProfile("git-profile", config)
 	require.NoError(t, err)
 
-	agentsDir := filepath.Join(tmpDir, ".agents")
-	profileDir := filepath.Join(agentsDir, "profiles", "git-profile")
+	profileDir := filepath.Join(tmpDir, "profiles", "git-profile")
 	assert.FileExists(t, filepath.Join(profileDir, "gitconfig"))
 
 	data, err := os.ReadFile(filepath.Join(profileDir, "gitconfig"))
@@ -216,10 +204,7 @@ func TestCreateProfileWithGit(t *testing.T) {
 // TestCreateProfileAlreadyExists tests CreateProfile fails if profile exists
 func TestCreateProfileAlreadyExists(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	config := Profile{
 		DisplayName: "First Profile",
@@ -235,45 +220,32 @@ func TestCreateProfileAlreadyExists(t *testing.T) {
 
 // TestGetProfileDir returns correct path
 func TestGetProfileDir(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	dir, err := GetProfileDir("test-id")
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents", "profiles", "test-id")
+	expected := filepath.Join(tmpDir, "profiles", "test-id")
 	assert.Equal(t, expected, dir)
 }
 
 // TestGetProfilePath returns profile.yaml path
 func TestGetProfilePath(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	path, err := GetProfilePath("test-id")
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents", "profiles", "test-id", "profile.yaml")
+	expected := filepath.Join(tmpDir, "profiles", "test-id", "profile.yaml")
 	assert.Equal(t, expected, path)
 }
 
 // TestListProfilesEmpty returns empty list when no profiles exist
 func TestListProfilesEmpty(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profiles, err := ListProfiles()
 	require.NoError(t, err)
@@ -283,10 +255,7 @@ func TestListProfilesEmpty(t *testing.T) {
 // TestListProfilesMultiple returns all profiles
 func TestListProfilesMultiple(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	for _, id := range []string{"profile1", "profile2", "profile3"} {
 		config := Profile{
@@ -307,10 +276,7 @@ func TestListProfilesMultiple(t *testing.T) {
 // TestProfileWithA2AConfig tests profile with A2A configuration
 func TestProfileWithA2AConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "A2A Profile",
@@ -323,7 +289,7 @@ func TestProfileWithA2AConfig(t *testing.T) {
 	err := CreateProfile("a2a-profile", profile)
 	require.NoError(t, err)
 
-	profilePath := filepath.Join(tmpDir, ".agents", "profiles", "a2a-profile", "profile.yaml")
+	profilePath := filepath.Join(tmpDir, "profiles", "a2a-profile", "profile.yaml")
 	data, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 
@@ -336,10 +302,7 @@ func TestProfileWithA2AConfig(t *testing.T) {
 // TestProfileWithACPConfig tests profile with ACP configuration
 func TestProfileWithACPConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "ACP Profile",
@@ -354,7 +317,7 @@ func TestProfileWithACPConfig(t *testing.T) {
 	err := CreateProfile("acp-profile", profile)
 	require.NoError(t, err)
 
-	profilePath := filepath.Join(tmpDir, ".agents", "profiles", "acp-profile", "profile.yaml")
+	profilePath := filepath.Join(tmpDir, "profiles", "acp-profile", "profile.yaml")
 	data, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 
@@ -369,10 +332,7 @@ func TestProfileWithACPConfig(t *testing.T) {
 // TestConcurrentProfileCreation tests concurrent profile operations
 func TestConcurrentProfileCreation(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 10)
@@ -407,15 +367,8 @@ func TestConcurrentProfileCreation(t *testing.T) {
 // TestInjectEnvironmentVariables tests environment variable injection
 func TestInjectEnvironmentVariables(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() {
-		os.Setenv("HOME", oldHome)
-		os.Setenv("XDG_CONFIG_HOME", oldXDG)
-	})
-
-	os.Setenv("HOME", tmpDir)
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	profile := Profile{
 		DisplayName: "Env Test",
@@ -439,10 +392,7 @@ func TestInjectEnvironmentVariables(t *testing.T) {
 // TestInjectEnvironmentWithSecrets tests secrets injection
 func TestInjectEnvironmentWithSecrets(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "Secret Test",
@@ -450,7 +400,7 @@ func TestInjectEnvironmentWithSecrets(t *testing.T) {
 	err := CreateProfile("secret-test", profile)
 	require.NoError(t, err)
 
-	secretsPath := filepath.Join(tmpDir, ".agents", "profiles", "secret-test", "secrets.env")
+	secretsPath := filepath.Join(tmpDir, "profiles", "secret-test", "secrets.env")
 	err = os.WriteFile(secretsPath, []byte("SECRET_KEY=secret_value\nAPI_TOKEN=token123\n"), 0600)
 	require.NoError(t, err)
 
@@ -469,10 +419,7 @@ func TestInjectEnvironmentWithSecrets(t *testing.T) {
 // TestInjectEnvironmentWithGitConfig tests git config injection
 func TestInjectEnvironmentWithGitConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "Git Test",
@@ -497,10 +444,7 @@ func TestInjectEnvironmentWithGitConfig(t *testing.T) {
 // TestInjectEnvironmentWithSSHConfig tests SSH config injection
 func TestInjectEnvironmentWithSSHConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "SSH Test",
@@ -512,7 +456,7 @@ func TestInjectEnvironmentWithSSHConfig(t *testing.T) {
 	err := CreateProfile("ssh-test", profile)
 	require.NoError(t, err)
 
-	sshKeyPath := filepath.Join(tmpDir, ".agents", "profiles", "ssh-test", "ssh.key")
+	sshKeyPath := filepath.Join(tmpDir, "profiles", "ssh-test", "ssh.key")
 	err = os.WriteFile(sshKeyPath, []byte("mock-key"), 0600)
 	require.NoError(t, err)
 
@@ -530,10 +474,7 @@ func TestInjectEnvironmentWithSSHConfig(t *testing.T) {
 // TestRunCommandWithProcessIsolation tests basic command execution
 func TestRunCommandWithProcessIsolation(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "Run Test",
@@ -577,10 +518,7 @@ func TestActionTypeResolution(t *testing.T) {
 // TestRunActionPayloadHandling tests action with payload
 func TestRunActionPayloadHandling(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	profile := Profile{
 		DisplayName: "Action Test",
@@ -591,8 +529,7 @@ func TestRunActionPayloadHandling(t *testing.T) {
 	err := CreateProfile("action-test", profile)
 	require.NoError(t, err)
 
-	agentsDir := filepath.Join(tmpDir, ".agents")
-	actionsDir := filepath.Join(agentsDir, "profiles", "action-test", "actions")
+	actionsDir := filepath.Join(tmpDir, "profiles", "action-test", "actions")
 
 	testScript := filepath.Join(actionsDir, "test.sh")
 	err = os.WriteFile(testScript, []byte("#!/bin/bash\ncat"), 0755)
@@ -992,21 +929,15 @@ func TestProfileWithoutWorkspaceLink(t *testing.T) {
 	assert.Nil(t, loaded.Workspace)
 }
 
-// TestGetAgentsDir returns home/.agents
+// TestGetAgentsDir returns XDG data dir (delegates to GetDataDir)
 func TestGetAgentsDir(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("APS_DATA_PATH", tmpDir)
 
 	dir, err := GetAgentsDir()
 	require.NoError(t, err)
 
-	expected := filepath.Join(tmpDir, ".agents")
-	assert.Equal(t, expected, dir)
+	assert.Equal(t, tmpDir, dir)
 }
 
 // ============================================================================

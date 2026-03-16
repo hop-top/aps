@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"hop.top/aps/internal/core"
@@ -194,5 +195,5 @@ func getRegistry() (*mobile.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mobile.NewRegistry(dataDir + "/devices")
+	return mobile.NewRegistry(filepath.Join(dataDir, "devices"))
 }

@@ -7,12 +7,26 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-
-	"hop.top/aps/internal/core"
 )
 
+// getXDGDataDir returns the XDG-compliant data directory for APS,
+// inlined here to avoid a circular import with internal/core.
+func getXDGDataDir() (string, error) {
+	if v := os.Getenv("APS_DATA_PATH"); v != "" {
+		return v, nil
+	}
+	if v := os.Getenv("XDG_DATA_HOME"); v != "" {
+		return filepath.Join(v, "aps"), nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".local", "share", "aps"), nil
+}
+
 func GetAdaptersDir() (string, error) {
-	dataDir, err := core.GetDataDir()
+	dataDir, err := getXDGDataDir()
 	if err != nil {
 		return "", err
 	}
@@ -28,11 +42,11 @@ func GetGlobalAdapterPath(name string) (string, error) {
 }
 
 func GetProfileAdapterPath(profileID, name string) (string, error) {
-	profileDir, err := core.GetProfileDir(profileID)
+	dataDir, err := getXDGDataDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(profileDir, "devices", name), nil
+	return filepath.Join(dataDir, "profiles", profileID, "devices", name), nil
 }
 
 func GetAdapterManifestPath(devicePath string) string {
@@ -116,7 +130,7 @@ func SaveAdapter(device *Adapter) error {
 	}
 
 	if err := os.MkdirAll(basePath, 0755); err != nil {
-		return fmt.Errorf("failed to create device directory: %w", err)
+		return fmt.Errorf("failed to create adapter directory: %w", err)
 	}
 
 	now := time.Now()
@@ -126,8 +140,8 @@ func SaveAdapter(device *Adapter) error {
 	device.UpdatedAt = now
 
 	manifest := AdapterManifest{
-		APIVersion:  "device.aps.dev/v1",
-		Kind:        "Device",
+		APIVersion:  "adapter.aps.dev/v1",
+		Kind:        "Adapter",
 		Name:        device.Name,
 		Type:        device.Type,
 		Strategy:    device.Strategy,
@@ -137,12 +151,12 @@ func SaveAdapter(device *Adapter) error {
 
 	data, err := yaml.Marshal(manifest)
 	if err != nil {
-		return fmt.Errorf("failed to marshal device manifest: %w", err)
+		return fmt.Errorf("failed to marshal adapter manifest: %w", err)
 	}
 
 	manifestPath := GetAdapterManifestPath(basePath)
 	if err := os.WriteFile(manifestPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write device manifest: %w", err)
+		return fmt.Errorf("failed to write adapter manifest: %w", err)
 	}
 
 	device.Path = basePath
@@ -158,7 +172,7 @@ func DeleteAdapter(name string) error {
 	}
 
 	if err := os.RemoveAll(device.Path); err != nil {
-		return fmt.Errorf("failed to delete device directory: %w", err)
+		return fmt.Errorf("failed to delete adapter directory: %w", err)
 	}
 
 	return nil
@@ -241,7 +255,7 @@ func matchesFilter(device *Adapter, filter *AdapterFilter) bool {
 }
 
 func listProfilesWithAdapters() ([]string, error) {
-	dataDir, err := core.GetDataDir()
+	dataDir, err := getXDGDataDir()
 	if err != nil {
 		return nil, err
 	}

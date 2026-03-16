@@ -14,23 +14,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// setupTestHome sets HOME and XDG_DATA_HOME to a temp directory and returns the path
+// setupTestHome sets APS_DATA_PATH to a temp directory and returns the path
 func setupTestHome(t *testing.T) string {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	oldAPS := os.Getenv("APS_DATA_PATH")
-	t.Cleanup(func() {
-		os.Setenv("HOME", oldHome)
-		os.Setenv("XDG_DATA_HOME", oldXDG)
-		if oldAPS != "" {
-			os.Setenv("APS_DATA_PATH", oldAPS)
-		}
-	})
-
-	os.Setenv("HOME", tmpDir)
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, ".local", "share"))
-	os.Unsetenv("APS_DATA_PATH")
+	t.Setenv("APS_DATA_PATH", tmpDir)
 	return tmpDir
 }
 
@@ -52,7 +39,7 @@ func TestInstallFromLocalPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify capability directory exists
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "my-capability")
+	capDir := filepath.Join(homeDir, "capabilities", "my-capability")
 	assert.DirExists(t, capDir)
 
 	// Verify content was copied
@@ -79,7 +66,7 @@ func TestInstallFromEmptySource(t *testing.T) {
 	err := Install("empty-capability", "")
 	require.NoError(t, err)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "empty-capability")
+	capDir := filepath.Join(homeDir, "capabilities", "empty-capability")
 	assert.DirExists(t, capDir)
 	assert.FileExists(t, filepath.Join(capDir, "manifest.yaml"))
 
@@ -105,7 +92,7 @@ func TestInstallWithVersionSpecification(t *testing.T) {
 	err := Install("versioned-cap", sourceDir)
 	require.NoError(t, err)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "versioned-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "versioned-cap")
 	assert.FileExists(t, filepath.Join(capDir, "version.txt"))
 
 	data, err := os.ReadFile(filepath.Join(capDir, "version.txt"))
@@ -148,7 +135,7 @@ func TestInstallToDifferentDirectory(t *testing.T) {
 	err := Install("custom-cap", "")
 	require.NoError(t, err)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "custom-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "custom-cap")
 	assert.DirExists(t, capDir)
 }
 
@@ -161,7 +148,7 @@ func TestInstallationErrors(t *testing.T) {
 		err := Install("test-cap", "/nonexistent/path/to/source")
 		require.NoError(t, err)
 
-		capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "test-cap")
+		capDir := filepath.Join(homeDir, "capabilities", "test-cap")
 		assert.DirExists(t, capDir)
 	})
 }
@@ -184,7 +171,7 @@ func TestDuplicateInstallation(t *testing.T) {
 func TestManifestValidation(t *testing.T) {
 	homeDir := setupTestHome(t)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "manifest-test")
+	capDir := filepath.Join(homeDir, "capabilities", "manifest-test")
 	require.NoError(t, os.MkdirAll(capDir, 0755))
 
 	// Create a manifest with all fields
@@ -240,7 +227,7 @@ func TestLinkCapabilityToProfile(t *testing.T) {
 	assert.FileExists(t, targetPath)
 
 	// Verify metadata was saved
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "linkable-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "linkable-cap")
 	data, err := os.ReadFile(filepath.Join(capDir, "manifest.yaml"))
 	require.NoError(t, err)
 
@@ -263,7 +250,7 @@ func TestAdoptExistingDirectory(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify capability was created
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "adopted-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "adopted-cap")
 	assert.DirExists(t, capDir)
 
 	// Verify original path still exists (symlinked back)
@@ -349,7 +336,7 @@ func TestUnlinkCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify capability is gone
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "cleanup-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "cleanup-cap")
 	assert.NoDirExists(t, capDir)
 }
 
@@ -361,7 +348,7 @@ func TestUnlinkCleanup(t *testing.T) {
 func TestLoadCapabilityFromManifest(t *testing.T) {
 	homeDir := setupTestHome(t)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "load-test")
+	capDir := filepath.Join(homeDir, "capabilities", "load-test")
 	require.NoError(t, os.MkdirAll(capDir, 0755))
 
 	manifest := Capability{
@@ -438,7 +425,7 @@ func TestDeleteCapability(t *testing.T) {
 	err := Install("delete-cap", "")
 	require.NoError(t, err)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "delete-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "delete-cap")
 	assert.DirExists(t, capDir)
 
 	err = Delete("delete-cap")
@@ -617,7 +604,7 @@ func TestCapabilityLoadWithoutManifest(t *testing.T) {
 	homeDir := setupTestHome(t)
 
 	// Create capability dir without manifest
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "no-manifest")
+	capDir := filepath.Join(homeDir, "capabilities", "no-manifest")
 	require.NoError(t, os.MkdirAll(capDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(capDir, "file.txt"), []byte("content"), 0644))
 
@@ -675,7 +662,7 @@ func TestCopyDirWithNestedStructure(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify structure was copied
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "nested-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "nested-cap")
 	assert.FileExists(t, filepath.Join(capDir, "bin", "tool"))
 	assert.FileExists(t, filepath.Join(capDir, "lib", "lib.sh"))
 }
@@ -749,7 +736,7 @@ func TestCapabilityPathHandling(t *testing.T) {
 	// Path should be absolute and properly formatted
 	assert.True(t, filepath.IsAbs(cap.Path))
 	assert.Contains(t, cap.Path, capName)
-	assert.True(t, strings.Contains(cap.Path, "aps"))
+	assert.Contains(t, cap.Path, "capabilities")
 }
 
 // ============================================================================
@@ -774,7 +761,7 @@ func TestDeleteWithValidCapability(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should no longer exist
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "valid-delete-cap")
+	capDir := filepath.Join(homeDir, "capabilities", "valid-delete-cap")
 	assert.NoDirExists(t, capDir)
 }
 
@@ -843,7 +830,7 @@ func TestSaveMetadataCreatesFile(t *testing.T) {
 	err := Install("metadata-test", "")
 	require.NoError(t, err)
 
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "metadata-test")
+	capDir := filepath.Join(homeDir, "capabilities", "metadata-test")
 	assert.FileExists(t, filepath.Join(capDir, "manifest.yaml"))
 }
 
@@ -862,7 +849,7 @@ func TestLoadCapabilityInitializesLinks(t *testing.T) {
 	homeDir := setupTestHome(t)
 
 	// Create capability dir without manifest
-	capDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities", "links-init-test")
+	capDir := filepath.Join(homeDir, "capabilities", "links-init-test")
 	require.NoError(t, os.MkdirAll(capDir, 0755))
 
 	cap, err := LoadCapabilityFromPath(capDir, "links-init-test")
@@ -897,7 +884,7 @@ func TestListFiltersNonDirectories(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a file in the capabilities directory (not a directory)
-	capsDir := filepath.Join(homeDir, ".local", "share", "aps", "capabilities")
+	capsDir := filepath.Join(homeDir, "capabilities")
 	require.NoError(t, os.WriteFile(filepath.Join(capsDir, "stray-file.txt"), []byte("test"), 0644))
 
 	// List should only return directories

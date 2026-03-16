@@ -7,15 +7,15 @@ import (
 type ErrorCode string
 
 const (
-	ErrCodeNotFound        ErrorCode = "device_not_found"
-	ErrCodeAlreadyExists   ErrorCode = "device_already_exists"
-	ErrCodeAlreadyRunning  ErrorCode = "device_already_running"
-	ErrCodeAlreadyStopped  ErrorCode = "device_already_stopped"
-	ErrCodeTypeNotImpl     ErrorCode = "device_type_not_implemented"
-	ErrCodeTypeInvalid     ErrorCode = "device_type_invalid"
+	ErrCodeNotFound        ErrorCode = "adapter_not_found"
+	ErrCodeAlreadyExists   ErrorCode = "adapter_already_exists"
+	ErrCodeAlreadyRunning  ErrorCode = "adapter_already_running"
+	ErrCodeAlreadyStopped  ErrorCode = "adapter_already_stopped"
+	ErrCodeTypeNotImpl     ErrorCode = "adapter_type_not_implemented"
+	ErrCodeTypeInvalid     ErrorCode = "adapter_type_invalid"
 	ErrCodeStrategyInvalid ErrorCode = "strategy_invalid"
-	ErrCodeStartFailed     ErrorCode = "device_start_failed"
-	ErrCodeStopFailed      ErrorCode = "device_stop_failed"
+	ErrCodeStartFailed     ErrorCode = "adapter_start_failed"
+	ErrCodeStopFailed      ErrorCode = "adapter_stop_failed"
 	ErrCodeHealthCheck     ErrorCode = "health_check_failed"
 	ErrCodeMigrationFailed ErrorCode = "migration_failed"
 	ErrCodeManifestInvalid ErrorCode = "manifest_invalid"
@@ -43,7 +43,7 @@ func (e *AdapterError) Unwrap() error {
 func ErrAdapterNotFound(name string) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "device not found",
+		Message: "adapter not found",
 		Code:    ErrCodeNotFound,
 	}
 }
@@ -51,7 +51,7 @@ func ErrAdapterNotFound(name string) error {
 func ErrAdapterAlreadyExists(name string) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "device already exists",
+		Message: "adapter already exists",
 		Code:    ErrCodeAlreadyExists,
 	}
 }
@@ -59,7 +59,7 @@ func ErrAdapterAlreadyExists(name string) error {
 func ErrAdapterAlreadyRunning(name string) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "device is already running",
+		Message: "adapter is already running",
 		Code:    ErrCodeAlreadyRunning,
 	}
 }
@@ -67,7 +67,7 @@ func ErrAdapterAlreadyRunning(name string) error {
 func ErrAdapterAlreadyStopped(name string) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "device is already stopped",
+		Message: "adapter is already stopped",
 		Code:    ErrCodeAlreadyStopped,
 	}
 }
@@ -75,7 +75,7 @@ func ErrAdapterAlreadyStopped(name string) error {
 func ErrAdapterTypeNotImplemented(t AdapterType) error {
 	return &AdapterError{
 		Name:    string(t),
-		Message: fmt.Sprintf("device type '%s' is not yet implemented", t),
+		Message: fmt.Sprintf("adapter type '%s' is not yet implemented", t),
 		Code:    ErrCodeTypeNotImpl,
 	}
 }
@@ -99,7 +99,7 @@ func ErrStrategyInvalid(s string) error {
 func ErrStartFailed(name string, cause error) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "failed to start device",
+		Message: "failed to start adapter",
 		Code:    ErrCodeStartFailed,
 		Cause:   cause,
 	}
@@ -108,7 +108,7 @@ func ErrStartFailed(name string, cause error) error {
 func ErrStopFailed(name string, cause error) error {
 	return &AdapterError{
 		Name:    name,
-		Message: "failed to stop device",
+		Message: "failed to stop adapter",
 		Code:    ErrCodeStopFailed,
 		Cause:   cause,
 	}

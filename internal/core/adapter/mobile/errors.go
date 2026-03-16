@@ -7,10 +7,10 @@ type MobileErrorCode string
 const (
 	ErrCodePairingExpired      MobileErrorCode = "pairing_expired"
 	ErrCodePairingInvalid      MobileErrorCode = "pairing_invalid"
-	ErrCodeAdapterNotFound      MobileErrorCode = "mobile_device_not_found"
-	ErrCodeAdapterRevoked       MobileErrorCode = "device_revoked"
-	ErrCodeAdapterPending       MobileErrorCode = "device_pending_approval"
-	ErrCodeMaxAdaptersReached   MobileErrorCode = "max_devices_reached"
+	ErrCodeAdapterNotFound      MobileErrorCode = "mobile_adapter_not_found"
+	ErrCodeAdapterRevoked       MobileErrorCode = "adapter_revoked"
+	ErrCodeAdapterPending       MobileErrorCode = "adapter_pending_approval"
+	ErrCodeMaxAdaptersReached   MobileErrorCode = "max_adapters_reached"
 	ErrCodeTokenExpired        MobileErrorCode = "token_expired"
 	ErrCodeTokenInvalid        MobileErrorCode = "token_invalid"
 	ErrCodePortInUse           MobileErrorCode = "port_in_use"
@@ -59,35 +59,35 @@ func ErrMobileAdapterNotFound(deviceID string) error {
 
 func ErrAdapterRevoked(deviceID string) error {
 	return &MobileError{
-		Message: fmt.Sprintf("device '%s' has been revoked", deviceID),
+		Message: fmt.Sprintf("adapter '%s' has been revoked", deviceID),
 		Code:    ErrCodeAdapterRevoked,
 	}
 }
 
 func ErrAdapterPending(deviceID string) error {
 	return &MobileError{
-		Message: fmt.Sprintf("device '%s' is pending approval", deviceID),
+		Message: fmt.Sprintf("adapter '%s' is pending approval", deviceID),
 		Code:    ErrCodeAdapterPending,
 	}
 }
 
 func ErrMaxAdaptersReached(profileID string, max int) error {
 	return &MobileError{
-		Message: fmt.Sprintf("maximum devices reached for profile '%s' (%d/%d)", profileID, max, max),
+		Message: fmt.Sprintf("maximum adapters reached for profile '%s' (%d/%d)", profileID, max, max),
 		Code:    ErrCodeMaxAdaptersReached,
 	}
 }
 
 func ErrTokenExpired() error {
 	return &MobileError{
-		Message: "device token has expired",
+		Message: "adapter token has expired",
 		Code:    ErrCodeTokenExpired,
 	}
 }
 
 func ErrTokenInvalid(cause error) error {
 	return &MobileError{
-		Message: "invalid device token",
+		Message: "invalid adapter token",
 		Code:    ErrCodeTokenInvalid,
 		Cause:   cause,
 	}
@@ -95,7 +95,7 @@ func ErrTokenInvalid(cause error) error {
 
 func ErrPortInUse(port int, cause error) error {
 	return &MobileError{
-		Message: fmt.Sprintf("cannot start device server on port %d", port),
+		Message: fmt.Sprintf("cannot start adapter server on port %d", port),
 		Code:    ErrCodePortInUse,
 		Cause:   cause,
 	}
@@ -110,7 +110,7 @@ func ErrMobileNotEnabled(profileID string) error {
 
 func ErrCapabilityInvalid(cap string) error {
 	return &MobileError{
-		Message: fmt.Sprintf("invalid device capability '%s'", cap),
+		Message: fmt.Sprintf("invalid adapter capability '%s'", cap),
 		Code:    ErrCodeCapabilityInvalid,
 	}
 }
