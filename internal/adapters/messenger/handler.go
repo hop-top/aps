@@ -1,6 +1,7 @@
 package messenger
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,12 @@ import (
 
 	msgtypes "hop.top/aps/internal/core/messenger"
 )
+
+// VoiceHandler handles voice messages (audio attachments) from messenger platforms.
+// If set on Handler, audio messages bypass the action router and go to the voice pipeline.
+type VoiceHandler interface {
+	HandleVoiceMessage(ctx context.Context, msg *msgtypes.NormalizedMessage) error
+}
 
 // MessageLogger defines the logging interface for messenger message events.
 // This decouples the handler from the concrete WorkspaceMessageLogger
@@ -22,19 +29,26 @@ type MessageLogger interface {
 // platform-specific payloads, routes them to the appropriate profile action,
 // and returns a platform-appropriate response.
 type Handler struct {
-	router     *MessageRouter
-	normalizer *Normalizer
-	logger     MessageLogger
+	router       *MessageRouter
+	normalizer   *Normalizer
+	logger       MessageLogger
+	voiceHandler VoiceHandler
 }
 
 // NewHandler creates a Handler with the given router, normalizer, and optional
 // logger. The logger may be nil, in which case message logging is skipped.
-func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLogger) *Handler {
-	return &Handler{
-		router:     router,
-		normalizer: normalizer,
-		logger:     logger,
+// Additional functional options may be provided (e.g. WithVoiceHandler).
+func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLogger, opts ...func(*Handler)) *Handler {
+	h := &Handler{router: router, normalizer: normalizer, logger: logger}
+	for _, opt := range opts {
+		opt(h)
 	}
+	return h
+}
+
+// WithVoiceHandler attaches a voice pipeline handler to the messenger Handler.
+func WithVoiceHandler(vh VoiceHandler) func(*Handler) {
+	return func(h *Handler) { h.voiceHandler = vh }
 }
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
@@ -78,6 +92,20 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request, platform
 	if h.logger != nil {
 		// Log errors are not fatal to the processing pipeline.
 		_ = h.logger.LogMessageReceived(msg)
+	}
+
+	// If this message contains audio and a voice handler is registered, delegate to it.
+	if h.voiceHandler != nil && hasAudioAttachment(msg) {
+		if err := h.voiceHandler.HandleVoiceMessage(r.Context(), msg); err != nil {
+			writeError(w, http.StatusInternalServerError, fmt.Sprintf("voice handling failed: %v", err))
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":     "accepted",
+			"message_id": msg.ID,
+			"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		})
+		return
 	}
 
 	// Route and execute the action.
@@ -181,6 +209,16 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
+}
+
+// hasAudioAttachment reports whether the message contains at least one audio attachment.
+func hasAudioAttachment(msg *msgtypes.NormalizedMessage) bool {
+	for _, att := range msg.Attachments {
+		if att.Type == "audio" {
+			return true
+		}
+	}
+	return false
 }
 
 // writeError writes a JSON-formatted error response with the given HTTP status code.
