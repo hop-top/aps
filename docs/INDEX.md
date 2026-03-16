@@ -5,6 +5,7 @@ Quick navigation to all APS documentation.
 ## Getting Started
 
 - [**Messengers Overview**](MESSENGERS_OVERVIEW.md) — Platform comparison, routing architecture, best practices
+- [**Voice**](dev/voice.md) — Speech-to-speech backend, channel adapters, CLI commands
 - [**Adapters**](dev/adapters.md) — What adapters are, types, CLI usage, export/import
 - [**Squads**](dev/squads.md) — Squad topologies, contracts, checklist, CLI usage
 - [**Configuration**](dev/configuration.md) — XDG directories, config file, profile storage, migration
@@ -25,6 +26,7 @@ Quick navigation to all APS documentation.
 - [**Squads Implementation**](dev/squads.md) — What's built: types, manager, contracts, router, evolution, CLI
 - [**Scope System**](dev/scope.md) — Unified scope type, intersection logic, multi-layer resolution
 - [**Capability Bundles**](dev/bundles.md) — Named presets grouping capabilities, scope rules, env vars, and services
+- [**Voice**](dev/voice.md) — Backend lifecycle, channel adapters (web/TUI/messenger/telephony), session routing
 - [**A2A Implementation**](a2a-implementation.md) — Agent-to-agent protocol
 - [**ACP Implementation**](acp-implementation.md) — Agent control protocol
 - [**Protocol Interface Unification**](protocol-interface-unification.md) — Protocol abstraction layer
@@ -39,6 +41,15 @@ Quick navigation to all APS documentation.
 1. Read [Messengers Overview](MESSENGERS_OVERVIEW.md)
 2. Choose: [Telegram](TELEGRAM_SETUP.md) | [Discord](DISCORD_SETUP.md)
 3. Run: `./scripts/setup-messenger.sh --type=<platform>`
+
+### Use voice
+```bash
+aps voice service start
+aps voice start --profile <id> [--channel web|tui|telegram|twilio]
+aps voice session list
+```
+
+See [Voice](dev/voice.md) for full reference.
 
 ### Manage adapters
 ```bash
@@ -72,6 +83,7 @@ docs/
 ├── DISCORD_SETUP.md
 ├── MESSENGER_SETUP_QUICK_REF.md
 ├── dev/
+│   ├── voice.md                   ← voice subsystem
 │   ├── squad-topologies-spec.md   ← theory
 │   ├── squads.md                  ← implementation
 │   ├── adapters.md                ← implementation
@@ -79,6 +91,7 @@ docs/
 │   ├── bundles.md                 ← capability bundles
 │   └── configuration.md           ← XDG, config, migration
 ├── plans/
+│   ├── 2026-03-16-voice-integration-design.md
 │   └── 2026-03-01-agntcy-integration-gap-analysis.md
 └── stories/
     └── README.md
@@ -92,4 +105,4 @@ docs/
 
 ---
 
-**Last Updated**: 2026-03-08
+**Last Updated**: 2026-03-16

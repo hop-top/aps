@@ -105,6 +105,7 @@ Documentation will be generated at `~/.agents/docs/`.
 - **Git Integration**: Automatic gitconfig and SSH key management
 - **Webhook Support**: Event-driven automation from GitHub, GitLab, and more
 - **TUI Interface**: Interactive terminal user interface for easy profile management
+- **Voice Sessions**: Speech-to-speech backend integration (PersonaPlex, Moshi) with web, terminal, messenger, and telephony channels
 - **Graceful Degradation**: Automatic fallback to available isolation levels when requested level is unavailable
 - **Cross-Platform Support**: macOS, Linux, and Windows (platform isolation varies by OS)
 
@@ -296,6 +297,9 @@ aps session detach <id>  # Detach from a session
 aps session inspect <id> # Inspect session details
 aps session logs <id>    # Show session logs
 aps session terminate <id> # Terminate a session
+aps voice service start|stop|status  # Manage voice backend
+aps voice start [--profile <id>] [--channel web|tui|telegram|twilio]
+aps voice session list   # List active voice sessions
 aps docs               # Generate documentation
 ```
 

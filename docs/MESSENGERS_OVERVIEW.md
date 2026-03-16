@@ -64,6 +64,7 @@ For any platform, use:
 | **Message History** | Unlimited | Unlimited | 90 days (free) | ✗ | ✓ |
 | **Multi-user** | ✓ | ✓ | ✓ | ✗ | ✓ |
 | **Rate Limits** | ~30/sec | ~10/sec | ~1/sec | ✗ | Varies |
+| **Voice Messages** | ✓ (via APS voice) | ✗ | ✗ | ✗ | ✗ |
 
 ### Setup Complexity
 
@@ -95,10 +96,11 @@ For any platform, use:
 ## When to Use Each
 
 ### Telegram
-**Best for**: Commands, quick notifications, broad audience
+**Best for**: Commands, quick notifications, broad audience, voice messages
 - ✓ Easy setup (@BotFather)
 - ✓ Large community
 - ✓ No cost
+- ✓ Voice message support (APS voice channel adapter)
 - ✗ Limited formatting
 
 **Use cases**:
@@ -106,6 +108,7 @@ For any platform, use:
 - Command bots
 - Notifications
 - Quick polls
+- Voice-driven agent interaction (see [Voice](dev/voice.md))
 
 ### Discord
 **Best for**: Community servers, multi-team collaboration, gaming communities
