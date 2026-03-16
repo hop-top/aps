@@ -3,7 +3,7 @@
 # Docs: https://mise.jdx.dev
 
 [tools]
-go = "1.25.5"
+go = "1.26.1"
 goreleaser = "latest"
 golangci-lint = "latest"
 act = "latest"
