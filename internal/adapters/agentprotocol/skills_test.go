@@ -20,24 +20,19 @@ func TestHandleSkillsList(t *testing.T) {
 	setupTestSkill(t, tmpDir, "test-skill-1")
 	setupTestSkill(t, tmpDir, "test-skill-2")
 
-	// Create .agents/profiles directory structure
-	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "testagent")
+	// Set XDG_DATA_HOME to our test directory
+	oldXDG := os.Getenv("XDG_DATA_HOME")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+
+	// Create profiles directory at XDG path
+	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
 	profileYAML := `id: testagent
 display_name: Test Agent
 `
 	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "profile.yaml"), []byte(profileYAML), 0644))
-
-	// Override home directory for profile loading
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
-
-	// Set XDG_DATA_HOME to our test directory
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
 
 	// Copy skills to global location
 	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
@@ -91,23 +86,19 @@ func TestHandleSkillsGet(t *testing.T) {
 	tmpDir := t.TempDir()
 	setupTestSkill(t, tmpDir, "test-skill")
 
-	// Create profile
-	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "testagent")
+	// Set XDG_DATA_HOME to our test directory
+	oldXDG := os.Getenv("XDG_DATA_HOME")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+
+	// Create profile at XDG path
+	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
 	profileYAML := `id: testagent
 display_name: Test Agent
 `
 	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "profile.yaml"), []byte(profileYAML), 0644))
-
-	// Override environment
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
-
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
 
 	// Copy skill to global location
 	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
@@ -168,19 +159,19 @@ func TestHandleSkillsInvoke(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Create profile
-	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "testagent")
+	// Set XDG_DATA_HOME to our test directory
+	oldXDG := os.Getenv("XDG_DATA_HOME")
+	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+
+	// Create profile at XDG path
+	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
 	profileYAML := `id: testagent
 display_name: Test Agent
 `
 	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "profile.yaml"), []byte(profileYAML), 0644))
-
-	// Override environment
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
 
 	adapter := NewAgentProtocolAdapter()
 
