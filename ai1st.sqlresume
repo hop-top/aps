@@ -1,0 +1,293 @@
+-- AI-Agent First Businesses: Full Schema Definition
+-- Extracted from core business and marketplace ERDs
+
+--------------------------------------------------------------------------------
+-- 1. CORE ORGANIZATIONAL LAYER
+--------------------------------------------------------------------------------
+
+CREATE TABLE companies (
+    company_id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    operating_model VARCHAR(255),
+    maturity_stage VARCHAR(255),
+    industry VARCHAR(255),
+    verification_status VARCHAR(255),
+    company_role VARCHAR(255)
+);
+
+CREATE TABLE business_units (
+    unit_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    owner_role VARCHAR(255),
+    mission TEXT
+);
+
+CREATE TABLE strategic_goals (
+    goal_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    horizon VARCHAR(255),
+    priority VARCHAR(255)
+);
+
+CREATE TABLE initiatives (
+    initiative_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    theme VARCHAR(255),
+    status VARCHAR(255)
+);
+
+CREATE TABLE customer_segments (
+    segment_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    profile TEXT,
+    value_priority VARCHAR(255)
+);
+
+--------------------------------------------------------------------------------
+-- 2. AGENT & CAPABILITY LAYER
+--------------------------------------------------------------------------------
+
+CREATE TABLE ai_agents (
+    agent_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(255),
+    agent_role VARCHAR(255),
+    autonomy_level VARCHAR(255)
+);
+
+CREATE TABLE capabilities (
+    capability_id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(255),
+    maturity VARCHAR(255),
+    complexity VARCHAR(255),
+    domain VARCHAR(255),
+    assurance_level VARCHAR(255)
+);
+
+CREATE TABLE agent_workflows (
+    workflow_id VARCHAR(255) PRIMARY KEY,
+    agent_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    trigger_type VARCHAR(255),
+    execution_mode VARCHAR(255)
+);
+
+CREATE TABLE memory_scopes (
+    memory_id VARCHAR(255) PRIMARY KEY,
+    agent_id VARCHAR(255),
+    scope_type VARCHAR(255),
+    retention_rule VARCHAR(255),
+    sensitivity_level VARCHAR(255)
+);
+
+CREATE TABLE tools (
+    tool_id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    tool_type VARCHAR(255),
+    provider VARCHAR(255)
+);
+
+CREATE TABLE knowledge_assets (
+    knowledge_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    source_type VARCHAR(255),
+    trust_level VARCHAR(255)
+);
+
+--------------------------------------------------------------------------------
+-- 3. PROCESS & EXECUTION LAYER
+--------------------------------------------------------------------------------
+
+CREATE TABLE processes (
+    process_id VARCHAR(255) PRIMARY KEY,
+    unit_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    objective TEXT,
+    automation_level VARCHAR(255)
+);
+
+CREATE TABLE tasks (
+    task_id VARCHAR(255) PRIMARY KEY,
+    process_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    task_type VARCHAR(255),
+    criticality VARCHAR(255)
+);
+
+CREATE TABLE decision_points (
+    decision_id VARCHAR(255) PRIMARY KEY,
+    process_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    risk_level VARCHAR(255),
+    approval_type VARCHAR(255)
+);
+
+CREATE TABLE human_roles (
+    role_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
+    function VARCHAR(255),
+    accountability TEXT
+);
+
+--------------------------------------------------------------------------------
+-- 4. MARKETPLACE & NETWORK LAYER
+--------------------------------------------------------------------------------
+
+CREATE TABLE networks (
+    network_id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    governance_model VARCHAR(255),
+    trust_framework VARCHAR(255),
+    settlement_rail VARCHAR(255)
+);
+
+CREATE TABLE marketplaces (
+    marketplace_id VARCHAR(255) PRIMARY KEY,
+    network_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    operator VARCHAR(255),
+    settlement_model VARCHAR(255),
+    discovery_mode VARCHAR(255),
+    fee_model VARCHAR(255)
+);
+
+CREATE TABLE service_listings (
+    listing_id VARCHAR(255) PRIMARY KEY,
+    marketplace_id VARCHAR(255),
+    company_id VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
+    service_type VARCHAR(255),
+    capability_domain VARCHAR(255),
+    fulfillment_mode VARCHAR(255),
+    service_scope TEXT
+);
+
+CREATE TABLE task_contracts (
+    contract_id VARCHAR(255) PRIMARY KEY,
+    negotiation_id VARCHAR(255),
+    scope TEXT,
+    SLA TEXT,
+    status VARCHAR(255),
+    contract_type VARCHAR(255),
+    auto_execute_flag BOOLEAN
+);
+
+CREATE TABLE escrow_accounts (
+    escrow_id VARCHAR(255) PRIMARY KEY,
+    marketplace_id VARCHAR(255),
+    contract_id VARCHAR(255),
+    currency VARCHAR(50),
+    balance DECIMAL(18, 4),
+    release_condition TEXT,
+    funding_state VARCHAR(255),
+    release_policy VARCHAR(255)
+);
+
+CREATE TABLE buy_requests (
+    request_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    agent_id VARCHAR(255),
+    objective TEXT,
+    urgency VARCHAR(255),
+    budget_band VARCHAR(255),
+    desired_outcome TEXT
+);
+
+CREATE TABLE negotiation_sessions (
+    negotiation_id VARCHAR(255) PRIMARY KEY,
+    request_id VARCHAR(255),
+    marketplace_id VARCHAR(255),
+    protocol VARCHAR(255),
+    deadline TIMESTAMP,
+    status VARCHAR(255)
+);
+
+CREATE TABLE bids (
+    bid_id VARCHAR(255) PRIMARY KEY,
+    listing_id VARCHAR(255),
+    negotiation_id VARCHAR(255),
+    quoted_price DECIMAL(18, 4),
+    lead_time VARCHAR(255),
+    confidence DECIMAL(5, 2),
+    validity_window VARCHAR(255)
+);
+
+--------------------------------------------------------------------------------
+-- 5. TRUST, COMPLIANCE & REPUTATION
+--------------------------------------------------------------------------------
+
+CREATE TABLE reputation_scores (
+    reputation_id VARCHAR(255) PRIMARY KEY,
+    subject_id VARCHAR(255), -- ID of company, agent, or capability
+    subject_type VARCHAR(255),
+    score DECIMAL(5, 2),
+    confidence DECIMAL(5, 2),
+    last_updated TIMESTAMP
+);
+
+CREATE TABLE reviews (
+    review_id VARCHAR(255) PRIMARY KEY,
+    listing_id VARCHAR(255),
+    reviewer_id VARCHAR(255),
+    rating INT,
+    review_type VARCHAR(255),
+    sentiment VARCHAR(255),
+    comment TEXT
+);
+
+CREATE TABLE compliance_credentials (
+    credential_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    credential_type VARCHAR(255),
+    issuer VARCHAR(255),
+    expiry_date DATE
+);
+
+CREATE TABLE trust_bonds (
+    bond_id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    bond_type VARCHAR(255),
+    amount DECIMAL(18, 4),
+    slashing_rule TEXT
+);
+
+--------------------------------------------------------------------------------
+-- 6. RELATIONSHIP MAPPING (FOREIGN KEYS)
+--------------------------------------------------------------------------------
+
+-- Core Org
+ALTER TABLE business_units ADD CONSTRAINT fk_bu_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE strategic_goals ADD CONSTRAINT fk_goal_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE initiatives ADD CONSTRAINT fk_init_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE customer_segments ADD CONSTRAINT fk_segment_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
+
+-- Agents
+ALTER TABLE ai_agents ADD CONSTRAINT fk_agent_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE agent_workflows ADD CONSTRAINT fk_wf_agent FOREIGN KEY (agent_id) REFERENCES ai_agents(agent_id);
+ALTER TABLE memory_scopes ADD CONSTRAINT fk_mem_agent FOREIGN KEY (agent_id) REFERENCES ai_agents(agent_id);
+
+-- Processes
+ALTER TABLE processes ADD CONSTRAINT fk_proc_unit FOREIGN KEY (unit_id) REFERENCES business_units(unit_id);
+ALTER TABLE tasks ADD CONSTRAINT fk_task_proc FOREIGN KEY (process_id) REFERENCES processes(process_id);
+ALTER TABLE decision_points ADD CONSTRAINT fk_dec_proc FOREIGN KEY (process_id) REFERENCES processes(process_id);
+
+-- Marketplace
+ALTER TABLE marketplaces ADD CONSTRAINT fk_mkt_net FOREIGN KEY (network_id) REFERENCES networks(network_id);
+ALTER TABLE service_listings ADD CONSTRAINT fk_list_mkt FOREIGN KEY (marketplace_id) REFERENCES marketplaces(marketplace_id);
+ALTER TABLE service_listings ADD CONSTRAINT fk_list_comp FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE task_contracts ADD CONSTRAINT fk_cont_neg FOREIGN KEY (negotiation_id) REFERENCES negotiation_sessions(negotiation_id);
+ALTER TABLE escrow_accounts ADD CONSTRAINT fk_esc_mkt FOREIGN KEY (marketplace_id) REFERENCES marketplaces(marketplace_id);
+ALTER TABLE escrow_accounts ADD CONSTRAINT fk_esc_cont FOREIGN KEY (contract_id) REFERENCES task_contracts(contract_id);
+ALTER TABLE buy_requests ADD CONSTRAINT fk_req_comp FOREIGN KEY (company_id) REFERENCES companies(company_id);
+ALTER TABLE buy_requests ADD CONSTRAINT fk_req_agent FOREIGN KEY (agent_id) REFERENCES ai_agents(agent_id);
+ALTER TABLE negotiation_sessions ADD CONSTRAINT fk_neg_req FOREIGN KEY (request_id) REFERENCES buy_requests(request_id);
+ALTER TABLE bids ADD CONSTRAINT fk_bid_list FOREIGN KEY (listing_id) REFERENCES service_listings(listing_id);
+ALTER TABLE bids ADD CONSTRAINT fk_bid_neg FOREIGN KEY (negotiation_id) REFERENCES negotiation_sessions(negotiation_id);

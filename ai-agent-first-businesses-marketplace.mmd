@@ -1,0 +1,725 @@
+erDiagram
+    COMPANY ||--o{ BUSINESS_UNIT : contains
+    COMPANY ||--o{ STRATEGIC_GOAL : pursues
+    COMPANY ||--o{ CUSTOMER_SEGMENT : serves
+    COMPANY ||--o{ POLICY : enforces
+    COMPANY ||--o{ KNOWLEDGE_ASSET : owns
+    COMPANY ||--o{ AI_AGENT : operates
+    COMPANY ||--o{ HUMAN_ROLE : employs
+    COMPANY ||--o{ CHANNEL : uses
+    COMPANY ||--o{ PARTNER : collaborates_with
+
+    BUSINESS_UNIT ||--o{ PROCESS : runs
+    BUSINESS_UNIT ||--o{ KPI : tracks
+    BUSINESS_UNIT ||--o{ BUDGET : allocates
+
+    STRATEGIC_GOAL ||--o{ KPI : measured_by
+    STRATEGIC_GOAL ||--o{ INITIATIVE : driven_by
+
+    INITIATIVE ||--o{ PROCESS : transforms
+    INITIATIVE ||--o{ AI_AGENT : introduces
+    INITIATIVE ||--o{ HUMAN_ROLE : impacts
+
+    CUSTOMER_SEGMENT ||--o{ JOURNEY : experiences
+    CUSTOMER_SEGMENT ||--o{ OFFERING : buys
+    CHANNEL ||--o{ JOURNEY : enables
+
+    JOURNEY ||--o{ PROCESS : triggers
+    JOURNEY ||--o{ INTERACTION : contains
+
+    PROCESS ||--o{ TASK : decomposes_to
+    PROCESS ||--o{ DECISION_POINT : includes
+    PROCESS ||--o{ DATA_PRODUCT : uses
+    PROCESS ||--o{ KPI : evaluated_by
+
+    TASK }o--o{ HUMAN_ROLE : performed_by
+    TASK }o--o{ AI_AGENT : automated_by
+    TASK ||--o{ TOOL : uses
+    TASK ||--o{ OUTCOME : produces
+
+    DECISION_POINT }o--o{ POLICY : constrained_by
+    DECISION_POINT }o--o{ AI_AGENT : recommended_by
+    DECISION_POINT }o--o{ HUMAN_ROLE : approved_by
+
+    AI_AGENT }o--o{ TOOL : invokes
+    AI_AGENT }o--o{ KNOWLEDGE_ASSET : grounded_on
+    AI_AGENT }o--o{ POLICY : governed_by
+    AI_AGENT }o--o{ KPI : evaluated_by
+    AI_AGENT ||--o{ AGENT_WORKFLOW : executes
+    AI_AGENT ||--o{ MEMORY_SCOPE : maintains
+
+    AGENT_WORKFLOW ||--o{ TASK : orchestrates
+    AGENT_WORKFLOW ||--o{ TOOL : chains
+    AGENT_WORKFLOW ||--o{ EVENT : emits
+
+    HUMAN_ROLE }o--o{ KPI : accountable_for
+    HUMAN_ROLE }o--o{ POLICY : follows
+    HUMAN_ROLE ||--o{ CAPABILITY : requires
+
+    OFFERING ||--o{ REVENUE_STREAM : generates
+    OFFERING ||--o{ DATA_PRODUCT : depends_on
+
+    DATA_PRODUCT ||--o{ KNOWLEDGE_ASSET : packages
+    DATA_PRODUCT ||--o{ KPI : informs
+
+    PARTNER ||--o{ TOOL : provides
+    PARTNER ||--o{ OFFERING : extends
+
+    POLICY ||--o{ CONTROL : implemented_by
+    CONTROL ||--o{ AUDIT_EVENT : produces
+
+    EVENT ||--o{ AUDIT_EVENT : may_become
+    INTERACTION ||--o{ EVENT : creates
+
+    COMPANY {
+        string company_id PK
+        string name
+        string operating_model
+        string maturity_stage
+    }
+
+    BUSINESS_UNIT {
+        string unit_id PK
+        string name
+        string owner_role
+        string mission
+    }
+
+    STRATEGIC_GOAL {
+        string goal_id PK
+        string name
+        string horizon
+        string priority
+    }
+
+    INITIATIVE {
+        string initiative_id PK
+        string name
+        string theme
+        string status
+    }
+
+    CUSTOMER_SEGMENT {
+        string segment_id PK
+        string name
+        string profile
+        string value_priority
+    }
+
+    JOURNEY {
+        string journey_id PK
+        string name
+        string stage
+        string outcome_target
+    }
+
+    INTERACTION {
+        string interaction_id PK
+        string type
+        string channel_type
+        string intent
+    }
+
+    CHANNEL {
+        string channel_id PK
+        string name
+        string mode
+        string owner
+    }
+
+    PROCESS {
+        string process_id PK
+        string name
+        string objective
+        string automation_level
+    }
+
+    TASK {
+        string task_id PK
+        string name
+        string task_type
+        string criticality
+    }
+
+    DECISION_POINT {
+        string decision_id PK
+        string name
+        string risk_level
+        string approval_type
+    }
+
+    AI_AGENT {
+        string agent_id PK
+        string name
+        string role
+        string autonomy_level
+    }
+
+    AGENT_WORKFLOW {
+        string workflow_id PK
+        string name
+        string trigger_type
+        string execution_mode
+    }
+
+    MEMORY_SCOPE {
+        string memory_id PK
+        string scope_type
+        string retention_rule
+        string sensitivity_level
+    }
+
+    HUMAN_ROLE {
+        string role_id PK
+        string title
+        string function
+        string accountability
+    }
+
+    CAPABILITY {
+        string capability_id PK
+        string name
+        string category
+        string maturity
+    }
+
+    TOOL {
+        string tool_id PK
+        string name
+        string tool_type
+        string provider
+    }
+
+    KNOWLEDGE_ASSET {
+        string knowledge_id PK
+        string name
+        string source_type
+        string trust_level
+    }
+
+    DATA_PRODUCT {
+        string data_product_id PK
+        string name
+        string domain
+        string freshness
+    }
+
+    POLICY {
+        string policy_id PK
+        string name
+        string category
+        string enforcement_level
+    }
+
+    CONTROL {
+        string control_id PK
+        string name
+        string control_type
+        string frequency
+    }
+
+    AUDIT_EVENT {
+        string audit_id PK
+        string event_type
+        string severity
+        string traceability
+    }
+
+    KPI {
+        string kpi_id PK
+        string name
+        string metric_type
+        string target
+    }
+
+    OUTCOME {
+        string outcome_id PK
+        string name
+        string outcome_type
+        string value_dimension
+    }
+
+    OFFERING {
+        string offering_id PK
+        string name
+        string category
+        string pricing_model
+    }
+
+    REVENUE_STREAM {
+        string revenue_id PK
+        string type
+        string recurrence
+        string margin_profile
+    }
+
+    PARTNER {
+        string partner_id PK
+        string name
+        string partner_type
+        string dependency_level
+    }
+
+    EVENT {
+        string event_id PK
+        string name
+        string event_type
+        string source
+    }
+
+    BUDGET {
+        string budget_id PK
+        string period
+        string allocation_type
+        string owner
+    }
+
+
+    NETWORK ||--o{ MEMBER_COMPANY : includes
+    NETWORK ||--o{ MARKETPLACE : operates
+
+    MEMBER_COMPANY ||--o{ AI_AGENT : owns
+    MEMBER_COMPANY ||--o{ SERVICE_PROVIDER_PROFILE : exposes
+    MEMBER_COMPANY ||--o{ REPUTATION_SCORE : accumulates
+
+    MARKETPLACE ||--o{ SERVICE_LISTING : hosts
+    MARKETPLACE ||--o{ TRANSACTION : mediates
+    MARKETPLACE ||--o{ ESCROW_ACCOUNT : manages
+    MARKETPLACE ||--o{ DISCOVERY_INDEX : powers
+
+    SERVICE_PROVIDER_PROFILE ||--o{ SERVICE_LISTING : publishes
+
+    SERVICE_LISTING }o--o{ AI_AGENT : delivered_by
+    SERVICE_LISTING }o--o{ CAPABILITY : offers
+    SERVICE_LISTING ||--o{ PRICING_MODEL : priced_by
+
+    BUYER_COMPANY ||--o{ SERVICE_REQUEST : submits
+
+    SERVICE_REQUEST ||--o{ TASK_CONTRACT : creates
+    SERVICE_REQUEST }o--o{ CAPABILITY : requires
+
+    TASK_CONTRACT ||--o{ AGENT_ASSIGNMENT : executed_by
+    TASK_CONTRACT ||--o{ ESCROW_ACCOUNT : funded_by
+    TASK_CONTRACT ||--o{ DELIVERABLE : produces
+    TASK_CONTRACT ||--o{ PERFORMANCE_RESULT : evaluated_by
+
+    AGENT_ASSIGNMENT }o--o{ AI_AGENT : assigned
+    AGENT_ASSIGNMENT ||--o{ EXECUTION_EVENT : logs
+
+    ESCROW_ACCOUNT ||--o{ PAYMENT_RELEASE : triggers
+    ESCROW_ACCOUNT ||--o{ DISPUTE_CASE : may_open
+
+    TRANSACTION ||--o{ TASK_CONTRACT : represents
+    TRANSACTION ||--o{ PAYMENT_RELEASE : completes
+
+    SERVICE_LISTING ||--o{ REVIEW : receives
+    MEMBER_COMPANY ||--o{ REVIEW : receives
+    AI_AGENT ||--o{ REVIEW : receives
+
+    REVIEW ||--o{ REPUTATION_SCORE : influences
+
+    AI_AGENT }o--o{ INTER_AGENT_PROTOCOL : communicates
+    AI_AGENT }o--o{ CROSS_COMPANY_WORKFLOW : participates
+
+    CROSS_COMPANY_WORKFLOW ||--o{ TASK_CONTRACT : coordinates
+
+    DISCOVERY_INDEX ||--o{ SERVICE_LISTING : indexes
+    DISCOVERY_INDEX ||--o{ CAPABILITY : categorizes
+
+
+    NETWORK {
+        string network_id PK
+        string name
+        string governance_model
+        string trust_framework
+    }
+
+    MEMBER_COMPANY {
+        string company_id PK
+        string name
+        string industry
+        string verification_status
+    }
+
+    MARKETPLACE {
+        string marketplace_id PK
+        string name
+        string operator
+        string settlement_model
+    }
+
+    SERVICE_PROVIDER_PROFILE {
+        string profile_id PK
+        string specialization
+        string certification_level
+        string availability
+    }
+
+    SERVICE_LISTING {
+        string listing_id PK
+        string title
+        string service_type
+        string capability_domain
+    }
+
+    CAPABILITY {
+        string capability_id PK
+        string name
+        string category
+        string complexity
+    }
+
+    SERVICE_REQUEST {
+        string request_id PK
+        string objective
+        string urgency
+        string budget_range
+    }
+
+    TASK_CONTRACT {
+        string contract_id PK
+        string scope
+        string SLA
+        string status
+    }
+
+    AGENT_ASSIGNMENT {
+        string assignment_id PK
+        string role
+        string responsibility
+        string execution_mode
+    }
+
+    ESCROW_ACCOUNT {
+        string escrow_id PK
+        string currency
+        string balance
+        string release_condition
+    }
+
+    TRANSACTION {
+        string transaction_id PK
+        string value
+        string fee
+        string status
+    }
+
+    DELIVERABLE {
+        string deliverable_id PK
+        string type
+        string artifact_location
+        string completion_state
+    }
+
+    PERFORMANCE_RESULT {
+        string result_id PK
+        string metric
+        string value
+        string evaluation_time
+    }
+
+    PAYMENT_RELEASE {
+        string payment_id PK
+        string amount
+        string release_trigger
+        string timestamp
+    }
+
+    DISPUTE_CASE {
+        string dispute_id PK
+        string reason
+        string resolution_status
+        string arbitrator
+    }
+
+    REVIEW {
+        string review_id PK
+        string rating
+        string comment
+        string reviewer_type
+    }
+
+    REPUTATION_SCORE {
+        string reputation_id PK
+        string score
+        string confidence
+        string last_updated
+    }
+
+    DISCOVERY_INDEX {
+        string index_id PK
+        string search_domain
+        string ranking_method
+        string freshness
+    }
+
+    INTER_AGENT_PROTOCOL {
+        string protocol_id PK
+        string name
+        string communication_standard
+        string trust_model
+    }
+
+    CROSS_COMPANY_WORKFLOW {
+        string workflow_id PK
+        string orchestration_model
+        string coordination_protocol
+        string trust_requirement
+    }
+
+    EXECUTION_EVENT {
+        string event_id PK
+        string type
+        string timestamp
+        string status
+    }
+
+
+    NETWORK ||--o{ COMPANY : admits
+    NETWORK ||--o{ MARKETPLACE : hosts
+
+    MARKETPLACE ||--o{ SERVICE_LISTING : indexes
+    MARKETPLACE ||--o{ BUY_REQUEST : receives
+    MARKETPLACE ||--o{ NEGOTIATION_SESSION : mediates
+    MARKETPLACE ||--o{ ESCROW_ACCOUNT : manages
+    MARKETPLACE ||--o{ MARKET_SIGNAL : observes
+
+    COMPANY ||--o{ AI_AGENT : owns
+    COMPANY ||--o{ SERVICE_LISTING : publishes
+    COMPANY ||--o{ BUY_REQUEST : submits
+    COMPANY ||--o{ COMPLIANCE_CREDENTIAL : holds
+    COMPANY ||--o{ REPUTATION_SCORE : accumulates
+    COMPANY ||--o{ TRUST_BOND : posts
+
+    SERVICE_LISTING }o--o{ CAPABILITY : offers
+    SERVICE_LISTING }o--o{ AI_AGENT : fulfilled_by
+    SERVICE_LISTING ||--o{ PRICE_MODEL : uses
+    SERVICE_LISTING ||--o{ CAPABILITY_TOKEN : issues
+    SERVICE_LISTING }o--o{ COMPLIANCE_CREDENTIAL : assured_by
+    SERVICE_LISTING }o--o{ TRUST_BOND : backed_by
+    SERVICE_LISTING ||--o{ BID : quoted_as
+    SERVICE_LISTING ||--o{ REVIEW : receives
+    SERVICE_LISTING ||--o{ REPUTATION_SCORE : accumulates
+
+    BUY_REQUEST }o--o{ CAPABILITY : requires
+    BUY_REQUEST }o--o{ AI_AGENT : issued_by
+    BUY_REQUEST }o--o{ PROCUREMENT_POLICY : constrained_by
+    BUY_REQUEST ||--o{ NEGOTIATION_SESSION : opens
+
+    PROCUREMENT_POLICY }o--o{ COMPLIANCE_CREDENTIAL : requires
+
+    NEGOTIATION_SESSION }o--o{ AI_AGENT : negotiated_by
+    NEGOTIATION_SESSION ||--o{ NEGOTIATION_TERM : proposes
+    NEGOTIATION_SESSION ||--o{ BID : collects
+    NEGOTIATION_SESSION ||--o{ TASK_CONTRACT : awards
+
+    PRICE_MODEL }o--o{ MARKET_SIGNAL : reacts_to
+    PRICE_MODEL ||--o{ BID : generates
+
+    TASK_CONTRACT }o--o{ AI_AGENT : executed_by
+    TASK_CONTRACT ||--o{ SLA : governed_by
+    TASK_CONTRACT ||--o{ MILESTONE : decomposes_to
+    TASK_CONTRACT ||--|| ESCROW_ACCOUNT : funded_in
+    TASK_CONTRACT }o--o{ CAPABILITY_TOKEN : consumes
+    TASK_CONTRACT ||--o{ DELIVERABLE : yields
+    TASK_CONTRACT ||--o{ DISPUTE_CASE : may_trigger
+
+    MILESTONE ||--o{ DELIVERABLE : accepts
+    MILESTONE ||--o{ ESCROW_RELEASE : unlocks
+
+    DELIVERABLE ||--o{ PERFORMANCE_ATTESTATION : verified_by
+    PERFORMANCE_ATTESTATION ||--o{ ESCROW_RELEASE : authorizes
+    PERFORMANCE_ATTESTATION ||--o{ REPUTATION_SCORE : updates
+
+    ESCROW_ACCOUNT ||--o{ ESCROW_RELEASE : releases
+
+    REVIEW ||--o{ REPUTATION_SCORE : influences
+    AI_AGENT ||--o{ REVIEW : receives
+    AI_AGENT ||--o{ REPUTATION_SCORE : accumulates
+    CAPABILITY ||--o{ REPUTATION_SCORE : accumulates
+
+    DISPUTE_CASE }o--o{ TRUST_BOND : may_slash
+
+    NETWORK {
+        string network_id PK
+        string name
+        string governance_model
+        string settlement_rail
+    }
+
+    MARKETPLACE {
+        string marketplace_id PK
+        string name
+        string discovery_mode
+        string fee_model
+    }
+
+    COMPANY {
+        string company_id PK
+        string name
+        string company_role
+        string verification_status
+    }
+
+    AI_AGENT {
+        string agent_id PK
+        string name
+        string agent_role
+        string autonomy_level
+    }
+
+    CAPABILITY {
+        string capability_id PK
+        string name
+        string domain
+        string assurance_level
+    }
+
+    SERVICE_LISTING {
+        string listing_id PK
+        string title
+        string fulfillment_mode
+        string service_scope
+    }
+
+    PRICE_MODEL {
+        string price_model_id PK
+        string model_type
+        string billing_unit
+        string repricing_rule
+    }
+
+    MARKET_SIGNAL {
+        string signal_id PK
+        string signal_type
+        string signal_value
+        string signal_window
+    }
+
+    CAPABILITY_TOKEN {
+        string token_id PK
+        string token_type
+        string entitlement_unit
+        string expiry_rule
+    }
+
+    PROCUREMENT_POLICY {
+        string policy_id PK
+        string policy_type
+        string budget_guardrail
+        string approval_rule
+    }
+
+    BUY_REQUEST {
+        string request_id PK
+        string objective
+        string urgency
+        string budget_band
+        string desired_outcome
+    }
+
+    NEGOTIATION_SESSION {
+        string negotiation_id PK
+        string protocol
+        string deadline
+        string status
+    }
+
+    NEGOTIATION_TERM {
+        string term_id PK
+        string term_type
+        string proposed_value
+        string accepted_flag
+    }
+
+    BID {
+        string bid_id PK
+        string quoted_price
+        string lead_time
+        string confidence
+        string validity_window
+    }
+
+    TASK_CONTRACT {
+        string contract_id PK
+        string contract_type
+        string status
+        string auto_execute_flag
+    }
+
+    SLA {
+        string sla_id PK
+        string service_level
+        string penalty_rule
+        string acceptance_rule
+    }
+
+    MILESTONE {
+        string milestone_id PK
+        string name
+        string due_rule
+        string payout_share
+    }
+
+    ESCROW_ACCOUNT {
+        string escrow_id PK
+        string currency
+        string funding_state
+        string release_policy
+    }
+
+    ESCROW_RELEASE {
+        string release_id PK
+        string amount
+        string release_trigger
+        string release_status
+    }
+
+    DELIVERABLE {
+        string deliverable_id PK
+        string deliverable_type
+        string artifact_ref
+        string acceptance_state
+    }
+
+    PERFORMANCE_ATTESTATION {
+        string attestation_id PK
+        string attester_type
+        string result
+        string timestamp
+    }
+
+    REPUTATION_SCORE {
+        string reputation_id PK
+        string subject_type
+        string score
+        string confidence
+    }
+
+    REVIEW {
+        string review_id PK
+        string rating
+        string review_type
+        string sentiment
+    }
+
+    COMPLIANCE_CREDENTIAL {
+        string credential_id PK
+        string credential_type
+        string issuer
+        string expiry_date
+    }
+
+    TRUST_BOND {
+        string bond_id PK
+        string bond_type
+        string amount
+        string slashing_rule
+    }
+
+    DISPUTE_CASE {
+        string dispute_id PK
+        string dispute_reason
+        string resolution_state
+        string arbitrator_type
+    }

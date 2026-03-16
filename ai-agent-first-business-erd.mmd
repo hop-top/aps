@@ -1,0 +1,275 @@
+erDiagram
+    COMPANY ||--o{ BUSINESS_UNIT : contains
+    COMPANY ||--o{ STRATEGIC_GOAL : pursues
+    COMPANY ||--o{ CUSTOMER_SEGMENT : serves
+    COMPANY ||--o{ POLICY : enforces
+    COMPANY ||--o{ KNOWLEDGE_ASSET : owns
+    COMPANY ||--o{ AI_AGENT : operates
+    COMPANY ||--o{ HUMAN_ROLE : employs
+    COMPANY ||--o{ CHANNEL : uses
+    COMPANY ||--o{ PARTNER : collaborates_with
+
+    BUSINESS_UNIT ||--o{ PROCESS : runs
+    BUSINESS_UNIT ||--o{ KPI : tracks
+    BUSINESS_UNIT ||--o{ BUDGET : allocates
+
+    STRATEGIC_GOAL ||--o{ KPI : measured_by
+    STRATEGIC_GOAL ||--o{ INITIATIVE : driven_by
+
+    INITIATIVE ||--o{ PROCESS : transforms
+    INITIATIVE ||--o{ AI_AGENT : introduces
+    INITIATIVE ||--o{ HUMAN_ROLE : impacts
+
+    CUSTOMER_SEGMENT ||--o{ JOURNEY : experiences
+    CUSTOMER_SEGMENT ||--o{ OFFERING : buys
+    CHANNEL ||--o{ JOURNEY : enables
+
+    JOURNEY ||--o{ PROCESS : triggers
+    JOURNEY ||--o{ INTERACTION : contains
+
+    PROCESS ||--o{ TASK : decomposes_to
+    PROCESS ||--o{ DECISION_POINT : includes
+    PROCESS ||--o{ DATA_PRODUCT : uses
+    PROCESS ||--o{ KPI : evaluated_by
+
+    TASK }o--o{ HUMAN_ROLE : performed_by
+    TASK }o--o{ AI_AGENT : automated_by
+    TASK ||--o{ TOOL : uses
+    TASK ||--o{ OUTCOME : produces
+
+    DECISION_POINT }o--o{ POLICY : constrained_by
+    DECISION_POINT }o--o{ AI_AGENT : recommended_by
+    DECISION_POINT }o--o{ HUMAN_ROLE : approved_by
+
+    AI_AGENT }o--o{ TOOL : invokes
+    AI_AGENT }o--o{ KNOWLEDGE_ASSET : grounded_on
+    AI_AGENT }o--o{ POLICY : governed_by
+    AI_AGENT }o--o{ KPI : evaluated_by
+    AI_AGENT ||--o{ AGENT_WORKFLOW : executes
+    AI_AGENT ||--o{ MEMORY_SCOPE : maintains
+
+    AGENT_WORKFLOW ||--o{ TASK : orchestrates
+    AGENT_WORKFLOW ||--o{ TOOL : chains
+    AGENT_WORKFLOW ||--o{ EVENT : emits
+
+    HUMAN_ROLE }o--o{ KPI : accountable_for
+    HUMAN_ROLE }o--o{ POLICY : follows
+    HUMAN_ROLE ||--o{ CAPABILITY : requires
+
+    OFFERING ||--o{ REVENUE_STREAM : generates
+    OFFERING ||--o{ DATA_PRODUCT : depends_on
+
+    DATA_PRODUCT ||--o{ KNOWLEDGE_ASSET : packages
+    DATA_PRODUCT ||--o{ KPI : informs
+
+    PARTNER ||--o{ TOOL : provides
+    PARTNER ||--o{ OFFERING : extends
+
+    POLICY ||--o{ CONTROL : implemented_by
+    CONTROL ||--o{ AUDIT_EVENT : produces
+
+    EVENT ||--o{ AUDIT_EVENT : may_become
+    INTERACTION ||--o{ EVENT : creates
+
+    COMPANY {
+        string company_id PK
+        string name
+        string operating_model
+        string maturity_stage
+    }
+
+    BUSINESS_UNIT {
+        string unit_id PK
+        string name
+        string owner_role
+        string mission
+    }
+
+    STRATEGIC_GOAL {
+        string goal_id PK
+        string name
+        string horizon
+        string priority
+    }
+
+    INITIATIVE {
+        string initiative_id PK
+        string name
+        string theme
+        string status
+    }
+
+    CUSTOMER_SEGMENT {
+        string segment_id PK
+        string name
+        string profile
+        string value_priority
+    }
+
+    JOURNEY {
+        string journey_id PK
+        string name
+        string stage
+        string outcome_target
+    }
+
+    INTERACTION {
+        string interaction_id PK
+        string type
+        string channel_type
+        string intent
+    }
+
+    CHANNEL {
+        string channel_id PK
+        string name
+        string mode
+        string owner
+    }
+
+    PROCESS {
+        string process_id PK
+        string name
+        string objective
+        string automation_level
+    }
+
+    TASK {
+        string task_id PK
+        string name
+        string task_type
+        string criticality
+    }
+
+    DECISION_POINT {
+        string decision_id PK
+        string name
+        string risk_level
+        string approval_type
+    }
+
+    AI_AGENT {
+        string agent_id PK
+        string name
+        string role
+        string autonomy_level
+    }
+
+    AGENT_WORKFLOW {
+        string workflow_id PK
+        string name
+        string trigger_type
+        string execution_mode
+    }
+
+    MEMORY_SCOPE {
+        string memory_id PK
+        string scope_type
+        string retention_rule
+        string sensitivity_level
+    }
+
+    HUMAN_ROLE {
+        string role_id PK
+        string title
+        string function
+        string accountability
+    }
+
+    CAPABILITY {
+        string capability_id PK
+        string name
+        string category
+        string maturity
+    }
+
+    TOOL {
+        string tool_id PK
+        string name
+        string tool_type
+        string provider
+    }
+
+    KNOWLEDGE_ASSET {
+        string knowledge_id PK
+        string name
+        string source_type
+        string trust_level
+    }
+
+    DATA_PRODUCT {
+        string data_product_id PK
+        string name
+        string domain
+        string freshness
+    }
+
+    POLICY {
+        string policy_id PK
+        string name
+        string category
+        string enforcement_level
+    }
+
+    CONTROL {
+        string control_id PK
+        string name
+        string control_type
+        string frequency
+    }
+
+    AUDIT_EVENT {
+        string audit_id PK
+        string event_type
+        string severity
+        string traceability
+    }
+
+    KPI {
+        string kpi_id PK
+        string name
+        string metric_type
+        string target
+    }
+
+    OUTCOME {
+        string outcome_id PK
+        string name
+        string outcome_type
+        string value_dimension
+    }
+
+    OFFERING {
+        string offering_id PK
+        string name
+        string category
+        string pricing_model
+    }
+
+    REVENUE_STREAM {
+        string revenue_id PK
+        string type
+        string recurrence
+        string margin_profile
+    }
+
+    PARTNER {
+        string partner_id PK
+        string name
+        string partner_type
+        string dependency_level
+    }
+
+    EVENT {
+        string event_id PK
+        string name
+        string event_type
+        string source
+    }
+
+    BUDGET {
+        string budget_id PK
+        string period
+        string allocation_type
+        string owner
+    }
