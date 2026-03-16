@@ -45,6 +45,9 @@ Consolidated user stories. Each story is a single source of truth for its requir
 | [037](037-a2a-protocol-toggle.md) | A2A Protocol Toggle | A2A Protocol | User | P2 |
 | [038](038-acp-protocol-toggle.md) | ACP Protocol Toggle | Agent Protocol Adapter | User | P2 |
 | [039](039-webhook-protocol-toggle.md) | Webhook Protocol Toggle | CLI Core | User | P2 |
+| [040](040-voice-profile-configuration.md) | Voice Profile Configuration | Voice | User | P2 |
+| [041](041-voice-backend-service.md) | Voice Backend Service | Voice | User | P2 |
+| [042](042-voice-sessions.md) | Voice Sessions | Voice | User | P2 |
 | [050](050-multi-device-workspace-access.md) | Multi-Device Workspace Access | Multi-Device Workspace | User | P2 |
 
 ## By Feature
@@ -73,13 +76,16 @@ Consolidated user stories. Each story is a single source of truth for its requir
 ### Execution Isolation
 [030](030-execution-isolation.md), [031](031-platform-sandbox.md)
 
+### Voice
+[040](040-voice-profile-configuration.md), [041](041-voice-backend-service.md), [042](042-voice-sessions.md)
+
 ### Multi-Device Workspace
 [050](050-multi-device-workspace-access.md)
 
 ## By Persona
 
 ### [User](../personas/user.md)
-001-005, 010-020, 026-030, 034-039, 050
+001-005, 010-020, 026-030, 034-042, 050
 
 ### [Maintainer](../personas/maintainer.md)
 006-009, 031
