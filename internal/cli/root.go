@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/tui"
+	"hop.top/upgrade"
 
 	"github.com/spf13/cobra"
 )
@@ -82,6 +83,16 @@ var rootCmd = &cobra.Command{
 		cmd.Help()
 		os.Exit(1)
 	},
+}
+
+func init() {
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		// skip notification for the upgrade command itself
+		if cmd.Name() == "upgrade" {
+			return
+		}
+		upgrade.NotifyIfAvailable(cmd.Context(), newChecker(), os.Stderr)
+	}
 }
 
 func Execute() error {
