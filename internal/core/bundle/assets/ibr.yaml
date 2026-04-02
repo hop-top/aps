@@ -1,0 +1,50 @@
+name: ibr
+description: "Intent Browser Runtime — browser-based task automation, extraction, and research tools"
+version: "1.0"
+
+capabilities:
+  - ibr
+
+scope:
+  operations:
+    # Core Operations
+    - ibr:run
+    - ibr:tool
+    - ibr:snap
+    - ibr:daemon
+    - ibr:extract
+    # Built-in Tool "Perks"
+    - ibr:tool:web-search
+    - ibr:tool:web-fetch
+    - ibr:tool:trend-search
+    - ibr:tool:github-search
+    - ibr:tool:github-trending
+    - ibr:tool:github-starred
+    - ibr:tool:context7
+    - ibr:tool:arxiv
+    - ibr:tool:web-archive
+    - ibr:tool:wikipedia
+    - ibr:tool:amazon
+    - ibr:tool:ebay
+    - ibr:tool:npm
+    - ibr:tool:pypi
+    - ibr:tool:producthunt
+    - ibr:tool:reddit
+    - ibr:tool:hackernews
+    - ibr:tool:yahoo-finance
+    - ibr:tool:dockerhub
+  networks:
+    - "*"  # General browser access for navigation and scraping
+
+requires:
+  - binary: ibr
+    missing: warn
+    message: "ibr (Intent Browser Runtime) not found. Install it to use browser-based task automation."
+
+env:
+  IBR_DAEMON: "true"
+  LOG_LEVEL: "error"
+  BROWSER_HEADLESS: "true"
+  AI_TEMPERATURE: "0"
+  NDJSON_STREAM: "true"
+  ANNOTATED_SCREENSHOTS_ON_FAILURE: "true"
