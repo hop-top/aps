@@ -14,6 +14,7 @@ var BuiltinCapabilities = []BuiltinCapability{
 	{Name: "agntcy-directory", Description: "AGNTCY Directory registration and discovery"},
 	{Name: "agntcy-identity", Description: "DID-based agent identity"},
 	{Name: "agntcy-trust", Description: "Inbound trust verification"},
+	{Name: "ibr", Description: "Intent Browser Runtime - browser-based task automation"},
 }
 
 // IsBuiltin returns true if the capability name is a builtin
@@ -45,6 +46,9 @@ func ListBuiltins() []BuiltinCapability {
 
 // Exists returns true if a capability exists (builtin or external)
 func Exists(name string) bool {
+	if strings.HasPrefix(name, "bundle:") {
+		return true // Bundles are validated during resolution
+	}
 	if IsBuiltin(name) {
 		return true
 	}
