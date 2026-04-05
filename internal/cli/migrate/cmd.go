@@ -9,7 +9,7 @@ import (
 	"hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/styles"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 )
 

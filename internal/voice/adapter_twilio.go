@@ -3,7 +3,7 @@ package voice
 import (
 	"net/http"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/gorilla/websocket"
 )
 

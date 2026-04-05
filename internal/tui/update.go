@@ -6,12 +6,12 @@ import (
 
 	"hop.top/aps/internal/core"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch m.state {
 		case StateProfileList:
 			return m.updateProfileList(msg)
@@ -32,7 +32,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateProfileList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateProfileList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -66,7 +66,7 @@ func (m Model) updateProfileList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateProfileDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateProfileDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -83,7 +83,7 @@ func (m Model) updateProfileDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateCapabilityList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateCapabilityList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -117,7 +117,7 @@ func (m Model) updateCapabilityList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateActionList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateActionList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit

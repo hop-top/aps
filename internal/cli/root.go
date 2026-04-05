@@ -1,23 +1,43 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/tui"
+	"hop.top/aps/internal/version"
 	"hop.top/upgrade"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/cli"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "aps",
-	Short: "Agent Profile System CLI",
-	Long:  `APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.`,
-	Args:  cobra.ArbitraryArgs,
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+var root = kitcli.New(kitcli.Config{
+	Name:    "aps",
+	Version: version.Short(),
+	Short:   "Agent Profile System CLI",
+})
+
+// rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
+var rootCmd = root.Cmd
+
+func init() {
+	logging.SetViper(root.Viper)
+
+	rootCmd.Long = `Agent Profile System CLI
+
+Run aps with no arguments to launch the interactive TUI.
+
+Pass a profile ID to start a session for that profile, or pass a profile
+ID followed by a command to run that command under the selected profile.`
+
+	// ArbitraryArgs + profile dispatch
+	rootCmd.Args = cobra.ArbitraryArgs
+	rootCmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) != 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -26,8 +46,8 @@ var rootCmd = &cobra.Command{
 			return nil, cobra.ShellCompDirectiveError
 		}
 		return profiles, cobra.ShellCompDirectiveNoFileComp
-	},
-	Run: func(cmd *cobra.Command, args []string) {
+	}
+	rootCmd.Run = func(cmd *cobra.Command, args []string) {
 		// If no args, launch TUI
 		if len(args) == 0 {
 			tui.Run()
@@ -39,16 +59,11 @@ var rootCmd = &cobra.Command{
 		profile, err := core.LoadProfile(profileID)
 
 		if err == nil {
-			// It is a valid profile!
-			// Dispatch as shorthand execution
-
-			// Case 1: Session (no other args) -> aps run <profile> -- <shell>
 			if len(args) == 1 {
 				shell := profile.Preferences.Shell
 				if shell == "" {
 					shell = core.DetectShell()
 				}
-
 				fmt.Printf("Starting session for %s using %s...\n", profileID, shell)
 				if err := core.RunCommand(profileID, shell, nil); err != nil {
 					fmt.Fprintf(os.Stderr, "Session ended with error: %v\n", err)
@@ -57,13 +72,9 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			// Case 2: Command execution -> aps run <profile> -- <cmd> <args>
-			// args[1] is the command, args[2:] are args
 			commandName := args[1]
 			commandArgs := args[2:]
-
 			if err := core.RunCommand(profileID, commandName, commandArgs); err != nil {
-				// We might want to pass through exit code here
 				if exitErr, ok := err.(*exec.ExitError); ok {
 					os.Exit(exitErr.ExitCode())
 				}
@@ -73,21 +84,14 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		// Not a profile, and not a valid subcommand (or Cobra would have routed it)
-		// Cobra handles "unknown command" usually, but since we use ArbitraryArgs,
-		// we are intercepting everything that isn't a defined subcommand.
-		// If LoadProfile failed, it means it's not a profile.
-		// So we should print help or error.
-
 		fmt.Fprintf(os.Stderr, "Error: unknown command or profile '%s'\n", profileID)
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error rendering help: %v\n", err)
+		}
 		os.Exit(1)
-	},
-}
+	}
 
-func init() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
-		// skip notification for the upgrade command itself
 		if cmd.Name() == "upgrade" {
 			return
 		}
@@ -95,6 +99,7 @@ func init() {
 	}
 }
 
+// Execute runs the CLI through fang (styled help, version, etc.)
 func Execute() error {
-	return rootCmd.Execute()
+	return root.Execute(context.Background())
 }
