@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,6 @@ You must specify your profile to identify which agent is joining.`,
 
 			agent, err := mgr.Join(cmd.Context(), wsID, profile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

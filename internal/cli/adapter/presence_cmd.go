@@ -46,11 +46,11 @@ Displays device status, last heartbeat, and sync lag information.`,
 }
 
 type presenceRow struct {
-	DeviceID    string `json:"device_id"`
-	State       string `json:"state"`
-	LastSeen    string `json:"last_seen"`
-	SyncLag     int    `json:"sync_lag"`
-	OfflineQueue int   `json:"offline_queue"`
+	DeviceID     string `json:"device_id"`
+	State        string `json:"state"`
+	LastSeen     string `json:"last_seen"`
+	SyncLag      int    `json:"sync_lag"`
+	OfflineQueue int    `json:"offline_queue"`
 }
 
 func runPresence(workspaceID string, jsonOut bool) error {

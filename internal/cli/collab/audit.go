@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	collab "hop.top/aps/internal/core/collaboration"
 
@@ -47,7 +46,6 @@ Filter with --since, --actor, --event, and --limit.`,
 
 			events, err := auditLog.Query(cmd.Context(), wsID, opts)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

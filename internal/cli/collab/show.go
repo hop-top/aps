@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +25,6 @@ func NewShowCmd() *cobra.Command {
 
 			ws, err := mgr.Get(cmd.Context(), wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

@@ -1,12 +1,11 @@
 package collab
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
 )
 
 // NewLeaveCmd creates the "collab leave" command.
@@ -31,18 +30,12 @@ If no workspace is specified, the active workspace is used.`,
 			force, _ := cmd.Flags().GetBool("force")
 
 			if !force {
-				fmt.Printf("Leaving workspace '%s'...\n", wsID)
-				fmt.Println()
-				fmt.Println("  This will:")
-				fmt.Println("    - Remove you from the workspace")
-				fmt.Println("    - Revoke access to shared context")
-				fmt.Println()
-				fmt.Print("  Proceed? [y/N]: ")
-
-				reader := bufio.NewReader(os.Stdin)
-				answer, _ := reader.ReadString('\n')
-				answer = strings.TrimSpace(strings.ToLower(answer))
-				if answer != "y" && answer != "yes" {
+				confirmed, err := prompt.Confirm(
+					fmt.Sprintf("Leave workspace '%s'? This removes access to shared context.", wsID))
+				if err != nil {
+					return err
+				}
+				if !confirmed {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -54,7 +47,6 @@ If no workspace is specified, the active workspace is used.`,
 			}
 
 			if err := mgr.Leave(cmd.Context(), wsID, profile); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

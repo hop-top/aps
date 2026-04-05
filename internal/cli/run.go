@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"hop.top/aps/internal/core"
 
@@ -13,7 +12,7 @@ var runCmd = &cobra.Command{
 	Use:   "run [profile] -- [command] [args...]",
 	Short: "Run a command in a profile context",
 	Args:  cobra.MinimumNArgs(1), // At least profile
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 
 		// Cobra parses flags before "--". Everything after "--" is in args if we configure it right,
@@ -21,9 +20,7 @@ var runCmd = &cobra.Command{
 
 		dashIdx := cmd.ArgsLenAtDash()
 		if dashIdx == -1 {
-			fmt.Fprintln(os.Stderr, "Error: missing '--' separator")
-			fmt.Fprintln(os.Stderr, "Usage: aps run <profile> -- <command> [args...]")
-			os.Exit(1)
+			return fmt.Errorf("missing '--' separator\nUsage: aps run <profile> -- <command> [args...]")
 		}
 
 		// args[0] is profile
@@ -32,19 +29,16 @@ var runCmd = &cobra.Command{
 
 		commandArgs := args[dashIdx:]
 		if len(commandArgs) == 0 {
-			fmt.Fprintln(os.Stderr, "Error: no command specified")
-			os.Exit(1)
+			return fmt.Errorf("no command specified")
 		}
 
 		commandName := commandArgs[0]
 		commandRest := commandArgs[1:]
 
 		if err := core.RunCommand(profileID, commandName, commandRest); err != nil {
-			// Pass through exit code if possible?
-			// For now, just exit 1 on error
-			fmt.Fprintf(os.Stderr, "Error running command: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("running command: %w", err)
 		}
+		return nil
 	},
 }
 

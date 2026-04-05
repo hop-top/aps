@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	collab "hop.top/aps/internal/core/collaboration"
 
@@ -35,7 +34,6 @@ Optionally filter by a specific agent using --agent.`,
 
 			ws, err := mgr.Get(cmd.Context(), wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -54,7 +52,6 @@ Optionally filter by a specific agent using --agent.`,
 				cmd.Context(), wsID, agentFilter,
 			)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

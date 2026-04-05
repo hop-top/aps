@@ -17,11 +17,10 @@ Add the following to your shell configuration file:
 
   eval "$(aps alias)"
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profiles, err := core.ListProfiles()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing profiles: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("listing profiles: %w", err)
 		}
 
 		// Detect shell to decide alias format
@@ -45,6 +44,7 @@ Add the following to your shell configuration file:
 				fmt.Printf("alias %s='aps %s'\n", p, p)
 			}
 		}
+		return nil
 	},
 }
 

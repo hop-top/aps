@@ -2,32 +2,59 @@ package collab
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
 
 	collab "hop.top/aps/internal/core/collaboration"
-
-	"github.com/spf13/cobra"
 )
 
 // NewRoleCmd creates the "collab role" command.
 func NewRoleCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "role <agent> <role> [workspace]",
+		Use:   "role <agent> [role] [workspace]",
 		Short: "Set an agent's role in the workspace",
 		Long: `Change an agent's role within a collaboration workspace.
 
-Valid roles: owner, contributor, observer`,
-		Args: cobra.MinimumNArgs(2),
+Valid roles: owner, contributor, observer
+
+If role is not provided, an interactive selector is shown.`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			agent := args[0]
-			role := collab.AgentRole(args[1])
 
-			if err := role.Validate(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-				return err
+			var roleStr string
+			var wsArgs []string
+
+			if len(args) >= 2 {
+				// Disambiguate: check if args[1] is a valid role
+				candidate := collab.AgentRole(args[1])
+				if candidate.Validate() == nil {
+					roleStr = args[1]
+					wsArgs = args[2:]
+				} else {
+					// Not a valid role — treat as workspace
+					wsArgs = args[1:]
+				}
 			}
 
-			wsID, err := resolveWorkspace(cmd, args[2:])
+			if roleStr == "" {
+				if err := huh.NewSelect[string]().
+					Title(fmt.Sprintf("Role for %s", agent)).
+					Options(
+						huh.NewOption("owner", "owner"),
+						huh.NewOption("contributor", "contributor"),
+						huh.NewOption("observer", "observer"),
+					).
+					Value(&roleStr).
+					Run(); err != nil {
+					return err
+				}
+			}
+
+			role := collab.AgentRole(roleStr)
+
+			wsID, err := resolveWorkspace(cmd, wsArgs)
 			if err != nil {
 				return err
 			}
@@ -38,7 +65,6 @@ Valid roles: owner, contributor, observer`,
 			}
 
 			if err := mgr.SetRole(cmd.Context(), wsID, agent, role); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

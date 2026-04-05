@@ -1,15 +1,13 @@
 package adapter
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
-
-	"hop.top/aps/internal/core/multidevice"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
+	"hop.top/aps/internal/core/multidevice"
 )
 
 func newDetachCmd() *cobra.Command {
@@ -57,18 +55,13 @@ func runDetach(deviceID, workspaceID string, force, jsonOut bool) error {
 		fmt.Printf("  Device:    %s\n", boldStyle.Render(deviceID))
 		fmt.Printf("  Workspace: %s\n", boldStyle.Render(workspaceID))
 		fmt.Printf("  Role:      %s\n", string(link.Permissions.Role))
-		fmt.Printf("  Status:    %s\n", string(link.Status))
-		fmt.Println()
-		fmt.Println("  Detaching will:")
-		fmt.Println("    - Remove device access to this workspace")
-		fmt.Println("    - Discard any pending offline queue entries")
-		fmt.Println("    - The device must be re-attached to regain access")
-		fmt.Printf("\n  Detach this device? [y/N]: ")
+		fmt.Printf("  Status:    %s\n\n", string(link.Status))
 
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
+		confirmed, err := prompt.Confirm("Detach this device?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
 			fmt.Println("  Cancelled.")
 			return nil
 		}

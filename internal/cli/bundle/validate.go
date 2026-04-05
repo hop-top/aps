@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	corebundle "hop.top/aps/internal/core/bundle"
 	"gopkg.in/yaml.v3"
+	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
 )
@@ -29,9 +29,7 @@ func runValidate(filePath string) error {
 
 	var b corebundle.Bundle
 	if err := yaml.Unmarshal(data, &b); err != nil {
-		fmt.Fprintf(os.Stderr, "%s %s: invalid YAML: %v\n",
-			errorStyle.Render("✗"), filePath, err)
-		os.Exit(1)
+		return fmt.Errorf("%s: invalid YAML: %w", filePath, err)
 	}
 
 	reg, err := corebundle.NewRegistry()
@@ -40,9 +38,7 @@ func runValidate(filePath string) error {
 	}
 
 	if err := reg.Validate(&b); err != nil {
-		fmt.Fprintf(os.Stderr, "%s %s: %v\n",
-			errorStyle.Render("✗"), filePath, err)
-		os.Exit(1)
+		return fmt.Errorf("%s: %w", filePath, err)
 	}
 
 	fmt.Printf("%s %s is valid\n", successStyle.Render("✓"), filePath)

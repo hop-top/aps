@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	collab "hop.top/aps/internal/core/collaboration"
@@ -34,7 +33,6 @@ func NewTaskCmd() *cobra.Command {
 
 			task, err := router.Get(cmd.Context(), wsID, taskID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

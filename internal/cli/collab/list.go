@@ -2,9 +2,9 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
@@ -29,7 +29,6 @@ func NewListCmd() *cobra.Command {
 
 			workspaces, err := mgr.List(cmd.Context(), opts)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -38,25 +37,34 @@ func NewListCmd() *cobra.Command {
 			}
 
 			if len(workspaces) == 0 {
-				fmt.Println("No collaboration workspaces yet.")
+				fmt.Println(styles.Dim.Render("No collaboration workspaces yet."))
 				fmt.Println()
-				fmt.Println("  Create your first:")
-				fmt.Println("    aps collab new my-team --profile <profile>")
+				fmt.Println(styles.Dim.Render("  Create your first:"))
+				fmt.Println(styles.Dim.Render("    aps collab new my-team --profile <profile>"))
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render("Workspaces"))
+
 			w := newTabWriter()
-			fmt.Fprintf(w, "NAME\tSTATE\tAGENTS\tOWNER\tCREATED\n")
+			fmt.Fprintln(w, collabTableHeader.Render("NAME")+"\t"+
+				collabTableHeader.Render("STATE")+"\t"+
+				collabTableHeader.Render("AGENTS")+"\t"+
+				collabTableHeader.Render("OWNER")+"\t"+
+				collabTableHeader.Render("CREATED"))
 			for _, ws := range workspaces {
 				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\n",
 					ws.Config.Name,
 					ws.State,
 					len(ws.Agents),
 					ws.Config.OwnerProfileID,
-					ws.CreatedAt.Format("2006-01-02 15:04"),
+					styles.Dim.Render(ws.CreatedAt.Format("2006-01-02 15:04")),
 				)
 			}
 			w.Flush()
+
+			fmt.Printf("\n%s\n", styles.Dim.Render(
+				fmt.Sprintf("%d workspaces", len(workspaces))))
 
 			return nil
 		},

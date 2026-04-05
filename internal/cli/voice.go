@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/voice"
@@ -21,26 +20,26 @@ var voiceServiceCmd = &cobra.Command{
 var voiceServiceStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the voice backend service",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})
 		if err := mgr.Start(nil); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("starting voice backend: %w", err)
 		}
 		fmt.Println("Voice backend started.")
+		return nil
 	},
 }
 
 var voiceServiceStopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop the voice backend service",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})
 		if err := mgr.Stop(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("stopping voice backend: %w", err)
 		}
 		fmt.Println("Voice backend stopped.")
+		return nil
 	},
 }
 

@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	corebundle "hop.top/aps/internal/core/bundle"
 	"gopkg.in/yaml.v3"
+	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
 )

@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	collab "hop.top/aps/internal/core/collaboration"
 
@@ -43,7 +42,6 @@ Valid strategies:
 
 			ws, err := mgr.Get(cmd.Context(), wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
