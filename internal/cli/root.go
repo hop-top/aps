@@ -16,21 +16,17 @@ import (
 	kitcli "hop.top/kit/cli"
 )
 
-var (
-	root    *kitcli.Root
-	rootCmd *cobra.Command
-)
+var root = kitcli.New(kitcli.Config{
+	Name:    "aps",
+	Version: version.Short(),
+	Short:   "Agent Profile System CLI",
+})
+
+// rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
+var rootCmd = root.Cmd
 
 func init() {
-	root = kitcli.New(kitcli.Config{
-		Name:    "aps",
-		Version: version.Short(),
-		Short:   "Agent Profile System CLI",
-	})
 	logging.SetViper(root.Viper)
-
-	// Keep rootCmd for backward compat with init() AddCommand calls
-	rootCmd = root.Cmd
 
 	// ArbitraryArgs + profile dispatch
 	rootCmd.Args = cobra.ArbitraryArgs

@@ -57,7 +57,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func Run() {
-	p := tea.NewProgram(InitialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(InitialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

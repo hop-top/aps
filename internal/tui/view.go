@@ -11,7 +11,9 @@ import (
 
 func (m Model) View() tea.View {
 	if m.err != nil {
-		return tea.NewView(fmt.Sprintf("Error: %v\nPress q to quit.", m.err))
+		v := tea.NewView(fmt.Sprintf("Error: %v\nPress q to quit.", m.err))
+		v.AltScreen = true
+		return v
 	}
 
 	var s strings.Builder
@@ -54,7 +56,9 @@ func (m Model) View() tea.View {
 		s.WriteString("\n" + footerStyle.Render("(esc to back, q to quit)"))
 	}
 
-	return tea.NewView(s.String())
+	v := tea.NewView(s.String())
+	v.AltScreen = true
+	return v
 }
 
 func (m Model) viewProfileDetail() string {
