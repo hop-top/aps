@@ -5,11 +5,13 @@ import (
 	"strings"
 
 	"hop.top/aps/internal/styles"
+
+	tea "charm.land/bubbletea/v2"
 )
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	if m.err != nil {
-		return fmt.Sprintf("Error: %v\nPress q to quit.", m.err)
+		return tea.NewView(fmt.Sprintf("Error: %v\nPress q to quit.", m.err))
 	}
 
 	var s strings.Builder
@@ -52,7 +54,7 @@ func (m Model) View() string {
 		s.WriteString("\n" + footerStyle.Render("(esc to back, q to quit)"))
 	}
 
-	return s.String()
+	return tea.NewView(s.String())
 }
 
 func (m Model) viewProfileDetail() string {

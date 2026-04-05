@@ -7,7 +7,7 @@ import (
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/capability"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 type State int
