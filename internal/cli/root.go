@@ -28,6 +28,13 @@ var rootCmd = root.Cmd
 func init() {
 	logging.SetViper(root.Viper)
 
+	rootCmd.Long = `Agent Profile System CLI
+
+Run aps with no arguments to launch the interactive TUI.
+
+Pass a profile ID to start a session for that profile, or pass a profile
+ID followed by a command to run that command under the selected profile.`
+
 	// ArbitraryArgs + profile dispatch
 	rootCmd.Args = cobra.ArbitraryArgs
 	rootCmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -78,7 +85,9 @@ func init() {
 		}
 
 		fmt.Fprintf(os.Stderr, "Error: unknown command or profile '%s'\n", profileID)
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error rendering help: %v\n", err)
+		}
 		os.Exit(1)
 	}
 
