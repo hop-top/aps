@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
@@ -27,11 +28,13 @@ func NewDeleteCmd() *cobra.Command {
 			force, _ := cmd.Flags().GetBool("force")
 
 			if !force {
-				fmt.Printf("Are you sure you want to delete session %s? [y/N]: ", sessionID)
-				var response string
-				fmt.Scanln(&response)
-				if response != "y" && response != "Y" {
-					fmt.Println("Cancelled")
+				confirmed, err := prompt.Confirm(
+					fmt.Sprintf("Delete session %s?", sessionID))
+				if err != nil {
+					return err
+				}
+				if !confirmed {
+					fmt.Println("Cancelled.")
 					return nil
 				}
 			}

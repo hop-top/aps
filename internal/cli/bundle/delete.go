@@ -1,14 +1,13 @@
 package bundle
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"strings"
-
-	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
+	corebundle "hop.top/aps/internal/core/bundle"
 )
 
 func newDeleteCmd() *cobra.Command {
@@ -45,11 +44,12 @@ func runDelete(name string, force bool) error {
 	}
 
 	if !force {
-		fmt.Printf("Delete user bundle %q at %s? [y/N] ", name, path)
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
+		confirmed, err := prompt.Confirm(
+			fmt.Sprintf("Delete user bundle %q at %s?", name, path))
+		if err != nil {
+			return err
+		}
+		if !confirmed {
 			fmt.Println(dimStyle.Render("Aborted."))
 			return nil
 		}

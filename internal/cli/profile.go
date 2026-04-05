@@ -1,17 +1,23 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"text/tabwriter"
+
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/core/capability"
 	"hop.top/aps/internal/styles"
-
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
+
+var profileTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 
 var profileCmd = &cobra.Command{
 	Use:   "profile",
@@ -22,15 +28,34 @@ var profileCmd = &cobra.Command{
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available profiles",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profiles, err := core.ListProfiles()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing profiles: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("listing profiles: %w", err)
 		}
+
+		jsonOut, _ := cmd.Flags().GetBool("json")
+		if jsonOut {
+			return json.NewEncoder(os.Stdout).Encode(profiles)
+		}
+
+		if len(profiles) == 0 {
+			fmt.Println(styles.Dim.Render("No profiles found."))
+			return nil
+		}
+
+		fmt.Printf("%s\n\n", styles.Title.Render("Profiles"))
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, profileTableHeader.Render("ID"))
 		for _, p := range profiles {
-			fmt.Println(p)
+			fmt.Fprintln(w, p)
 		}
+		w.Flush()
+
+		fmt.Printf("\n%s\n", styles.Dim.Render(
+			fmt.Sprintf("%d profiles", len(profiles))))
+		return nil
 	},
 }
 
@@ -38,13 +63,31 @@ var profileNewCmd = &cobra.Command{
 	Use:   "new [id]",
 	Short: "Create a new profile",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		displayName, _ := cmd.Flags().GetString("display-name")
 		email, _ := cmd.Flags().GetString("email")
 		force, _ := cmd.Flags().GetBool("force")
 
-		// Prepare initial config
+		// Interactive prompts when flags not provided
+		if displayName == "" {
+			if err := huh.NewInput().
+				Title("Display name").
+				Placeholder(id).
+				Value(&displayName).
+				Run(); err != nil {
+				return err
+			}
+		}
+		if email == "" {
+			if err := huh.NewInput().
+				Title("Email (for git config, optional)").
+				Value(&email).
+				Run(); err != nil {
+				return err
+			}
+		}
+
 		config := core.Profile{
 			DisplayName: displayName,
 			Git: core.GitConfig{
@@ -55,25 +98,24 @@ var profileNewCmd = &cobra.Command{
 			config.DisplayName = id
 		}
 
-		// Handle Force: if force is true and profile exists, we might need to remove it first or just overwrite?
-		// Spec T013 just says "Implement aps profile new command handler with flags"
-		// Spec 12.4 says "Refuse overwrite unless --force is provided"
-		// CreateProfile returns error if exists.
 		if force {
-			dir, _ := core.GetProfileDir(id)
+			dir, err := core.GetProfileDir(id)
+			if err != nil {
+				return fmt.Errorf("resolving profile dir: %w", err)
+			}
 			if _, err := os.Stat(dir); err == nil {
-				os.RemoveAll(dir) // DANGER: destructive, but requested by force
+				if err := os.RemoveAll(dir); err != nil {
+					return fmt.Errorf("removing existing profile: %w", err)
+				}
 			}
 		}
 
 		if err := core.CreateProfile(id, config); err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating profile: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("creating profile: %w", err)
 		}
 
-		// If email provided, we might want to update the gitconfig we just wrote
-		// But CreateProfile wrote a placeholder. Let's strictly follow MVP.
 		fmt.Printf("Profile '%s' created successfully.\n", id)
+		return nil
 	},
 }
 
@@ -81,18 +123,16 @@ var profileShowCmd = &cobra.Command{
 	Use:   "show [id]",
 	Short: "Show profile details",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		profile, err := core.LoadProfile(id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading profile: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("loading profile: %w", err)
 		}
 
 		data, err := yaml.Marshal(profile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error marshaling profile: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("marshaling profile: %w", err)
 		}
 		fmt.Println(string(data))
 
@@ -141,6 +181,7 @@ var profileShowCmd = &cobra.Command{
 		} else {
 			fmt.Println("- Secrets: missing")
 		}
+		return nil
 	},
 }
 
@@ -308,7 +349,7 @@ var profileShareCmd = &cobra.Command{
 	Use:   "share [id]",
 	Short: "Export a shareable profile bundle",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		outPath, _ := cmd.Flags().GetString("out")
 		if outPath == "" {
@@ -317,8 +358,7 @@ var profileShareCmd = &cobra.Command{
 
 		bundle, err := core.ExportProfileBundle(id, outPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error exporting profile bundle: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("exporting profile bundle: %w", err)
 		}
 
 		if err := core.TrackEvent("profile_share_created", map[string]string{
@@ -330,6 +370,7 @@ var profileShareCmd = &cobra.Command{
 
 		fmt.Printf("Share bundle created: %s\n", outPath)
 		fmt.Printf("Import with: aps profile import %s\n", outPath)
+		return nil
 	},
 }
 
@@ -337,15 +378,14 @@ var profileImportCmd = &cobra.Command{
 	Use:   "import [bundle]",
 	Short: "Import a shared profile bundle",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 		id, _ := cmd.Flags().GetString("id")
 		force, _ := cmd.Flags().GetBool("force")
 
 		profile, bundle, err := core.ImportProfileBundle(bundlePath, id, force)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error importing profile bundle: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("importing profile bundle: %w", err)
 		}
 
 		if err := core.TrackEvent("profile_share_imported", map[string]string{
@@ -357,6 +397,7 @@ var profileImportCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Profile '%s' imported successfully.\n", profile.ID)
+		return nil
 	},
 }
 
@@ -371,6 +412,7 @@ func init() {
 	profileCmd.AddCommand(profileAddCapCmd)
 	profileCmd.AddCommand(profileRemoveCapCmd)
 
+	profileListCmd.Flags().Bool("json", false, "Output as JSON")
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")

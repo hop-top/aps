@@ -77,7 +77,6 @@ Input can be provided as:
 
 			result, err := router.Send(cmd.Context(), wsID, task)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

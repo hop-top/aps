@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+
+	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
 
 	coreadapter "hop.top/aps/internal/core/adapter"
-
-	"github.com/spf13/cobra"
 )
 
 var defaultManager = coreadapter.NewManager()
@@ -24,12 +26,37 @@ func newCreateCmd() *cobra.Command {
 		Short:   "Create a new device",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Interactive type selection when not provided via flag
+			if deviceType == "" {
+				var types []string
+				for _, meta := range coreadapter.AdapterTypes {
+					if meta.Implemented {
+						types = append(types, string(meta.Type))
+					}
+				}
+				sort.Strings(types)
+
+				var opts []huh.Option[string]
+				for _, t := range types {
+					meta := coreadapter.AdapterTypes[coreadapter.AdapterType(t)]
+					opts = append(opts,
+						huh.NewOption(
+							fmt.Sprintf("%s — %s", t, meta.Description),
+							t))
+				}
+				if err := huh.NewSelect[string]().
+					Title("Device type").
+					Options(opts...).
+					Value(&deviceType).
+					Run(); err != nil {
+					return err
+				}
+			}
 			return runCreate(args[0], deviceType, strategy, profileID, jsonOutput)
 		},
 	}
 
 	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, desktop, mobile)")
-	cmd.MarkFlagRequired("type")
 	cmd.Flags().StringVar(&strategy, "strategy", "", "Loading strategy (subprocess, script, builtin)")
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Create as profile-scoped device")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")

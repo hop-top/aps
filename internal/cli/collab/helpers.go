@@ -6,11 +6,15 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"charm.land/lipgloss/v2"
+	"github.com/spf13/cobra"
+
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/storage"
-
-	"github.com/spf13/cobra"
+	"hop.top/aps/internal/styles"
 )
+
+var collabTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 
 // resolveWorkspace determines the workspace ID from flag or active context.
 func resolveWorkspace(cmd *cobra.Command, args []string) (string, error) {

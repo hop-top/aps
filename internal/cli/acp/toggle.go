@@ -12,11 +12,11 @@ import (
 
 func NewToggleCmd() *cobra.Command {
 	var (
-		profileID  string
-		enabled    string
-		transport  string
-		host       string
-		port       string
+		profileID string
+		enabled   string
+		transport string
+		host      string
+		port      string
 	)
 
 	cmd := &cobra.Command{

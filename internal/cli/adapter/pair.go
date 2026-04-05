@@ -319,7 +319,7 @@ func renderPairJSON(profileID, pairingCode, endpoint string, capabilities []stri
 		"pairing_code": pairingCode,
 		"endpoint":     endpoint,
 		"capabilities": capabilities,
-		"token_expiry":  tokenExpiry.String(),
+		"token_expiry": tokenExpiry.String(),
 		"qr_expiry":    qrExpiry.String(),
 	}
 	out, err := json.MarshalIndent(data, "", "  ")

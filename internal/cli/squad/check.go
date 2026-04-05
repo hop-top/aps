@@ -5,8 +5,8 @@ import (
 	"os"
 	"text/tabwriter"
 
-	coresquad "hop.top/aps/internal/core/squad"
 	"github.com/spf13/cobra"
+	coresquad "hop.top/aps/internal/core/squad"
 )
 
 func newCheckCmd() *cobra.Command {
@@ -52,7 +52,7 @@ func runCheck() error {
 	fmt.Fprintf(os.Stdout, "\n%d/%d checks passed\n", passed, len(results))
 
 	if passed < len(results) {
-		os.Exit(1)
+		return fmt.Errorf("%d/%d checks failed", len(results)-passed, len(results))
 	}
 	return nil
 }

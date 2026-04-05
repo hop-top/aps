@@ -2,11 +2,11 @@ package collab
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
 
 	collab "hop.top/aps/internal/core/collaboration"
-
-	"github.com/spf13/cobra"
 )
 
 // NewNewCmd creates the "collab new" command.
@@ -30,6 +30,32 @@ exchange tasks, and resolve conflicts.`,
 			description, _ := cmd.Flags().GetString("description")
 			policy, _ := cmd.Flags().GetString("policy")
 
+			// Interactive prompts when flags not provided
+			if description == "" {
+				if err := huh.NewInput().
+					Title("Description (optional)").
+					Value(&description).
+					Run(); err != nil {
+					return err
+				}
+			}
+
+			if !cmd.Flags().Changed("policy") {
+				if err := huh.NewSelect[string]().
+					Title("Conflict resolution policy").
+					Options(
+						huh.NewOption("priority", "priority"),
+						huh.NewOption("consensus", "consensus"),
+						huh.NewOption("keep-last", "keep-last"),
+						huh.NewOption("keep-first", "keep-first"),
+						huh.NewOption("voting", "voting"),
+					).
+					Value(&policy).
+					Run(); err != nil {
+					return err
+				}
+			}
+
 			mgr, err := getManager()
 			if err != nil {
 				return err
@@ -44,7 +70,6 @@ exchange tasks, and resolve conflicts.`,
 
 			ws, err := mgr.Create(cmd.Context(), config)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

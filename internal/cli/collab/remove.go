@@ -1,12 +1,11 @@
 package collab
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
 )
 
 // NewRemoveCmd creates the "collab remove" command.
@@ -33,19 +32,12 @@ can perform this action. Use --force to skip confirmation.`,
 			force, _ := cmd.Flags().GetBool("force")
 
 			if !force {
-				fmt.Printf("Removing agent '%s' from workspace '%s'...\n", targetAgent, wsID)
-				fmt.Println()
-				fmt.Println("  This will:")
-				fmt.Printf("    - Remove '%s' from the workspace\n", targetAgent)
-				fmt.Println("    - Revoke their access to shared context")
-				fmt.Println("    - Cancel any pending tasks assigned to them")
-				fmt.Println()
-				fmt.Print("  Proceed? [y/N]: ")
-
-				reader := bufio.NewReader(os.Stdin)
-				answer, _ := reader.ReadString('\n')
-				answer = strings.TrimSpace(strings.ToLower(answer))
-				if answer != "y" && answer != "yes" {
+				confirmed, err := prompt.Confirm(
+					fmt.Sprintf("Remove agent '%s' from workspace '%s'?", targetAgent, wsID))
+				if err != nil {
+					return err
+				}
+				if !confirmed {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -57,7 +49,6 @@ can perform this action. Use --force to skip confirmation.`,
 			}
 
 			if err := mgr.Remove(cmd.Context(), wsID, targetAgent, actor); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

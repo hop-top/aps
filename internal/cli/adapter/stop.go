@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	coreadapter "hop.top/aps/internal/core/adapter"
-
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
+	coreadapter "hop.top/aps/internal/core/adapter"
 )
 
 func newStopCmd() *cobra.Command {
@@ -50,11 +51,13 @@ func runStop(ctx context.Context, name string, force, dryRun, jsonOut bool) erro
 			fmt.Printf("  %s\n", p)
 		}
 		fmt.Println()
-		fmt.Print("Stop anyway? [y/N]: ")
-		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" {
-			fmt.Println("Cancelled")
+
+		confirmed, err := prompt.Confirm("Stop anyway?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Println("Cancelled.")
 			return nil
 		}
 	}

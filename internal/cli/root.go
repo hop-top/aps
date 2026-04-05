@@ -8,6 +8,7 @@ import (
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/logging"
+	"hop.top/aps/internal/styles"
 	"hop.top/aps/internal/tui"
 	"hop.top/aps/internal/version"
 	"hop.top/upgrade"
@@ -101,5 +102,10 @@ ID followed by a command to run that command under the selected profile.`
 
 // Execute runs the CLI through fang (styled help, version, etc.)
 func Execute() error {
-	return root.Execute(context.Background())
+	rootCmd.SilenceErrors = true
+	err := root.Execute(context.Background())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))
+	}
+	return err
 }

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"hop.top/aps/internal/core"
@@ -13,20 +12,19 @@ import (
 var docsCmd = &cobra.Command{
 	Use:   "docs",
 	Short: "Generate documentation",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		agentsDir, err := core.GetAgentsDir()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting agents dir: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("getting agents dir: %w", err)
 		}
 
 		docsDest := filepath.Join(agentsDir, "docs")
 		if err := core.GenerateDocs(docsDest); err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating docs: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("generating docs: %w", err)
 		}
 
 		fmt.Printf("Documentation generated at: %s\n", docsDest)
+		return nil
 	},
 }
 
