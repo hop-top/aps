@@ -3,7 +3,7 @@ package voice
 import (
 	"context"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	msgtypes "hop.top/aps/internal/core/messenger"
 )
 

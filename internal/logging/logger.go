@@ -4,7 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
+	"github.com/spf13/viper"
+	kitlog "hop.top/kit/log"
 )
 
 // Logger wraps charmbracelet's logger with structured error logging
@@ -65,4 +67,12 @@ func GetLogger() *Logger {
 // SetLogger sets the global logger instance
 func SetLogger(logger *Logger) {
 	globalLogger = logger
+}
+
+// SetViper re-creates the global logger using kit/log with viper integration.
+// Call this after viper is initialized (e.g. in root command init).
+func SetViper(v *viper.Viper) {
+	globalLogger = &Logger{
+		logger: kitlog.New(v),
+	}
 }

@@ -3,7 +3,7 @@ package styles
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // Palette — consistent across TUI + CLI

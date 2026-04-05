@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 )
 
 // BackendBinConfig holds the path and args for a managed backend binary.
