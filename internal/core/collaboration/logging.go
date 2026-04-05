@@ -5,7 +5,7 @@ import (
 )
 
 // EventLogger provides structured operational logging for collaboration events.
-// It uses the global charmbracelet/log logger for stderr output.
+// It uses the global charm.land/log/v2 logger for stderr output.
 // This is distinct from WorkspaceAuditLog which provides persistent, queryable records.
 type EventLogger struct {
 	logger *logging.Logger

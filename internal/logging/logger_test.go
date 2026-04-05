@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 )
 
 // TestNewLogger creates and verifies a new logger

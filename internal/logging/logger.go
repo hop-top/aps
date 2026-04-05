@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 )
 
 // Logger wraps charmbracelet's logger with structured error logging

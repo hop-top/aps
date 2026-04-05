@@ -3,7 +3,7 @@ package adapter
 import (
 	"hop.top/aps/internal/styles"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 var (

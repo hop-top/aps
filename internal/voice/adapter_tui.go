@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 )
 
 // TUIAdapter listens on a Unix domain socket for Hex TUI connections.
