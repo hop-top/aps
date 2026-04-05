@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +25,6 @@ when no --workspace flag is provided.`,
 			}
 
 			if err := mgr.SetActiveWorkspace(cmd.Context(), wsID); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

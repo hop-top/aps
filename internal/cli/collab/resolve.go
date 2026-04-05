@@ -2,12 +2,12 @@ package collab
 
 import (
 	"fmt"
-	"os"
 	"time"
 
-	collab "hop.top/aps/internal/core/collaboration"
-
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+
+	collab "hop.top/aps/internal/core/collaboration"
 )
 
 // NewResolveCmd creates the "collab resolve" command.
@@ -32,8 +32,21 @@ Strategies:
 			}
 
 			strategy, _ := cmd.Flags().GetString("strategy")
-			if strategy == "" {
-				strategy = "priority"
+
+			// Interactive strategy selection when not provided
+			if !cmd.Flags().Changed("strategy") {
+				if err := huh.NewSelect[string]().
+					Title("Resolution strategy").
+					Options(
+						huh.NewOption("priority — resolve by agent role", "priority"),
+						huh.NewOption("keep-first — keep earliest write", "keep-first"),
+						huh.NewOption("keep-last — keep most recent write", "keep-last"),
+						huh.NewOption("rollback — revert to pre-conflict", "rollback"),
+					).
+					Value(&strategy).
+					Run(); err != nil {
+					return err
+				}
 			}
 
 			store, err := getStorage()
@@ -70,7 +83,6 @@ Strategies:
 				collab.ResolutionStrategy(strategy),
 			)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -93,7 +105,6 @@ Strategies:
 				cmd.Context(), *target, ws,
 			)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

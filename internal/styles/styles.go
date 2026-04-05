@@ -224,6 +224,32 @@ func ConflictStatusBadge(status string) string {
 	}
 }
 
+// SessionStatusBadge renders a colored badge for session status.
+func SessionStatusBadge(status string) string {
+	switch status {
+	case "active":
+		return lipgloss.NewStyle().Foreground(ColorSuccess).Render("● active")
+	case "inactive":
+		return lipgloss.NewStyle().Foreground(ColorDim).Render("○ inactive")
+	case "errored":
+		return lipgloss.NewStyle().Foreground(ColorError).Render("● errored")
+	default:
+		return Dim.Render("? " + status)
+	}
+}
+
+// TierBadge renders a colored badge for session tier.
+func TierBadge(tier string) string {
+	switch tier {
+	case "premium":
+		return lipgloss.NewStyle().Foreground(ColorAccent).Render(tier)
+	case "standard":
+		return lipgloss.NewStyle().Foreground(ColorBuiltin).Render(tier)
+	default:
+		return Dim.Render(tier)
+	}
+}
+
 // RoleBadge renders a colored badge for a device role.
 func RoleBadge(role string) string {
 	switch role {

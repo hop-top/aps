@@ -5,12 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/tabwriter"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/skills"
+	"hop.top/aps/internal/styles"
 )
+
+var skillTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 
 // NewSkillCmd creates the skill command group
 func NewSkillCmd() *cobra.Command {
@@ -57,29 +62,38 @@ func newListCmd() *cobra.Command {
 			bySource := registry.ListBySource()
 
 			if len(bySource) == 0 {
-				fmt.Println("No skills found.")
+				fmt.Println(styles.Dim.Render("No skills found."))
 				fmt.Println()
-				fmt.Println("To install skills:")
-				fmt.Println("  aps skill install <path> [--global]")
+				fmt.Println(styles.Dim.Render("To install skills:"))
+				fmt.Println(styles.Dim.Render("  aps skill install <path> [--global]"))
 				return nil
 			}
 
-			fmt.Printf("Found %d skill(s):\n\n", registry.Count())
+			fmt.Printf("%s\n\n", styles.Title.Render(
+				fmt.Sprintf("Skills (%d)", registry.Count())))
 
 			for source, skillList := range bySource {
-				fmt.Printf("%s (%d):\n", source, len(skillList))
-				for _, skill := range skillList {
-					if verbose {
+				fmt.Printf("%s (%d):\n", styles.Bold.Render(source), len(skillList))
+				if verbose {
+					for _, skill := range skillList {
 						fmt.Printf("  • %s\n", skill.Name)
-						fmt.Printf("    %s\n", skill.Description)
+						fmt.Printf("    %s\n", styles.Dim.Render(skill.Description))
 						if skill.License != "" {
-							fmt.Printf("    License: %s\n", skill.License)
+							fmt.Printf("    License: %s\n", styles.Dim.Render(skill.License))
 						}
-						fmt.Printf("    Location: %s\n", skill.BasePath)
+						fmt.Printf("    Location: %s\n", styles.Dim.Render(skill.BasePath))
 						fmt.Println()
-					} else {
-						fmt.Printf("  %-30s %s\n", skill.Name, skill.Description)
 					}
+				} else {
+					w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+					fmt.Fprintln(w, "  "+skillTableHeader.Render("NAME")+"\t"+
+						skillTableHeader.Render("DESCRIPTION"))
+					for _, skill := range skillList {
+						fmt.Fprintf(w, "  %s\t%s\n",
+							skill.Name,
+							styles.Dim.Render(skill.Description))
+					}
+					w.Flush()
 				}
 				fmt.Println()
 			}

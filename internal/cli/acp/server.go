@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/spf13/cobra"
 	"hop.top/aps/internal/acp"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
-	"github.com/spf13/cobra"
 )
 
 // NewServerCmd creates the `aps acp server` command

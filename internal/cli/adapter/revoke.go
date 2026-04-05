@@ -1,17 +1,16 @@
 package adapter
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"hop.top/aps/internal/core"
-	"hop.top/aps/internal/core/adapter/mobile"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
+	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/adapter/mobile"
 )
 
 func newRevokeCmd() *cobra.Command {
@@ -78,27 +77,19 @@ func runRevoke(deviceID, profileID string, force, dryRun, revokeAll, jsonOut, qu
 		fmt.Printf("  Device:  %s (%s)\n", device.AdapterName, device.AdapterOS)
 		fmt.Printf("  Status:  %s\n", device.Status)
 		fmt.Printf("  Profile: %s\n\n", profileID)
-		fmt.Println("  Revoking will:")
-		fmt.Println("    - Blacklist the device token")
-		fmt.Println("    - Reject future connection attempts")
-		fmt.Println("    - The device must re-pair via new QR code")
-		fmt.Println("\n  No changes made. Remove --dry-run to revoke.")
+		fmt.Println("  No changes made. Remove --dry-run to revoke.")
 		return nil
 	}
 
 	if !force {
 		fmt.Printf("  Device: %s\n", device.AdapterName)
 		fmt.Printf("  Status: %s\n\n", device.Status)
-		fmt.Println("  Revoking will:")
-		fmt.Println("    - Blacklist the device token")
-		fmt.Println("    - Reject future connection attempts")
-		fmt.Println("    - The device must re-pair via new QR code")
-		fmt.Printf("\n  Revoke this device? [y/N]: ")
 
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
+		confirmed, err := prompt.Confirm("Revoke this device?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
 			fmt.Println("  Cancelled.")
 			return nil
 		}
@@ -155,12 +146,13 @@ func revokeAllDevices(registry *mobile.Registry, profileID string, force, dryRun
 		for _, d := range active {
 			fmt.Printf("    %s  %s (%s)\n", dimStyle.Render(string(d.AdapterID)), d.AdapterName, d.Status)
 		}
-		fmt.Printf("\n  Type '%s' to confirm: ", profileID)
 
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(answer)
-		if answer != profileID {
+		confirmed, err := prompt.Confirm(
+			fmt.Sprintf("Revoke all %d devices for profile '%s'?", len(active), profileID))
+		if err != nil {
+			return err
+		}
+		if !confirmed {
 			fmt.Println("  Cancelled.")
 			return nil
 		}

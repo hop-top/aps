@@ -2,11 +2,11 @@ package collab
 
 import (
 	"fmt"
-	"os"
-
-	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
+
+	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/styles"
 )
 
 // NewCtxCmd creates the "collab ctx" command group.
@@ -62,7 +62,6 @@ func newCtxSetCmd() *cobra.Command {
 
 			v, err := ctx.Set(key, value, profile, collab.RoleOwner)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -160,15 +159,20 @@ func newCtxListCmd() *cobra.Command {
 			}
 
 			if len(variables) == 0 {
-				fmt.Println("No context variables set.")
+				fmt.Println(styles.Dim.Render("No context variables set."))
 				fmt.Println()
-				fmt.Println("  Set one:")
-				fmt.Println("    aps collab ctx set <key> <value>")
+				fmt.Println(styles.Dim.Render("  Set one:"))
+				fmt.Println(styles.Dim.Render("    aps collab ctx set <key> <value>"))
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render("Context"))
+
 			w := newTabWriter()
-			fmt.Fprintf(w, "KEY\tVALUE\tVERSION\tUPDATED BY\n")
+			fmt.Fprintln(w, collabTableHeader.Render("KEY")+"\t"+
+				collabTableHeader.Render("VALUE")+"\t"+
+				collabTableHeader.Render("VERSION")+"\t"+
+				collabTableHeader.Render("UPDATED BY"))
 			for _, v := range variables {
 				fmt.Fprintf(w, "%s\t%s\tv%d\t%s\n",
 					v.Key,
@@ -220,7 +224,6 @@ func newCtxDeleteCmd() *cobra.Command {
 			ctx := collab.NewWorkspaceContextFromState(variables, nil)
 
 			if err := ctx.Delete(key, profile, collab.RoleOwner); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -292,15 +295,22 @@ func newCtxHistoryCmd() *cobra.Command {
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render(
+				fmt.Sprintf("History: %s", key)))
+
 			w := newTabWriter()
-			fmt.Fprintf(w, "VERSION\tAGENT\tOLD\tNEW\tTIME\n")
+			fmt.Fprintln(w, collabTableHeader.Render("VERSION")+"\t"+
+				collabTableHeader.Render("AGENT")+"\t"+
+				collabTableHeader.Render("OLD")+"\t"+
+				collabTableHeader.Render("NEW")+"\t"+
+				collabTableHeader.Render("TIME"))
 			for _, m := range mutations {
 				fmt.Fprintf(w, "v%d\t%s\t%s\t%s\t%s\n",
 					m.Version,
 					m.AgentID,
 					truncate(m.OldValue, 30),
 					truncate(m.NewValue, 30),
-					m.Timestamp.Format("15:04:05"),
+					styles.Dim.Render(m.Timestamp.Format("15:04:05")),
 				)
 			}
 			w.Flush()

@@ -1,12 +1,11 @@
 package collab
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
 )
 
 // NewArchiveCmd creates the "collab archive" command.
@@ -25,19 +24,12 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 			force, _ := cmd.Flags().GetBool("force")
 
 			if !force {
-				fmt.Printf("Archiving workspace '%s'...\n", wsID)
-				fmt.Println()
-				fmt.Println("  This will:")
-				fmt.Println("    - Set workspace to read-only")
-				fmt.Println("    - Prevent new agents from joining")
-				fmt.Println("    - Cancel any pending tasks")
-				fmt.Println()
-				fmt.Print("  Proceed? [y/N]: ")
-
-				reader := bufio.NewReader(os.Stdin)
-				answer, _ := reader.ReadString('\n')
-				answer = strings.TrimSpace(strings.ToLower(answer))
-				if answer != "y" && answer != "yes" {
+				confirmed, err := prompt.Confirm(
+					fmt.Sprintf("Archive workspace '%s'? It becomes read-only.", wsID))
+				if err != nil {
+					return err
+				}
+				if !confirmed {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -49,7 +41,6 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 			}
 
 			if err := mgr.Archive(cmd.Context(), wsID); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

@@ -5,8 +5,14 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/core/session"
+	"hop.top/aps/internal/styles"
+)
+
+var (
+	tableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 )
 
 func NewListCmd() *cobra.Command {
@@ -23,35 +29,48 @@ func NewListCmd() *cobra.Command {
 			sessions := registry.List()
 
 			if len(sessions) == 0 {
-				fmt.Println("No active sessions")
+				fmt.Println(styles.Dim.Render("No active sessions"))
 				return nil
 			}
 
 			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter, workspaceFilter)
 
 			if len(sessions) == 0 {
-				fmt.Println("No sessions match the specified filters")
+				fmt.Println(styles.Dim.Render("No sessions match the specified filters"))
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render("Sessions"))
+
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tPROFILE\tWORKSPACE\tPID\tSTATUS\tTIER\tCREATED\tLAST SEEN")
+			fmt.Fprintln(w, tableHeader.Render("ID")+"\t"+
+				tableHeader.Render("PROFILE")+"\t"+
+				tableHeader.Render("WORKSPACE")+"\t"+
+				tableHeader.Render("PID")+"\t"+
+				tableHeader.Render("STATUS")+"\t"+
+				tableHeader.Render("TIER")+"\t"+
+				tableHeader.Render("CREATED")+"\t"+
+				tableHeader.Render("LAST SEEN"))
+
 			for _, s := range sessions {
 				wsID := s.WorkspaceID
 				if wsID == "" {
-					wsID = "--"
+					wsID = styles.Dim.Render("--")
 				}
 				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
 					s.ID,
 					s.ProfileID,
 					wsID,
 					s.PID,
-					s.Status,
-					s.Tier,
-					s.CreatedAt.Format("2006-01-02 15:04:05"),
-					s.LastSeenAt.Format("15:04:05"))
+					styles.SessionStatusBadge(string(s.Status)),
+					styles.TierBadge(string(s.Tier)),
+					styles.Dim.Render(s.CreatedAt.Format("2006-01-02 15:04:05")),
+					styles.Dim.Render(s.LastSeenAt.Format("15:04:05")))
 			}
 			w.Flush()
+
+			summary := fmt.Sprintf("%d sessions", len(sessions))
+			fmt.Printf("\n%s\n", styles.Dim.Render(summary))
 
 			return nil
 		},

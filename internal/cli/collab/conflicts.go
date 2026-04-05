@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,7 +26,6 @@ func NewConflictsCmd() *cobra.Command {
 
 			conflicts, err := store.LoadConflicts(wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

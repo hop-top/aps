@@ -1,16 +1,14 @@
 package conflict
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
-
-	"hop.top/aps/internal/core/multidevice"
-	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/prompt"
+	"hop.top/aps/internal/core/multidevice"
+	"hop.top/aps/internal/styles"
 )
 
 func newResolveCmd() *cobra.Command {
@@ -126,11 +124,11 @@ func runConflictResolve(
 	}
 
 	if !force {
-		fmt.Printf("\n  Apply this resolution? [y/N]: ")
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
+		confirmed, err := prompt.Confirm("Apply this resolution?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
 			fmt.Println("  Cancelled.")
 			return nil
 		}

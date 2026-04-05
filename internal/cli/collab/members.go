@@ -2,7 +2,8 @@ package collab
 
 import (
 	"fmt"
-	"os"
+
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,6 @@ func NewMembersCmd() *cobra.Command {
 
 			members, err := mgr.Members(cmd.Context(), wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -35,21 +35,30 @@ func NewMembersCmd() *cobra.Command {
 			}
 
 			if len(members) == 0 {
-				fmt.Println("No members in workspace.")
+				fmt.Println(styles.Dim.Render("No members in workspace."))
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render(
+				fmt.Sprintf("Members (%s)", wsID)))
+
 			w := newTabWriter()
-			fmt.Fprintf(w, "AGENT\tROLE\tSTATUS\tLAST SEEN\n")
+			fmt.Fprintln(w, collabTableHeader.Render("AGENT")+"\t"+
+				collabTableHeader.Render("ROLE")+"\t"+
+				collabTableHeader.Render("STATUS")+"\t"+
+				collabTableHeader.Render("LAST SEEN"))
 			for _, m := range members {
 				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 					m.ProfileID,
-					m.Role,
+					styles.RoleBadge(string(m.Role)),
 					m.Status,
-					m.LastSeen.Format("2006-01-02 15:04:05"),
+					styles.Dim.Render(m.LastSeen.Format("2006-01-02 15:04:05")),
 				)
 			}
 			w.Flush()
+
+			fmt.Printf("\n%s\n", styles.Dim.Render(
+				fmt.Sprintf("%d members", len(members))))
 
 			return nil
 		},

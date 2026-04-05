@@ -31,7 +31,7 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start protocol server",
 	Long:  `Start Agent Protocol server to expose APS functionality via HTTP API.`,
-	Run:   runServe,
+	RunE:  runServe,
 }
 
 func init() {
@@ -46,16 +46,14 @@ func init() {
 	serveCmd.Flags().StringVar(&serveLogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 }
 
-func runServe(cmd *cobra.Command, args []string) {
+func runServe(cmd *cobra.Command, args []string) error {
 	if err := adapters.RegisterDefaults(); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to register adapters: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("registering adapters: %w", err)
 	}
 
 	core, err := protocol.NewAPSAdapter()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create core adapter: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("creating core adapter: %w", err)
 	}
 
 	mux := http.NewServeMux()
@@ -71,8 +69,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	})
 
 	if err := adapters.GetRegistry().RegisterAll(mux, core); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to register adapter routes: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("registering adapter routes: %w", err)
 	}
 
 	if serveAuthToken != "" {
@@ -81,8 +78,7 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	listener, err := net.Listen("tcp", serveAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", serveAddr, err)
-		os.Exit(1)
+		return fmt.Errorf("listening on %s: %w", serveAddr, err)
 	}
 
 	log.Printf("Protocol server starting on %s", serveAddr)
@@ -115,6 +111,7 @@ func runServe(cmd *cobra.Command, args []string) {
 	}
 
 	log.Println("Server stopped")
+	return nil
 }
 
 func authMiddleware(mux *http.ServeMux, token string) http.HandlerFunc {

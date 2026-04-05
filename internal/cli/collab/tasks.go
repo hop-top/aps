@@ -2,11 +2,11 @@ package collab
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,6 @@ func NewTasksCmd() *cobra.Command {
 
 			tasks, err := router.List(cmd.Context(), wsID, opts)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -58,15 +57,23 @@ func NewTasksCmd() *cobra.Command {
 			}
 
 			if len(tasks) == 0 {
-				fmt.Println("No tasks in this workspace.")
+				fmt.Println(styles.Dim.Render("No tasks in this workspace."))
 				fmt.Println()
-				fmt.Println("  Send one:")
-				fmt.Println("    aps collab send <agent> --action <action>")
+				fmt.Println(styles.Dim.Render("  Send one:"))
+				fmt.Println(styles.Dim.Render("    aps collab send <agent> --action <action>"))
 				return nil
 			}
 
+			fmt.Printf("%s\n\n", styles.Title.Render(
+				fmt.Sprintf("Tasks (%s)", wsID)))
+
 			w := newTabWriter()
-			fmt.Fprintf(w, "ID\tACTION\tFROM\tTO\tSTATUS\tAGE\n")
+			fmt.Fprintln(w, collabTableHeader.Render("ID")+"\t"+
+				collabTableHeader.Render("ACTION")+"\t"+
+				collabTableHeader.Render("FROM")+"\t"+
+				collabTableHeader.Render("TO")+"\t"+
+				collabTableHeader.Render("STATUS")+"\t"+
+				collabTableHeader.Render("AGE"))
 			for _, t := range tasks {
 				age := formatAge(t.CreatedAt)
 				short := shortID(t.ID)
@@ -76,10 +83,13 @@ func NewTasksCmd() *cobra.Command {
 					t.SenderID,
 					t.RecipientID,
 					strings.ToUpper(string(t.Status)),
-					age,
+					styles.Dim.Render(age),
 				)
 			}
 			w.Flush()
+
+			fmt.Printf("\n%s\n", styles.Dim.Render(
+				fmt.Sprintf("%d tasks", len(tasks))))
 
 			return nil
 		},

@@ -2,7 +2,6 @@ package collab
 
 import (
 	"fmt"
-	"os"
 
 	collab "hop.top/aps/internal/core/collaboration"
 
@@ -41,7 +40,6 @@ against a task description.`,
 			// Load workspace to rebuild capability index from agents
 			ws, err := mgr.Get(cmd.Context(), wsID)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 
@@ -64,7 +62,6 @@ against a task description.`,
 
 			matches, err := registry.FindAgents(cmd.Context(), wsID, query)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				return err
 			}
 

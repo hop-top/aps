@@ -1,13 +1,19 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"text/tabwriter"
+
+	"charm.land/lipgloss/v2"
+	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/core"
-
-	"github.com/spf13/cobra"
+	"hop.top/aps/internal/styles"
 )
+
+var actionTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 
 var actionCmd = &cobra.Command{
 	Use:   "action",
@@ -18,26 +24,41 @@ var actionListCmd = &cobra.Command{
 	Use:   "list [profile]",
 	Short: "List available actions for a profile",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actions, err := core.LoadActions(profileID)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading actions: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("loading actions: %w", err)
+		}
+
+		jsonOut, _ := cmd.Flags().GetBool("json")
+		if jsonOut {
+			return json.NewEncoder(os.Stdout).Encode(actions)
 		}
 
 		if len(actions) == 0 {
-			fmt.Println("No actions found.")
-			return
+			fmt.Println(styles.Dim.Render("No actions found."))
+			return nil
 		}
 
+		fmt.Printf("%s\n\n", styles.Title.Render(
+			fmt.Sprintf("Actions (%s)", profileID)))
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, actionTableHeader.Render("ID")+"\t"+
+			actionTableHeader.Render("TITLE"))
 		for _, a := range actions {
 			title := a.Title
 			if title == "" {
-				title = "(no description)"
+				title = styles.Dim.Render("(no description)")
 			}
-			fmt.Printf("%s\t%s\n", a.ID, title)
+			fmt.Fprintf(w, "%s\t%s\n", a.ID, title)
 		}
+		w.Flush()
+
+		fmt.Printf("\n%s\n", styles.Dim.Render(
+			fmt.Sprintf("%d actions", len(actions))))
+		return nil
 	},
 }
 
@@ -45,14 +66,13 @@ var actionShowCmd = &cobra.Command{
 	Use:   "show [profile] [action]",
 	Short: "Show details of a specific action",
 	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actionID := args[1]
 
 		action, err := core.GetAction(profileID, actionID)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("getting action: %w", err)
 		}
 
 		fmt.Printf("ID: %s\n", action.ID)
@@ -60,6 +80,7 @@ var actionShowCmd = &cobra.Command{
 		fmt.Printf("Type: %s\n", action.Type)
 		fmt.Printf("Path: %s\n", action.Path)
 		fmt.Printf("Accepts Stdin: %v\n", action.AcceptsStdin)
+		return nil
 	},
 }
 
@@ -67,7 +88,7 @@ var actionRunCmd = &cobra.Command{
 	Use:   "run [profile] [action]",
 	Short: "Run an action",
 	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actionID := args[1]
 
@@ -78,22 +99,20 @@ var actionRunCmd = &cobra.Command{
 		// Load action to check details
 		action, err := core.GetAction(profileID, actionID)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("getting action: %w", err)
 		}
 
 		if dryRun {
 			fmt.Printf("Would run action '%s' from profile '%s'\n", actionID, profileID)
 			fmt.Printf("Path: %s\n", action.Path)
-			return
+			return nil
 		}
 
 		var payload []byte
 		if payloadFile != "" {
 			data, err := os.ReadFile(payloadFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error reading payload file: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("reading payload file: %w", err)
 			}
 			payload = data
 		} else if payloadStdin {
@@ -114,9 +133,9 @@ var actionRunCmd = &cobra.Command{
 		}
 
 		if err := core.RunAction(profileID, actionID, payload); err != nil {
-			fmt.Fprintf(os.Stderr, "Error running action: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("running action: %w", err)
 		}
+		return nil
 	},
 }
 
@@ -126,6 +145,7 @@ func init() {
 	actionCmd.AddCommand(actionShowCmd)
 	actionCmd.AddCommand(actionRunCmd)
 
+	actionListCmd.Flags().Bool("json", false, "Output as JSON")
 	actionRunCmd.Flags().String("payload-file", "", "File to send to action stdin")
 	actionRunCmd.Flags().Bool("payload-stdin", false, "Read stdin and forward to action") // effectively default if interactive, but explicit flag requested
 	actionRunCmd.Flags().Bool("dry-run", false, "Print action details without running")
