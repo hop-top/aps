@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"charm.land/log/v2"
+	"github.com/spf13/viper"
 )
 
 // TestNewLogger creates and verifies a new logger
@@ -142,6 +143,26 @@ func TestGlobalLogger(t *testing.T) {
 	logger3 := GetLogger()
 	if logger3 != newLogger {
 		t.Error("expected SetLogger to update global logger")
+	}
+}
+
+// TestSetViper tests that SetViper re-creates the global logger via kit/log
+func TestSetViper(t *testing.T) {
+	original := GetLogger()
+	defer SetLogger(original)
+
+	v := viper.New()
+	SetViper(v)
+
+	logger := GetLogger()
+	if logger == nil {
+		t.Fatal("expected non-nil logger after SetViper")
+	}
+	if logger.logger == nil {
+		t.Fatal("expected non-nil internal logger after SetViper")
+	}
+	if logger == original {
+		t.Error("expected SetViper to create a new logger instance")
 	}
 }
 

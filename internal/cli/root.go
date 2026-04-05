@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/tui"
 	"hop.top/aps/internal/version"
 	"hop.top/upgrade"
@@ -26,6 +27,7 @@ func init() {
 		Version: version.Short(),
 		Short:   "Agent Profile System CLI",
 	})
+	logging.SetViper(root.Viper)
 
 	// Keep rootCmd for backward compat with init() AddCommand calls
 	rootCmd = root.Cmd
