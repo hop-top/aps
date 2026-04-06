@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"hop.top/aps/internal/core"
@@ -12,6 +13,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// setupTestDataDir sets APS_DATA_PATH to a temp directory and returns the profiles dir.
+func setupTestDataDir(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmpDir)
+	return tmpDir
+}
+
+// createTestProfile creates a profile directory with the given YAML content.
+func createTestProfile(t *testing.T, dataDir, profileID, profileYAML string) string {
+	t.Helper()
+	profileDir := filepath.Join(dataDir, "profiles", profileID)
+	err := os.MkdirAll(profileDir, 0o755)
+	require.NoError(t, err)
+
+	profilePath := filepath.Join(profileDir, "profile.yaml")
+	err = os.WriteFile(profilePath, []byte(profileYAML), 0o644)
+	require.NoError(t, err)
+
+	secretsPath := filepath.Join(profileDir, "secrets.env")
+	err = os.WriteFile(secretsPath, []byte(""), 0o600)
+	require.NoError(t, err)
+
+	return profileDir
+}
 
 func TestIsolationFoundation_InterfaceCompliance(t *testing.T) {
 	t.Run("ProcessIsolation implements IsolationManager", func(t *testing.T) {
@@ -167,32 +194,23 @@ func TestIsolationFoundation_FallbackLogic(t *testing.T) {
 }
 
 func TestIsolationFoundation_ProcessIsolationIntegration(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("process isolation integration tests use sh/echo and are not supported on Windows")
+	}
+
 	t.Run("End-to-end command execution with process isolation", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "e2e-process-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: e2e-process-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: e2e-process-test
 display_name: E2E Process Test
 isolation:
   level: process
   strict: false
   fallback: true
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("E2E_VAR=e2e_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("E2E_VAR=e2e_value\n"), 0o600)
 		require.NoError(t, err)
 
 		err = core.RunCommand(profileID, "echo", []string{"integration test"})
@@ -200,40 +218,27 @@ isolation:
 	})
 
 	t.Run("End-to-end action execution with process isolation", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "e2e-action-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: e2e-action-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: e2e-action-test
 display_name: E2E Action Test
 isolation:
   level: process
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("E2E_ACTION_VAR=action_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("E2E_ACTION_VAR=action_value\n"), 0o600)
 		require.NoError(t, err)
 
 		actionsDir := filepath.Join(profileDir, "actions")
-		err = os.MkdirAll(actionsDir, 0755)
+		err = os.MkdirAll(actionsDir, 0o755)
 		require.NoError(t, err)
 
 		actionScript := `#!/bin/sh
 echo "E2E Action Executed"
 `
 		actionPath := filepath.Join(actionsDir, "e2e-test.sh")
-		err = os.WriteFile(actionPath, []byte(actionScript), 0755)
+		err = os.WriteFile(actionPath, []byte(actionScript), 0o755)
 		require.NoError(t, err)
 
 		actionYaml := `id: e2e-test
@@ -243,7 +248,7 @@ path: actions/e2e-test.sh
 accepts_stdin: false
 `
 		actionYamlPath := filepath.Join(actionsDir, "e2e-test.yaml")
-		err = os.WriteFile(actionYamlPath, []byte(actionYaml), 0644)
+		err = os.WriteFile(actionYamlPath, []byte(actionYaml), 0o644)
 		require.NoError(t, err)
 
 		err = core.RunAction(profileID, "e2e-test", nil)
@@ -251,27 +256,14 @@ accepts_stdin: false
 	})
 
 	t.Run("Process isolation environment injection", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "env-inject-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: env-inject-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: env-inject-test
 display_name: Environment Injection Test
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("INJECT_TEST=inject_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("INJECT_TEST=inject_value\n"), 0o600)
 		require.NoError(t, err)
 
 		cmd := exec.Command("sh", "-c", "echo $INJECT_TEST")
@@ -281,7 +273,6 @@ display_name: Environment Injection Test
 		err = core.InjectEnvironment(cmd, profile)
 		assert.NoError(t, err)
 
-		// Check that profile ID is in environment
 		foundProfileID := false
 		foundSecret := false
 		for _, env := range cmd.Env {
@@ -299,32 +290,16 @@ display_name: Environment Injection Test
 
 func TestIsolationFoundation_ConfigIntegration(t *testing.T) {
 	t.Run("Profile with isolation config loads successfully", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "config-integration-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: config-integration-test
+		createTestProfile(t, dataDir, profileID, `id: config-integration-test
 display_name: Config Integration Test
 isolation:
   level: process
   strict: false
   fallback: true
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
-		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte(""), 0600)
-		require.NoError(t, err)
+`)
 
 		profile, err := core.LoadProfile(profileID)
 		require.NoError(t, err)
@@ -334,15 +309,12 @@ isolation:
 	})
 
 	t.Run("Global config with isolation settings", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", tempDir)
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		tmpDir := t.TempDir()
+		t.Setenv("APS_DATA_PATH", tmpDir)
+		t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
-		configDir := filepath.Join(tempDir, "aps")
-		err := os.MkdirAll(configDir, 0755)
+		configDir := filepath.Join(tmpDir, "aps")
+		err := os.MkdirAll(configDir, 0o755)
 		require.NoError(t, err)
 
 		configContent := `prefix: FOUNDATION
@@ -351,7 +323,7 @@ isolation:
   fallback_enabled: true
 `
 		configPath := filepath.Join(configDir, "config.yaml")
-		err = os.WriteFile(configPath, []byte(configContent), 0644)
+		err = os.WriteFile(configPath, []byte(configContent), 0o644)
 		require.NoError(t, err)
 
 		config, err := core.LoadConfig()
@@ -364,50 +336,29 @@ isolation:
 
 func TestIsolationFoundation_ErrorHandling(t *testing.T) {
 	t.Run("Invalid isolation level in profile", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "invalid-level-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: invalid-level-test
+		createTestProfile(t, dataDir, profileID, `id: invalid-level-test
 display_name: Invalid Level Test
 isolation:
   level: invalid_level
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
+`)
 
-		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte(""), 0600)
-		require.NoError(t, err)
-
-		_, err = core.LoadProfile(profileID)
+		_, err := core.LoadProfile(profileID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid isolation level")
 	})
 
 	t.Run("Unsupported isolation level during execution", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		if runtime.GOOS == "windows" {
+			t.Skip("container isolation execution test not supported on Windows")
+		}
+
+		dataDir := setupTestDataDir(t)
 
 		profileID := "unsupported-exec-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: unsupported-exec-test
+		createTestProfile(t, dataDir, profileID, `id: unsupported-exec-test
 display_name: Unsupported Execution Test
 isolation:
   level: container
@@ -415,16 +366,9 @@ isolation:
   fallback: true
   container:
     image: ubuntu:22.04
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
+`)
 
-		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte(""), 0600)
-		require.NoError(t, err)
-
-		err = core.RunCommand(profileID, "echo", []string{"test"})
+		err := core.RunCommand(profileID, "echo", []string{"test"})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not yet implemented")
 	})
@@ -437,33 +381,23 @@ isolation:
 }
 
 func TestIsolationFoundation_BackwardCompatibility(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("backward compatibility tests use sh and are not supported on Windows")
+	}
+
 	t.Run("Old-style profile without isolation section", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "old-style-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: old-style-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: old-style-test
 display_name: Old Style Profile
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("OLD_VAR=old_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("OLD_VAR=old_value\n"), 0o600)
 		require.NoError(t, err)
 
 		profile, err := core.LoadProfile(profileID)
 		require.NoError(t, err)
-		// When isolation level is not specified in YAML, it defaults to IsolationProcess
 		assert.Equal(t, core.IsolationProcess, profile.Isolation.Level)
 
 		err = core.RunCommand(profileID, "echo", []string{"backward compat"})
@@ -471,27 +405,14 @@ display_name: Old Style Profile
 	})
 
 	t.Run("InjectEnvironment still works for old code", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "inject-compat-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: inject-compat-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: inject-compat-test
 display_name: Inject Compat Test
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("COMPAT_VAR=compat_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("COMPAT_VAR=compat_value\n"), 0o600)
 		require.NoError(t, err)
 
 		profile, err := core.LoadProfile(profileID)
@@ -518,39 +439,21 @@ display_name: Inject Compat Test
 
 func TestIsolationFoundation_AllExistingTests(t *testing.T) {
 	t.Run("Execution injection test still passes", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		setupTestDataDir(t)
 
 		_, err := core.LoadConfig()
 		assert.NoError(t, err)
 	})
 
 	t.Run("Load profile still works", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		dataDir := setupTestDataDir(t)
 
 		profileID := "existing-test-profile"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: existing-test-profile
+		profileDir := createTestProfile(t, dataDir, profileID, `id: existing-test-profile
 display_name: Existing Test Profile
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("EXISTING_VAR=existing_value\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("EXISTING_VAR=existing_value\n"), 0o600)
 		require.NoError(t, err)
 
 		profile, err := core.LoadProfile(profileID)
@@ -560,38 +463,29 @@ display_name: Existing Test Profile
 	})
 
 	t.Run("RunAction with shell type still works", func(t *testing.T) {
-		tempDir := t.TempDir()
-		os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-		os.Setenv("XDG_CONFIG_HOME", "")
-		defer os.Setenv("HOME", os.Getenv("HOME"))
+		if runtime.GOOS == "windows" {
+			t.Skip("shell action tests use sh and are not supported on Windows")
+		}
+
+		dataDir := setupTestDataDir(t)
 
 		profileID := "shell-action-test"
-		profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
-		err := os.MkdirAll(profileDir, 0755)
-		require.NoError(t, err)
-
-		profileContent := `id: shell-action-test
+		profileDir := createTestProfile(t, dataDir, profileID, `id: shell-action-test
 display_name: Shell Action Test
-`
-		profilePath := filepath.Join(profileDir, "profile.yaml")
-		err = os.WriteFile(profilePath, []byte(profileContent), 0644)
-		require.NoError(t, err)
-
+`)
 		secretsPath := filepath.Join(profileDir, "secrets.env")
-		err = os.WriteFile(secretsPath, []byte("SHELL_ACTION_VAR=shell_action\n"), 0600)
+		err := os.WriteFile(secretsPath, []byte("SHELL_ACTION_VAR=shell_action\n"), 0o600)
 		require.NoError(t, err)
 
 		actionsDir := filepath.Join(profileDir, "actions")
-		err = os.MkdirAll(actionsDir, 0755)
+		err = os.MkdirAll(actionsDir, 0o755)
 		require.NoError(t, err)
 
 		actionScript := `#!/bin/sh
 echo "Shell action executed"
 `
 		actionPath := filepath.Join(actionsDir, "existing-test.sh")
-		err = os.WriteFile(actionPath, []byte(actionScript), 0755)
+		err = os.WriteFile(actionPath, []byte(actionScript), 0o755)
 		require.NoError(t, err)
 
 		actionYaml := `id: existing-test
@@ -601,7 +495,7 @@ path: actions/existing-test.sh
 accepts_stdin: false
 `
 		actionYamlPath := filepath.Join(actionsDir, "existing-test.yaml")
-		err = os.WriteFile(actionYamlPath, []byte(actionYaml), 0644)
+		err = os.WriteFile(actionYamlPath, []byte(actionYaml), 0o644)
 		require.NoError(t, err)
 
 		err = core.RunAction(profileID, "existing-test", nil)

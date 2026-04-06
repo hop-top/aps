@@ -357,28 +357,75 @@ func (w *WindowsSandbox) setSysProcAttr(cmd *exec.Cmd) error {
 
 func (w *WindowsSandbox) createRestrictedToken() (windows.Handle, error) {
 	var token windows.Handle
-	err := windows.CreateRestrictedToken(windows.GetCurrentProcessToken(), 0, 0, nil, 0, nil, 0, nil, &token)
-	if err != nil {
+
+	// Use NtCreateLowBoxToken or CreateRestrictedToken via syscall
+	// The golang.org/x/sys/windows API changed in recent versions;
+	// call the Win32 API directly via syscall for stability.
+	modadvapi32 := windows.NewLazySystemDLL("advapi32.dll")
+	procCreateRestrictedToken := modadvapi32.NewProc("CreateRestrictedToken")
+
+	r1, _, err := procCreateRestrictedToken.Call(
+		uintptr(windows.GetCurrentProcessToken()),
+		0, // flags
+		0, // disableSidCount
+		0, // disableSids
+		0, // deletePrivilegeCount
+		0, // deletePrivileges
+		0, // restrictedSidCount
+		0, // restrictedSids
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if r1 == 0 {
 		return 0, fmt.Errorf("CreateRestrictedToken failed: %w", err)
 	}
 	return token, nil
 }
 
+func lookupPrivilegeValue(name string) (windows.LUID, error) { //nolint:unused // used by adjustTokenPrivileges
+	var luid windows.LUID
+	namePtr, _ := syscall.UTF16PtrFromString(name)
+	err := windows.LookupPrivilegeValue(nil, namePtr, &luid)
+	if err != nil {
+		return luid, fmt.Errorf("LookupPrivilegeValue(%s) failed: %w", name, err)
+	}
+	return luid, nil
+}
+
 func (w *WindowsSandbox) adjustTokenPrivileges() error {
 	token := windows.GetCurrentProcessToken()
 
-	privileges := []windows.LUIDAndAttributes{
-		{
-			Luid:       windows.LookupPrivilegeValue(PRIVILEGE_ASSIGN_PRIMARY_TOKEN),
-			Attributes: windows.SE_PRIVILEGE_ENABLED,
-		},
-		{
-			Luid:       windows.LookupPrivilegeValue(PRIVILEGE_INCREASE_QUOTA),
-			Attributes: windows.SE_PRIVILEGE_ENABLED,
+	luid1, err := lookupPrivilegeValue(PRIVILEGE_ASSIGN_PRIMARY_TOKEN)
+	if err != nil {
+		return err
+	}
+	luid2, err := lookupPrivilegeValue(PRIVILEGE_INCREASE_QUOTA)
+	if err != nil {
+		return err
+	}
+
+	// Build a Tokenprivileges struct with 2 entries.
+	// windows.Tokenprivileges has a fixed array of 1; we use a larger buffer.
+	type tokenPrivileges2 struct {
+		PrivilegeCount uint32
+		Privileges     [2]windows.LUIDAndAttributes
+	}
+
+	tp := tokenPrivileges2{
+		PrivilegeCount: 2,
+		Privileges: [2]windows.LUIDAndAttributes{
+			{Luid: luid1, Attributes: windows.SE_PRIVILEGE_ENABLED},
+			{Luid: luid2, Attributes: windows.SE_PRIVILEGE_ENABLED},
 		},
 	}
 
-	err := windows.AdjustTokenPrivileges(token, false, privileges, nil, nil)
+	err = windows.AdjustTokenPrivileges(
+		token,
+		false,
+		(*windows.Tokenprivileges)(unsafe.Pointer(&tp)),
+		0,
+		nil,
+		nil,
+	)
 	if err != nil {
 		return fmt.Errorf("AdjustTokenPrivileges failed: %w", err)
 	}

@@ -19,10 +19,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
+          go-version: '1.26.1'
+
+      - name: Configure private modules
+        run: git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download dependencies
         run: go mod download
+        env:
+          GOPRIVATE: hop.top
 
       - name: Build binary
         run: make build

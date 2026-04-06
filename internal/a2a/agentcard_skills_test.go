@@ -15,10 +15,7 @@ func TestGenerateSkillCapabilities(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Set XDG_DATA_HOME to our test directory
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
 	// Create test skills
 	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
@@ -81,10 +78,11 @@ Content here.
 	})
 
 	t.Run("no skills returns empty", func(t *testing.T) {
-		// Use different profile ID with no skills
-		capabilities := GenerateSkillCapabilities("nonexistent")
+		// Point to an empty data dir so no skills are discovered
+		emptyDir := t.TempDir()
+		t.Setenv("XDG_DATA_HOME", filepath.Join(emptyDir, "data"))
 
-		// Should return empty list
+		capabilities := GenerateSkillCapabilities("nonexistent")
 		assert.Empty(t, capabilities)
 	})
 }
@@ -94,10 +92,7 @@ func TestGenerateAgentSkillsIntegration(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Set XDG_DATA_HOME
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
 	// Create test skill
 	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")

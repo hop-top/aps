@@ -856,22 +856,42 @@ func TestExecutionContextStructure(t *testing.T) {
 // ProcessIsolation Advanced Command Execution Tests (15 tests)
 // ============================================================================
 
-// TestExecuteCommandWithShell verifies command execution with sh shell
-func TestExecuteCommandWithShell(t *testing.T) {
-	proc := NewProcessIsolation()
+// setupExecTest creates a ProcessIsolation with a properly-configured profile
+// in a temp data dir so that core.LoadProfile can find it.
+func setupExecTest(t *testing.T) (*ProcessIsolation, string) {
+	t.Helper()
 	tempDir := t.TempDir()
 
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
+	profileID := "test-profile"
+	profileDir := filepath.Join(tempDir, "profiles", profileID)
+	require.NoError(t, os.MkdirAll(profileDir, 0o750))
+
+	profileYaml := filepath.Join(profileDir, "profile.yaml")
+	require.NoError(t, os.WriteFile(profileYaml, []byte("id: test-profile\ndisplay_name: Test\n"), 0o600))
+
+	secretsPath := filepath.Join(profileDir, "secrets.env")
+	require.NoError(t, os.WriteFile(secretsPath, []byte(""), 0o600))
+
+	t.Setenv("APS_DATA_PATH", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tempDir, ".config"))
+
+	proc := NewProcessIsolation()
+	proc.context = &ExecutionContext{
+		ProfileID:   profileID,
+		ProfileDir:  profileDir,
+		ProfileYaml: profileYaml,
+		SecretsPath: secretsPath,
+		DocsDir:     filepath.Join(profileDir, "docs"),
 		Environment: make(map[string]string),
 		WorkingDir:  tempDir,
 	}
 
-	proc.context = context
+	return proc, tempDir
+}
+
+// TestExecuteCommandWithShell verifies command execution with sh shell.
+func TestExecuteCommandWithShell(t *testing.T) {
+	proc, tempDir := setupExecTest(t)
 
 	// Create a simple shell script
 	scriptPath := filepath.Join(tempDir, "test.sh")
@@ -888,20 +908,7 @@ func TestExecuteCommandWithShell(t *testing.T) {
 
 // TestExecuteCommandWithBash verifies command execution with bash shell
 func TestExecuteCommandWithBash(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, tempDir := setupExecTest(t)
 
 	scriptPath := filepath.Join(tempDir, "test.sh")
 	err := os.WriteFile(scriptPath, []byte("#!/bin/bash\necho 'test'\n"), 0755)
@@ -916,20 +923,7 @@ func TestExecuteCommandWithBash(t *testing.T) {
 
 // TestExecuteCommandWithZsh verifies command execution with zsh shell
 func TestExecuteCommandWithZsh(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, tempDir := setupExecTest(t)
 
 	cmd := exec.Command("zsh", "-c", "echo test")
 	err := proc.SetupEnvironment(cmd)
@@ -940,20 +934,7 @@ func TestExecuteCommandWithZsh(t *testing.T) {
 
 // TestExecuteCommandWithPipes simulates command execution with pipes
 func TestExecuteCommandWithPipes(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, tempDir := setupExecTest(t)
 
 	// Simulate piped command: echo test | cat
 	cmd := exec.Command("sh", "-c", "echo test | cat")
@@ -966,20 +947,7 @@ func TestExecuteCommandWithPipes(t *testing.T) {
 
 // TestExecuteCommandWithRedirects simulates command execution with redirects
 func TestExecuteCommandWithRedirects(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, tempDir := setupExecTest(t)
 
 	outputFile := filepath.Join(tempDir, "output.txt")
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo test > %s", outputFile))
@@ -991,31 +959,12 @@ func TestExecuteCommandWithRedirects(t *testing.T) {
 
 // TestExecuteCommandWithEnvironmentVariables verifies environment variable injection
 func TestExecuteCommandWithEnvironmentVariables(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
+	proc, _ := setupExecTest(t)
 
-	// Create profile.yaml file to avoid loader failures
-	profileYaml := filepath.Join(tempDir, "profile.yaml")
-	require.NoError(t, os.WriteFile(profileYaml, []byte("id: test-profile\n"), 0644))
-
-	// Create secrets file
-	secretsPath := filepath.Join(tempDir, "secrets.env")
-	require.NoError(t, os.WriteFile(secretsPath, []byte(""), 0644))
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: profileYaml,
-		SecretsPath: secretsPath,
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: map[string]string{
-			"CUSTOM_VAR": "custom_value",
-			"ANOTHER_VAR": "another_value",
-		},
-		WorkingDir: tempDir,
+	proc.context.Environment = map[string]string{
+		"CUSTOM_VAR":  "custom_value",
+		"ANOTHER_VAR": "another_value",
 	}
-
-	proc.context = context
 
 	cmd := exec.Command("echo", "test")
 	err := proc.SetupEnvironment(cmd)
@@ -1028,20 +977,7 @@ func TestExecuteCommandWithEnvironmentVariables(t *testing.T) {
 
 // TestExecuteCommandWithStdinInput verifies stdin input handling
 func TestExecuteCommandWithStdinInput(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("cat")
 	input := "test input data"
@@ -1055,20 +991,7 @@ func TestExecuteCommandWithStdinInput(t *testing.T) {
 
 // TestExecuteCommandOutputCapture verifies stdout/stderr capture
 func TestExecuteCommandOutputCapture(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("echo", "test output")
 	var stdout, stderr bytes.Buffer
@@ -1084,20 +1007,7 @@ func TestExecuteCommandOutputCapture(t *testing.T) {
 
 // TestExecuteCommandExitCodes verifies exit code handling
 func TestExecuteCommandExitCodes(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	// Command that exits with code 0 (success)
 	cmd := exec.Command("true")
@@ -1109,20 +1019,7 @@ func TestExecuteCommandExitCodes(t *testing.T) {
 
 // TestExecuteCommandTimeoutEnforcement verifies timeout handling
 func TestExecuteCommandTimeoutEnforcement(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	ctxVal, cancel := ctx.WithTimeout(ctx.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -1136,20 +1033,7 @@ func TestExecuteCommandTimeoutEnforcement(t *testing.T) {
 
 // TestExecuteCommandWithPATHResolution verifies PATH environment variable usage
 func TestExecuteCommandWithPATHResolution(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("echo", "hello")
 	err := proc.SetupEnvironment(cmd)
@@ -1165,22 +1049,11 @@ func TestExecuteCommandWithPATHResolution(t *testing.T) {
 
 // TestExecuteCommandWithWorkingDirectory verifies working directory setup
 func TestExecuteCommandWithWorkingDirectory(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
+	proc, tempDir := setupExecTest(t)
 	workDir := filepath.Join(tempDir, "subdir")
 	require.NoError(t, os.MkdirAll(workDir, 0755))
 
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  workDir,
-	}
-
-	proc.context = context
+	proc.context.WorkingDir = workDir
 
 	cmd := exec.Command("pwd")
 	err := proc.SetupEnvironment(cmd)
@@ -1191,20 +1064,7 @@ func TestExecuteCommandWithWorkingDirectory(t *testing.T) {
 
 // TestExecuteCommandWithSignals verifies signal handling
 func TestExecuteCommandWithSignals(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("sleep", "1")
 	err := proc.SetupEnvironment(cmd)
@@ -1216,7 +1076,7 @@ func TestExecuteCommandWithSignals(t *testing.T) {
 
 // TestExecuteCommandConcurrentExecution verifies concurrent command execution
 func TestExecuteCommandConcurrentExecution(t *testing.T) {
-	tempDir := t.TempDir()
+	_, tempDir := setupExecTest(t)
 	numCmds := 5
 
 	var wg sync.WaitGroup
@@ -1263,20 +1123,7 @@ func TestExecuteCommandConcurrentExecution(t *testing.T) {
 
 // TestExecuteCommandErrorPropagation verifies error propagation in execution
 func TestExecuteCommandErrorPropagation(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	// Command that will fail
 	cmd := exec.Command("sh", "-c", "exit 1")
@@ -1288,20 +1135,7 @@ func TestExecuteCommandErrorPropagation(t *testing.T) {
 
 // TestExecuteCommandOutputBuffering verifies output buffering
 func TestExecuteCommandOutputBuffering(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("sh", "-c", "for i in 1 2 3 4 5; do echo line$i; done")
 	var stdout bytes.Buffer
@@ -1315,20 +1149,7 @@ func TestExecuteCommandOutputBuffering(t *testing.T) {
 
 // TestExecuteCommandResourceLimits verifies resource limit handling
 func TestExecuteCommandResourceLimits(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("echo", "test")
 	err := proc.SetupEnvironment(cmd)
@@ -1340,20 +1161,7 @@ func TestExecuteCommandResourceLimits(t *testing.T) {
 
 // TestExecuteCommandCleanupOnError verifies cleanup after execution error
 func TestExecuteCommandCleanupOnError(t *testing.T) {
-	proc := NewProcessIsolation()
-	tempDir := t.TempDir()
-
-	context := &ExecutionContext{
-		ProfileID:   "test-profile",
-		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
-		SecretsPath: filepath.Join(tempDir, "secrets.env"),
-		DocsDir:     filepath.Join(tempDir, "docs"),
-		Environment: make(map[string]string),
-		WorkingDir:  tempDir,
-	}
-
-	proc.context = context
+	proc, _ := setupExecTest(t)
 
 	cmd := exec.Command("sh", "-c", "exit 127")
 	err := proc.SetupEnvironment(cmd)

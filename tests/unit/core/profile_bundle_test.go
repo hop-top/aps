@@ -88,6 +88,7 @@ func TestProfileBundle_ExportImport(t *testing.T) {
 func TestTrackEvent_WritesJSONL(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
+	t.Setenv("USERPROFILE", tempDir)
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("APS_DATA_PATH", "")
 
