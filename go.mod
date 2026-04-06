@@ -26,6 +26,7 @@ require (
 	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
+	hop.top/cxr v0.0.0-20260402204247-d882ff0ed735
 	hop.top/kit v0.1.1-alpha.3
 	hop.top/upgrade v0.0.0-20260323164843-b8379a5355f7
 )
@@ -96,4 +97,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	hop.top/xrr v0.1.0-alpha.1 // indirect
 )
