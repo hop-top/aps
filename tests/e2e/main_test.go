@@ -44,7 +44,7 @@ func compileBinary() error {
 		return err
 	}
 
-	cmd := exec.Command("go", "build", "-o", apsBinary, "./cmd/aps")
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", apsBinary, "./cmd/aps")
 	cmd.Dir = rootDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

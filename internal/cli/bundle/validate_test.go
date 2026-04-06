@@ -3,7 +3,6 @@ package bundle
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -37,35 +36,15 @@ version: "1.0"
 }
 
 // TestValidateCmd_InvalidFile_EmptyName tests that a bundle with an empty name
-// causes a validation failure. Because the validate command calls os.Exit(1) on
-// failure, we run the test in a subprocess via VALIDATE_TEST_SUBPROCESS so the
-// parent test process is not killed.
+// causes a validation failure.
 func TestValidateCmd_InvalidFile_EmptyName(t *testing.T) {
-	if os.Getenv("VALIDATE_TEST_SUBPROCESS") == "1" {
-		// Running inside the subprocess: execute runValidate directly.
-		invalidYAML := `name: ""
+	invalidYAML := `name: ""
 description: Empty name bundle
 `
-		path := writeTemp(t, invalidYAML)
-		// runValidate calls os.Exit(1) on validation failure.
-		_ = runValidate(path)
-		return
-	}
-
-	// Parent: re-run only this test in a subprocess and expect exit code 1.
-	exe, err := os.Executable()
-	require.NoError(t, err)
-
-	cmd := exec.Command(exe, "-test.run=TestValidateCmd_InvalidFile_EmptyName", "-test.v")
-	cmd.Env = append(os.Environ(), "VALIDATE_TEST_SUBPROCESS=1")
-	out, err := cmd.CombinedOutput()
-
-	// The subprocess should exit with a non-zero status due to os.Exit(1).
-	var exitErr *exec.ExitError
-	if assert.ErrorAs(t, err, &exitErr) {
-		assert.Equal(t, 1, exitErr.ExitCode())
-	}
-	_ = out // output is available for debugging if needed
+	path := writeTemp(t, invalidYAML)
+	err := runValidate(path)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "name is required")
 }
 
 // TestValidateCmd_MissingFile tests that a non-existent file path is rejected.

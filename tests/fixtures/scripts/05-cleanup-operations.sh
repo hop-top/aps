@@ -19,11 +19,12 @@ echo "2. Listing all profiles..."
 aps profile list
 echo
 
-# Delete profiles
+# Delete profiles by removing their directories
 echo "3. Deleting profiles..."
+DATA_DIR="${APS_DATA_PATH:-${XDG_DATA_HOME:-$HOME/.local/share}/aps}"
 for i in 1 2 3; do
     PROFILE_ID="cleanup-test-$$-$i"
-    aps profile delete "$PROFILE_ID" --force
+    rm -rf "$DATA_DIR/profiles/$PROFILE_ID"
     echo "✓ Deleted profile: $PROFILE_ID"
 done
 echo

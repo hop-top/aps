@@ -29,16 +29,9 @@ display_name: Test Profile
 	defaultSecrets := "TEST_SECRET=value"
 	require.NoError(t, os.WriteFile(secretsPath, []byte(defaultSecrets), 0600))
 
-	orig := os.Getenv("XDG_DATA_HOME")
-	origAPS := os.Getenv("APS_DATA_PATH")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
-	os.Unsetenv("APS_DATA_PATH")
-	t.Cleanup(func() {
-		os.Setenv("XDG_DATA_HOME", orig)
-		if origAPS != "" {
-			os.Setenv("APS_DATA_PATH", origAPS)
-		}
-	})
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tempDir, ".config"))
 
 	return tempDir
 }
@@ -48,7 +41,6 @@ func TestProcessIsolation_PrepareContext(t *testing.T) {
 
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", originalHome)
 
 	process := isolation.NewProcessIsolation()
@@ -65,7 +57,6 @@ func TestProcessIsolation_SetupEnvironment(t *testing.T) {
 
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", originalHome)
 
 	process := isolation.NewProcessIsolation()
@@ -85,7 +76,6 @@ func TestProcessIsolation_Validate(t *testing.T) {
 
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", originalHome)
 
 	process := isolation.NewProcessIsolation()
@@ -123,7 +113,6 @@ func TestProcessIsolation_Cleanup(t *testing.T) {
 	tempDir := setupTestProfile(t)
 	originalHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
 	defer os.Setenv("HOME", originalHome)
 
 	_, err = process.PrepareContext("test-profile")

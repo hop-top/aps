@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -98,9 +97,7 @@ func (m *Manager) startSubprocess(ctx context.Context, device *Adapter) error {
 	cmd.Dir = device.Path
 	cmd.Env = append(os.Environ(), m.buildAdapterEnv(device)...)
 
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+	cmd.SysProcAttr = sysProcAttr()
 
 	stdoutPath := filepath.Join(device.Path, "stdout.log")
 	stderrPath := filepath.Join(device.Path, "stderr.log")
@@ -196,9 +193,9 @@ func (m *Manager) stopSubprocess(ctx context.Context, device *Adapter, runtime *
 		return ErrStopFailed(device.Name, err)
 	}
 
-	sig := syscall.SIGTERM
+	sig := termSignal()
 	if force {
-		sig = syscall.SIGKILL
+		sig = killSignal()
 	}
 
 	if err := process.Signal(sig); err != nil {

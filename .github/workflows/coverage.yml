@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
+          go-version: '1.26.1'
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
@@ -27,13 +27,24 @@ jobs:
           path: coverage-artifacts
 
       - name: Merge coverage reports
+        continue-on-error: true
         run: |
           go install github.com/wadey/gocovmerge@latest
-          
+
+          # Check if any coverage files exist at all
+          FOUND=0
+          for f in coverage-artifacts/*/coverage*.out; do
+            [ -f "$f" ] && FOUND=1 && break
+          done
+          if [ "$FOUND" = "0" ]; then
+            echo "No coverage artifacts found — skipping merge"
+            exit 0
+          fi
+
           if [ -f coverage-artifacts/coverage-Linux/coverage.out ]; then
             cp coverage-artifacts/coverage-Linux/coverage.out coverage-merged.out
           fi
-          
+
           if [ -f coverage-artifacts/coverage-macOS/coverage.out ]; then
             if [ -f coverage-merged.out ]; then
               gocovmerge coverage-merged.out coverage-artifacts/coverage-macOS/coverage.out > coverage-temp.out
@@ -42,7 +53,7 @@ jobs:
               cp coverage-artifacts/coverage-macOS/coverage.out coverage-merged.out
             fi
           fi
-          
+
           if [ -f coverage-artifacts/coverage-Windows/coverage.out ]; then
             if [ -f coverage-merged.out ]; then
               gocovmerge coverage-merged.out coverage-artifacts/coverage-Windows/coverage.out > coverage-final.out
@@ -50,22 +61,35 @@ jobs:
               cp coverage-artifacts/coverage-Windows/coverage.out coverage-final.out
             fi
           fi
-          
+
           if [ ! -f coverage-final.out ]; then
             mv coverage-merged.out coverage-final.out 2>/dev/null || echo "No coverage files found"
           fi
 
       - name: Generate coverage report
+        if: always()
+        continue-on-error: true
         run: |
+          if [ ! -f coverage-final.out ]; then
+            echo "No coverage-final.out — skipping report generation"
+            exit 0
+          fi
           go tool cover -func=coverage-final.out > coverage-report.txt
           go tool cover -html=coverage-final.out -o coverage.html
 
       - name: Display coverage
-        run: cat coverage-report.txt
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f coverage-report.txt ]; then
+            cat coverage-report.txt
+          else
+            echo "No coverage report available"
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && hashFiles('coverage-final.out') != ''
         with:
           files: ./coverage-final.out
           flags: unittests
@@ -74,6 +98,8 @@ jobs:
 
       - name: Upload coverage HTML report
         uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
         with:
           name: coverage-html
           path: coverage.html
@@ -81,16 +107,24 @@ jobs:
 
       - name: Upload coverage text report
         uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
         with:
           name: coverage-report
           path: coverage-report.txt
           retention-days: 30
 
       - name: Coverage summary
+        if: always()
+        continue-on-error: true
         run: |
+          if [ ! -f coverage-report.txt ]; then
+            echo "No coverage report — skipping summary"
+            exit 0
+          fi
           TOTAL=$(grep -E '^total:' coverage-report.txt | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: ${TOTAL}%"
-          
+
           if (( $(echo "$TOTAL < 70" | bc -l) )); then
             echo "::warning::Coverage is below 70%: ${TOTAL}%"
           fi

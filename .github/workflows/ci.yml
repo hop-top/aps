@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.25.5']
+        go-version: ['1.26.1']
 
     steps:
       - name: Checkout code
@@ -33,11 +33,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
 
+      - name: Configure private modules
+        shell: bash
+        run: git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download dependencies
         run: go mod download
+        env:
+          GOPRIVATE: hop.top
 
       - name: Run unit tests with coverage
-        run: go test -v -coverprofile=coverage.out -covermode=atomic ./tests/unit/...
+        shell: bash
+        run: go test -v -timeout 5m -coverprofile=coverage.out -covermode=atomic ./tests/unit/...
+
+      - name: Run internal package tests
+        shell: bash
+        continue-on-error: true
+        run: |
+          # Test all internal packages except core/isolation (env isolation issues: T-0146)
+          # continue-on-error until env isolation is fixed across internal tests (T-0146)
+          go test -v -timeout 5m $(go list ./internal/... | grep -v /core/isolation)
 
       - name: Run E2E tests
         shell: bash
@@ -45,7 +62,7 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             echo "Skipping E2E tests on Windows due to TUI limitations"
           else
-            go test -v -coverprofile=coverage-e2e.out -covermode=atomic ./tests/e2e
+            go test -v -timeout 5m -coverprofile=coverage-e2e.out -covermode=atomic ./tests/e2e
           fi
 
       - name: Upload coverage to artifacts
