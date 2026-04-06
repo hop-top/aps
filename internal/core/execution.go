@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -11,20 +12,22 @@ import (
 	"hop.top/aps/internal/core/bundle"
 )
 
-// InjectEnvironment prepares environment variables for a command
-func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
+// buildEnvVars assembles the full environment slice (KEY=VALUE) for a profile.
+// It is the canonical source of env injection; both InjectEnvironment and
+// ProcessHandler.BuildEnv delegate here.
+func buildEnvVars(profile *Profile) ([]string, error) {
 	profileDir, err := GetProfileDir(profile.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	profileYaml, err := GetProfilePath(profile.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	secretsPath := filepath.Join(profileDir, "secrets.env")
 	agentsDir, err := GetAgentsDir()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	docsDir := filepath.Join(agentsDir, "docs")
 
@@ -50,7 +53,7 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	// 3. Inject Secrets
 	secrets, err := LoadSecrets(secretsPath)
 	if err != nil {
-		return fmt.Errorf("failed to load secrets: %w", err)
+		return nil, fmt.Errorf("failed to load secrets: %w", err)
 	}
 	for k, v := range secrets {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -66,13 +69,6 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 
 	// 5. Inject SSH Config (Module)
 	if profile.SSH.Enabled && profile.SSH.KeyPath != "" {
-		// Resolve relative paths (like ~) if necessary, simplified here to use raw or absolute
-		// Ideally we expand ~, but for now we assume valid path or let ssh handle it if absolute
-		// Actually, spec says "If ssh.key exists in profile directory... APS may inject"
-		// The spec example shows: GIT_SSH_COMMAND=ssh -i <profile-dir>/ssh.key -F /dev/null
-		// But T008 goal is generic environment. Let's stick to spec section 9 and 8.
-		// Spec 8.2 says: "If ssh.key exists... and SSH is enabled... inject GIT_SSH_COMMAND"
-		// Let's check for ssh.key in profile dir as per spec 8.2 logic
 		internalKeyPath := filepath.Join(profileDir, "ssh.key")
 		if _, err := os.Stat(internalKeyPath); err == nil {
 			env = append(env, fmt.Sprintf("GIT_SSH_COMMAND=ssh -i %s -F /dev/null", internalKeyPath))
@@ -80,8 +76,6 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	}
 
 	// 6. Inject capability env vars (only for this profile's capabilities)
-	// Uses builtinCaps set to skip built-ins; resolves external cap paths
-	// from ~/.aps/capabilities/ and configured sources.
 	builtinCaps := map[string]bool{
 		"a2a": true, "agent-protocol": true, "webhooks": true,
 	}
@@ -111,7 +105,7 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 	// 7. Resolve bundles and inject bundle env vars (T-0052)
 	resolved, err := ResolveBundlesForProfile(profile)
 	if err != nil {
-		return fmt.Errorf("bundle resolution failed: %w", err)
+		return nil, fmt.Errorf("bundle resolution failed: %w", err)
 	}
 	for _, rb := range resolved {
 		for k, v := range rb.Env {
@@ -119,6 +113,16 @@ func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
 		}
 	}
 
+	return env, nil
+}
+
+// InjectEnvironment prepares environment variables for a command.
+// Kept for backward compatibility; delegates to buildEnvVars.
+func InjectEnvironment(cmd *exec.Cmd, profile *Profile) error {
+	env, err := buildEnvVars(profile)
+	if err != nil {
+		return err
+	}
 	cmd.Env = env
 	return nil
 }
@@ -148,7 +152,7 @@ func ResolveBundlesForProfile(profile *Profile) ([]*bundle.ResolvedBundle, error
 		Email:       "", // Profile has no Email field
 		ConfigDir:   configDir,
 		DataDir:     profileDir,
-		Runtime:     "",            // auto-detected by resolver
+		Runtime:     "",                   // auto-detected by resolver
 		Scope:       bundle.BundleScope{}, // populated below if profile has scope
 	}
 
@@ -192,6 +196,20 @@ func ResolveBundlesForProfile(profile *Profile) ([]*bundle.ResolvedBundle, error
 	return resolved, nil
 }
 
+// actionBinaryArgs resolves the interpreter binary and argv for an action type.
+func actionBinaryArgs(action *Action) (binary string, argv []string) {
+	switch action.Type {
+	case "sh":
+		return "sh", []string{action.Path}
+	case "py":
+		return "python3", []string{action.Path}
+	case "js":
+		return "node", []string{action.Path}
+	default:
+		return action.Path, nil
+	}
+}
+
 // RunCommand executes a command within a profile's context using configured isolation
 func RunCommand(profileID string, command string, args []string) error {
 	profile, err := LoadProfile(profileID)
@@ -207,7 +225,6 @@ func RunCommand(profileID string, command string, args []string) error {
 
 	switch requestedLevel {
 	case IsolationProcess:
-		// Process isolation is always available
 		return runCommandWithProcessIsolation(profile, command, args)
 	case IsolationPlatform:
 		return fmt.Errorf("platform isolation not yet implemented")
@@ -218,16 +235,19 @@ func RunCommand(profileID string, command string, args []string) error {
 	}
 }
 
-// runCommandWithProcessIsolation executes a command using process-level isolation
+// runCommandWithProcessIsolation executes a command using process-level isolation.
+// Builds env via buildEnvVars (fails fast on error); uses exec.Command for interactive stdio.
 func runCommandWithProcessIsolation(profile *Profile, command string, args []string) error {
-	cmd := exec.Command(command, args...)
+	env, err := buildEnvVars(profile)
+	if err != nil {
+		return fmt.Errorf("failed to setup environment: %w", err)
+	}
+
+	cmd := exec.CommandContext(context.Background(), command, args...) //nolint:gosec // command from profile config
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	if err := InjectEnvironment(cmd, profile); err != nil {
-		return fmt.Errorf("failed to setup environment: %w", err)
-	}
+	cmd.Env = env
 
 	return cmd.Run()
 }
@@ -252,7 +272,6 @@ func RunAction(profileID string, actionID string, payload []byte) error {
 
 	switch requestedLevel {
 	case IsolationProcess:
-		// Process isolation is always available
 		return runActionWithProcessIsolation(profile, action, payload)
 	case IsolationPlatform:
 		return fmt.Errorf("platform isolation not yet implemented")
@@ -263,45 +282,35 @@ func RunAction(profileID string, actionID string, payload []byte) error {
 	}
 }
 
-// runActionWithProcessIsolation executes an action using process-level isolation
+// runActionWithProcessIsolation executes an action using process-level isolation.
+// Builds env via buildEnvVars (fails fast on error); uses exec.Command for interactive stdio.
 func runActionWithProcessIsolation(profile *Profile, action *Action, payload []byte) error {
-	// Prepare command based on type
-	var cmd *exec.Cmd
-	switch action.Type {
-	case "sh":
-		cmd = exec.Command("sh", action.Path)
-	case "py":
-		cmd = exec.Command("python3", action.Path)
-	case "js":
-		cmd = exec.Command("node", action.Path)
-	default:
-		// Try executing directly
-		cmd = exec.Command(action.Path)
+	env, err := buildEnvVars(profile)
+	if err != nil {
+		return fmt.Errorf("failed to setup environment: %w", err)
 	}
+
+	binary, argv := actionBinaryArgs(action)
+
+	cmd := exec.CommandContext(context.Background(), binary, argv...) //nolint:gosec // binary from action config
+	cmd.Env = env
 
 	// Stdin handling
 	if len(payload) > 0 {
-		// If payload provided, pipe it
 		pipe, err := cmd.StdinPipe()
 		if err != nil {
 			return fmt.Errorf("failed to create stdin pipe: %w", err)
 		}
 		go func() {
 			defer pipe.Close()
-			pipe.Write(payload)
+			_, _ = pipe.Write(payload)
 		}()
 	} else {
-		// Interactive if no payload? Spec 10.3: "attach stdio for interactive scripts unless explicitly disabled"
-		// If payload provided, we used stdin for it. If not, inherit?
 		cmd.Stdin = os.Stdin
 	}
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	if err := InjectEnvironment(cmd, profile); err != nil {
-		return fmt.Errorf("failed to setup environment: %w", err)
-	}
 
 	return cmd.Run()
 }

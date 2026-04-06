@@ -8,8 +8,11 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"hop.top/cxr"
 )
 
+// Manager owns adapter runtimes and routes start requests via cxr.Router.
 type Manager struct {
 	mu       sync.RWMutex
 	runtimes map[string]*AdapterRuntime
@@ -60,6 +63,7 @@ func (m *Manager) CreateAdapter(name string, deviceType AdapterType, strategy Lo
 	return device, nil
 }
 
+// StartAdapter routes to the appropriate handler via cxr.Router.
 func (m *Manager) StartAdapter(ctx context.Context, name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -75,19 +79,111 @@ func (m *Manager) StartAdapter(ctx context.Context, name string) error {
 		}
 	}
 
+	router, err := m.buildRouter(device)
+	if err != nil {
+		return err
+	}
+
+	req := cxr.Request{
+		Operation: string(device.Strategy),
+		Config:    map[string]any{"handler": string(device.Strategy)},
+	}
+
+	handler, err := router.Route(req)
+	if err != nil {
+		return ErrStrategyInvalid(string(device.Strategy))
+	}
+
+	_, err = handler.Exec(ctx, req)
+	if err != nil {
+		return fmt.Errorf("adapter exec failed: %w", err)
+	}
+	return nil
+}
+
+// buildRouter constructs a cxr.Router with strategy-specific handlers for device.
+func (m *Manager) buildRouter(device *Adapter) (*cxr.Router, error) {
 	switch device.Strategy {
 	case StrategySubprocess:
-		return m.startSubprocess(ctx, device)
+		h := m.newSubprocessHandler(device)
+		return cxr.NewRouter([]cxr.Handler{h}), nil
 	case StrategyBuiltin:
-		return m.startBuiltin(ctx, device)
+		h := m.newBuiltinHandler(device)
+		return cxr.NewRouter([]cxr.Handler{h}), nil
 	case StrategyScript:
-		return fmt.Errorf("script strategy does not support persistent start")
+		return nil, fmt.Errorf("script strategy does not support persistent start")
 	default:
-		return ErrStrategyInvalid(string(device.Strategy))
+		return nil, ErrStrategyInvalid(string(device.Strategy))
 	}
 }
 
-func (m *Manager) startSubprocess(ctx context.Context, device *Adapter) error {
+// ── subprocess handler ────────────────────────────────────────────────────────
+
+// subprocessHandler wraps subprocess start logic as a cxr.Handler.
+// Uses cxr.ProcessHandler for env building; overrides Exec for daemon semantics
+// (log-file stdio, Setpgid, background wait goroutine).
+type subprocessHandler struct {
+	m      *Manager
+	device *Adapter
+	ph     *cxr.ProcessHandler // provides BuildEnv; Exec not used directly
+}
+
+func (m *Manager) newSubprocessHandler(device *Adapter) *subprocessHandler {
+	ph := cxr.NewProcessHandler(device.Name, "", nil, nil)
+	ph.BuildEnv = func(_ cxr.Request) []string {
+		return m.buildAdapterEnv(device)
+	}
+	return &subprocessHandler{m: m, device: device, ph: ph}
+}
+
+func (h *subprocessHandler) ID() string { return string(StrategySubprocess) }
+
+func (h *subprocessHandler) CanHandle(req cxr.Request) bool {
+	return req.Operation == string(StrategySubprocess)
+}
+
+func (h *subprocessHandler) Exec(ctx context.Context, _ cxr.Request) (cxr.Result, error) {
+	if err := h.m.startSubprocess(ctx, h.device, h.ph); err != nil {
+		return cxr.Result{}, err
+	}
+	return cxr.Result{}, nil
+}
+
+func (h *subprocessHandler) Probe(_ context.Context) (*cxr.Capabilities, error) {
+	return &cxr.Capabilities{}, nil
+}
+
+// ── builtin handler ───────────────────────────────────────────────────────────
+
+type builtinHandler struct {
+	m      *Manager
+	device *Adapter
+}
+
+func (m *Manager) newBuiltinHandler(device *Adapter) *builtinHandler {
+	return &builtinHandler{m: m, device: device}
+}
+
+func (h *builtinHandler) ID() string { return string(StrategyBuiltin) }
+
+func (h *builtinHandler) CanHandle(req cxr.Request) bool {
+	return req.Operation == string(StrategyBuiltin)
+}
+
+func (h *builtinHandler) Exec(ctx context.Context, _ cxr.Request) (cxr.Result, error) {
+	h.m.startBuiltin(ctx, h.device)
+	return cxr.Result{}, nil
+}
+
+func (h *builtinHandler) Probe(_ context.Context) (*cxr.Capabilities, error) {
+	return &cxr.Capabilities{}, nil
+}
+
+// ── start helpers ─────────────────────────────────────────────────────────────
+
+// startSubprocess launches the adapter as a background process.
+// ph provides the BuildEnv hook so env construction is unified with cxr.
+func (m *Manager) startSubprocess(ctx context.Context, device *Adapter, ph *cxr.ProcessHandler) error {
 	executablePath, err := m.findAdapterExecutable(device)
 	if err != nil {
 		return ErrStartFailed(device.Name, err)
@@ -95,7 +191,10 @@ func (m *Manager) startSubprocess(ctx context.Context, device *Adapter) error {
 
 	cmd := exec.CommandContext(ctx, executablePath)
 	cmd.Dir = device.Path
-	cmd.Env = append(os.Environ(), m.buildAdapterEnv(device)...)
+
+	// Env: system env + adapter-specific env from ProcessHandler.BuildEnv hook.
+	extraEnv := ph.BuildEnv(cxr.Request{Operation: string(device.Strategy)})
+	cmd.Env = append(os.Environ(), extraEnv...)
 
 	cmd.SysProcAttr = sysProcAttr()
 
@@ -146,7 +245,7 @@ func (m *Manager) startSubprocess(ctx context.Context, device *Adapter) error {
 	return nil
 }
 
-func (m *Manager) startBuiltin(ctx context.Context, device *Adapter) error {
+func (m *Manager) startBuiltin(_ context.Context, device *Adapter) {
 	now := time.Now()
 	m.runtimes[device.Name] = &AdapterRuntime{
 		Name:      device.Name,
@@ -154,8 +253,9 @@ func (m *Manager) startBuiltin(ctx context.Context, device *Adapter) error {
 		Health:    HealthHealthy,
 		StartedAt: &now,
 	}
-	return nil
 }
+
+// ── stop ──────────────────────────────────────────────────────────────────────
 
 func (m *Manager) StopAdapter(ctx context.Context, name string, force bool) error {
 	m.mu.Lock()
@@ -233,6 +333,8 @@ func (m *Manager) stopBuiltin(ctx context.Context, device *Adapter, runtime *Ada
 	runtime.State = StateStopped
 	return nil
 }
+
+// ── query ─────────────────────────────────────────────────────────────────────
 
 func (m *Manager) GetRuntime(name string) (*AdapterRuntime, error) {
 	m.mu.RLock()
@@ -349,6 +451,8 @@ func (m *Manager) Shutdown(ctx context.Context) error {
 	}
 	return nil
 }
+
+// ── env / exec helpers ────────────────────────────────────────────────────────
 
 func (m *Manager) findAdapterExecutable(device *Adapter) (string, error) {
 	executableName := fmt.Sprintf("aps-adapter-%s", device.Name)
