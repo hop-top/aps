@@ -1,0 +1,166 @@
+flowchart TD
+    %% ─── External entry points ───────────────────────────────────────────────
+    CLI["CLI\ncmd/aps"]
+    WEBHOOK["Webhook\nHTTP POST"]
+    MESSENGER["Messenger adapter\n(Telegram / Discord / etc.)"]
+    VOICE_CH["Voice channel\n(TUI / Twilio / Web)"]
+    A2A_CLIENT["Remote A2A client\n(peer agent)"]
+    ACP_CLIENT["ACP client\n(Claude / IDE / agent)"]
+
+    %% ─── Adapter / registry layer ────────────────────────────────────────────
+    ADAPTER_REG["AdapterRegistry\ninternal/adapters"]
+    PROTO_REG["ProtocolRegistry\ninternal/adapters"]
+
+    %% ─── Protocol servers ────────────────────────────────────────────────────
+    ACP_SRV["ACP Server\ninternal/acp"]
+    A2A_SRV["A2A Server\ninternal/a2a"]
+
+    %% ─── Core domain ─────────────────────────────────────────────────────────
+    CORE["Core\ninternal/core\nProfile · Config · Paths · Secrets"]
+    PROTO_ADAPTER["CoreAdapter\ninternal/core/protocol"]
+    MESSENGER_MGR["MessengerManager\ninternal/core/messenger"]
+    ISOLATION["IsolationEngine\ninternal/core/isolation"]
+    CAPABILITY["CapabilityEngine\ninternal/core/capability"]
+    SQUAD["SquadManager\ninternal/core/squad"]
+    BUNDLE["BundleManager\ninternal/core/bundle"]
+    SKILLS["SkillsEngine\ninternal/skills"]
+    VOICE_CORE["VoiceConfig\ninternal/core (voice.go)"]
+
+    %% ─── Execution ───────────────────────────────────────────────────────────
+    EXEC["Execution\nRunCommand / RunAction\nInjectEnvironment"]
+    ACTIONS["ActionLoader\ninternal/core/action"]
+
+    %% ─── A2A internals ───────────────────────────────────────────────────────
+    A2A_STORAGE["A2A Storage\n(tasks / agent-cards)"]
+    A2A_CACHE["A2A Cache"]
+    A2A_EXECUTOR["A2A Executor"]
+    A2A_RESOLVER["A2A Resolver"]
+    A2A_TRANSPORT["A2A Transport\ninternal/a2a/transport"]
+
+    %% ─── ACP internals ───────────────────────────────────────────────────────
+    SESSION_MGR["SessionManager\ninternal/acp"]
+    PERM_MGR["PermissionManager\ninternal/acp"]
+    TERM_MGR["TerminalManager\ninternal/acp"]
+    FS_HANDLER["FileSystemHandler\ninternal/acp"]
+    MCP_BRIDGE["MCPBridge\ninternal/acp"]
+    WS_TRANSPORT["WebSocketTransport\ninternal/acp"]
+
+    %% ─── Voice internals ─────────────────────────────────────────────────────
+    VOICE_BACKEND["BackendManager\ninternal/voice"]
+    VOICE_SESSION["VoiceSessionManager\ninternal/voice"]
+    VOICE_PROMPT["PromptGenerator\ninternal/voice"]
+
+    %% ─── Agent protocol adapters ─────────────────────────────────────────────
+    AGENTPROTO["AgentProtocol adapter\ninternal/adapters/agentprotocol"]
+    MESSENGER_ADAPTER["Messenger adapter\ninternal/adapters/messenger"]
+
+    %% ─── Persistence ─────────────────────────────────────────────────────────
+    FS_STORE["File-system store\n$APS_DATA_PATH"]
+    SECRETS["Secrets\n(env / secrets.yaml)"]
+    LINK_STORE["LinkStore\ninternal/core/messenger"]
+
+    %% ─── External services ───────────────────────────────────────────────────
+    LLM["LLM backend\n(Claude / OpenAI / local)"]
+    AGNTCY["Agntcy services\n(discovery · identity · trust · obs)"]
+
+    %% ═══════════════════════════════════════════════════════════════════════
+    %% Data flows
+    %% ═══════════════════════════════════════════════════════════════════════
+
+    CLI -->|"parse flags\nload profile ID"| CORE
+    CLI -->|"start servers"| PROTO_REG
+    CLI -->|"start servers"| ADAPTER_REG
+
+    WEBHOOK -->|"HMAC-verified event"| CORE
+    CORE -->|"RunAction(profileID, actionID, payload)"| EXEC
+
+    MESSENGER -->|"inbound message\n(channel + text)"| MESSENGER_ADAPTER
+    MESSENGER_ADAPTER -->|"ResolveChannelRoute"| MESSENGER_MGR
+    MESSENGER_MGR -->|"profileID + actionID"| EXEC
+    MESSENGER_MGR <-->|"load/save links"| LINK_STORE
+    LINK_STORE <-->|"links YAML"| FS_STORE
+
+    VOICE_CH -->|"audio/text frames"| VOICE_SESSION
+    VOICE_SESSION -->|"SwitchProfile / Meta"| VOICE_CORE
+    VOICE_BACKEND -->|"start/stop backend bin"| LLM
+    VOICE_PROMPT -->|"system prompt"| LLM
+    VOICE_CORE -->|"config"| VOICE_BACKEND
+    VOICE_SESSION -->|"ChannelSession audio I/O"| VOICE_BACKEND
+
+    ACP_CLIENT -->|"JSON-RPC over stdio/WS"| ACP_SRV
+    ACP_SRV -->|"messageLoop / handleRequest"| SESSION_MGR
+    ACP_SRV -->|"fs.read / fs.write"| FS_HANDLER
+    ACP_SRV -->|"terminal.*"| TERM_MGR
+    ACP_SRV -->|"permission.*"| PERM_MGR
+    ACP_SRV -->|"skill.*"| SKILLS
+    ACP_SRV -->|"ExecuteRun / GetRun"| PROTO_ADAPTER
+    ACP_SRV <-->|"WS upgrade"| WS_TRANSPORT
+    ACP_SRV -->|"MCP tool calls"| MCP_BRIDGE
+    SESSION_MGR -->|"HasPermission"| PERM_MGR
+    PERM_MGR -->|"PermissionRules"| SESSION_MGR
+    FS_HANDLER -->|"ValidatePath / read / write"| FS_STORE
+    TERM_MGR -->|"spawn process"| ISOLATION
+
+    A2A_CLIENT -->|"JSON-RPC / gRPC"| A2A_TRANSPORT
+    A2A_TRANSPORT -->|"MessageHandler"| A2A_SRV
+    A2A_SRV -->|"OnSendMessage / OnGetTask"| A2A_EXECUTOR
+    A2A_SRV -->|"save / get task"| A2A_STORAGE
+    A2A_SRV -->|"GetAgentCard"| A2A_STORAGE
+    A2A_EXECUTOR -->|"RunAction"| EXEC
+    A2A_EXECUTOR <-->|"task state"| A2A_STORAGE
+    A2A_RESOLVER -->|"ResolveProfile"| CORE
+    A2A_RESOLVER <-->|"cached cards"| A2A_CACHE
+    A2A_CACHE <-->|"persist / load"| FS_STORE
+    A2A_STORAGE <-->|"tasks / cards JSON"| FS_STORE
+
+    PROTO_ADAPTER -->|"ExecuteRun → RunAction"| EXEC
+    PROTO_ADAPTER -->|"session CRUD"| SESSION_MGR
+    PROTO_ADAPTER -->|"store put/get/search"| FS_STORE
+
+    EXEC -->|"LoadProfile"| CORE
+    EXEC -->|"InjectEnvironment\n(env vars, secrets, git, ssh)"| SECRETS
+    EXEC -->|"ResolveBundles"| BUNDLE
+    EXEC -->|"LoadActions"| ACTIONS
+    EXEC -->|"spawn isolated process"| ISOLATION
+    ISOLATION -->|"container / process / platform"| LLM
+
+    CORE -->|"LoadConfig / SaveConfig"| FS_STORE
+    CORE -->|"LoadProfile / SaveProfile"| FS_STORE
+    CORE -->|"LoadSecrets"| SECRETS
+    CORE -->|"TrackEvent"| AGNTCY
+    CORE -->|"GenerateDocs"| FS_STORE
+
+    CAPABILITY -->|"add/remove caps"| CORE
+    CAPABILITY -->|"GenerateSkillCapabilities"| SKILLS
+    SKILLS <-->|"skill YAML/dirs"| FS_STORE
+
+    SQUAD -->|"member profiles"| CORE
+    BUNDLE -->|"bundle manifests"| FS_STORE
+
+    AGENTPROTO -->|"RegisterHTTPAdapter"| PROTO_REG
+    AGENTPROTO -->|"skill list/get/invoke"| SKILLS
+    MESSENGER_ADAPTER -->|"RegisterStandaloneServer"| PROTO_REG
+
+    PROTO_REG -->|"StartStandaloneServer"| ACP_SRV
+    PROTO_REG -->|"StartStandaloneServer"| A2A_SRV
+    PROTO_REG -->|"RegisterHTTPRoutes"| AGENTPROTO
+    ADAPTER_REG -->|"RegisterAll"| AGENTPROTO
+    ADAPTER_REG -->|"RegisterAll"| MESSENGER_ADAPTER
+
+    AGNTCY -->|"discovery / identity / trust / obs"| CORE
+
+    %% ─── Styles ──────────────────────────────────────────────────────────────
+    classDef ext      fill:#1a1a2e,stroke:#e94560,color:#eee
+    classDef adapter  fill:#16213e,stroke:#0f3460,color:#eee
+    classDef server   fill:#0f3460,stroke:#533483,color:#eee
+    classDef core     fill:#533483,stroke:#e94560,color:#eee
+    classDef storage  fill:#2c2c54,stroke:#aaa,color:#eee,stroke-dasharray:4
+    classDef external fill:#1b1b2f,stroke:#888,color:#ccc,stroke-dasharray:6
+
+    class CLI,WEBHOOK,MESSENGER,VOICE_CH,A2A_CLIENT,ACP_CLIENT ext
+    class ADAPTER_REG,PROTO_REG,AGENTPROTO,MESSENGER_ADAPTER adapter
+    class ACP_SRV,A2A_SRV,A2A_TRANSPORT server
+    class CORE,PROTO_ADAPTER,MESSENGER_MGR,ISOLATION,CAPABILITY,SQUAD,BUNDLE,SKILLS,VOICE_CORE,EXEC,ACTIONS core
+    class A2A_STORAGE,A2A_CACHE,A2A_EXECUTOR,A2A_RESOLVER,SESSION_MGR,PERM_MGR,TERM_MGR,FS_HANDLER,MCP_BRIDGE,WS_TRANSPORT,VOICE_BACKEND,VOICE_SESSION,VOICE_PROMPT server
+    class FS_STORE,SECRETS,LINK_STORE storage
+    class LLM,AGNTCY external
