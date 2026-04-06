@@ -7,6 +7,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.2
 	charm.land/log/v2 v2.0.0
 	github.com/a2aproject/a2a-go v0.3.4
+	github.com/charmbracelet/huh v1.0.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
@@ -25,7 +26,7 @@ require (
 	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
-	hop.top/kit v0.1.0
+	hop.top/kit v0.1.1-alpha.3
 	hop.top/upgrade v0.0.0-20260323164843-b8379a5355f7
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/charmbracelet/bubbles v1.0.0 // indirect
 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect
-	github.com/charmbracelet/huh v1.0.0 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260205113103-524a6607adb8 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect

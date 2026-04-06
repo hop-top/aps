@@ -261,11 +261,6 @@ func (tm *TerminalManager) ReleaseAll() {
 func (t *Terminal) readOutput(reader *bufio.Reader, isStderr bool) {
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				line = fmt.Sprintf("Error reading output: %v\n", err)
-			}
-		}
 
 		if line != "" {
 			t.outputMutex.Lock()
@@ -276,7 +271,7 @@ func (t *Terminal) readOutput(reader *bufio.Reader, isStderr bool) {
 			t.outputMutex.Unlock()
 		}
 
-		if err == io.EOF {
+		if err != nil {
 			break
 		}
 	}

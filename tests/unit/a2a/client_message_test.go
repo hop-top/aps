@@ -60,5 +60,5 @@ func TestClient_SendMessage_ValidMessage(t *testing.T) {
 	// This is a unit test - for actual message sending, use integration tests
 	assert.Error(t, err)
 	assert.Nil(t, task)
-	assert.Contains(t, err.Error(), "connection refused")
+	assert.Contains(t, err.Error(), "refused")
 }

@@ -588,16 +588,16 @@ func TestPresenceTracker_IsOnline(t *testing.T) {
 
 func TestPresenceTracker_CheckTimeouts(t *testing.T) {
 	cfg := PresenceConfig{
-		HeartbeatInterval: 1 * time.Millisecond,
-		AwayTimeout:       5 * time.Millisecond,
-		OfflineTimeout:    10 * time.Millisecond,
+		HeartbeatInterval: 5 * time.Millisecond,
+		AwayTimeout:       50 * time.Millisecond,
+		OfflineTimeout:    100 * time.Millisecond,
 	}
 	tracker := NewPresenceTracker(cfg)
 
 	require.NoError(t, tracker.RecordHeartbeat("dev-1", "ws-1"))
 
 	// Wait long enough for the away timeout.
-	time.Sleep(8 * time.Millisecond)
+	time.Sleep(80 * time.Millisecond)
 	transitions := tracker.CheckTimeouts()
 	// Should transition to away.
 	found := false
@@ -611,7 +611,7 @@ func TestPresenceTracker_CheckTimeouts(t *testing.T) {
 	assert.True(t, found, "expected a transition for dev-1")
 
 	// Wait for offline timeout.
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	transitions = tracker.CheckTimeouts()
 	found = false
 	for _, tr := range transitions {

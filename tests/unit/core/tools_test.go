@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"hop.top/aps/internal/core/tools"
@@ -116,12 +117,11 @@ func TestTool_EnsureTool(t *testing.T) {
 
 func TestTool_ProfileScripts(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("USERPROFILE", tempDir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tempDir, ".config"))
 
 	profileID := "tools-test-profile"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
@@ -183,12 +183,11 @@ print("Hello from Python tool")
 
 func TestTool_ExecuteProfileTool(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("USERPROFILE", tempDir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tempDir, ".config"))
 
 	profileID := "execute-tool-test"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
@@ -207,6 +206,9 @@ display_name: Execute Tool Test
 	require.NoError(t, err)
 
 	t.Run("Execute shell script tool", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("shell scripts not executable on Windows")
+		}
 		toolsDir := filepath.Join(profileDir, "tools")
 		err := os.MkdirAll(toolsDir, 0755)
 		require.NoError(t, err)

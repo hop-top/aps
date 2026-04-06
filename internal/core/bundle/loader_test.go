@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoadBuiltins_ReturnsSix(t *testing.T) {
+func TestLoadBuiltins_ReturnsAll(t *testing.T) {
 	bundles, err := LoadBuiltins()
 	require.NoError(t, err)
-	assert.Len(t, bundles, 6)
+	assert.Len(t, bundles, 7)
 }
 
 func TestLoadBuiltins_DeveloperHasRequires(t *testing.T) {

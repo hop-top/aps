@@ -158,7 +158,7 @@ func (sp *SkillPaths) DetectIDEPaths() []string {
 	}
 
 	// Filter to only existing directories
-	var detected []string
+	detected := []string{}
 	for _, path := range candidates {
 		if info, err := os.Stat(path); err == nil && info.IsDir() {
 			detected = append(detected, path)

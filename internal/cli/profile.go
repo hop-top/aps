@@ -9,6 +9,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 
 	"hop.top/aps/internal/core"
@@ -40,7 +41,7 @@ var profileListCmd = &cobra.Command{
 		}
 
 		if len(profiles) == 0 {
-			fmt.Println(styles.Dim.Render("No profiles found."))
+			fmt.Fprintln(os.Stderr, styles.Dim.Render("No profiles found."))
 			return nil
 		}
 
@@ -69,8 +70,9 @@ var profileNewCmd = &cobra.Command{
 		email, _ := cmd.Flags().GetString("email")
 		force, _ := cmd.Flags().GetBool("force")
 
-		// Interactive prompts when flags not provided
-		if displayName == "" {
+		// Interactive prompts when flags not provided and stdin is a terminal
+		interactive := term.IsTerminal(int(os.Stdin.Fd()))
+		if displayName == "" && interactive {
 			if err := huh.NewInput().
 				Title("Display name").
 				Placeholder(id).
@@ -79,7 +81,7 @@ var profileNewCmd = &cobra.Command{
 				return err
 			}
 		}
-		if email == "" {
+		if email == "" && interactive {
 			if err := huh.NewInput().
 				Title("Email (for git config, optional)").
 				Value(&email).
