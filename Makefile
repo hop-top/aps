@@ -20,7 +20,7 @@ all: build test lint
 build: ## Build the binary locally
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
-	@go build -buildvcs=false $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/aps
+	@go build -buildvcs=false -mod=mod $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/aps
 	@echo "Binary built at $(BIN_DIR)/$(BINARY_NAME)"
 
 test: test-go test-workflows ## Run all tests (Go and Workflows)
