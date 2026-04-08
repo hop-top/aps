@@ -697,6 +697,7 @@ type MockAPSCore struct {
 	CreateSessionFunc   func(profileID string, metadata map[string]string) (*SessionState, error)
 	GetSessionFunc      func(sessionID string) (*SessionState, error)
 	UpdateSessionFunc   func(sessionID string, metadata map[string]string) error
+	HeartbeatSessionFunc func(sessionID string) error
 	DeleteSessionFunc   func(sessionID string) error
 	ListSessionsFunc    func(profileID string) ([]SessionState, error)
 	StorePutFunc        func(namespace string, key string, value []byte) error
@@ -765,6 +766,13 @@ func (m *MockAPSCore) GetSession(sessionID string) (*SessionState, error) {
 func (m *MockAPSCore) UpdateSession(sessionID string, metadata map[string]string) error {
 	if m.UpdateSessionFunc != nil {
 		return m.UpdateSessionFunc(sessionID, metadata)
+	}
+	return nil
+}
+
+func (m *MockAPSCore) HeartbeatSession(sessionID string) error {
+	if m.HeartbeatSessionFunc != nil {
+		return m.HeartbeatSessionFunc(sessionID)
 	}
 	return nil
 }

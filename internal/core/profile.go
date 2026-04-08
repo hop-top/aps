@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +11,59 @@ import (
 	"gopkg.in/yaml.v3"
 
 )
+
+// ErrProfileHasActiveSessions is returned when DeleteProfile finds active
+// sessions for the profile and force is not set. The wrapped error message
+// lists the blocking session IDs so callers can render a useful message.
+var ErrProfileHasActiveSessions = errors.New("profile has active sessions")
+
+// activeSessionsForProfile is a test seam: it returns the IDs of sessions
+// currently in the "active" state for the given profile. The default
+// implementation reads the session registry JSON directly from disk to
+// avoid an import cycle with internal/core/session. Tests may override
+// this variable to inject a fake.
+var activeSessionsForProfile = defaultActiveSessionsForProfile
+
+// defaultActiveSessionsForProfile reads <data>/sessions/registry.json
+// and returns the IDs of any session whose profile_id matches id and
+// whose status is "active". A missing OR corrupt registry is treated as
+// having no active sessions: a registry that cannot be parsed cannot
+// reliably block deletion, and locking out deletes on a corrupt file is
+// worse than allowing them. File-read errors other than not-exist
+// (e.g. permission denied) still propagate.
+func defaultActiveSessionsForProfile(id string) ([]string, error) {
+	dataDir, err := GetDataDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(dataDir, "sessions", "registry.json")
+	// #nosec G304 -- path is constructed from core.GetDataDir(), not user input
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read session registry: %w", err)
+	}
+	// Decode loosely so we don't depend on the session package's types.
+	var raw map[string]struct {
+		ProfileID string `json:"profile_id"`
+		Status    string `json:"status"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		// Corrupt registry cannot reliably block deletion; treat as empty.
+		// The registry will be rewritten on the next successful session
+		// mutation via T1's write-through path.
+		return nil, nil //nolint:nilerr // intentional: corrupt registry should not block delete
+	}
+	var active []string
+	for sid, info := range raw {
+		if info.ProfileID == id && info.Status == "active" {
+			active = append(active, sid)
+		}
+	}
+	return active, nil
+}
 
 const (
 	ApsHomeDir = ".aps"
@@ -396,6 +451,60 @@ func CreateProfile(id string, config Profile) error {
 		}
 	}
 
+	return nil
+}
+
+// DeleteProfile removes a profile by id. It refuses to delete if any
+// session for the profile is currently active, unless force is true.
+// The returned error wraps ErrProfileHasActiveSessions and lists the
+// blocking session IDs so callers can present a useful message.
+//
+// On success, DeleteProfile removes the profile directory under
+// <data>/profiles/<id>. The workspace link and squad memberships live
+// inside profile.yaml itself, so they are removed implicitly when the
+// directory is deleted — there is no separate persisted store to
+// reverse-clean. (If a future change introduces a persisted reverse
+// index for either, this function must be updated to clean it up.)
+//
+// DeleteProfile is not transactional. If the directory removal fails
+// part-way through, the caller must clean up manually. The function
+// returns the first error encountered and aborts.
+//
+// In force mode, DeleteProfile does NOT terminate the active sessions —
+// the caller has explicitly accepted the risk that they will be left
+// referencing a missing profile. Terminating sessions is the CLI's
+// concern, not core's.
+func DeleteProfile(id string, force bool) error {
+	if id == "" {
+		return fmt.Errorf("delete profile: id cannot be empty")
+	}
+
+	// Precondition 1: profile must exist (LoadProfile errors otherwise).
+	if _, err := LoadProfile(id); err != nil {
+		return fmt.Errorf("delete profile %q: %w", id, err)
+	}
+
+	// Precondition 2: no active sessions, unless force.
+	if !force {
+		active, err := activeSessionsForProfile(id)
+		if err != nil {
+			return fmt.Errorf("delete profile %q: check active sessions: %w", id, err)
+		}
+		if len(active) > 0 {
+			return fmt.Errorf("%w: %d active session(s) for profile %q: %s. Terminate them first or pass force=true",
+				ErrProfileHasActiveSessions, len(active), id, strings.Join(active, ", "))
+		}
+	}
+
+	// Removal: profile directory. Workspace link and squad memberships
+	// live inside profile.yaml and are removed with it.
+	dir, err := GetProfileDir(id)
+	if err != nil {
+		return fmt.Errorf("delete profile %q: %w", id, err)
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("delete profile %q: remove directory: %w", id, err)
+	}
 	return nil
 }
 

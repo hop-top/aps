@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/session"
@@ -50,14 +50,16 @@ func NewDeleteCmd() *cobra.Command {
 
 func deleteSession(sess *session.SessionInfo) error {
 	if sess.TmuxSocket != "" {
-		cmd := exec.Command("tmux", "-S", sess.TmuxSocket, "kill-server")
-		_ = cmd.Run()
+		if err := killTmuxSession(sess); err != nil {
+			// Non-benign tmux errors are logged but do not abort
+			// the delete — the session is going away in the
+			// registry regardless.
+			fmt.Fprintf(os.Stderr, "warning: tmux teardown: %v\n", err)
+		}
 	}
 
 	registry := session.GetRegistry()
-	if err := registry.Unregister(sess.ID); err != nil {
-		return fmt.Errorf("failed to unregister session: %w", err)
-	}
+	_ = registry.Unregister(sess.ID)
 
 	fmt.Printf("Session %s deleted\n", sess.ID)
 	return nil

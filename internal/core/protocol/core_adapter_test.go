@@ -19,10 +19,11 @@ import (
 // setupTestAdapter creates an APSAdapter with a temporary store directory
 func setupTestAdapter(t *testing.T) (*APSAdapter, string) {
 	tmpDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmpDir)
 	adapter := &APSAdapter{
 		runRegistry:     make(map[string]*RunState),
 		runMutex:        sync.RWMutex{},
-		sessionRegistry: session.GetRegistry(),
+		sessionRegistry: session.NewForTesting(),
 		storeDir:        tmpDir,
 	}
 	return adapter, tmpDir
@@ -537,6 +538,67 @@ func TestUpdateSession_LastSeenAtUpdate(t *testing.T) {
 	retrieved, err := adapter.GetSession(created.SessionID)
 	assert.NoError(t, err)
 	assert.True(t, retrieved.LastSeenAt.After(created.LastSeenAt))
+}
+
+// TestHeartbeatSession_ExistingUpdatesLastSeen verifies HeartbeatSession
+// refreshes LastSeenAt via the registry (and thus persists to disk).
+func TestHeartbeatSession_ExistingUpdatesLastSeen(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	created, err := adapter.CreateSession("profile-1", nil)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Millisecond)
+
+	err = adapter.HeartbeatSession(created.SessionID)
+	assert.NoError(t, err)
+
+	retrieved, err := adapter.GetSession(created.SessionID)
+	assert.NoError(t, err)
+	assert.True(t, retrieved.LastSeenAt.After(created.LastSeenAt),
+		"LastSeenAt should advance after HeartbeatSession")
+}
+
+// TestHeartbeatSession_MissingSession verifies HeartbeatSession returns
+// an error for an unknown session ID.
+func TestHeartbeatSession_MissingSession(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	err := adapter.HeartbeatSession("does-not-exist")
+	assert.Error(t, err)
+}
+
+// TestUpdateSession_PersistsAndRefreshes verifies UpdateSession now
+// goes through the registry (persists to disk) rather than mutating
+// the shared pointer directly. Reloads from a fresh registry reading
+// the same data dir and asserts both the metadata merge and the
+// LastSeenAt advance.
+func TestUpdateSession_PersistsAndRefreshes(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	created, err := adapter.CreateSession("profile-1", map[string]string{"mode": "default"})
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Millisecond)
+
+	err = adapter.UpdateSession(created.SessionID, map[string]string{"mode": "auto_approve", "new": "v"})
+	assert.NoError(t, err)
+
+	// Reload via a fresh registry from the same data dir to prove
+	// persistence happened (the old direct pointer mutation would
+	// not have made it to disk).
+	reloaded := session.NewForTesting()
+	if err := reloaded.LoadFromDisk(); err != nil {
+		t.Fatalf("LoadFromDisk failed: %v", err)
+	}
+	got, err := reloaded.Get(created.SessionID)
+	if err != nil {
+		t.Fatalf("reloaded Get failed: %v", err)
+	}
+	assert.Equal(t, "auto_approve", got.Environment["mode"])
+	assert.Equal(t, "v", got.Environment["new"])
+	assert.True(t, got.LastSeenAt.After(created.LastSeenAt),
+		"LastSeenAt should advance and be persisted")
 }
 
 // TestDeleteSession_SuccessfulDeletion tests DeleteSession removes session
@@ -1146,5 +1208,65 @@ func TestListSessions_FilteringByProfile(t *testing.T) {
 		for _, sess := range sessions {
 			assert.Equal(t, profile, sess.ProfileID)
 		}
+	}
+}
+
+// TestIntegration_HeartbeatPreventsReaping is the T4 -> T5 integration:
+// HeartbeatSession refreshes LastSeenAt and CleanupInactive must respect
+// that refresh. The test uses generous wall-clock margins (50ms) rather
+// than tight timing to keep flakes off CI machines.
+//
+// TODO: replace wall-clock sleeps with an injectable clock to make
+// this test fully deterministic.
+func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	sess, err := adapter.CreateSession("p1", nil)
+	if err != nil {
+		t.Fatalf("CreateSession failed: %v", err)
+	}
+	id := sess.SessionID
+
+	// Wait so the original LastSeenAt is comfortably stale relative
+	// to the upcoming heartbeat.
+	time.Sleep(50 * time.Millisecond)
+
+	if err := adapter.HeartbeatSession(id); err != nil {
+		t.Fatalf("HeartbeatSession failed: %v", err)
+	}
+
+	// Reap with a short staleness window. The just-issued heartbeat
+	// should keep the session alive.
+	expired, err := adapter.sessionRegistry.CleanupInactive(50 * time.Millisecond)
+	if err != nil {
+		t.Fatalf("CleanupInactive (post-heartbeat) failed: %v", err)
+	}
+	for _, expiredID := range expired {
+		if expiredID == id {
+			t.Fatalf("session %s was reaped immediately after heartbeat", id)
+		}
+	}
+	if _, err := adapter.GetSession(id); err != nil {
+		t.Fatalf("expected session %s to still exist after heartbeat: %v", id, err)
+	}
+
+	// Now let the heartbeat go stale and reap again.
+	time.Sleep(100 * time.Millisecond)
+	expired, err = adapter.sessionRegistry.CleanupInactive(50 * time.Millisecond)
+	if err != nil {
+		t.Fatalf("CleanupInactive (post-stale) failed: %v", err)
+	}
+	found := false
+	for _, expiredID := range expired {
+		if expiredID == id {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected session %s to be reaped after staleness window, expired=%v", id, expired)
+	}
+	if _, err := adapter.GetSession(id); err == nil {
+		t.Fatalf("expected session %s to be gone after reap", id)
 	}
 }

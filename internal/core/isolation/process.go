@@ -1,6 +1,7 @@
 package isolation
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -180,16 +181,17 @@ func (p *ProcessIsolation) registerSession() error {
 
 	registry := session.GetRegistry()
 	sess := &session.SessionInfo{
-		ID:         p.tmuxSession,
-		ProfileID:  p.context.ProfileID,
-		ProfileDir: p.context.ProfileDir,
-		Command:    strings.Join(append([]string{"tmux"}, "-S", p.tmuxSocket, "new-session"), " "),
-		PID:        pid,
-		Status:     session.SessionActive,
-		Tier:       session.TierStandard,
-		TmuxSocket: p.tmuxSocket,
-		CreatedAt:  time.Now(),
-		LastSeenAt: time.Now(),
+		ID:          p.tmuxSession,
+		ProfileID:   p.context.ProfileID,
+		ProfileDir:  p.context.ProfileDir,
+		Command:     strings.Join(append([]string{"tmux"}, "-S", p.tmuxSocket, "new-session"), " "),
+		PID:         pid,
+		Status:      session.SessionActive,
+		Tier:        session.TierStandard,
+		TmuxSocket:  p.tmuxSocket,
+		TmuxSession: p.tmuxSession,
+		CreatedAt:   time.Now(),
+		LastSeenAt:  time.Now(),
 		Environment: map[string]string{
 			"tmux_socket":  p.tmuxSocket,
 			"tmux_session": p.tmuxSession,
@@ -199,15 +201,32 @@ func (p *ProcessIsolation) registerSession() error {
 	return registry.Register(sess)
 }
 
+// cleanupTmux tears down the tmux session for this isolation. On a
+// clean shutdown (success or benign already-dead) the session is
+// removed from the registry. On a real teardown failure, the session
+// is marked SessionErrored and LEFT in the registry so operators can
+// observe it via `aps session list` and remove it explicitly with
+// `aps session delete`.
 func (p *ProcessIsolation) cleanupTmux() {
 	if p.tmuxSocket == "" || p.tmuxSession == "" {
 		return
 	}
 
 	cmd := exec.Command("tmux", "-S", p.tmuxSocket, "kill-session", "-t", p.tmuxSession)
-	_ = cmd.Run()
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	killErr := cmd.Run()
 
 	registry := session.GetRegistry()
+
+	if killErr != nil && !session.IsBenignTmuxError(stderr.String()) {
+		// Real teardown failure — mark errored, leave registered.
+		fmt.Fprintf(os.Stderr, "isolation: tmux teardown failed for session %s: %v: %s\n",
+			p.tmuxSession, killErr, strings.TrimSpace(stderr.String()))
+		_ = registry.UpdateStatus(p.tmuxSession, session.SessionErrored)
+		return
+	}
+
 	_ = registry.Unregister(p.tmuxSession)
 }
 

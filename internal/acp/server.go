@@ -6,11 +6,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 
 	"hop.top/aps/internal/core/protocol"
 )
+
+// sessionScopedMethods lists JSON-RPC methods whose params carry a
+// sessionId that identifies a live registry session. Requests for
+// these methods trigger a heartbeat refresh before dispatch so
+// SessionInfo.LastSeenAt reflects actual client activity.
+var sessionScopedMethods = map[string]bool{
+	"session/prompt":     true,
+	"session/cancel":     true,
+	"session/set_mode":   true,
+	"session/load":       true,
+	"fs/read_text_file":  true,
+	"fs/write_text_file": true,
+	"terminal/create":    true,
+}
 
 // Server implements the ACP (Agent Client Protocol) server
 // Handles JSON-RPC 2.0 communication over stdio and other transports
@@ -199,6 +214,17 @@ func (s *Server) handleRequest(req *JSONRPCRequest) *JSONRPCResponse {
 	// Validate JSON-RPC format
 	if req.JSONRPC != "2.0" {
 		return s.errorResponse(req.ID, NewErrorResponse(ErrCodeInvalidRequest, "invalid jsonrpc version", nil))
+	}
+
+	// Refresh session heartbeat for session-scoped methods. Heartbeat
+	// failures do not block dispatch: the downstream handler will
+	// return its own not-found error if the session is truly gone.
+	if sessionScopedMethods[req.Method] {
+		if sid := extractSessionID(req); sid != "" {
+			if err := s.core.HeartbeatSession(sid); err != nil {
+				log.Printf("acp: heartbeat for session %s (method=%s) failed: %v", sid, req.Method, err)
+			}
+		}
 	}
 
 	// Route to appropriate handler based on method
@@ -639,11 +665,11 @@ func (s *Server) buildAgentCapabilities() map[string]interface{} {
 			"writeTextFile": true,
 		},
 		"terminal": map[string]bool{
-			"create":        true,
-			"output":        true,
-			"waitForExit":   true,
-			"kill":          true,
-			"release":       true,
+			"create":      true,
+			"output":      true,
+			"waitForExit": true,
+			"kill":        true,
+			"release":     true,
 		},
 		"sessionModes": []string{"default", "auto_approve", "read_only"},
 		"contentTypes": []string{"text", "image", "audio", "resource"},
@@ -713,6 +739,21 @@ func (s *Server) IsInitialized() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.initialized
+}
+
+// extractSessionID pulls a "sessionId" string field out of a request's
+// params payload. Returns empty string if params is nil, not an
+// object, or lacks a sessionId. Does not error — callers use the
+// empty string to mean "no session scope".
+func extractSessionID(req *JSONRPCRequest) string {
+	if req == nil || req.Params == nil {
+		return ""
+	}
+	var probe struct {
+		SessionID string `json:"sessionId"`
+	}
+	_ = parseParams(req.Params, &probe)
+	return probe.SessionID
 }
 
 // parseParams unmarshals params into a target struct

@@ -86,6 +86,10 @@ func (m *mockCore) UpdateSession(sessionID string, metadata map[string]string) e
 	return nil
 }
 
+func (m *mockCore) HeartbeatSession(_ string) error {
+	return nil
+}
+
 func (m *mockCore) DeleteSession(sessionID string) error {
 	return nil
 }

@@ -75,9 +75,10 @@ func (mt *mockTransport) getResponses() []interface{} {
 
 // mockAPSCore implements protocol.APSCore interface for testing
 type mockAPSCore struct {
-	sessions map[string]*protocol.SessionState
-	runs     map[string]*protocol.RunState
-	mu       sync.RWMutex
+	sessions       map[string]*protocol.SessionState
+	runs           map[string]*protocol.RunState
+	heartbeatCalls []string
+	mu             sync.RWMutex
 }
 
 func newMockAPSCore() *mockAPSCore {
@@ -163,6 +164,17 @@ func (m *mockAPSCore) UpdateSession(sessionID string, metadata map[string]string
 	defer m.mu.Unlock()
 	if s, ok := m.sessions[sessionID]; ok {
 		s.Metadata = metadata
+		return nil
+	}
+	return fmt.Errorf("session not found: %s", sessionID)
+}
+
+func (m *mockAPSCore) HeartbeatSession(sessionID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.heartbeatCalls = append(m.heartbeatCalls, sessionID)
+	if s, ok := m.sessions[sessionID]; ok {
+		s.LastSeenAt = time.Now()
 		return nil
 	}
 	return fmt.Errorf("session not found: %s", sessionID)
@@ -2211,3 +2223,110 @@ func TestHandleFSReadTextFile_AutoApproveMode_Allowed(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
+// TestHandleRequest_HeartbeatChokepoint asserts that the handleRequest
+// dispatcher calls HeartbeatSession for session-scoped methods with a
+// valid sessionId, skips it for non-session-scoped methods, and does
+// not abort dispatch when the session ID is missing or invalid.
+func TestHandleRequest_HeartbeatChokepoint(t *testing.T) {
+	core := newMockAPSCore()
+	server, err := NewServer("test-profile", core)
+	require.NoError(t, err)
+
+	// Seed a session directly through the core so the ACP session
+	// manager is not involved; we only care about the heartbeat call.
+	sess, err := core.CreateSession("test-profile", map[string]string{"acp_mode": "default"})
+	require.NoError(t, err)
+	sid := sess.SessionID
+
+	t.Run("session-scoped method triggers heartbeat", func(t *testing.T) {
+		core.mu.Lock()
+		core.heartbeatCalls = nil
+		core.mu.Unlock()
+
+		req := &JSONRPCRequest{
+			JSONRPC: "2.0",
+			Method:  "session/set_mode",
+			ID:      1,
+			Params: map[string]interface{}{
+				"sessionId": sid,
+				"mode":      "default",
+			},
+		}
+		_ = server.handleRequest(req)
+
+		core.mu.RLock()
+		calls := append([]string(nil), core.heartbeatCalls...)
+		core.mu.RUnlock()
+
+		assert.Equal(t, []string{sid}, calls,
+			"session/set_mode should trigger exactly one HeartbeatSession call")
+	})
+
+	t.Run("non-session-scoped method does not heartbeat", func(t *testing.T) {
+		core.mu.Lock()
+		core.heartbeatCalls = nil
+		core.mu.Unlock()
+
+		req := &JSONRPCRequest{
+			JSONRPC: "2.0",
+			Method:  "initialize",
+			ID:      2,
+			Params:  map[string]interface{}{},
+		}
+		_ = server.handleRequest(req)
+
+		core.mu.RLock()
+		calls := append([]string(nil), core.heartbeatCalls...)
+		core.mu.RUnlock()
+		assert.Empty(t, calls, "initialize should not trigger HeartbeatSession")
+	})
+
+	t.Run("session-scoped method with missing sessionId is silent", func(t *testing.T) {
+		core.mu.Lock()
+		core.heartbeatCalls = nil
+		core.mu.Unlock()
+
+		req := &JSONRPCRequest{
+			JSONRPC: "2.0",
+			Method:  "fs/read_text_file",
+			ID:      3,
+			Params: map[string]interface{}{
+				"path": "/tmp/does-not-matter",
+			},
+		}
+		resp := server.handleRequest(req)
+		assert.NotNil(t, resp)
+
+		core.mu.RLock()
+		calls := append([]string(nil), core.heartbeatCalls...)
+		core.mu.RUnlock()
+		assert.Empty(t, calls,
+			"heartbeat should be skipped when sessionId is absent")
+	})
+
+	t.Run("heartbeat error does not abort dispatch", func(t *testing.T) {
+		core.mu.Lock()
+		core.heartbeatCalls = nil
+		core.mu.Unlock()
+
+		req := &JSONRPCRequest{
+			JSONRPC: "2.0",
+			Method:  "session/set_mode",
+			ID:      4,
+			Params: map[string]interface{}{
+				"sessionId": "unknown-session",
+				"mode":      "default",
+			},
+		}
+		resp := server.handleRequest(req)
+		// Heartbeat failed, but dispatch still ran and produced a
+		// response (handler will report its own session-ended error).
+		assert.NotNil(t, resp)
+
+		core.mu.RLock()
+		calls := append([]string(nil), core.heartbeatCalls...)
+		core.mu.RUnlock()
+		assert.Equal(t, []string{"unknown-session"}, calls,
+			"heartbeat should still be attempted even if it will fail")
+	})
+}
