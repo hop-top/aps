@@ -37,6 +37,7 @@ type APSCore interface {
 	CreateSession(profileID string, metadata map[string]string) (*SessionState, error)
 	GetSession(sessionID string) (*SessionState, error)
 	UpdateSession(sessionID string, metadata map[string]string) error
+	HeartbeatSession(sessionID string) error
 	DeleteSession(sessionID string) error
 	ListSessions(profileID string) ([]SessionState, error)
 

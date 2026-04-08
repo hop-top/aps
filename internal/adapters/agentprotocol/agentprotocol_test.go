@@ -182,6 +182,15 @@ func (m *mockAPSCore) UpdateSession(sessionID string, metadata map[string]string
 	return nil
 }
 
+func (m *mockAPSCore) HeartbeatSession(sessionID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if session, ok := m.sessions[sessionID]; ok {
+		session.LastSeenAt = time.Now()
+	}
+	return nil
+}
+
 func (m *mockAPSCore) DeleteSession(sessionID string) error {
 	if m.deleteSessionFunc != nil {
 		return m.deleteSessionFunc(sessionID)

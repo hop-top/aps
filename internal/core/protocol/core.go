@@ -339,25 +339,27 @@ func (a *APSAdapter) GetSession(sessionID string) (*SessionState, error) {
 }
 
 func (a *APSAdapter) UpdateSession(sessionID string, metadata map[string]string) error {
-	session, err := a.sessionRegistry.Get(sessionID)
-	if err != nil {
-		return err
+	if err := a.sessionRegistry.UpdateSessionMetadata(sessionID, metadata); err != nil {
+		return fmt.Errorf("update session metadata: %w", err)
 	}
+	return nil
+}
 
-	if session.Environment == nil {
-		session.Environment = make(map[string]string)
+// HeartbeatSession marks the session as recently active by updating
+// its LastSeenAt timestamp via the registry (persists to disk).
+// Returns an error if the session does not exist or if updating the
+// registry, including persisting the change to disk, fails.
+func (a *APSAdapter) HeartbeatSession(sessionID string) error {
+	if err := a.sessionRegistry.UpdateHeartbeat(sessionID); err != nil {
+		return fmt.Errorf("heartbeat session: %w", err)
 	}
-
-	for k, v := range metadata {
-		session.Environment[k] = v
-	}
-
-	session.LastSeenAt = time.Now()
-
 	return nil
 }
 
 func (a *APSAdapter) DeleteSession(sessionID string) error {
+	if _, err := a.sessionRegistry.Get(sessionID); err != nil {
+		return fmt.Errorf("session %s: %w", sessionID, err)
+	}
 	return a.sessionRegistry.Unregister(sessionID)
 }
 

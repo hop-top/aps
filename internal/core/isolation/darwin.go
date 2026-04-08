@@ -199,16 +199,17 @@ func (d *DarwinSandbox) registerSession(command string, args []string) error {
 
 	registry := session.GetRegistry()
 	sess := &session.SessionInfo{
-		ID:         d.tmuxSession,
-		ProfileID:  d.context.ProfileID,
-		ProfileDir: d.context.ProfileDir,
-		Command:    fmt.Sprintf("sudo -u %s %s", d.username, fullCommand),
-		PID:        d.sessionPID,
-		Status:     session.SessionActive,
-		Tier:       session.TierStandard,
-		TmuxSocket: d.tmuxSocket,
-		CreatedAt:  time.Now(),
-		LastSeenAt: time.Now(),
+		ID:          d.tmuxSession,
+		ProfileID:   d.context.ProfileID,
+		ProfileDir:  d.context.ProfileDir,
+		Command:     fmt.Sprintf("sudo -u %s %s", d.username, fullCommand),
+		PID:         d.sessionPID,
+		Status:      session.SessionActive,
+		Tier:        session.TierStandard,
+		TmuxSocket:  d.tmuxSocket,
+		TmuxSession: d.tmuxSession,
+		CreatedAt:   time.Now(),
+		LastSeenAt:  time.Now(),
 		Environment: map[string]string{
 			"sandbox_user":  d.username,
 			"sandbox_home":  d.homeDir,
@@ -283,22 +284,41 @@ func (d *DarwinSandbox) ExecuteAction(actionID string, payload []byte) error {
 func (d *DarwinSandbox) Cleanup() error {
 	if d.useTmux {
 		d.cleanupTmux()
+	} else if d.tmuxSession != "" {
+		registry := session.GetRegistry()
+		_ = registry.Unregister(d.tmuxSession)
 	}
-
-	registry := session.GetRegistry()
-	_ = registry.Unregister(d.tmuxSession)
 
 	d.context = nil
 	return nil
 }
 
+// cleanupTmux tears down the tmux session for this sandbox. On a
+// clean shutdown (success or benign already-dead) the session is
+// removed from the registry. On a real teardown failure, the session
+// is marked SessionErrored and LEFT in the registry so operators can
+// observe it via `aps session list` and remove it explicitly with
+// `aps session delete`.
 func (d *DarwinSandbox) cleanupTmux() {
 	if d.tmuxSocket == "" || d.tmuxSession == "" {
 		return
 	}
 
 	cmd := exec.Command("tmux", "-S", d.tmuxSocket, "kill-session", "-t", d.tmuxSession)
-	_ = cmd.Run()
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	killErr := cmd.Run()
+
+	registry := session.GetRegistry()
+
+	if killErr != nil && !session.IsBenignTmuxError(stderr.String()) {
+		fmt.Fprintf(os.Stderr, "isolation: tmux teardown failed for session %s: %v: %s\n",
+			d.tmuxSession, killErr, strings.TrimSpace(stderr.String()))
+		_ = registry.UpdateStatus(d.tmuxSession, session.SessionErrored)
+		return
+	}
+
+	_ = registry.Unregister(d.tmuxSession)
 }
 
 func (d *DarwinSandbox) Validate() error {

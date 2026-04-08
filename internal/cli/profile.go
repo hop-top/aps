@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -403,6 +404,51 @@ var profileImportCmd = &cobra.Command{
 	},
 }
 
+// profileDeleteCmd implements `aps profile delete <id> [--force] [--yes]` (T7).
+// It wraps core.DeleteProfile, prompting for confirmation interactively unless
+// --yes is set, and surfacing a helpful hint when blocked by active sessions.
+var profileDeleteCmd = &cobra.Command{
+	Use:     "delete <id>",
+	Aliases: []string{"rm", "remove"},
+	Short:   "Delete a profile",
+	Args:    cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		force, _ := cmd.Flags().GetBool("force")
+		yes, _ := cmd.Flags().GetBool("yes")
+
+		// Interactive confirmation unless --yes or non-tty.
+		if !yes && term.IsTerminal(int(os.Stdin.Fd())) {
+			confirmed := false
+			prompt := fmt.Sprintf("Delete profile '%s'? This cannot be undone.", id)
+			if err := huh.NewConfirm().
+				Title(prompt).
+				Value(&confirmed).
+				Run(); err != nil {
+				return fmt.Errorf("confirmation prompt: %w", err)
+			}
+			if !confirmed {
+				fmt.Println("Aborted.")
+				return nil
+			}
+		}
+
+		if err := core.DeleteProfile(id, force); err != nil {
+			if errors.Is(err, core.ErrProfileHasActiveSessions) {
+				return fmt.Errorf(
+					"cannot delete profile '%s': %w\n\nHint: terminate the blocking sessions first, or pass --force to delete anyway",
+					id,
+					err,
+				)
+			}
+			return fmt.Errorf("deleting profile %q: %w", id, err)
+		}
+
+		fmt.Printf("Profile '%s' deleted.\n", id)
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(profileCmd)
 	profileCmd.AddCommand(profileListCmd)
@@ -413,6 +459,7 @@ func init() {
 	profileCmd.AddCommand(profileImportCmd)
 	profileCmd.AddCommand(profileAddCapCmd)
 	profileCmd.AddCommand(profileRemoveCapCmd)
+	profileCmd.AddCommand(profileDeleteCmd)
 
 	profileListCmd.Flags().Bool("json", false, "Output as JSON")
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
@@ -422,4 +469,6 @@ func init() {
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
 	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
+	profileDeleteCmd.Flags().BoolP("force", "f", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
+	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
 }
