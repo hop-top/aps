@@ -84,7 +84,7 @@ var profileNewCmd = &cobra.Command{
 		}
 		if email == "" && interactive {
 			if err := huh.NewInput().
-				Title("Email (for git config, optional)").
+				Title("Email (for profile + git config)").
 				Value(&email).
 				Run(); err != nil {
 				return err
@@ -93,6 +93,7 @@ var profileNewCmd = &cobra.Command{
 
 		config := core.Profile{
 			DisplayName: displayName,
+			Email:       email,
 			Git: core.GitConfig{
 				Enabled: email != "",
 			},
@@ -463,7 +464,7 @@ func init() {
 
 	profileListCmd.Flags().Bool("json", false, "Output as JSON")
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
-	profileNewCmd.Flags().String("email", "", "Email for git config")
+	profileNewCmd.Flags().String("email", "", "Email for profile and git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")
 	profileStatusCmd.Flags().BoolP("verbose", "v", false, "Show full resolved scope and env var keys per bundle")
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")

@@ -81,6 +81,7 @@ const (
 type Profile struct {
 	ID           string             `yaml:"id"`
 	DisplayName  string             `yaml:"display_name"`
+	Email        string             `yaml:"email,omitempty"`
 	Persona      Persona            `yaml:"persona,omitempty"`
 	Capabilities []string           `yaml:"capabilities,omitempty"`
 	Accounts     map[string]Account `yaml:"accounts,omitempty"`

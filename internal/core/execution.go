@@ -149,7 +149,7 @@ func ResolveBundlesForProfile(profile *Profile) ([]*bundle.ResolvedBundle, error
 	ctx := bundle.ProfileContext{
 		ID:          profile.ID,
 		DisplayName: profile.DisplayName,
-		Email:       "", // Profile has no Email field
+		Email:       profile.Email,
 		ConfigDir:   configDir,
 		DataDir:     profileDir,
 		Runtime:     "",                   // auto-detected by resolver

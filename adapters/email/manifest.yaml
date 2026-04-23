@@ -9,7 +9,7 @@ description: >
 config:
   backend: himalaya
   account: ideacrafters
-actions:
+  actions:
   - name: send
     description: Send a new email
     script: backends/{{backend}}/send.sh

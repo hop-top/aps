@@ -3,12 +3,10 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
 )
 
@@ -104,7 +102,7 @@ func parseInputs(raw []string) map[string]string {
 }
 
 // resolveFromAddress determines the From email address.
-// Priority: --from flag > profile.yaml email field.
+// Priority: --from flag > profile.email field.
 func resolveFromAddress(
 	from string,
 	profileID string,
@@ -118,72 +116,19 @@ func resolveFromAddress(
 		)
 	}
 
-	dataDir, err := getProfileDir(profileID)
-	if err != nil {
-		return "", err
-	}
-
-	email, err := readProfileEmail(dataDir)
+	profile, err := core.LoadProfile(profileID)
 	if err != nil {
 		return "", fmt.Errorf(
-			"profile %q has no email; use --from: %w",
-			profileID, err,
+			"load profile %q: %w", profileID, err,
 		)
 	}
-	return email, nil
-}
 
-func getProfileDir(id string) (string, error) {
-	dataDir := os.Getenv("APS_DATA_PATH")
-	if dataDir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		dataDir = filepath.Join(
-			home, ".local", "share", "aps",
-		)
-	}
-	return filepath.Join(dataDir, "profiles", id), nil
-}
-
-func readProfileEmail(dir string) (string, error) {
-	// 1. Check profile.yaml email field
-	profData, err := os.ReadFile(
-		filepath.Join(dir, "profile.yaml"),
-	)
-	if err == nil {
-		var profile struct {
-			Email string `yaml:"email"`
-		}
-		if yaml.Unmarshal(profData, &profile) == nil {
-			if profile.Email != "" {
-				return profile.Email, nil
-			}
-		}
-	}
-
-	// 2. Fall back to gitconfig [user] email
-	gitcfg := filepath.Join(dir, "gitconfig")
-	data, err := os.ReadFile(gitcfg)
-	if err != nil {
+	if profile.Email == "" {
 		return "", fmt.Errorf(
-			"no email in profile.yaml or gitconfig",
+			"profile %q has no email; use --from or "+
+				"set email via: aps profile new %s --email <addr>",
+			profileID, profileID,
 		)
 	}
-	for _, line := range strings.Split(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "email") {
-			parts := strings.SplitN(trimmed, "=", 2)
-			if len(parts) == 2 {
-				email := strings.TrimSpace(parts[1])
-				if email != "" && email != "agent@example.com" {
-					return email, nil
-				}
-			}
-		}
-	}
-	return "", fmt.Errorf(
-		"no email in profile.yaml or gitconfig",
-	)
+	return profile.Email, nil
 }
