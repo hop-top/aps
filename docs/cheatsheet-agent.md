@@ -58,6 +58,45 @@ aps env <profile>                    # emit env vars (source into shell)
 
 ---
 
+## Adapter Actions
+
+Script adapters dispatch actions to backend scripts.
+No LLM needed — pure shell execution.
+
+```bash
+# Send email as profile
+aps adapter exec email send \
+  --profile <id> \
+  --input to=<addr> \
+  --input subject="<subject>" \
+  --input body="<body>"
+
+# List inbox
+aps adapter exec email list --profile <id>
+
+# Read message
+aps adapter exec email read --profile <id> \
+  --input id=<envelope-id>
+
+# Reply
+aps adapter exec email reply --profile <id> \
+  --input id=<envelope-id> \
+  --input body="<reply>"
+
+# Explicit From (no profile lookup)
+aps adapter exec email send \
+  --from ops@company.com \
+  --input to=<addr> \
+  --input subject="<subject>" \
+  --input body="<body>"
+```
+
+Profile email resolved from `profile.yaml` `email` field.
+Env vars passed to scripts: `APS_EMAIL_FROM`,
+`APS_EMAIL_ACCOUNT`, `EMAIL_<INPUT>`.
+
+---
+
 ## Sessions
 
 ```bash

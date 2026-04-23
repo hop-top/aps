@@ -19,12 +19,33 @@ Profiles are stored under the data directory:
 
 ```
 ~/.local/share/aps/profiles/{profile-id}/
-├── profile.yaml       # profile config, squad memberships, scope
+├── profile.yaml       # config, email, squad memberships, scope
 ├── secrets.env        # secret key-value pairs (mode 0600)
 ├── notes.md           # profile notes
 ├── gitconfig          # git configuration (if git enabled)
 └── actions/           # profile actions
 ```
+
+### profile.yaml Fields
+
+```yaml
+id: noor
+display_name: Noor
+email: noor@example.com          # used by adapters, bundles
+persona: {}
+capabilities: []
+preferences:
+  shell: /bin/zsh
+git:
+  enabled: true
+isolation:
+  level: process
+```
+
+The `email` field is used by:
+- Script adapter exec (`APS_EMAIL_FROM` env var)
+- Bundle template variable (`${PROFILE_EMAIL}`)
+- Set via `aps profile new --email <addr>`
 
 ## Global Config File
 

@@ -1,0 +1,11 @@
+graph TD
+    subgraph aps
+        P[Profile / Capability / Session] -->|mutation| BUS[Bus interface]
+        BUS -->|in-process default| SYNC[SyncBus]
+        BUS -->|transport configured| SDK[cloudevents sdk-go/v2]
+        SUB[Subscriber goroutine] -->|AOK events| HANDLERS[Entity / Capability / Action handlers]
+        DLQ[DLQ writer] -->|failed delivery| FS[(events/dlq/)]
+    end
+
+    SDK -->|HTTP / Kafka / NATS / AMQP| AOK[AOK Event Bus]
+    AOK -->|CloudEvents stream| SUB

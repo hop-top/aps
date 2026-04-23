@@ -19,6 +19,7 @@ Config: `~/.config/aps/` (XDG); `$APS_DATA_PATH` for data
 
 ```bash
 aps profile new <name>               # create profile
+aps profile new <n> --email <addr>   # create with email
 aps profile list                     # list all
 aps profile show <name>              # inspect details
 aps profile status <name>            # bundle resolution status
@@ -169,6 +170,21 @@ aps adapter detach <id> <workspace>  # detach
 aps adapter test <id>                # test messenger pipeline
 aps adapter logs <id>                # view device logs
 aps adapter channels <id>            # list known channels
+
+# Script adapter actions (email, etc.)
+aps adapter exec email send \
+  --profile noor \
+  --input to=user@example.com \
+  --input subject="Hello" \
+  --input body="Message"            # send email as profile
+aps adapter exec email list \
+  --profile noor                    # list inbox
+aps adapter exec email read \
+  --profile noor --input id=7131    # read message
+aps adapter exec email reply \
+  --profile noor \
+  --input id=7131 \
+  --input body="Thanks!"           # reply as profile
 
 # Mobile pairing
 aps adapter pair <id>                # QR code for mobile pairing
