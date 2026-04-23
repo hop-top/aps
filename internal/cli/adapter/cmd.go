@@ -36,5 +36,8 @@ func NewAdapterCmd() *cobra.Command {
 	cmd.AddCommand(newLinksCmd())
 	cmd.AddCommand(newTestMessengerCmd())
 
+	// Script adapter execution
+	cmd.AddCommand(newExecCmd())
+
 	return cmd
 }

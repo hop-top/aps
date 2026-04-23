@@ -1,0 +1,50 @@
+api_version: v1
+kind: adapter
+name: email
+type: messenger
+strategy: script
+description: >
+  Email adapter for agent profiles. Dispatches send/reply/list/read
+  actions to a pluggable backend (himalaya, mxhook, etc.).
+config:
+  backend: himalaya
+  account: ideacrafters
+actions:
+  - name: send
+    description: Send a new email
+    script: backends/{{backend}}/send.sh
+    input:
+      - name: to
+        required: true
+      - name: subject
+        required: true
+      - name: body
+        required: true
+      - name: cc
+        required: false
+  - name: reply
+    description: Reply to an email
+    script: backends/{{backend}}/reply.sh
+    input:
+      - name: id
+        required: true
+        description: Envelope ID to reply to
+      - name: body
+        required: true
+  - name: list
+    description: List inbox envelopes
+    script: backends/{{backend}}/list.sh
+    input:
+      - name: limit
+        required: false
+        default: "10"
+      - name: folder
+        required: false
+        default: INBOX
+  - name: read
+    description: Read an email message
+    script: backends/{{backend}}/read.sh
+    input:
+      - name: id
+        required: true
+        description: Envelope ID to read
