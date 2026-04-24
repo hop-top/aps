@@ -10,14 +10,36 @@ import (
 	"hop.top/kit/bus"
 )
 
-// eventBus is the process-wide in-memory bus for lifecycle events.
+const (
+	defaultBusAddr  = "ws://localhost:8080/ws/bus"
+	defaultBusToken = "dpkms-dev-token"
+)
+
+// eventBus is the process-wide bus for lifecycle events.
+// Connects to dpkms hub when available; falls back to local-only.
 var eventBus bus.Bus
 
 // publisher wraps eventBus for structured event publishing.
 var publisher *events.Publisher
 
 func init() {
-	eventBus = bus.New()
+	addr := os.Getenv("APS_BUS_ADDR")
+	if addr == "" {
+		addr = defaultBusAddr
+	}
+
+	token := os.Getenv("APS_BUS_TOKEN")
+	if token == "" {
+		token = defaultBusToken
+	}
+
+	eventBus = bus.New(
+		bus.WithNetwork(addr),
+		bus.WithNetworkOption(
+			bus.WithAuth(&bus.StaticTokenAuth{Token_: token}),
+		),
+	)
+
 	publisher = events.NewPublisher(eventBus)
 	adapter.SetPublisher(publisher)
 }
