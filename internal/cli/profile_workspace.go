@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
@@ -30,6 +31,11 @@ var profileSetWorkspaceCmd = &cobra.Command{
 		if err := core.SaveProfile(profile); err != nil {
 			return fmt.Errorf("failed to save profile %s: %w", profileID, err)
 		}
+
+		publishEvent(string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+			ProfileID: profileID,
+			Fields:    []string{"workspace"},
+		})
 
 		fmt.Fprintf(os.Stdout, "%s workspace set to %s for profile %s\n",
 			styles.StatusDot(true),
