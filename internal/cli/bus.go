@@ -10,10 +10,7 @@ import (
 	"hop.top/kit/bus"
 )
 
-const (
-	defaultBusAddr  = "ws://localhost:8080/ws/bus"
-	defaultBusToken = "dpkms-dev-token"
-)
+const defaultBusAddr = "ws://localhost:8080/ws/bus"
 
 // eventBus is the process-wide bus for lifecycle events.
 // Connects to dpkms hub when available; falls back to local-only.
@@ -30,7 +27,11 @@ func init() {
 
 	token := os.Getenv("APS_BUS_TOKEN")
 	if token == "" {
-		token = defaultBusToken
+		token = os.Getenv("BUS_TOKEN")
+	}
+	if token == "" {
+		fmt.Fprintln(os.Stderr, "warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled")
+		return
 	}
 
 	eventBus = bus.New(
