@@ -102,6 +102,8 @@ type Profile struct {
 	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
+	Roles         []string             `yaml:"roles,omitempty"`  // owner, assignee, evaluator, auditor
+	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty"`
 }
 
 // ScopeConfig defines access boundaries for a profile.
