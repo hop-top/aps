@@ -15,10 +15,16 @@ ACCOUNT_FLAG=""
 TEMPLATE=$(himalaya template reply "$ID" \
   -H "From:$FROM" $ACCOUNT_FLAG)
 
-# Replace the empty body placeholder with actual body
-# Template has the quoted original after a blank line
-HEADER=$(echo "$TEMPLATE" | sed '/^$/q')
-QUOTED=$(echo "$TEMPLATE" | sed '1,/^$/d')
+# Split template at the first blank line: headers above, quoted
+# original below. Done with bash parameter expansion (no pipe) so a
+# multi-MB HTML alternative can't trigger SIGPIPE on an early-
+# exiting consumer like `sed '/^$/q'`. See T-0332.
+SEP=$'\n\n'
+HEADER="${TEMPLATE%%"$SEP"*}"
+QUOTED="${TEMPLATE#*"$SEP"}"
+# If TEMPLATE has no blank line, %% / # leave both equal to TEMPLATE;
+# fall back to "no quoted body" rather than duplicating headers.
+[ "$QUOTED" = "$TEMPLATE" ] && QUOTED=""
 
 himalaya template send $ACCOUNT_FLAG <<EOF
 $HEADER
