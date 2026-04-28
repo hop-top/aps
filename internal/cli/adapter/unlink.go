@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	coreadapter "hop.top/aps/internal/core/adapter"
+	"hop.top/aps/internal/events"
 
 	"github.com/spf13/cobra"
 )
@@ -50,6 +51,12 @@ func runUnlink(deviceName, profileID string, jsonOut, dryRun bool) error {
 	if err != nil {
 		return err
 	}
+
+	publishEvent(string(events.TopicAdapterUnlinked), "", events.AdapterUnlinkedPayload{
+		ProfileID:   profileID,
+		AdapterType: string(dev.Type),
+		AdapterID:   deviceName,
+	})
 
 	if jsonOut {
 		return renderUnlinkJSON(dev, profileID)

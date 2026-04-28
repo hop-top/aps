@@ -1,0 +1,59 @@
+graph TD
+    subgraph Humans
+        Jad[Jad - Founder]
+        Monaam[Monaam - Co-founder]
+        Amine[Amine - DevOps]
+    end
+
+    subgraph Channels
+        Email[Email<br/>jad+name@ideacrafters.com]
+        TG[Telegram Bot<br/>@IdeaCraftersBot]
+        A2A[A2A Protocol<br/>JSON-RPC :8081-8089]
+    end
+
+    subgraph Agents
+        Noor[Noor :8081<br/>Ops Lead]
+        Sami[Sami :8082<br/>Eng Lead]
+        Rami[Rami :8083<br/>QA]
+        Kai[Kai :8084<br/>Product]
+        Lina[Lina :8085<br/>Marketing]
+        Amir[Amir :8086<br/>Community]
+        Zara[Zara :8087<br/>Sales]
+        Farid[Farid :8088<br/>Finance]
+        Hana[Hana :8089<br/>Legal]
+    end
+
+    Jad -->|send to +alias| Email
+    Monaam -->|send to +alias| Email
+    Amine -->|send to +alias| Email
+
+    Jad -->|message| TG
+    Monaam -->|message| TG
+    Amine -->|message| TG
+
+    Jad -->|CLI| A2A
+
+    Email -->|Gmail filter + himalaya| Noor
+    Email -->|Gmail filter + himalaya| Sami
+    Email -->|Gmail filter + himalaya| Rami
+    Email -->|Gmail filter + himalaya| Kai
+    Email -->|Gmail filter + himalaya| Lina
+    Email -->|Gmail filter + himalaya| Amir
+    Email -->|Gmail filter + himalaya| Zara
+    Email -->|Gmail filter + himalaya| Farid
+    Email -->|Gmail filter + himalaya| Hana
+
+    TG -->|keyword route| Noor
+    TG -->|keyword route| Sami
+    TG -->|keyword route| Rami
+    TG -->|keyword route| Kai
+    TG -->|keyword route| Lina
+    TG -->|keyword route| Amir
+    TG -->|keyword route| Zara
+    TG -->|keyword route| Farid
+    TG -->|keyword route| Hana
+
+    Noor <-->|send-task| Sami
+    Noor <-->|send-task| Kai
+    Sami <-->|send-task| Rami
+    Lina <-->|send-task| Amir

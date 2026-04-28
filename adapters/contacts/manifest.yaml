@@ -1,0 +1,79 @@
+api_version: v1
+kind: adapter
+name: contacts
+type: messenger
+strategy: script
+description: >
+  Contact management adapter for agent profiles. Dispatches
+  list/show/add/update/find/note/delete actions to a pluggable
+  backend (cardamum, etc.).
+config:
+  backend: cardamum
+  account: ideacrafters
+  addressbook: default
+  actions:
+    - name: list
+      description: List all contacts
+      script: backends/{{backend}}/list.sh
+      input:
+        - name: addressbook
+          required: false
+    - name: show
+      description: Show contact detail
+      script: backends/{{backend}}/show.sh
+      input:
+        - name: id
+          required: true
+          description: Card ID
+    - name: add
+      description: Add a new contact
+      script: backends/{{backend}}/add.sh
+      input:
+        - name: email
+          required: true
+        - name: name
+          required: false
+        - name: org
+          required: false
+        - name: phone
+          required: false
+        - name: note
+          required: false
+        - name: addressbook
+          required: false
+    - name: update
+      description: Update contact fields
+      script: backends/{{backend}}/update.sh
+      input:
+        - name: id
+          required: true
+        - name: name
+          required: false
+        - name: email
+          required: false
+        - name: org
+          required: false
+        - name: phone
+          required: false
+        - name: note
+          required: false
+    - name: find
+      description: Search contacts
+      script: backends/{{backend}}/find.sh
+      input:
+        - name: query
+          required: true
+    - name: note
+      description: Append note to contact
+      script: backends/{{backend}}/note.sh
+      input:
+        - name: id
+          required: true
+        - name: text
+          required: true
+    - name: delete
+      description: Delete a contact
+      script: backends/{{backend}}/delete.sh
+      input:
+        - name: id
+          required: true

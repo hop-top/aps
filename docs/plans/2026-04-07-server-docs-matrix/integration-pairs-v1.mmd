@@ -1,0 +1,42 @@
+graph LR
+    subgraph APS["APS side"]
+        APS_A2A[A2A server]
+        APS_ACP[ACP server]
+        APS_AGNTCY[AGNTCY server]
+        APS_MCP[MCP server]
+        APS_VOICE[Voice server]
+        APS_MSG[Messenger adapters]
+        APS_ACP_CLI[ACP client driver]
+        APS_CODEX_CLI[Codex app-server client]
+    end
+
+    subgraph CLIS["External CLIs"]
+        CLAUDE[Claude Code]
+        GEMINI[Gemini CLI]
+        CODEX[Codex CLI]
+        OPENCODE[OpenCode]
+    end
+
+    subgraph PEERS["Non-CLI peers"]
+        BROWSER[Browser]
+        CURL[curl / CLI client]
+        PHONE[Voice phone/WebRTC]
+        MSG_PLAT[Messenger platforms]
+    end
+
+    APS_MCP -- stdio / HTTP --> CLAUDE
+    APS_MCP -- stdio / HTTP --> GEMINI
+    APS_MCP -- stdio / HTTP --> CODEX
+    APS_MCP -- stdio / HTTP --> OPENCODE
+
+    APS_ACP_CLI -- drives via stdio --> GEMINI
+    APS_ACP_CLI -- drives via stdio --> OPENCODE
+
+    APS_CODEX_CLI -- JSON-RPC v2 stdio/ws --> CODEX
+
+    APS_A2A -- HTTP/JSON-RPC --> CURL
+    APS_A2A -- HTTP/JSON-RPC --> BROWSER
+    APS_ACP -- JSON-RPC --> CURL
+    APS_AGNTCY -- gRPC --> CURL
+    APS_VOICE -- WebRTC/SIP --> PHONE
+    APS_MSG -- webhook/long-poll --> MSG_PLAT

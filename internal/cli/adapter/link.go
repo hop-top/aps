@@ -7,6 +7,7 @@ import (
 
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
+	"hop.top/aps/internal/events"
 
 	"github.com/spf13/cobra"
 )
@@ -99,6 +100,12 @@ func runLink(opts linkOpts) error {
 		if err != nil {
 			return err
 		}
+
+		publishEvent(string(events.TopicAdapterLinked), "", events.AdapterLinkedPayload{
+			ProfileID:   opts.profileID,
+			AdapterType: string(dev.Type),
+			AdapterID:   opts.deviceName,
+		})
 	}
 
 	// Handle messenger mappings

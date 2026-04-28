@@ -53,6 +53,7 @@ Implementation guides and summaries.
   - [linux-sandbox-summary.md](implementation/summaries/linux-sandbox-summary.md) - Linux sandbox implementation
   - [capability-implementation.md](implementation/summaries/capability-implementation.md) - Capability management implementation
   - [a2a-implementation.md](a2a-implementation.md) - A2A Protocol integration technical details
+- [cli-extension.md](cli-extension.md) - Extending the APS CLI with new commands
 
 ### ⚙️ Operations
 CI/CD, releases, and operational documentation.
