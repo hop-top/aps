@@ -33,6 +33,7 @@ require (
 
 require (
 	charm.land/fang/v2 v2.0.1 // indirect
+	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
@@ -105,6 +106,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	hop.top/hdl v0.0.1-alpha.1 // indirect
 	hop.top/xrr v0.1.0-alpha.3 // indirect
 	modernc.org/libc v1.72.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
@@ -112,4 +114,6 @@ require (
 	modernc.org/sqlite v1.48.2 // indirect
 )
 
-replace hop.top/kit => /Users/jadb/.w/ideacrafterslabs/kit/hops/bus-compat
+replace hop.top/kit => /Users/jadb/.w/ideacrafterslabs/kit/hops/main
+
+replace hop.top/hdl => /Users/jadb/.w/ideacrafterslabs/hdl/hops/main

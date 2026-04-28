@@ -14,7 +14,7 @@ import (
 	"hop.top/upgrade"
 
 	"github.com/spf13/cobra"
-	kitcli "hop.top/kit/cli"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 var root = kitcli.New(kitcli.Config{

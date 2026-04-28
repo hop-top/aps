@@ -7,7 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/adapter"
 	"hop.top/aps/internal/events"
-	"hop.top/kit/bus"
+	"hop.top/kit/go/runtime/bus"
 )
 
 const defaultBusAddr = "ws://localhost:8080/ws/bus"
