@@ -7,8 +7,10 @@ import (
 
 	"hop.top/aps/internal/cli/adapter"
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/events"
+	"hop.top/aps/internal/storage"
 	"hop.top/kit/go/runtime/bus"
 )
 
@@ -47,6 +49,15 @@ func init() {
 	adapter.SetPublisher(publisher)
 	core.SetEventPublisher(publisher)
 	session.SetEventPublisher(publisher)
+
+	// Wire the workspace audit log as a bus subscriber. Storage init is
+	// best-effort: if it fails (no data dir yet, etc.) we skip silently
+	// since the bus itself works fine without a persistent audit sink.
+	if store, err := storage.NewCollaborationStorage(""); err == nil {
+		collaboration.SubscribeAudit(eventBus, collaboration.NewWorkspaceAuditLog(store))
+	} else {
+		fmt.Fprintf(os.Stderr, "warn: audit subscriber: storage init failed: %v\n", err)
+	}
 }
 
 // publishEvent is a fire-and-forget helper; logs on failure but never
