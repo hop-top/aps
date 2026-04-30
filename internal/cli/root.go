@@ -105,6 +105,17 @@ ID followed by a command to run that command under the selected profile.`
 		}
 		upgrade.NotifyIfAvailable(cmd.Context(), newChecker(), os.Stderr)
 	}
+
+	// Register contextual post-command hints (T-0346).
+	registerHints(root.Hints)
+
+	// Render hints after command output. Hints auto-suppress on non-TTY,
+	// json/yaml formats, and when --no-hints is set (kit handles this
+	// inside output.RenderHints).
+	rootCmd.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		renderPostRunHintsFor(cmd, root)
+		return nil
+	}
 }
 
 // Execute runs the CLI through fang (styled help, version, etc.)
