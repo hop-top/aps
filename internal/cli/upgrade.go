@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/version"
+	"hop.top/kit/go/core/upgrade"
+	"hop.top/kit/go/core/upgrade/skill"
 	"hop.top/kit/go/core/xdg"
-	"hop.top/upgrade"
-	"hop.top/upgrade/skill"
 )
 
 const apsGitHubRepo = "hop-top/aps"

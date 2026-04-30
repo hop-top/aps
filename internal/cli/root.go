@@ -11,10 +11,10 @@ import (
 	"hop.top/aps/internal/styles"
 	"hop.top/aps/internal/tui"
 	"hop.top/aps/internal/version"
-	"hop.top/upgrade"
 
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/core/upgrade"
 )
 
 var root = kitcli.New(kitcli.Config{
