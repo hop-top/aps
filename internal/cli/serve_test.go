@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,16 +14,15 @@ import (
 
 func newTestHandler(t *testing.T, token string) http.Handler {
 	t.Helper()
-	if err := adapters.RegisterDefaults(); err != nil {
-		// Defaults may already be registered by another test; ignore
-		// "already registered" so this test is independent.
-		t.Logf("RegisterDefaults: %v (continuing)", err)
+	mgr := adapters.DefaultManager()
+	if err := mgr.InitAll(context.Background()); err != nil {
+		t.Logf("InitAll: %v (continuing)", err)
 	}
 	core, err := protocol.NewAPSAdapter()
 	if err != nil {
 		t.Fatalf("NewAPSAdapter: %v", err)
 	}
-	h, err := buildServerHandler(core, token)
+	h, err := buildServerHandler(mgr, core, token)
 	if err != nil {
 		t.Fatalf("buildServerHandler: %v", err)
 	}

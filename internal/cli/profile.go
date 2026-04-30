@@ -14,7 +14,6 @@ import (
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/core/capability"
-	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/styles"
 )
 

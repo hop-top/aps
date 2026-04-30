@@ -103,7 +103,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	defer func() {
 		if errs := mgr.CloseAll(); len(errs) != 0 {
-			logging.GetLogger().Error("adapter close errors", "errors", errs)
+			logging.GetLogger().Error("adapter close errors", nil, "errors", errs)
 		}
 	}()
 
