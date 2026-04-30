@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/logging"
 )
 
@@ -158,6 +159,14 @@ func (r *SessionRegistry) Register(session *SessionInfo) error {
 		delete(r.sessions, session.ID)
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
+
+	publish(context.Background(), string(events.TopicSessionStarted), "", events.SessionStartedPayload{
+		SessionID: session.ID,
+		ProfileID: session.ProfileID,
+		Command:   session.Command,
+		PID:       session.PID,
+		Tier:      string(session.Tier),
+	})
 	return nil
 }
 
@@ -173,6 +182,14 @@ func (r *SessionRegistry) Unregister(sessionID string) error {
 			r.sessions[sessionID] = prev
 		}
 		return fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	if existed {
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: sessionID,
+			ProfileID: prev.ProfileID,
+			Reason:    "unregister",
+		})
 	}
 	return nil
 }
@@ -233,6 +250,20 @@ func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) e
 		session.Status = prevStatus
 		session.LastSeenAt = prevSeen
 		return fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	// Emit a stop event when transitioning into a terminal state. Active
+	// transitions (e.g. resume) are not stops.
+	if status == SessionInactive || status == SessionErrored {
+		reason := "inactive"
+		if status == SessionErrored {
+			reason = "errored"
+		}
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: sessionID,
+			ProfileID: session.ProfileID,
+			Reason:    reason,
+		})
 	}
 	return nil
 }
@@ -330,6 +361,14 @@ func (r *SessionRegistry) CleanupInactive(timeout time.Duration) ([]string, erro
 			r.sessions[id] = session
 		}
 		return nil, fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	for id, sess := range removed {
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: id,
+			ProfileID: sess.ProfileID,
+			Reason:    "expired",
+		})
 	}
 	return expired, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/adapter"
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/events"
 	"hop.top/kit/go/runtime/bus"
 )
@@ -45,6 +46,7 @@ func init() {
 	publisher = events.NewPublisher(eventBus)
 	adapter.SetPublisher(publisher)
 	core.SetEventPublisher(publisher)
+	session.SetEventPublisher(publisher)
 }
 
 // publishEvent is a fire-and-forget helper; logs on failure but never
