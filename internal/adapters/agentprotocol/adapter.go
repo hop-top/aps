@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"hop.top/aps/internal/core/protocol"
+	kitapi "hop.top/kit/go/transport/api"
 )
 
 type AgentProtocolAdapter struct {
@@ -521,14 +522,25 @@ func (a *AgentProtocolAdapter) handleRunCancelFromPath(w http.ResponseWriter, r 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// sendError writes a structured error response. The wire shape matches
+// the legacy ErrorResponse for backward compatibility with existing
+// clients and tests. Internally it delegates to kitapi.JSON so the
+// JSON-encoding path is shared with the rest of the kit-based stack.
 func (a *AgentProtocolAdapter) sendError(w http.ResponseWriter, code int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(ErrorResponse{
+	kitapi.JSON(w, code, ErrorResponse{
 		Error:   http.StatusText(code),
 		Code:    code,
 		Message: message,
 	})
+}
+
+// sendDomainError translates a domain-level error into the right HTTP
+// status via kitapi.MapError, then writes via sendError. Use this from
+// handler call sites that surface raw errors from the core protocol
+// (so 404/409/422 land naturally instead of all collapsing to 500).
+func (a *AgentProtocolAdapter) sendDomainError(w http.ResponseWriter, err error) {
+	apiErr := kitapi.MapError(err)
+	a.sendError(w, apiErr.Status, err.Error())
 }
 
 func (a *AgentProtocolAdapter) sendJSON(w http.ResponseWriter, code int, data interface{}) {
