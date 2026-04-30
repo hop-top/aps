@@ -13,6 +13,7 @@ import (
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core/protocol"
+	kitapi "hop.top/kit/go/transport/api"
 
 	"github.com/spf13/cobra"
 )
@@ -46,6 +47,27 @@ func init() {
 	serveCmd.Flags().StringVar(&serveLogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 }
 
+// buildServerHandler wires the kit Router with the health endpoint and
+// mounts adapter routes. The authToken parameter is reserved for the
+// auth middleware wired in T-0349.
+func buildServerHandler(core protocol.APSCore, _ string) (http.Handler, error) {
+	router := kitapi.NewRouter()
+
+	router.Handle(http.MethodGet, "/health", func(w http.ResponseWriter, r *http.Request) {
+		kitapi.JSON(w, http.StatusOK, map[string]string{"status": "healthy"})
+	})
+
+	// Adapter routes still register against an http.ServeMux. Mount it
+	// under "/" so the kit Router delegates non-/health paths to it.
+	adapterMux := http.NewServeMux()
+	if err := adapters.GetRegistry().RegisterAll(adapterMux, core); err != nil {
+		return nil, fmt.Errorf("registering adapter routes: %w", err)
+	}
+	router.Mount("/", adapterMux)
+
+	return router, nil
+}
+
 func runServe(cmd *cobra.Command, args []string) error {
 	if err := adapters.RegisterDefaults(); err != nil {
 		return fmt.Errorf("registering adapters: %w", err)
@@ -56,24 +78,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating core adapter: %w", err)
 	}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"status":"healthy"}`)
-	})
-
-	if err := adapters.GetRegistry().RegisterAll(mux, core); err != nil {
-		return fmt.Errorf("registering adapter routes: %w", err)
+	handler, err := buildServerHandler(core, serveAuthToken)
+	if err != nil {
+		return err
 	}
 
 	if serveAuthToken != "" {
-		mux.HandleFunc("/", authMiddleware(mux, serveAuthToken))
+		handler = authMiddleware(handler, serveAuthToken)
 	}
 
 	listener, err := net.Listen("tcp", serveAddr)
@@ -86,7 +97,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	log.Printf("Press Ctrl+C to stop")
 
 	server := &http.Server{
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -114,10 +125,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func authMiddleware(mux *http.ServeMux, token string) http.HandlerFunc {
+func authMiddleware(next http.Handler, token string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
-			mux.ServeHTTP(w, r)
+			next.ServeHTTP(w, r)
 			return
 		}
 
@@ -140,6 +151,6 @@ func authMiddleware(mux *http.ServeMux, token string) http.HandlerFunc {
 			return
 		}
 
-		mux.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
 }
