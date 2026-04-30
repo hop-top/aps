@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"hop.top/aps/internal/events"
 )
 
 // ErrProfileHasActiveSessions is returned when DeleteProfile finds active
@@ -215,6 +217,9 @@ type TrustConfig struct {
 type A2AClient struct {
 	targetProfileID string
 }
+
+// GetID returns the profile ID. Implements hop.top/kit/go/runtime/domain.Entity.
+func (p Profile) GetID() string { return p.ID }
 
 // CreateA2AClient creates an A2A client for communicating with another profile
 func (p *Profile) CreateA2AClient(targetProfileID string) (*A2AClient, error) {
@@ -454,6 +459,13 @@ func CreateProfile(id string, config Profile) error {
 		}
 	}
 
+	publish(context.Background(), string(events.TopicProfileCreated), "", events.ProfileCreatedPayload{
+		ProfileID:    id,
+		DisplayName:  config.DisplayName,
+		Email:        config.Email,
+		Capabilities: config.Capabilities,
+	})
+
 	return nil
 }
 
@@ -508,6 +520,10 @@ func DeleteProfile(id string, force bool) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return fmt.Errorf("delete profile %q: remove directory: %w", id, err)
 	}
+
+	publish(context.Background(), string(events.TopicProfileDeleted), "", events.ProfileDeletedPayload{
+		ProfileID: id,
+	})
 	return nil
 }
 
@@ -552,7 +568,15 @@ func AddCapabilityToProfile(profileID, capName string) error {
 	}
 
 	profile.Capabilities = append(profile.Capabilities, capName)
-	return SaveProfile(profile)
+	if err := SaveProfile(profile); err != nil {
+		return err
+	}
+
+	publish(context.Background(), string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+		ProfileID: profileID,
+		Fields:    []string{"capabilities"},
+	})
+	return nil
 }
 
 // RemoveCapabilityFromProfile removes a capability from a profile
@@ -577,7 +601,15 @@ func RemoveCapabilityFromProfile(profileID, capName string) error {
 	}
 
 	profile.Capabilities = caps
-	return SaveProfile(profile)
+	if err := SaveProfile(profile); err != nil {
+		return err
+	}
+
+	publish(context.Background(), string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+		ProfileID: profileID,
+		Fields:    []string{"capabilities"},
+	})
+	return nil
 }
 
 // ProfileHasCapability checks if a profile has a specific capability

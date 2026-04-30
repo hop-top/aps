@@ -119,12 +119,7 @@ var profileNewCmd = &cobra.Command{
 		if err := core.CreateProfile(id, config); err != nil {
 			return fmt.Errorf("creating profile: %w", err)
 		}
-
-		publishEvent(string(events.TopicProfileCreated), "", events.ProfileCreatedPayload{
-			ProfileID:   id,
-			DisplayName: config.DisplayName,
-			Email:       config.Email,
-		})
+		// ProfileCreated event is emitted by core.CreateProfile.
 
 		fmt.Printf("Profile '%s' created successfully.\n", id)
 		return nil
@@ -209,11 +204,7 @@ var profileAddCapCmd = &cobra.Command{
 		if err := core.AddCapabilityToProfile(profileID, capName); err != nil {
 			return err
 		}
-
-		publishEvent(string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
-			ProfileID: profileID,
-			Fields:    []string{"capabilities"},
-		})
+		// ProfileUpdated event is emitted by core.AddCapabilityToProfile.
 
 		fmt.Printf("%s %s added to %s\n",
 			styles.StatusDot(true), capName, profileID)
@@ -230,11 +221,7 @@ var profileRemoveCapCmd = &cobra.Command{
 		if err := core.RemoveCapabilityFromProfile(profileID, capName); err != nil {
 			return err
 		}
-
-		publishEvent(string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
-			ProfileID: profileID,
-			Fields:    []string{"capabilities"},
-		})
+		// ProfileUpdated event is emitted by core.RemoveCapabilityFromProfile.
 
 		fmt.Printf("%s %s removed from %s\n",
 			styles.StatusDot(false), capName, profileID)
@@ -411,12 +398,7 @@ var profileImportCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("importing profile bundle: %w", err)
 		}
-
-		publishEvent(string(events.TopicProfileCreated), "", events.ProfileCreatedPayload{
-			ProfileID:   profile.ID,
-			DisplayName: profile.DisplayName,
-			Email:       profile.Email,
-		})
+		// ProfileCreated event is emitted by core.CreateProfile (called from ImportProfileBundle).
 
 		if err := core.TrackEvent("profile_share_imported", map[string]string{
 			"profile_id":     profile.ID,
@@ -470,10 +452,7 @@ var profileDeleteCmd = &cobra.Command{
 			}
 			return fmt.Errorf("deleting profile %q: %w", id, err)
 		}
-
-		publishEvent(string(events.TopicProfileDeleted), "", events.ProfileDeletedPayload{
-			ProfileID: id,
-		})
+		// ProfileDeleted event is emitted by core.DeleteProfile.
 
 		fmt.Printf("Profile '%s' deleted.\n", id)
 		return nil

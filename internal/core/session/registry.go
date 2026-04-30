@@ -18,8 +18,35 @@ import (
 	"time"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/logging"
+	"hop.top/kit/go/runtime/domain"
 )
+
+// statusRules defines valid SessionStatus transitions enforced by
+// SessionRegistry.UpdateStatus. The rules are deliberately strict:
+//   - "" (initial) → any non-terminal status (sessions registered
+//     without a status default to empty and need a first set)
+//   - active   ↔ inactive (resume / pause)
+//   - active/inactive → errored (terminal)
+//   - errored is terminal: any further status change must go through
+//     Unregister + Register
+//
+// Self-transitions are not allowed (a status set is meaningful only
+// when it actually changes).
+var statusRules = map[domain.State][]domain.State{
+	domain.State(""):              {domain.State(SessionActive), domain.State(SessionInactive), domain.State(SessionErrored)},
+	domain.State(SessionActive):   {domain.State(SessionInactive), domain.State(SessionErrored)},
+	domain.State(SessionInactive): {domain.State(SessionActive), domain.State(SessionErrored)},
+	domain.State(SessionErrored):  {}, // terminal
+}
+
+// statusMachine is the package-level state machine that enforces
+// statusRules. Constructed once at init and used by checkTransition.
+// Publisher is intentionally nil — aps emits its own richer
+// aps.session.* events from the registry methods directly, so we
+// don't need the generic domain.state.pre/post-transition events.
+var statusMachine = domain.NewStateMachine(statusRules, nil)
 
 // Directory and file constants for the on-disk session registry.
 const (
@@ -158,6 +185,14 @@ func (r *SessionRegistry) Register(session *SessionInfo) error {
 		delete(r.sessions, session.ID)
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
+
+	publish(context.Background(), string(events.TopicSessionStarted), "", events.SessionStartedPayload{
+		SessionID: session.ID,
+		ProfileID: session.ProfileID,
+		Command:   session.Command,
+		PID:       session.PID,
+		Tier:      string(session.Tier),
+	})
 	return nil
 }
 
@@ -173,6 +208,14 @@ func (r *SessionRegistry) Unregister(sessionID string) error {
 			r.sessions[sessionID] = prev
 		}
 		return fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	if existed {
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: sessionID,
+			ProfileID: prev.ProfileID,
+			Reason:    "unregister",
+		})
 	}
 	return nil
 }
@@ -215,6 +258,20 @@ func (r *SessionRegistry) ListByProfile(profileID string) []*SessionInfo {
 	return sessions
 }
 
+// checkTransition validates a SessionStatus transition against the
+// package state machine. Returns nil if allowed (including the no-op
+// case where from==to — idempotent status sets are not state changes
+// and should not error). Otherwise returns an error that wraps
+// domain.ErrInvalidTransition (testable via errors.Is).
+func (r *SessionRegistry) checkTransition(from, to SessionStatus) error {
+	if from == to {
+		return nil
+	}
+	// Pass nil context — domain.StateMachine.Transition only uses ctx
+	// when a publisher is wired (which it isn't here).
+	return statusMachine.Transition(nil, domain.State(from), domain.State(to), false) //nolint:staticcheck
+}
+
 func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -222,6 +279,10 @@ func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) e
 	session, exists := r.sessions[sessionID]
 	if !exists {
 		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	if err := r.checkTransition(session.Status, status); err != nil {
+		return fmt.Errorf("session %s: %w", sessionID, err)
 	}
 
 	prevStatus := session.Status
@@ -233,6 +294,21 @@ func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) e
 		session.Status = prevStatus
 		session.LastSeenAt = prevSeen
 		return fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	// Emit a stop event when transitioning into a terminal state. Active
+	// transitions (e.g. resume) are not stops. Skip when status hasn't
+	// actually changed (idempotent UpdateStatus calls are silent).
+	if prevStatus != status && (status == SessionInactive || status == SessionErrored) {
+		reason := "inactive"
+		if status == SessionErrored {
+			reason = "errored"
+		}
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: sessionID,
+			ProfileID: session.ProfileID,
+			Reason:    reason,
+		})
 	}
 	return nil
 }
@@ -330,6 +406,14 @@ func (r *SessionRegistry) CleanupInactive(timeout time.Duration) ([]string, erro
 			r.sessions[id] = session
 		}
 		return nil, fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	for id, sess := range removed {
+		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: id,
+			ProfileID: sess.ProfileID,
+			Reason:    "expired",
+		})
 	}
 	return expired, nil
 }
