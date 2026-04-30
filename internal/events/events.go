@@ -1,6 +1,6 @@
 package events
 
-import "hop.top/kit/bus"
+import "hop.top/kit/go/runtime/bus"
 
 // Bus topic constants for aps lifecycle events.
 const (

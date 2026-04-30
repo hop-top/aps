@@ -6,7 +6,7 @@ import (
 
 	"charm.land/log/v2"
 	"github.com/spf13/viper"
-	kitlog "hop.top/kit/log"
+	kitlog "hop.top/kit/go/console/log"
 )
 
 // Logger wraps charmbracelet's logger with structured error logging

@@ -3,7 +3,7 @@ package events
 import (
 	"context"
 
-	"hop.top/kit/bus"
+	"hop.top/kit/go/runtime/bus"
 )
 
 const source = "aps"
