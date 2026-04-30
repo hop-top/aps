@@ -3,9 +3,11 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/version"
+	"hop.top/kit/go/core/xdg"
 	"hop.top/upgrade"
 	"hop.top/upgrade/skill"
 )
@@ -77,15 +79,15 @@ Agents read this to know how to self-upgrade aps before executing tasks.`,
 }
 
 func installAPSPreamble(preamble string) error {
-	configDir, err := os.UserConfigDir()
+	configDir, err := xdg.ConfigDir("aps")
 	if err != nil {
 		return fmt.Errorf("upgrade preamble: %w", err)
 	}
-	dir := configDir + "/aps/skills"
+	dir := filepath.Join(configDir, "skills")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("upgrade preamble: mkdir: %w", err)
 	}
-	path := dir + "/upgrade-preamble.md"
+	path := filepath.Join(dir, "upgrade-preamble.md")
 	if err := os.WriteFile(path, []byte(preamble), 0o600); err != nil {
 		return fmt.Errorf("upgrade preamble: write: %w", err)
 	}

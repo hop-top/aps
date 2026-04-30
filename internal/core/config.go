@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/kit/go/core/xdg"
 )
 
 // Config represents the global configuration for APS
@@ -23,19 +24,10 @@ type GlobalIsolationConfig struct {
 // DefaultPrefix is the default prefix for environment variables
 const DefaultPrefix = "APS"
 
-// GetConfigDir returns the directory for APS configuration
+// GetConfigDir returns the directory for APS configuration, resolved via
+// kit/go/core/xdg (XDG Base Directory Specification with OS-native fallbacks).
 func GetConfigDir() (string, error) {
-	// 1. Check XDG_CONFIG_HOME
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "aps"), nil
-	}
-
-	// 2. Fallback to os.UserConfigDir()
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(configDir, "aps"), nil
+	return xdg.ConfigDir("aps")
 }
 
 // LoadConfig loads the global configuration
