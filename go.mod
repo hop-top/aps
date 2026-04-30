@@ -112,4 +112,4 @@ require (
 	modernc.org/sqlite v1.48.2 // indirect
 )
 
-replace hop.top/kit => /Users/jadb/.w/ideacrafterslabs/kit/hops/bus-compat
+replace hop.top/kit => /Users/jadb/.w/ideacrafterslabs/kit/hops/main
