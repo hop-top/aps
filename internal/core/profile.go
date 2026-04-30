@@ -218,6 +218,9 @@ type A2AClient struct {
 	targetProfileID string
 }
 
+// GetID returns the profile ID. Implements hop.top/kit/go/runtime/domain.Entity.
+func (p Profile) GetID() string { return p.ID }
+
 // CreateA2AClient creates an A2A client for communicating with another profile
 func (p *Profile) CreateA2AClient(targetProfileID string) (*A2AClient, error) {
 	if targetProfileID == "" {
