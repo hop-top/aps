@@ -124,7 +124,7 @@ func (d *DarwinSandbox) SetupEnvironment(cmd interface{}) error {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	profile, err := core.LoadProfile(d.context.ProfileID)
+	profile, err := core.LoadProfileFromPath(d.context.ProfileID, d.context.ProfileYaml)
 	if err != nil {
 		return fmt.Errorf("failed to load profile: %w", err)
 	}

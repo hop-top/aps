@@ -300,7 +300,13 @@ func LoadProfile(id string) (*Profile, error) {
 	if err != nil {
 		return nil, err
 	}
+	return LoadProfileFromPath(id, path)
+}
 
+// LoadProfileFromPath loads a profile from a specific YAML path. Lets
+// callers (and tests) pass an explicit path instead of resolving via
+// global APS data dirs.
+func LoadProfileFromPath(id, path string) (*Profile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read profile %s: %w", id, err)

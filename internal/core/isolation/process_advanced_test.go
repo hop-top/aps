@@ -28,7 +28,7 @@ func TestPrepareContextCreatesValidContext(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -50,7 +50,7 @@ func TestPrepareContextInitializesEnvironmentMap(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -74,7 +74,7 @@ func TestPrepareContextSetsWorkingDirectory(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -94,7 +94,7 @@ func TestPrepareContextSetsProfilePaths(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -168,7 +168,7 @@ func TestPrepareContextCreatesSecretsPath(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: secretsPath,
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -190,7 +190,7 @@ func TestPrepareContextCreatesDocsPath(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     docsDir,
 		Environment: make(map[string]string),
@@ -214,7 +214,7 @@ func TestSetupEnvironmentInjectsProfileVariables(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -241,7 +241,7 @@ func TestSetupEnvironmentSetsWorkingDirectory(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -265,7 +265,7 @@ func TestSetupEnvironmentInheritsParentEnvironment(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -289,7 +289,7 @@ func TestSetupEnvironmentAddsCustomVariables(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: map[string]string{
@@ -326,7 +326,7 @@ func TestSetupEnvironmentWithInvalidCommand(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -349,7 +349,7 @@ func TestSetupEnvironmentPreservesExistingEnv(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -375,7 +375,7 @@ func TestSetupEnvironmentMultipleCalls(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -423,7 +423,7 @@ func TestConcurrentContextPreparation(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -464,7 +464,7 @@ func TestConcurrentSetupEnvironment(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -511,7 +511,7 @@ func TestConcurrentCleanup(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -591,7 +591,7 @@ func TestConcurrentExecutionWithDifferentWorkDirs(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -632,7 +632,7 @@ func TestConcurrentEnvironmentStateIsolation(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: map[string]string{
@@ -675,7 +675,7 @@ func TestConcurrentRaceConditionDetection(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx%5),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -724,7 +724,7 @@ func TestConcurrentSessionIsolation(t *testing.T) {
 			context := &ExecutionContext{
 				ProfileID:   fmt.Sprintf("profile-%d", idx),
 				ProfileDir:  workDir,
-				ProfileYaml: filepath.Join(workDir, "profile.yaml"),
+				ProfileYaml: setupTestProfile(t, workDir),
 				SecretsPath: filepath.Join(workDir, "secrets.env"),
 				DocsDir:     filepath.Join(tempDir, "docs"),
 				Environment: make(map[string]string),
@@ -952,7 +952,7 @@ func TestExecuteCommandWithEcho(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -976,7 +976,7 @@ func TestExecuteCommandWithTrue(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1000,7 +1000,7 @@ func TestExecuteCommandWithFalse(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1024,7 +1024,7 @@ func TestExecuteCommandWithShellAdvanced(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1048,7 +1048,7 @@ func TestExecuteCommandWithEnvironmentVariablesAdvanced(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: map[string]string{
@@ -1074,7 +1074,7 @@ func TestExecuteCommandWithStdin(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1100,7 +1100,7 @@ func TestExecuteCommandWithStdout(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1127,7 +1127,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1154,7 +1154,7 @@ func TestExecuteCommandWithCancel(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1181,7 +1181,7 @@ func TestExecuteCommandPathResolution(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1219,7 +1219,7 @@ func TestCleanupWithContext(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1242,7 +1242,7 @@ func TestCleanupIdempotent(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1286,7 +1286,7 @@ func TestCleanupClearsContext(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1324,7 +1324,7 @@ func TestCleanupReleasesResources(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1360,7 +1360,7 @@ func TestStateTransitionPrepareToCleanup(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),
@@ -1383,7 +1383,7 @@ func TestEnvironmentStateConsistency(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: map[string]string{
@@ -1445,7 +1445,7 @@ func TestStateAfterError(t *testing.T) {
 	context := &ExecutionContext{
 		ProfileID:   "test-profile",
 		ProfileDir:  tempDir,
-		ProfileYaml: filepath.Join(tempDir, "profile.yaml"),
+		ProfileYaml: setupTestProfile(t, tempDir),
 		SecretsPath: filepath.Join(tempDir, "secrets.env"),
 		DocsDir:     filepath.Join(tempDir, "docs"),
 		Environment: make(map[string]string),

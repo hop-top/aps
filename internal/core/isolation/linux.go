@@ -132,7 +132,7 @@ func (l *LinuxSandbox) SetupEnvironment(cmd interface{}) error {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	profile, err := core.LoadProfile(l.context.ProfileID)
+	profile, err := core.LoadProfileFromPath(l.context.ProfileID, l.context.ProfileYaml)
 	if err != nil {
 		return fmt.Errorf("failed to load profile: %w", err)
 	}

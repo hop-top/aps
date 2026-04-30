@@ -59,20 +59,22 @@ func TestWebhookServer(t *testing.T) {
 		}
 	}()
 
-	// Wait for startup (poll stderr)
+	// Wait for startup (poll stderr). Log format is structured slog:
+	// "INFO webhook server listening addr=127.0.0.1:NNNNN".
 	var port string
 	for i := 0; i < 20; i++ {
 		time.Sleep(100 * time.Millisecond)
 		logs := stderr.String()
-		if idx := strings.Index(logs, "listening on 127.0.0.1:"); idx != -1 {
-			// Extract port
-			rest := logs[idx+len("listening on 127.0.0.1:"):]
-			// find next newline
-			if end := strings.IndexByte(rest, '\n'); end != -1 {
-				port = rest[:end]
-				port = strings.TrimSpace(port) // Trim newline
-				break
+		marker := "addr=127.0.0.1:"
+		if idx := strings.Index(logs, marker); idx != -1 {
+			rest := logs[idx+len(marker):]
+			// Port ends at whitespace or newline.
+			end := strings.IndexAny(rest, " \t\n\r")
+			if end == -1 {
+				continue // log line not yet flushed; try again
 			}
+			port = strings.TrimSpace(rest[:end])
+			break
 		}
 	}
 	require.NotEmpty(t, port, "Failed to find port in logs: "+stderr.String())

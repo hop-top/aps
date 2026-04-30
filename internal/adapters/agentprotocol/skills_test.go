@@ -20,12 +20,14 @@ func TestHandleSkillsList(t *testing.T) {
 	setupTestSkill(t, tmpDir, "test-skill-1")
 	setupTestSkill(t, tmpDir, "test-skill-2")
 
-	// Set XDG_DATA_HOME to our test directory
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	// Override APS_DATA_PATH to our test directory. APS_DATA_PATH wins
+	// over XDG_DATA_HOME in core.GetDataDir, so the test must set this
+	// explicitly — otherwise a host-set APS_DATA_PATH (e.g. ~/.ops's
+	// mise env) shadows the test fixture.
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
-	// Create profiles directory at XDG path
+	// Create profiles directory at the resolved data path.
 	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -34,7 +36,7 @@ display_name: Test Agent
 `
 	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "profile.yaml"), []byte(profileYAML), 0644))
 
-	// Copy skills to global location
+	// Copy skills to global location.
 	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
 	require.NoError(t, os.MkdirAll(globalSkillsDir, 0755))
 	require.NoError(t, copyDir(filepath.Join(tmpDir, "test-skill-1"), filepath.Join(globalSkillsDir, "test-skill-1")))
@@ -86,12 +88,11 @@ func TestHandleSkillsGet(t *testing.T) {
 	tmpDir := t.TempDir()
 	setupTestSkill(t, tmpDir, "test-skill")
 
-	// Set XDG_DATA_HOME to our test directory
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	// Override APS_DATA_PATH (overrides XDG_DATA_HOME in core.GetDataDir).
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
-	// Create profile at XDG path
+	// Create profile at the resolved data path.
 	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
@@ -159,12 +160,11 @@ func TestHandleSkillsInvoke(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Set XDG_DATA_HOME to our test directory
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	// Override APS_DATA_PATH (overrides XDG_DATA_HOME in core.GetDataDir).
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
-	// Create profile at XDG path
+	// Create profile at the resolved data path.
 	profileDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
