@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -13,6 +14,7 @@ import (
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core/protocol"
+	kitapi "hop.top/kit/go/transport/api"
 
 	"github.com/spf13/cobra"
 )
@@ -46,6 +48,57 @@ func init() {
 	serveCmd.Flags().StringVar(&serveLogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 }
 
+// buildServerHandler wires the kit Router with Recovery + RequestID
+// middleware globally, registers /health, and mounts adapter routes.
+// When authToken is non-empty, kitapi.Auth gates the adapter routes
+// (but not /health, which always answers without credentials so that
+// liveness probes work uniformly).
+func buildServerHandler(core protocol.APSCore, authToken string) (http.Handler, error) {
+	router := kitapi.NewRouter(kitapi.WithMiddleware(
+		kitapi.Recovery(nil),
+		kitapi.RequestID(),
+	))
+
+	router.Handle(http.MethodGet, "/health", func(w http.ResponseWriter, r *http.Request) {
+		kitapi.JSON(w, http.StatusOK, map[string]string{"status": "healthy"})
+	})
+
+	// Adapter routes still register against an http.ServeMux. Wrap the
+	// mux with the bearer-token Auth middleware (when a token is set)
+	// before mounting under "/".
+	adapterMux := http.NewServeMux()
+	if err := adapters.GetRegistry().RegisterAll(adapterMux, core); err != nil {
+		return nil, fmt.Errorf("registering adapter routes: %w", err)
+	}
+
+	var protected http.Handler = adapterMux
+	if authToken != "" {
+		protected = kitapi.Auth(bearerTokenAuth(authToken))(adapterMux)
+	}
+	router.Mount("/", protected)
+
+	return router, nil
+}
+
+// bearerTokenAuth returns a kitapi.AuthFunc that validates a static
+// bearer token from the Authorization header.
+func bearerTokenAuth(token string) kitapi.AuthFunc {
+	const bearerPrefix = "Bearer "
+	return func(r *http.Request) (any, error) {
+		h := r.Header.Get("Authorization")
+		if h == "" {
+			return nil, errors.New("missing authorization header")
+		}
+		if len(h) < len(bearerPrefix) || h[:len(bearerPrefix)] != bearerPrefix {
+			return nil, errors.New("invalid authorization header format")
+		}
+		if h[len(bearerPrefix):] != token {
+			return nil, errors.New("invalid token")
+		}
+		return struct{}{}, nil
+	}
+}
+
 func runServe(cmd *cobra.Command, args []string) error {
 	if err := adapters.RegisterDefaults(); err != nil {
 		return fmt.Errorf("registering adapters: %w", err)
@@ -56,24 +109,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating core adapter: %w", err)
 	}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"status":"healthy"}`)
-	})
-
-	if err := adapters.GetRegistry().RegisterAll(mux, core); err != nil {
-		return fmt.Errorf("registering adapter routes: %w", err)
-	}
-
-	if serveAuthToken != "" {
-		mux.HandleFunc("/", authMiddleware(mux, serveAuthToken))
+	handler, err := buildServerHandler(core, serveAuthToken)
+	if err != nil {
+		return err
 	}
 
 	listener, err := net.Listen("tcp", serveAddr)
@@ -86,7 +124,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	log.Printf("Press Ctrl+C to stop")
 
 	server := &http.Server{
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -112,34 +150,4 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	log.Println("Server stopped")
 	return nil
-}
-
-func authMiddleware(mux *http.ServeMux, token string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/health" {
-			mux.ServeHTTP(w, r)
-			return
-		}
-
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="APS Protocol Server"`)
-			http.Error(w, "Unauthorized: Missing authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		const bearerPrefix = "Bearer "
-		if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-			http.Error(w, "Unauthorized: Invalid authorization header format", http.StatusUnauthorized)
-			return
-		}
-
-		providedToken := authHeader[len(bearerPrefix):]
-		if providedToken != token {
-			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		mux.ServeHTTP(w, r)
-	}
 }

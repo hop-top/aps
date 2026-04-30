@@ -60,7 +60,7 @@ func (a *AgentProtocolAdapter) handleCreateRun(w http.ResponseWriter, r *http.Re
 
 	state, err := a.core.ExecuteRun(r.Context(), input, nil)
 	if err != nil {
-		a.sendError(w, http.StatusInternalServerError, err.Error())
+		a.sendDomainError(w, err)
 		return
 	}
 
