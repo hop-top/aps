@@ -29,6 +29,13 @@ var rootCmd = root.Cmd
 func init() {
 	logging.SetViper(root.Viper)
 
+	// Note: kit/go/console/cli.New already calls output.RegisterFlags
+	// and output.RegisterHintFlags by default (gated by Config.Disable.
+	// Format and .Hints). This wires --format (table|json|yaml) and
+	// --no-hints persistent flags on rootCmd, both bound to root.Viper.
+	// Subcommands read with root.Viper.GetString("format") /
+	// output.HintsEnabled(root.Viper). Tests in root_test.go assert this.
+
 	rootCmd.Long = `Agent Profile System CLI
 
 Run aps with no arguments to launch the interactive TUI.
@@ -97,6 +104,17 @@ ID followed by a command to run that command under the selected profile.`
 			return
 		}
 		upgrade.NotifyIfAvailable(cmd.Context(), newChecker(), os.Stderr)
+	}
+
+	// Register contextual post-command hints (T-0346).
+	registerHints(root.Hints)
+
+	// Render hints after command output. Hints auto-suppress on non-TTY,
+	// json/yaml formats, and when --no-hints is set (kit handles this
+	// inside output.RenderHints).
+	rootCmd.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		renderPostRunHintsFor(cmd, root)
+		return nil
 	}
 }
 

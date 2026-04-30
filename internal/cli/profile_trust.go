@@ -6,11 +6,16 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
 )
+
+// profileTrustTableHeader styles tabwriter headers for the trust subcommand
+// (table mode is hand-rolled here, not via output.Render).
+var profileTrustTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 
 var profileTrustCmd = &cobra.Command{
 	Use:   "trust <profile-id>",
@@ -80,7 +85,7 @@ func renderTrustTable(p *core.Profile, domain string, history bool) error {
 	// Scores
 	fmt.Println(styles.Bold.Render("Scores"))
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, profileTableHeader.Render("DOMAIN\tSCORE"))
+	fmt.Fprintln(w, profileTrustTableHeader.Render("DOMAIN\tSCORE"))
 
 	domains := core.TrustDomains
 	if domain != "" {
@@ -101,7 +106,7 @@ func renderTrustTable(p *core.Profile, domain string, history bool) error {
 
 		if len(entries) > 0 {
 			hw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(hw, profileTableHeader.Render(
+			fmt.Fprintln(hw, profileTrustTableHeader.Render(
 				"TIMESTAMP\tDOMAIN\tDELTA\tTASK\tDIFFICULTY"))
 			for _, e := range entries {
 				ts := e.Timestamp.Format("2006-01-02 15:04")

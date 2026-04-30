@@ -45,7 +45,7 @@ func newLinkCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to link (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be linked without linking")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be linked without linking")
 
 	// Messenger-specific flags
 	cmd.Flags().StringSliceVar(&mappings, "mapping", nil,

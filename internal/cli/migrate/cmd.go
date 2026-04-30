@@ -56,7 +56,7 @@ func newMessengersCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview migration without making changes")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Preview migration without making changes")
 	cmd.Flags().BoolVar(&backup, "backup", false, "Create backup before migration")
 	cmd.Flags().StringVar(&only, "only", "", "Migrate only specified messengers (comma-separated)")
 
