@@ -53,7 +53,7 @@ func init() {
 // When authToken is non-empty, kitapi.Auth gates the adapter routes
 // (but not /health, which always answers without credentials so that
 // liveness probes work uniformly).
-func buildServerHandler(core protocol.APSCore, authToken string) (http.Handler, error) {
+func buildServerHandler(mgr *adapters.Manager, core protocol.APSCore, authToken string) (http.Handler, error) {
 	router := kitapi.NewRouter(kitapi.WithMiddleware(
 		kitapi.Recovery(nil),
 		kitapi.RequestID(),
@@ -63,11 +63,8 @@ func buildServerHandler(core protocol.APSCore, authToken string) (http.Handler, 
 		kitapi.JSON(w, http.StatusOK, map[string]string{"status": "healthy"})
 	})
 
-	// Adapter routes still register against an http.ServeMux. Wrap the
-	// mux with the bearer-token Auth middleware (when a token is set)
-	// before mounting under "/".
 	adapterMux := http.NewServeMux()
-	if err := adapters.GetRegistry().RegisterAll(adapterMux, core); err != nil {
+	if err := mgr.RegisterRoutes(adapterMux, core); err != nil {
 		return nil, fmt.Errorf("registering adapter routes: %w", err)
 	}
 
@@ -100,16 +97,22 @@ func bearerTokenAuth(token string) kitapi.AuthFunc {
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
-	if err := adapters.RegisterDefaults(); err != nil {
-		return fmt.Errorf("registering adapters: %w", err)
+	mgr := adapters.DefaultManager()
+	if err := mgr.InitAll(cmd.Context()); err != nil {
+		return fmt.Errorf("initialising adapters: %w", err)
 	}
+	defer func() {
+		if errs := mgr.CloseAll(); len(errs) != 0 {
+			log.Printf("adapter close errors: %v", errs)
+		}
+	}()
 
 	core, err := protocol.NewAPSAdapter()
 	if err != nil {
 		return fmt.Errorf("creating core adapter: %w", err)
 	}
 
-	handler, err := buildServerHandler(core, serveAuthToken)
+	handler, err := buildServerHandler(mgr, core, serveAuthToken)
 	if err != nil {
 		return err
 	}

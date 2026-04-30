@@ -96,7 +96,7 @@ func (m Model) viewProfileDetail() string {
 		": %d available\n", len(m.actions)))
 
 	box := boxStyle.
-		BorderForeground(styles.ColorAccent).
+		BorderForeground(theme.Accent).
 		Width(42).
 		Render(content.String())
 	s.WriteString("  " + titleStyle.Render(p.ID) + "\n\n")
