@@ -3,13 +3,13 @@ package core
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"hop.top/aps/internal/core/bundle"
+	"hop.top/aps/internal/logging"
 )
 
 // buildEnvVars assembles the full environment slice (KEY=VALUE) for a profile.
@@ -185,11 +185,12 @@ func ResolveBundlesForProfile(profile *Profile) ([]*bundle.ResolvedBundle, error
 		}
 		// Log warnings.
 		for _, w := range rb.Warnings {
-			log.Printf("bundle %q warning: %s", name, w)
+			logging.GetLogger().Warn("bundle warning", "bundle", name, "warning", w)
 		}
 		// Log always-services (actual startup is out of scope for now).
 		for _, svc := range rb.AlwaysServices {
-			log.Printf("bundle %q: would start always-service %q (adapter=%s)", name, svc.Name, svc.Adapter)
+			logging.GetLogger().Info("bundle would start always-service",
+				"bundle", name, "service", svc.Name, "adapter", svc.Adapter)
 		}
 		resolved = append(resolved, rb)
 	}

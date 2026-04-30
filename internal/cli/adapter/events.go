@@ -2,10 +2,9 @@ package adapter
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"hop.top/aps/internal/events"
+	"hop.top/aps/internal/logging"
 )
 
 // pub is set by SetPublisher from the parent cli package during init.
@@ -19,6 +18,6 @@ func publishEvent(topic, source string, payload any) {
 		return
 	}
 	if err := pub.Publish(context.Background(), topic, source, payload); err != nil {
-		fmt.Fprintf(os.Stderr, "warn: event publish (%s): %v\n", topic, err)
+		logging.GetLogger().Warn("event publish failed", "topic", topic, "error", err)
 	}
 }

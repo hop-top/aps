@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"hop.top/aps/internal/logging"
 )
 
 const (
@@ -152,7 +152,7 @@ func (s *AdapterServer) Start(ctx context.Context, config any) error {
 			serveErr = s.server.Serve(s.listener)
 		}
 		if serveErr != nil && serveErr != http.ErrServerClosed {
-			log.Printf("adapter server error: %v", serveErr)
+			logging.GetLogger().Error("adapter server error", serveErr)
 		}
 		s.mu.Lock()
 		s.status = "stopped"
@@ -441,7 +441,7 @@ func (s *AdapterServer) handleWebSocket(w http.ResponseWriter, r *http.Request) 
 		var msg WSMessage
 		if err := conn.ReadJSON(&msg); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
-				log.Printf("websocket error for %s: %v", claims.AdapterID, err)
+				logging.GetLogger().Error("websocket error", err, "adapter", claims.AdapterID)
 			}
 			return
 		}

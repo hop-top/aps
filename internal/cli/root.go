@@ -67,7 +67,7 @@ ID followed by a command to run that command under the selected profile.`
 				}
 				fmt.Printf("Starting session for %s using %s...\n", profileID, shell)
 				if err := core.RunCommand(profileID, shell, nil); err != nil {
-					fmt.Fprintf(os.Stderr, "Session ended with error: %v\n", err)
+					logging.GetLogger().Error("session ended with error", err)
 					os.Exit(1)
 				}
 				return
@@ -79,15 +79,16 @@ ID followed by a command to run that command under the selected profile.`
 				if exitErr, ok := err.(*exec.ExitError); ok {
 					os.Exit(exitErr.ExitCode())
 				}
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				logging.GetLogger().Error("command failed", err)
 				os.Exit(1)
 			}
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "Error: unknown command or profile '%s'\n", profileID)
+		logging.GetLogger().Error("unknown command or profile",
+			fmt.Errorf("%q", profileID))
 		if err := cmd.Help(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error rendering help: %v\n", err)
+			logging.GetLogger().Error("error rendering help", err)
 		}
 		os.Exit(1)
 	}

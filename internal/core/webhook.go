@@ -6,15 +6,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"io"
-	"log"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"hop.top/aps/internal/logging"
 )
 
 // WebhookEvent represents an incoming webhook
@@ -109,7 +109,9 @@ func ServeWebhooks(config WebhookServerConfig) error {
 		}
 
 		// 6. Execute (or Dry Run)
-		log.Printf("Event: %s, Delivery: %s, Target: %s:%s", eventType, deliveryID, profileID, actionID)
+		logging.GetLogger().Info("webhook event",
+			"event", eventType, "delivery_id", deliveryID,
+			"profile", profileID, "action", actionID)
 
 		if config.DryRun {
 			respondJSON(w, http.StatusOK, map[string]string{
@@ -137,7 +139,8 @@ func ServeWebhooks(config WebhookServerConfig) error {
 		// Logging rules: "execution result".
 
 		if err != nil {
-			log.Printf("Execution failed: %v", err)
+			logging.GetLogger().Error("webhook execution failed", err,
+				"delivery_id", deliveryID, "event", eventType)
 			respondJSON(w, http.StatusInternalServerError, map[string]string{
 				"error":       err.Error(),
 				"delivery_id": deliveryID,
@@ -159,7 +162,7 @@ func ServeWebhooks(config WebhookServerConfig) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Webhook server listening on %s", listener.Addr().String())
+	logging.GetLogger().Info("webhook server listening", "addr", listener.Addr().String())
 	return http.Serve(listener, mux)
 }
 

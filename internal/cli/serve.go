@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core/protocol"
+	"hop.top/aps/internal/logging"
 
 	"github.com/spf13/cobra"
 )
@@ -81,9 +81,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("listening on %s: %w", serveAddr, err)
 	}
 
-	log.Printf("Protocol server starting on %s", serveAddr)
-	log.Printf("Health check: http://%s/health", serveAddr)
-	log.Printf("Press Ctrl+C to stop")
+	logging.GetLogger().Info("protocol server starting",
+		"addr", serveAddr, "health", fmt.Sprintf("http://%s/health", serveAddr))
 
 	server := &http.Server{
 		Handler:      mux,
@@ -94,7 +93,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	go func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
-			log.Printf("Server error: %v", err)
+			logging.GetLogger().Error("protocol server error", err)
 		}
 	}()
 
@@ -102,15 +101,15 @@ func runServe(cmd *cobra.Command, args []string) error {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("Shutting down server...")
+	logging.GetLogger().Info("shutting down protocol server")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("Error during shutdown: %v", err)
+		logging.GetLogger().Error("protocol server shutdown error", err)
 	}
 
-	log.Println("Server stopped")
+	logging.GetLogger().Info("protocol server stopped")
 	return nil
 }
 

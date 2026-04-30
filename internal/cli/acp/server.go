@@ -11,6 +11,7 @@ import (
 	"hop.top/aps/internal/acp"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
+	"hop.top/aps/internal/logging"
 )
 
 // NewServerCmd creates the `aps acp server` command
@@ -43,7 +44,7 @@ func runACPServer(profileID string) error {
 
 	// Auto-enable ACP if not already configured
 	if profile.ACP == nil || !profile.ACP.Enabled {
-		fmt.Fprintf(os.Stderr, "ACP not enabled for profile %s, auto-enabling...\n", profileID)
+		logging.GetLogger().Info("acp not enabled, auto-enabling", "profile", profileID)
 		if err := enableACP(profile, "stdio", "127.0.0.1", "8088"); err != nil {
 			return fmt.Errorf("failed to auto-enable ACP: %w", err)
 		}
@@ -52,7 +53,7 @@ func runACPServer(profileID string) error {
 		if err != nil {
 			return fmt.Errorf("failed to reload profile: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "ACP enabled with defaults: stdio transport\n\n")
+		logging.GetLogger().Info("acp enabled with defaults", "transport", "stdio")
 	}
 
 	// Get the protocol core adapter
@@ -77,7 +78,7 @@ func runACPServer(profileID string) error {
 
 	go func() {
 		sig := <-sigChan
-		fmt.Fprintf(os.Stderr, "\nReceived signal: %v\n", sig)
+		logging.GetLogger().Info("received signal", "signal", sig.String())
 		acpServer.Stop()
 		cancel()
 	}()
@@ -87,8 +88,7 @@ func runACPServer(profileID string) error {
 		return fmt.Errorf("failed to start ACP server: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "ACP server started for profile: %s\n", profileID)
-	fmt.Fprintf(os.Stderr, "Protocol version: 1\nReady to accept connections...\n")
+	logging.GetLogger().Info("acp server started", "profile", profileID, "protocol", 1)
 
 	// Wait for context to be cancelled
 	<-ctx.Done()
