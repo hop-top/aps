@@ -47,9 +47,15 @@ func init() {
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
-	if err := adapters.RegisterDefaults(); err != nil {
-		return fmt.Errorf("registering adapters: %w", err)
+	mgr := adapters.DefaultManager()
+	if err := mgr.InitAll(cmd.Context()); err != nil {
+		return fmt.Errorf("initialising adapters: %w", err)
 	}
+	defer func() {
+		if errs := mgr.CloseAll(); len(errs) != 0 {
+			log.Printf("adapter close errors: %v", errs)
+		}
+	}()
 
 	core, err := protocol.NewAPSAdapter()
 	if err != nil {
@@ -68,7 +74,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(w, `{"status":"healthy"}`)
 	})
 
-	if err := adapters.GetRegistry().RegisterAll(mux, core); err != nil {
+	if err := mgr.RegisterRoutes(mux, core); err != nil {
 		return fmt.Errorf("registering adapter routes: %w", err)
 	}
 

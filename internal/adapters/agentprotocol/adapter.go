@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"hop.top/aps/internal/core/protocol"
+	"hop.top/kit/go/ai/ext"
 )
 
 type AgentProtocolAdapter struct {
@@ -22,6 +23,40 @@ var _ protocol.ProtocolServer = (*AgentProtocolAdapter)(nil)
 
 // AgentProtocolAdapter also provides HTTP routing capabilities
 var _ protocol.HTTPProtocolAdapter = (*AgentProtocolAdapter)(nil)
+
+// AgentProtocolAdapter is also a kit ext.Extension. Init/Close map to
+// Start(ctx, nil) / Stop() so the adapter participates in
+// ext.Manager-driven lifecycle alongside other kit-aware extensions.
+var _ ext.Extension = (*AgentProtocolAdapter)(nil)
+
+// Meta returns the extension metadata used by ext.Manager logging and
+// dispatch. The Description is intentionally short; the agent-protocol
+// adapter exposes the LangChain Agent-Protocol HTTP surface.
+func (a *AgentProtocolAdapter) Meta() ext.Metadata {
+	return ext.Metadata{
+		Name:        "agent-protocol",
+		Version:     "v1",
+		Description: "LangChain Agent-Protocol HTTP adapter for APS",
+	}
+}
+
+// Capabilities advertises that the adapter participates in registry-style
+// dispatch (the aps protocol registry / ext.Manager wiring). HTTP routing
+// is an aps-domain concern surfaced via RegisterRoutes; kit's ext bitmask
+// covers lifecycle/registration only.
+func (a *AgentProtocolAdapter) Capabilities() ext.Capability {
+	return ext.CapRegistry
+}
+
+// Init satisfies ext.Extension by delegating to Start with a nil config.
+func (a *AgentProtocolAdapter) Init(ctx context.Context) error {
+	return a.Start(ctx, nil)
+}
+
+// Close satisfies ext.Extension by delegating to Stop.
+func (a *AgentProtocolAdapter) Close() error {
+	return a.Stop()
+}
 
 func NewAgentProtocolAdapter() *AgentProtocolAdapter {
 	return &AgentProtocolAdapter{
