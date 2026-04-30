@@ -1,10 +1,11 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 
 	"hop.top/aps/internal/version"
 )
@@ -13,29 +14,25 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Long:  `Print detailed version information including build metadata.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		jsonOutput, _ := cmd.Flags().GetBool("json")
+	RunE: func(cmd *cobra.Command, args []string) error {
 		short, _ := cmd.Flags().GetBool("short")
-
 		info := version.Get()
 
 		if short {
 			fmt.Println(info.Version)
-			return
+			return nil
 		}
 
-		if jsonOutput {
-			data, _ := json.MarshalIndent(info, "", "  ")
-			fmt.Println(string(data))
-			return
+		format := root.Viper.GetString("format")
+		if format == output.Table {
+			fmt.Println(info.String())
+			return nil
 		}
-
-		fmt.Println(info.String())
+		return output.Render(os.Stdout, format, info)
 	},
 }
 
 func init() {
-	versionCmd.Flags().Bool("json", false, "Output version info as JSON")
 	versionCmd.Flags().Bool("short", false, "Output only the version number")
 	rootCmd.AddCommand(versionCmd)
 }

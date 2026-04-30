@@ -1,17 +1,15 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
-	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
+	"hop.top/kit/go/console/output"
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
@@ -20,7 +18,10 @@ import (
 	"hop.top/aps/internal/styles"
 )
 
-var profileTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+// profileRow is the table row shape for `aps profile list`.
+type profileRow struct {
+	ID string `table:"ID" json:"id" yaml:"id"`
+}
 
 var profileCmd = &cobra.Command{
 	Use:   "profile",
@@ -37,9 +38,14 @@ var profileListCmd = &cobra.Command{
 			return fmt.Errorf("listing profiles: %w", err)
 		}
 
-		jsonOut, _ := cmd.Flags().GetBool("json")
-		if jsonOut {
-			return json.NewEncoder(os.Stdout).Encode(profiles)
+		format := root.Viper.GetString("format")
+		rows := make([]profileRow, len(profiles))
+		for i, p := range profiles {
+			rows[i] = profileRow{ID: p}
+		}
+
+		if format != output.Table {
+			return output.Render(os.Stdout, format, rows)
 		}
 
 		if len(profiles) == 0 {
@@ -48,14 +54,9 @@ var profileListCmd = &cobra.Command{
 		}
 
 		fmt.Printf("%s\n\n", styles.Title.Render("Profiles"))
-
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, profileTableHeader.Render("ID"))
-		for _, p := range profiles {
-			fmt.Fprintln(w, p)
+		if err := output.Render(os.Stdout, output.Table, rows); err != nil {
+			return err
 		}
-		w.Flush()
-
 		fmt.Printf("\n%s\n", styles.Dim.Render(
 			fmt.Sprintf("%d profiles", len(profiles))))
 		return nil
@@ -491,7 +492,6 @@ func init() {
 	profileCmd.AddCommand(profileRemoveCapCmd)
 	profileCmd.AddCommand(profileDeleteCmd)
 
-	profileListCmd.Flags().Bool("json", false, "Output as JSON")
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for profile and git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")

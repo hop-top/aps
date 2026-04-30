@@ -1,19 +1,21 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
 )
 
-var actionTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+// actionRow is the table row shape for `aps action list`.
+type actionRow struct {
+	ID    string `table:"ID,priority=9"    json:"id"    yaml:"id"`
+	Title string `table:"TITLE,priority=8" json:"title" yaml:"title"`
+}
 
 var actionCmd = &cobra.Command{
 	Use:   "action",
@@ -31,9 +33,14 @@ var actionListCmd = &cobra.Command{
 			return fmt.Errorf("loading actions: %w", err)
 		}
 
-		jsonOut, _ := cmd.Flags().GetBool("json")
-		if jsonOut {
-			return json.NewEncoder(os.Stdout).Encode(actions)
+		format := root.Viper.GetString("format")
+		rows := make([]actionRow, len(actions))
+		for i, a := range actions {
+			rows[i] = actionRow{ID: a.ID, Title: a.Title}
+		}
+
+		if format != output.Table {
+			return output.Render(os.Stdout, format, rows)
 		}
 
 		if len(actions) == 0 {
@@ -43,19 +50,15 @@ var actionListCmd = &cobra.Command{
 
 		fmt.Printf("%s\n\n", styles.Title.Render(
 			fmt.Sprintf("Actions (%s)", profileID)))
-
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, actionTableHeader.Render("ID")+"\t"+
-			actionTableHeader.Render("TITLE"))
-		for _, a := range actions {
-			title := a.Title
-			if title == "" {
-				title = styles.Dim.Render("(no description)")
+		// Fill blank titles with the dimmed placeholder before render.
+		for i := range rows {
+			if rows[i].Title == "" {
+				rows[i].Title = styles.Dim.Render("(no description)")
 			}
-			fmt.Fprintf(w, "%s\t%s\n", a.ID, title)
 		}
-		w.Flush()
-
+		if err := output.Render(os.Stdout, output.Table, rows); err != nil {
+			return err
+		}
 		fmt.Printf("\n%s\n", styles.Dim.Render(
 			fmt.Sprintf("%d actions", len(actions))))
 		return nil
@@ -145,7 +148,6 @@ func init() {
 	actionCmd.AddCommand(actionShowCmd)
 	actionCmd.AddCommand(actionRunCmd)
 
-	actionListCmd.Flags().Bool("json", false, "Output as JSON")
 	actionRunCmd.Flags().String("payload-file", "", "File to send to action stdin")
 	actionRunCmd.Flags().Bool("payload-stdin", false, "Read stdin and forward to action") // effectively default if interactive, but explicit flag requested
 	actionRunCmd.Flags().Bool("dry-run", false, "Print action details without running")
