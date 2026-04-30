@@ -46,7 +46,7 @@ func NewTerminateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolP("force", "f", false, "Force terminate without graceful shutdown")
+	cmd.Flags().Bool("force", false, "Force terminate without graceful shutdown")
 	cmd.Flags().Int("timeout", 10, "Graceful shutdown timeout in seconds")
 
 	return cmd

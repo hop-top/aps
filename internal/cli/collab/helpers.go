@@ -102,7 +102,7 @@ func addJSONFlag(cmd *cobra.Command) {
 
 // addForceFlag adds the --force flag to a command.
 func addForceFlag(cmd *cobra.Command) {
-	cmd.Flags().BoolP("force", "f", false, "Skip confirmation")
+	cmd.Flags().Bool("force", false, "Skip confirmation")
 }
 
 // addLimitFlag adds the --limit flag.

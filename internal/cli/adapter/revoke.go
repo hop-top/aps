@@ -45,7 +45,7 @@ The device must re-pair via a new QR code to reconnect.`,
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would happen")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would happen")
 	cmd.Flags().BoolVar(&revokeAll, "all", false, "Revoke all devices")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")

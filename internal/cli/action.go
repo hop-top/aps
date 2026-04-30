@@ -150,5 +150,5 @@ func init() {
 
 	actionRunCmd.Flags().String("payload-file", "", "File to send to action stdin")
 	actionRunCmd.Flags().Bool("payload-stdin", false, "Read stdin and forward to action") // effectively default if interactive, but explicit flag requested
-	actionRunCmd.Flags().Bool("dry-run", false, "Print action details without running")
+	actionRunCmd.Flags().BoolP("dry-run", "n", false, "Print action details without running")
 }

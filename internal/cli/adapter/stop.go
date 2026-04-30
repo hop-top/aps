@@ -26,7 +26,7 @@ func newStopCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&force, "force", false, "Force stop (SIGKILL)")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be stopped without stopping")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be stopped without stopping")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
 	return cmd

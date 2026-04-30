@@ -20,13 +20,16 @@ func newChecker() *upgrade.Checker {
 }
 
 func newUpgradeCmd() *cobra.Command {
-	var auto, quiet bool
+	var auto bool
 
 	cmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Check for and install updates",
 		Long:  `Check for a newer version of aps and optionally install it.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// --quiet is provided by kit/go/console/cli as a persistent
+			// root flag (T-0347 dropped the local -q --quiet shadow).
+			quiet := root.Viper.GetBool("quiet")
 			return upgrade.RunCLI(cmd.Context(), newChecker(), upgrade.CLIOptions{
 				AutoUpgrade: auto,
 				Quiet:       quiet,
@@ -35,7 +38,6 @@ func newUpgradeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&auto, "auto", false, "Install without prompting")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress output when already up to date")
 	cmd.AddCommand(newUpgradePreambleCmd())
 	return cmd
 }

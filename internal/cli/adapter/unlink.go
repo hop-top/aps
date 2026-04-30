@@ -28,7 +28,7 @@ func newUnlinkCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to unlink (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be unlinked without unlinking")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be unlinked without unlinking")
 
 	return cmd
 }

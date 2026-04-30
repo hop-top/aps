@@ -34,7 +34,7 @@ func newLinksCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Filter by profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show verbose output")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show verbose output")
 
 	return cmd
 }

@@ -47,7 +47,7 @@ Use --dry-run to see what would happen without applying changes.`,
 		"Resolution strategy: lww, manual")
 	cmd.Flags().StringVar(&choice, "choice", "",
 		"Event ID to choose as winner (for manual strategy)")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false,
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false,
 		"Show what would happen without applying")
 	cmd.Flags().BoolVar(&force, "force", false,
 		"Skip confirmation prompt")

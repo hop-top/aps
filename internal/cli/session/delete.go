@@ -43,7 +43,7 @@ func NewDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolP("force", "f", false, "Force delete without confirmation")
+	cmd.Flags().Bool("force", false, "Force delete without confirmation")
 
 	return cmd
 }

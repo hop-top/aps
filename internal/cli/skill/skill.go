@@ -103,7 +103,7 @@ func newListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID to list skills for")
-	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show detailed information")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show detailed information")
 
 	return cmd
 }

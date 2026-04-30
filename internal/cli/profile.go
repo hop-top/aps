@@ -495,10 +495,10 @@ func init() {
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileNewCmd.Flags().String("email", "", "Email for profile and git config")
 	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")
-	profileStatusCmd.Flags().BoolP("verbose", "v", false, "Show full resolved scope and env var keys per bundle")
+	profileStatusCmd.Flags().Bool("verbose", false, "Show full resolved scope and env var keys per bundle")
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
 	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
-	profileDeleteCmd.Flags().BoolP("force", "f", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
+	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
 	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
 }

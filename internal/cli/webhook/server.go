@@ -84,7 +84,7 @@ Examples:
 	cmd.Flags().StringVar(&secret, "secret", "", "Shared secret for HMAC validation")
 	cmd.Flags().StringSliceVar(&eventMaps, "event-map", nil, "Map event to action (event=profile:action)")
 	cmd.Flags().StringSliceVar(&allowList, "allow-event", nil, "Allowed event types")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Log events without executing")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Log events without executing")
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (optional, auto-enables webhooks if not configured)")
 
 	return cmd
