@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+	kitconfig "hop.top/kit/go/core/config"
+	"hop.top/kit/go/core/xdg"
 )
 
 // Config represents the global configuration for APS
@@ -23,22 +25,15 @@ type GlobalIsolationConfig struct {
 // DefaultPrefix is the default prefix for environment variables
 const DefaultPrefix = "APS"
 
-// GetConfigDir returns the directory for APS configuration
+// GetConfigDir returns the directory for APS configuration, resolved via
+// kit/go/core/xdg (XDG Base Directory Specification with OS-native fallbacks).
 func GetConfigDir() (string, error) {
-	// 1. Check XDG_CONFIG_HOME
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "aps"), nil
-	}
-
-	// 2. Fallback to os.UserConfigDir()
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(configDir, "aps"), nil
+	return xdg.ConfigDir("aps")
 }
 
-// LoadConfig loads the global configuration
+// LoadConfig loads the global configuration via kit/go/core/config.Load,
+// merging system → user → project layers. Malformed YAML returns defaults
+// (per spec recommendation).
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		Prefix: DefaultPrefix,
@@ -48,20 +43,28 @@ func LoadConfig() (*Config, error) {
 		},
 	}
 
-	configDir, err := GetConfigDir()
-	if err != nil {
-		return config, nil // Return default on error finding config dir
+	userPath := ""
+	if configDir, err := GetConfigDir(); err == nil {
+		userPath = filepath.Join(configDir, "config.yaml")
 	}
 
-	configPath := filepath.Join(configDir, "config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return config, nil // Return default if file missing or unreadable
+	projectPath := ""
+	if cwd, err := os.Getwd(); err == nil {
+		projectPath = filepath.Join(cwd, ".aps.yaml")
 	}
 
-	err = yaml.Unmarshal(data, config)
-	if err != nil {
-		return config, nil // Return default on malformed YAML (as per spec recommendation)
+	if err := kitconfig.Load(config, kitconfig.Options{
+		UserConfigPath:    userPath,
+		ProjectConfigPath: projectPath,
+	}); err != nil {
+		// Malformed YAML → fall back to defaults rather than surface an error.
+		return &Config{
+			Prefix: DefaultPrefix,
+			Isolation: GlobalIsolationConfig{
+				DefaultLevel:    IsolationProcess,
+				FallbackEnabled: true,
+			},
+		}, nil
 	}
 
 	if config.Prefix == "" {
@@ -72,9 +75,7 @@ func LoadConfig() (*Config, error) {
 		config.Isolation.DefaultLevel = IsolationProcess
 	} else {
 		switch config.Isolation.DefaultLevel {
-		case IsolationProcess:
-		case IsolationPlatform:
-		case IsolationContainer:
+		case IsolationProcess, IsolationPlatform, IsolationContainer:
 		default:
 			config.Isolation.DefaultLevel = IsolationProcess
 		}

@@ -28,7 +28,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	hop.top/cxr v0.0.0-20260402204247-d882ff0ed735
 	hop.top/kit v0.3.2-patch.3
-	hop.top/upgrade v0.0.0-20260323164843-b8379a5355f7
+	hop.top/uri v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -114,3 +114,5 @@ require (
 )
 
 replace hop.top/kit => /Users/jadb/.w/ideacrafterslabs/kit/hops/main
+
+replace hop.top/uri => /Users/jadb/.w/ideacrafterslabs/uri/hops/main
