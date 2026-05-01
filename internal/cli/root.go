@@ -21,6 +21,14 @@ var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
 	Short:   "Agent Profile System CLI",
+	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
+	// Subcommands read via root.Viper.GetString("<key>") rather than
+	// declaring local duplicates.
+	Globals: []kitcli.Flag{
+		{Name: "config", Usage: "path to YAML config file"},
+		{Name: "profile", Usage: "profile id (defaults to active profile)"},
+		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
+	},
 })
 
 // rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
