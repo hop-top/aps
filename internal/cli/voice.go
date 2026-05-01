@@ -56,36 +56,21 @@ var voiceServiceStatusCmd = &cobra.Command{
 	},
 }
 
-var voiceSessionCmd = &cobra.Command{
-	Use:   "session",
-	Short: "Manage active voice sessions",
-}
-
-var voiceSessionListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List active voice sessions",
-	Run: func(cmd *cobra.Command, args []string) {
-		sm := voice.NewSessionManager()
-		sessions := sm.List()
-		if len(sessions) == 0 {
-			fmt.Println("No active voice sessions.")
-			return
-		}
-		for _, s := range sessions {
-			fmt.Printf("%s  profile=%-20s  channel=%-10s  state=%s\n",
-				s.ID, s.ProfileID, s.ChannelType, s.State)
-		}
-	},
-}
-
 var voiceStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start a voice session",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID, _ := cmd.Flags().GetString("profile")
 		channel, _ := cmd.Flags().GetString("channel")
-		fmt.Printf("Starting voice session: profile=%s channel=%s\n", profileID, channel)
-		// TODO: wire up orchestrator
+		if profileID == "" {
+			return fmt.Errorf("--profile is required")
+		}
+		info, err := voice.RegisterSession(profileID, channel)
+		if err != nil {
+			return fmt.Errorf("starting voice session: %w", err)
+		}
+		fmt.Printf("Started voice session %s (profile=%s channel=%s)\n", info.ID, profileID, channel)
+		return nil
 	},
 }
 
@@ -95,8 +80,6 @@ func init() {
 	voiceServiceCmd.AddCommand(voiceServiceStartCmd)
 	voiceServiceCmd.AddCommand(voiceServiceStopCmd)
 	voiceServiceCmd.AddCommand(voiceServiceStatusCmd)
-	voiceCmd.AddCommand(voiceSessionCmd)
-	voiceSessionCmd.AddCommand(voiceSessionListCmd)
 	voiceCmd.AddCommand(voiceStartCmd)
 	voiceStartCmd.Flags().String("profile", "", "Profile ID to use for this voice session")
 	voiceStartCmd.Flags().String("channel", "web", "Channel: web | tui | telegram | twilio")

@@ -2,95 +2,49 @@ package voice
 
 import (
 	"fmt"
-	"sync"
-	"time"
+	"os"
 
 	"github.com/google/uuid"
+	"hop.top/aps/internal/core/session"
 )
 
-type SessionState string
+// ChannelMetaKey is the SessionInfo.Environment key under which the
+// voice channel type (web | tui | telegram | twilio) is stored when a
+// voice session is registered with the core SessionRegistry.
+const ChannelMetaKey = "voice_channel"
 
-const (
-	SessionStateActive SessionState = "active"
-	SessionStateClosed SessionState = "closed"
-)
-
-// Session tracks one active voice session.
-type Session struct {
-	ID          string
-	ProfileID   string
-	ChannelType string
-	State       SessionState
-	CreatedAt   time.Time
-}
-
-// SessionManager tracks all active voice sessions.
-type SessionManager struct {
-	mu       sync.RWMutex
-	sessions map[string]*Session
-}
-
-func NewSessionManager() *SessionManager {
-	return &SessionManager{sessions: make(map[string]*Session)}
-}
-
-// Create registers a new active session and returns it.
-func (sm *SessionManager) Create(profileID, channelType string) *Session {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	s := &Session{
-		ID:          uuid.New().String(),
-		ProfileID:   profileID,
-		ChannelType: channelType,
-		State:       SessionStateActive,
-		CreatedAt:   time.Now(),
+// RegisterSession registers a new voice session in the core
+// SessionRegistry and returns the persisted SessionInfo.
+//
+// This replaces the legacy in-memory voice.SessionManager: voice
+// sessions are now first-class entries in the unified registry. The
+// voice-specific channel type is preserved via Environment so existing
+// voice runtime code (mic/speaker handles, audio pipeline) can key off
+// the unified session ID.
+func RegisterSession(profileID, channelType string) (*session.SessionInfo, error) {
+	if profileID == "" {
+		return nil, fmt.Errorf("voice session: profile ID required")
 	}
-	sm.sessions[s.ID] = s
-	return s
+	info := &session.SessionInfo{
+		ID:        uuid.New().String(),
+		ProfileID: profileID,
+		PID:       os.Getpid(),
+		Status:    session.SessionActive,
+		Type:      session.SessionTypeVoice,
+		Environment: map[string]string{
+			ChannelMetaKey: channelType,
+		},
+	}
+	if err := session.GetRegistry().Register(info); err != nil {
+		return nil, fmt.Errorf("voice session: register: %w", err)
+	}
+	return info, nil
 }
 
-// Get returns a session by ID.
-func (sm *SessionManager) Get(id string) (*Session, error) {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-	s, ok := sm.sessions[id]
-	if !ok {
-		return nil, fmt.Errorf("voice session %q not found", id)
-	}
-	return s, nil
-}
-
-// List returns all sessions.
-func (sm *SessionManager) List() []*Session {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-	out := make([]*Session, 0, len(sm.sessions))
-	for _, s := range sm.sessions {
-		out = append(out, s)
-	}
-	return out
-}
-
-// Close marks a session as closed.
-func (sm *SessionManager) Close(id string) error {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	s, ok := sm.sessions[id]
-	if !ok {
-		return fmt.Errorf("voice session %q not found", id)
-	}
-	s.State = SessionStateClosed
-	return nil
-}
-
-// SwitchProfile updates the profile for an active session (mid-session switch).
-func (sm *SessionManager) SwitchProfile(id, newProfileID string) error {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	s, ok := sm.sessions[id]
-	if !ok {
-		return fmt.Errorf("voice session %q not found", id)
-	}
-	s.ProfileID = newProfileID
-	return nil
+// CloseSession marks a voice session inactive in the core registry.
+// Mirrors the previous SessionManager.Close behaviour: the entry stays
+// in the registry (so `aps session list` shows the recently-closed
+// state) until the reaper expires it.
+func CloseSession(sessionID string) error {
+	return session.GetRegistry().UpdateStatus(sessionID, session.SessionInactive)
 }
