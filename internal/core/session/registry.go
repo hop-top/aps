@@ -93,6 +93,7 @@ type SessionInfo struct {
 	PID         int               `json:"pid"`
 	Status      SessionStatus     `json:"status"`
 	Tier        SessionTier       `json:"tier,omitempty"`
+	Type        SessionType       `json:"type,omitempty"`
 	TmuxSocket  string            `json:"tmux_socket,omitempty"`
 	TmuxSession string            `json:"tmux_session,omitempty"`
 	ContainerID string            `json:"container_id,omitempty"`
@@ -507,6 +508,24 @@ func (r *SessionRegistry) ListByTier(tier SessionTier) []*SessionInfo {
 	sessions := make([]*SessionInfo, 0)
 	for _, session := range r.sessions {
 		if session.Tier == tier {
+			sessions = append(sessions, session)
+		}
+	}
+
+	return sessions
+}
+
+// ListByType filters sessions by SessionType. The empty SessionType
+// (SessionTypeStandard) matches entries with no explicit type set —
+// i.e. sessions persisted before the Type field existed are treated
+// as standard.
+func (r *SessionRegistry) ListByType(t SessionType) []*SessionInfo {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	sessions := make([]*SessionInfo, 0)
+	for _, session := range r.sessions {
+		if session.Type == t {
 			sessions = append(sessions, session)
 		}
 	}
