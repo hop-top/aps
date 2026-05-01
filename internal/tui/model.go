@@ -49,6 +49,8 @@ func InitialModel() Model {
 	return Model{
 		state:    StateProfileList,
 		profiles: profiles,
+		width:    80,
+		height:   24,
 	}
 }
 
