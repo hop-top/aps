@@ -119,6 +119,7 @@ type AdapterManifest struct {
 	Strategy    LoadingStrategy `json:"strategy" yaml:"strategy"`
 	Description string          `json:"description,omitempty" yaml:"description,omitempty"`
 	Config      map[string]any  `json:"config,omitempty" yaml:"config,omitempty"`
+	LinkedTo    []string        `json:"linked_to,omitempty" yaml:"linked_to,omitempty"`
 }
 
 type AdapterCapability interface {
