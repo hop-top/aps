@@ -55,7 +55,37 @@ Recommended additions (NOT yet emitted; consumers tolerant):
   `~/.ops/docs/research/wsm-integration-audit-2026-04-30.md` (T-0179)
   and T-0192 (spec evolution).
 
-### 3.1 Subscriber filter pattern (workspace_id)
+### 3.1 Payload type erasure (cross-process)
+
+`payload` is typed `any` in Go (`kit/bus.Event.Payload`). In-process
+subscribers receive the exact Go value publishers passed to
+`bus.NewEvent` (e.g. `aps.ProfileCreatedPayload`). Cross-process
+subscribers (NetworkAdapter, SQLiteAdapter, dpkms hub) receive the
+JSON-decoded form: objects → `map[string]any`, arrays → `[]any`,
+numbers → `float64`. The publisher's Go struct type does NOT
+survive the wire — by design (T-0178).
+
+Go consumers wanting struct-typed access SHOULD re-marshal hop:
+
+```go
+raw, _ := json.Marshal(e.Payload)
+var p aps.ProfileCreatedPayload
+_ = json.Unmarshal(raw, &p)
+```
+
+Existing helpers like `payloadString(p, "ProfileID")` in
+`tests/e2e/bus/helpers_test.go` show the alternative — type-asserted
+field-by-field map access. Either pattern is fine; pick re-marshal
+when struct shape is stable, map access when scanning unknown
+payloads.
+
+Non-Go consumers (Python listener, webhook bridges) decode the JSON
+object directly — no special treatment needed.
+
+Cross-ref: `kit/go/runtime/bus/event.go` (Payload doc comment), tlc
+`bus-topics-spec-0.1.md §4.1`.
+
+### 3.2 Subscriber filter pattern (workspace_id)
 
 Multi-workspace agents (one aps profile, N active workspaces) need
 listeners to drop events from non-active workspaces. Pattern:
