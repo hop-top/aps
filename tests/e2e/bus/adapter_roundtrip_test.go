@@ -86,25 +86,14 @@ func TestBusAdapterLinked_CrossProcess(t *testing.T) {
 // subscriber pattern matches both, and we filter by topic in the
 // assertion.
 //
-// SKIPPED today: a separate persistence bug breaks the cross-process
-// link → unlink path. `aps adapter link` mutates the in-memory
-// Adapter.LinkedTo slice (internal/core/adapter/manager.go:385) and
-// calls SaveAdapter, but AdapterManifest (internal/core/adapter/types.go:114)
-// does not declare a LinkedTo field, so SaveAdapter (registry.go:142-150)
-// silently drops it. Likewise loadAdapterFromPath (registry.go:88-117)
-// never populates Adapter.LinkedTo on read. Effect: every reload of
-// the adapter sees LinkedTo=[]; `aps adapter unlink ...` fails with
-// "device X is not linked to profile Y" before reaching publishEvent.
-//
-// In-process the bug is invisible (the same Adapter pointer carries
-// LinkedTo across the link/unlink calls). Cross-process exposes it.
-//
-// Tracked as T-0181 (tools-showcase-scenarios). Once T-0181 lands, drop
-// the t.Skip below and run `go test -tags bus_e2e -count=5
-// ./tests/e2e/bus/...` to confirm the unlinked round-trip is green.
+// Persistence prerequisite (T-0181): AdapterManifest now carries a
+// `linked_to` field; SaveAdapter writes it, loadAdapterFromPath reads
+// it. Without that, `aps adapter link` (process B) writes the manifest
+// without LinkedTo, then `aps adapter unlink` (process C) reloads with
+// LinkedTo=[] and fails IsLinkedToProfile before reaching publishEvent.
+// In-process tests miss the bug because the same *Adapter pointer
+// carries LinkedTo across calls.
 func TestBusAdapterUnlinked_CrossProcess(t *testing.T) {
-	t.Skip("blocked on T-0181: AdapterManifest does not persist LinkedTo, so cross-process unlink cannot find a linked adapter; see test doc-comment for the full path-of-evidence")
-
 	hub := setupBusHub(t)
 	waitFor := hub.subscribe(t, "aps.adapter.*")
 

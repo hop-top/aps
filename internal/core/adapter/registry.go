@@ -105,6 +105,7 @@ func loadAdapterFromPath(path string, scope AdapterScope, profileID string) (*Ad
 		Strategy:     manifest.Strategy,
 		Description:  manifest.Description,
 		Config:       manifest.Config,
+		LinkedTo:     manifest.LinkedTo,
 		Path:         path,
 		ManifestPath: manifestPath,
 	}
@@ -147,6 +148,7 @@ func SaveAdapter(device *Adapter) error {
 		Strategy:    device.Strategy,
 		Description: device.Description,
 		Config:      device.Config,
+		LinkedTo:    device.LinkedTo,
 	}
 
 	data, err := yaml.Marshal(manifest)
