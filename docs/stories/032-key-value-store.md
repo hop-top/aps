@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Key-Value Store
 
 **ID**: 032

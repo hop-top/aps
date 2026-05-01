@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # XDG Configuration Discovery
 
 **ID**: 015

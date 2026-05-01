@@ -1,3 +1,7 @@
+---
+status: shipped-no-e2e
+---
+
 # Multi-Device Workspace Access
 
 **ID**: 050

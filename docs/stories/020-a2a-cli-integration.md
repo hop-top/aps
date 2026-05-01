@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # A2A CLI Integration
 
 **ID**: 020

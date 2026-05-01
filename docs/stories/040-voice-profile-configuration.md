@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Voice Profile Configuration
 
 **ID**: 040

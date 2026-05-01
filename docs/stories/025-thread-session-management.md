@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Thread/Session Management
 
 **ID**: 025

@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Profile-Bound Capability Bundles (Nadia EA Worked Example)
 
 **ID**: 053

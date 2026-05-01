@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Smart Linking
 
 **ID**: 028

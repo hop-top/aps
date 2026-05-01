@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # A2A Server
 
 **ID**: 017

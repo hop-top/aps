@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Profile Assignment
 
 **ID**: 029

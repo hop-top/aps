@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # SDK Integration & Agent Cards
 
 **ID**: 016

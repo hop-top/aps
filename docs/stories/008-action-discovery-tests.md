@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Action Discovery Tests
 
 **ID**: 008

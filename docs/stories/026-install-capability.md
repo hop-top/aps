@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Install Capability
 
 **ID**: 026

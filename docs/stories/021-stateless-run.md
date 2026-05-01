@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Stateless Run
 
 **ID**: 021

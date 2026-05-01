@@ -1,3 +1,7 @@
+---
+status: shipped-no-e2e
+---
+
 # A2A Protocol Toggle
 
 **ID**: 037
