@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Symlink Configuration
 
 **ID**: 027

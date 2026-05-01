@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Agent Discovery
 
 **ID**: 024

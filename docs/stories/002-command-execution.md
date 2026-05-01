@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Command Execution
 
 **ID**: 002

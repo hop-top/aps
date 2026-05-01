@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Capability Environment
 
 **ID**: 036

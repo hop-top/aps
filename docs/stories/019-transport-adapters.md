@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Transport Adapters
 
 **ID**: 019

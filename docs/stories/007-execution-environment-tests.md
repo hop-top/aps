@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Execution Environment Tests
 
 **ID**: 007

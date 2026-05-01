@@ -1,3 +1,7 @@
+---
+status: shipped
+---
+
 # Profile Shorthand Execution
 
 **ID**: 010

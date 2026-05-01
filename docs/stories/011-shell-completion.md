@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Shell Completion
 
 **ID**: 011

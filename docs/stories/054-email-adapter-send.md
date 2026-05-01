@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # 054 - Email Adapter Send (Founder Approval Workflow)
 
 **ID**: 054

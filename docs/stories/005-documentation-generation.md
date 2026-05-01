@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Documentation Generation
 
 **ID**: 005

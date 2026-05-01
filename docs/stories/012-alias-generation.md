@@ -1,3 +1,7 @@
+---
+status: paper
+---
+
 # Alias Generation
 
 **ID**: 012
