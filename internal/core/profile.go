@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/kit/go/runtime/domain"
 
 	"hop.top/aps/internal/events"
 )
@@ -417,7 +418,7 @@ func CreateProfile(id string, config Profile) error {
 
 	// Check if already exists
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
-		return fmt.Errorf("profile '%s' already exists", id)
+		return fmt.Errorf("%w: profile '%s' already exists", domain.ErrConflict, id)
 	}
 
 	// Create structure

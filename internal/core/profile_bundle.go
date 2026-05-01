@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/kit/go/runtime/domain"
 )
 
 const ProfileBundleVersion = "v1"
@@ -115,7 +116,7 @@ func ImportProfileBundle(bundlePath, newID string, force bool) (*Profile, *Profi
 	}
 	if _, err := os.Stat(profileDir); err == nil {
 		if !force {
-			return nil, nil, fmt.Errorf("profile '%s' already exists", targetID)
+			return nil, nil, fmt.Errorf("%w: profile '%s' already exists", domain.ErrConflict, targetID)
 		}
 		if err := os.RemoveAll(profileDir); err != nil {
 			return nil, nil, fmt.Errorf("failed to remove existing profile: %w", err)
