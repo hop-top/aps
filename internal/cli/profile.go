@@ -177,10 +177,9 @@ var profileShowCmd = &cobra.Command{
 
 		// Show modules status
 		fmt.Println("\nModules:")
-		secretsPath, _ := core.GetProfileDir(id)
-		if _, err := os.Stat(secretsPath + "/secrets.env"); err == nil {
+		secrets, _ := core.LoadProfileSecrets(id)
+		if len(secrets) > 0 {
 			fmt.Println("- Secrets: present")
-			secrets, _ := core.LoadSecrets(secretsPath + "/secrets.env")
 			for k := range secrets {
 				fmt.Printf("  - %s: ***redacted***\n", k)
 			}

@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/runtime/domain"
 )
 
 func newEnableCmd() *cobra.Command {
@@ -24,7 +25,7 @@ func newEnableCmd() *cobra.Command {
 
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
-				return fmt.Errorf("profile '%s' not found", profileID)
+				return fmt.Errorf("%w: profile '%s'", domain.ErrNotFound, profileID)
 			}
 
 			if core.ProfileHasCapability(profile, capName) {
@@ -55,7 +56,7 @@ func newDisableCmd() *cobra.Command {
 
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
-				return fmt.Errorf("profile '%s' not found", profileID)
+				return fmt.Errorf("%w: profile '%s'", domain.ErrNotFound, profileID)
 			}
 
 			if !core.ProfileHasCapability(profile, capName) {

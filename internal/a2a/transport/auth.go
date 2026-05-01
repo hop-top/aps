@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
 	"hop.top/aps/internal/core"
 )
@@ -120,135 +119,32 @@ func (a *AuthConfig) ValidateAuth() error {
 	return nil
 }
 
-// getAPIKeyFromProfile retrieves API key from profile secrets
+// getAPIKeyFromProfile retrieves API key from profile secrets via the
+// configured kit/storage/secret backend.
 func getAPIKeyFromProfile(profile *core.Profile) (string, error) {
-	profileDir, err := core.GetProfileDir(profile.ID)
+	secrets, err := core.LoadProfileSecrets(profile.ID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get profile directory: %w", err)
+		return "", fmt.Errorf("failed to read secrets: %w", err)
 	}
-
-	secretsPath := profileDir + "/secrets.env"
-
-	secrets, err := os.ReadFile(secretsPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read secrets file: %w", err)
-	}
-
-	apiKey := extractAPIKey(string(secrets))
+	apiKey := secrets["A2A_API_KEY"]
 	if apiKey == "" {
 		return "", fmt.Errorf("API key not found in secrets")
 	}
-
 	return apiKey, nil
 }
 
-// getMTLSPathsFromProfile retrieves mTLS cert and key paths from profile secrets
+// getMTLSPathsFromProfile retrieves mTLS cert and key paths from profile
+// secrets via the configured kit/storage/secret backend.
 func getMTLSPathsFromProfile(profile *core.Profile) (string, string, error) {
-	profileDir, err := core.GetProfileDir(profile.ID)
+	secrets, err := core.LoadProfileSecrets(profile.ID)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get profile directory: %w", err)
+		return "", "", fmt.Errorf("failed to read secrets: %w", err)
 	}
-
-	secretsPath := profileDir + "/secrets.env"
-
-	secrets, err := os.ReadFile(secretsPath)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read secrets file: %w", err)
-	}
-
-	certPath := extractMTLSCert(string(secrets))
-	keyPath := extractMTLSKey(string(secrets))
-
+	certPath := secrets["A2A_MTLS_CERT"]
+	keyPath := secrets["A2A_MTLS_KEY"]
 	if certPath == "" || keyPath == "" {
 		return "", "", fmt.Errorf("mTLS paths not found in secrets")
 	}
-
 	return certPath, keyPath, nil
 }
 
-// extractAPIKey extracts API key from secrets file content
-func extractAPIKey(content string) string {
-	lines := parseSecretsFile(content)
-	for _, line := range lines {
-		if len(line) > 0 && line[0] != '#' {
-			if key, value, ok := parseSecretLine(line); ok && key == "A2A_API_KEY" {
-				return value
-			}
-		}
-	}
-	return ""
-}
-
-// extractMTLSCert extracts mTLS certificate path from secrets
-func extractMTLSCert(content string) string {
-	lines := parseSecretsFile(content)
-	for _, line := range lines {
-		if len(line) > 0 && line[0] != '#' {
-			if key, value, ok := parseSecretLine(line); ok && key == "A2A_MTLS_CERT" {
-				return value
-			}
-		}
-	}
-	return ""
-}
-
-// extractMTLSKey extracts mTLS key path from secrets
-func extractMTLSKey(content string) string {
-	lines := parseSecretsFile(content)
-	for _, line := range lines {
-		if len(line) > 0 && line[0] != '#' {
-			if key, value, ok := parseSecretLine(line); ok && key == "A2A_MTLS_KEY" {
-				return value
-			}
-		}
-	}
-	return ""
-}
-
-// parseSecretsFile splits content into lines
-func parseSecretsFile(content string) []string {
-	var lines []string
-	for _, line := range splitLines(content) {
-		if len(line) > 0 {
-			lines = append(lines, line)
-		}
-	}
-	return lines
-}
-
-// parseSecretLine parses a KEY=VALUE line
-func parseSecretLine(line string) (string, string, bool) {
-	var key, value string
-	var found bool
-
-	for i, c := range line {
-		if c == '=' && !found {
-			key = line[:i]
-			value = line[i+1:]
-			found = true
-		}
-	}
-
-	return key, value, found
-}
-
-// splitLines splits content into lines
-func splitLines(content string) []string {
-	var lines []string
-	var current string
-
-	for _, c := range content {
-		if c == '\n' {
-			lines = append(lines, current)
-			current = ""
-		} else {
-			current += string(c)
-		}
-	}
-
-	if len(current) > 0 {
-		lines = append(lines, current)
-	}
-
-	return lines
-}

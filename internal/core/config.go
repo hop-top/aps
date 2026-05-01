@@ -14,6 +14,17 @@ type Config struct {
 	Prefix            string                `yaml:"prefix"`
 	Isolation         GlobalIsolationConfig `yaml:"isolation,omitempty"`
 	CapabilitySources []string              `yaml:"capability_sources,omitempty"`
+	Secrets           SecretsConfig         `yaml:"secrets,omitempty"`
+}
+
+// SecretsConfig selects the kit/storage/secret backend used for profile secrets.
+// Backend "file" (default) keeps the legacy secrets.env per-profile layout; "env"
+// reads from process environment with optional Prefix; "keyring" delegates to
+// the OS keychain (Service defaults to "aps").
+type SecretsConfig struct {
+	Backend string `yaml:"backend,omitempty"`
+	Service string `yaml:"service,omitempty"`
+	Prefix  string `yaml:"prefix,omitempty"`
 }
 
 // GlobalIsolationConfig represents global isolation settings
@@ -64,6 +75,7 @@ func LoadConfig() (*Config, error) {
 				DefaultLevel:    IsolationProcess,
 				FallbackEnabled: true,
 			},
+			Secrets: SecretsConfig{Backend: SecretsBackendFile},
 		}, nil
 	}
 
@@ -79,6 +91,10 @@ func LoadConfig() (*Config, error) {
 		default:
 			config.Isolation.DefaultLevel = IsolationProcess
 		}
+	}
+
+	if config.Secrets.Backend == "" {
+		config.Secrets.Backend = SecretsBackendFile
 	}
 
 	return config, nil
