@@ -48,6 +48,38 @@ Recommended additions (NOT yet emitted; consumers tolerant):
 - `event_id` (uuid v7) — dedupe key
 - `session_id` — link to originating CLI session
 - `schema_version` — `"0.1"` until bumped
+- `workspace_id` (string, ULID) — scopes event to a wsm workspace.
+  Subscribers MAY filter by active workspace; null = global event.
+  Emit-side: publishers MUST set from current aps profile's
+  `WorkspaceLink.name`; if profile has no link, leave nil. Cross-ref:
+  `~/.ops/docs/research/wsm-integration-audit-2026-04-30.md` (T-0179)
+  and T-0192 (spec evolution).
+
+### 3.1 Subscriber filter pattern (workspace_id)
+
+Multi-workspace agents (one aps profile, N active workspaces) need
+listeners to drop events from non-active workspaces. Pattern:
+
+```
+// pseudocode — listener handler
+profile := aps.LoadProfile(profileID)
+active := profile.WorkspaceLink.Name  // "" if no link
+bus.Subscribe("tlc.#", func(ctx, e) {
+    ws := e.Envelope["workspace_id"]  // nil → global
+    if ws != nil && active != "" && ws != active {
+        return  // skip cross-workspace event
+    }
+    dispatch(ctx, e)
+})
+```
+
+Rules:
+
+- nil `workspace_id` → treat as global; never filtered out.
+- profile with no `WorkspaceLink` → no filter; receive all.
+- mismatch (`ws != active`) → drop before dispatch.
+- listener route DSL (story `052-listener-routing-config`) supports
+  `where: workspace == active` predicate as syntactic sugar over above.
 
 ## 4. aps topics (this repo)
 
