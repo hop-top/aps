@@ -2,6 +2,8 @@
 
 Consolidated user stories. Each story is a single source of truth for its requirement.
 
+Authoring convention: see [Story → e2e test linkage](../conventions/stories.md).
+
 ## Story Index
 
 | ID | Title | Feature | Persona | Priority |
