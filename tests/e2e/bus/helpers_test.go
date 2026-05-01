@@ -22,6 +22,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/rand"
+	"net"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -129,48 +131,11 @@ type recordedEvent struct {
 
 // subscribe attaches a subscriber to the hub's bus on `pattern` and
 // returns a thread-safe accessor for the events received. Cleanup
-// (unsubscribe) is registered on t.
+// (unsubscribe) is registered on t. Delegates to subscribeOnBus —
+// shared with relayBusHub and reconnect tests.
 func (h *busHub) subscribe(t *testing.T, pattern string) (waitFor func(deadline time.Duration, want int) []recordedEvent) {
 	t.Helper()
-
-	var (
-		mu     sync.Mutex
-		events []recordedEvent
-	)
-
-	unsub := h.bus.Subscribe(pattern, func(_ context.Context, e kitbus.Event) error {
-		mu.Lock()
-		defer mu.Unlock()
-		events = append(events, recordedEvent{
-			Topic:   e.Topic,
-			Source:  e.Source,
-			Payload: e.Payload,
-		})
-		return nil
-	})
-	t.Cleanup(unsub)
-
-	return func(deadline time.Duration, want int) []recordedEvent {
-		t.Helper()
-		end := time.Now().Add(deadline)
-		for {
-			mu.Lock()
-			n := len(events)
-			mu.Unlock()
-			if n >= want {
-				break
-			}
-			if time.Now().After(end) {
-				break
-			}
-			time.Sleep(25 * time.Millisecond)
-		}
-		mu.Lock()
-		defer mu.Unlock()
-		out := make([]recordedEvent, len(events))
-		copy(out, events)
-		return out
-	}
+	return subscribeOnBus(t, h.bus, pattern)
 }
 
 // runAPSChild executes the aps binary as a child process with HOME
@@ -270,4 +235,176 @@ func findEvent(events []recordedEvent, topic kitbus.Topic) (recordedEvent, bool)
 		}
 	}
 	return recordedEvent{}, false
+}
+
+// relayBusHub is a kit/bus hub with star-topology relay enabled and a
+// stable listener port — required so the hub can be killed and a
+// successor re-bound at the same address for reconnect tests (T-0177).
+//
+// httptest.NewServer picks a random port on each start; that defeats
+// the reconnect test, where peers must redial the same addr after the
+// hub goes down. relayBusHub uses net.Listen("tcp", "127.0.0.1:0") to
+// claim a port up front and re-uses it across restart.
+type relayBusHub struct {
+	bus     kitbus.Bus
+	adapter *kitbus.NetworkAdapter
+	server  *http.Server
+	listen  net.Listener
+	addr    string // ws://… URL peers connect to
+	port    string // bound port, reused on restart
+	token   string // shared StaticTokenAuth secret
+}
+
+// setupRelayBusHub starts a kit/bus hub with WithRelay(true) on a
+// stable 127.0.0.1 port. Returns a hub handle whose stop/start methods
+// allow the reconnect test to kill the hub and bring up a successor on
+// the same port. Cleanup is registered on t.
+func setupRelayBusHub(t *testing.T) *relayBusHub {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		_ = ln.Close()
+		t.Fatalf("split host port: %v", err)
+	}
+
+	h := &relayBusHub{
+		token: randToken(),
+		port:  port,
+		addr:  "ws://127.0.0.1:" + port,
+	}
+	h.bringUp(t, ln)
+
+	t.Cleanup(func() {
+		h.stop(t)
+	})
+
+	return h
+}
+
+// bringUp starts a fresh hub bus + NetworkAdapter on the supplied
+// listener. Call from setupRelayBusHub for the initial start, and from
+// restart() after a stop.
+func (h *relayBusHub) bringUp(t *testing.T, ln net.Listener) {
+	t.Helper()
+
+	b := kitbus.New()
+	adapter := kitbus.NewNetworkAdapter(
+		b,
+		kitbus.WithOriginID("test-relay-hub"),
+		kitbus.WithAuth(&kitbus.StaticTokenAuth{Token_: h.token}),
+		kitbus.WithRelay(true),
+	)
+	srv := &http.Server{Handler: adapter.Handler()}
+	go func() { _ = srv.Serve(ln) }()
+
+	h.bus = b
+	h.adapter = adapter
+	h.server = srv
+	h.listen = ln
+}
+
+// stop shuts down the current hub instance. Listener is closed too.
+// After stop the same h.port is free for restart() to re-bind.
+func (h *relayBusHub) stop(t *testing.T) {
+	t.Helper()
+	if h.server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = h.server.Shutdown(ctx)
+		cancel()
+		h.server = nil
+	}
+	if h.adapter != nil {
+		_ = h.adapter.Close()
+		h.adapter = nil
+	}
+	if h.bus != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = h.bus.Close(ctx)
+		cancel()
+		h.bus = nil
+	}
+	h.listen = nil
+}
+
+// restart brings up a brand-new bus + NetworkAdapter on the same
+// 127.0.0.1:port. It expects stop() to have already been called.
+//
+// macOS lingers TIME_WAIT on the closed listener; we retry the bind a
+// few times with a short backoff. SO_REUSEADDR is the system default
+// for listeners on Darwin/Linux on the loopback, but the Go std lib
+// does not always set it — so we tolerate transient EADDRINUSE.
+func (h *relayBusHub) restart(t *testing.T) {
+	t.Helper()
+	var ln net.Listener
+	var err error
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		ln, err = net.Listen("tcp", "127.0.0.1:"+h.port)
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err != nil {
+		t.Fatalf("relisten on :%s: %v", h.port, err)
+	}
+	h.bringUp(t, ln)
+}
+
+// subscribeOnBus is the shared subscriber implementation used by
+// busHub.subscribe and relayBusHub.subscribe (and by reconnect tests
+// that subscribe on a peer's local bus). Returns a poll-based waitFor
+// that blocks up to deadline waiting for `want` events.
+func subscribeOnBus(t *testing.T, b kitbus.Bus, pattern string) (waitFor func(deadline time.Duration, want int) []recordedEvent) {
+	t.Helper()
+
+	var (
+		mu     sync.Mutex
+		events []recordedEvent
+	)
+
+	unsub := b.Subscribe(pattern, func(_ context.Context, e kitbus.Event) error {
+		mu.Lock()
+		defer mu.Unlock()
+		events = append(events, recordedEvent{
+			Topic:   e.Topic,
+			Source:  e.Source,
+			Payload: e.Payload,
+		})
+		return nil
+	})
+	t.Cleanup(unsub)
+
+	return func(deadline time.Duration, want int) []recordedEvent {
+		t.Helper()
+		end := time.Now().Add(deadline)
+		for {
+			mu.Lock()
+			n := len(events)
+			mu.Unlock()
+			if n >= want {
+				break
+			}
+			if time.Now().After(end) {
+				break
+			}
+			time.Sleep(25 * time.Millisecond)
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		out := make([]recordedEvent, len(events))
+		copy(out, events)
+		return out
+	}
+}
+
+// staticTokenAuthFor returns a kitbus.Authenticator pre-loaded with the
+// hub's shared secret — used when a peer NetworkAdapter dials in.
+func (h *relayBusHub) authenticator() kitbus.Authenticator {
+	return &kitbus.StaticTokenAuth{Token_: h.token}
 }
