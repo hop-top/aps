@@ -169,25 +169,22 @@ func TestBusProfileDeleted_CrossProcess(t *testing.T) {
 // subscriber resumes receiving events after the hub is killed and a
 // new hub comes up at the same address.
 //
-// SKIPPED today: the aps publisher is a short-lived child process —
-// each `aps profile <verb>` invocation dials the hub, publishes, and
-// exits. There is no long-running aps process to "reconnect".
+// SKIPPED today: T-0177 verified that kit/bus's NetworkAdapter does
+// NOT relay events between peers in a star topology — the outbound
+// forwarder skips events tagged with networkOriginKey, so events
+// arriving over WS are never forwarded back out. Hub receives, never
+// relays.
 //
-// To make this test meaningful we need either:
-//  1. A long-lived aps subscriber daemon (story 051 listener-daemon,
-//     not yet implemented), OR
-//  2. A way to keep the publisher alive across the hub restart (e.g.
-//     `aps daemon` mode), OR
-//  3. Move the assertion to the test-process side: keep the test
-//     subscriber alive, restart the hub on the same port, fire a new
-//     child after the restart, and assert the subscriber still receives.
-//     This is testable today but it tests the *test harness's* network
-//     adapter reconnect, not aps's — so it does not close the gap
-//     T-0162 is filed for.
+// All three implementation options previously listed (aps daemon, aps
+// bus tail, story 051 listener-daemon) hit the same wall: routing,
+// not reconnect. The reconnect mechanics in NetworkAdapter
+// (reconnectLoop, Connect) are fine.
 //
-// File a follow-up gap task in tools-showcase-scenarios for option 3
-// once 051 lands; until then we record the contract via t.Skip so the
-// scaffolding exists and grep-finds when 051 is in flight.
+// Tracked as kit-side gap: T-0182 — kit/bus relay mode for
+// star-topology peer-to-peer. Once that lands, this test can
+// un-skip with any of the three aps-side patterns above.
+//
+// Refs T-0177 + T-0182 in tools-showcase-scenarios.
 func TestBusReconnect_AfterHubRestart(t *testing.T) {
-	t.Skip("requires long-lived aps subscriber (story 051 listener-daemon, not yet implemented); see test doc-comment for the three implementation options and follow-up gap task")
+	t.Skip("blocked on T-0182: kit/bus NetworkAdapter does not relay events peer-to-peer; reconnect mechanics fine but routing absent")
 }
