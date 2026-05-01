@@ -9,17 +9,19 @@ import (
 	"hop.top/aps/internal/core"
 )
 
-// NewDeregisterCmd creates the directory deregister command.
-func NewDeregisterCmd() *cobra.Command {
+// NewDeleteCmd creates the directory delete command. Pairs with the
+// existing 'register' verb; 'delete' is the canonical removal verb
+// across the aps surface (cli-conventions §3.2).
+func NewDeleteCmd() *cobra.Command {
 	var profileID string
 
 	cmd := &cobra.Command{
-		Use:   "deregister",
+		Use:   "delete",
 		Short: "Remove a profile from the AGNTCY Directory",
 		Long: `Remove an agent profile's record from the AGNTCY Directory.
 
 Example:
-  aps directory deregister --profile worker`,
+  aps directory delete --profile worker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
@@ -33,10 +35,10 @@ Example:
 			defer client.Close()
 
 			if err := client.Deregister(cmd.Context(), profileID); err != nil {
-				return fmt.Errorf("failed to deregister: %w", err)
+				return fmt.Errorf("failed to delete record: %w", err)
 			}
 
-			fmt.Printf("Deregistered profile %s from AGNTCY Directory\n", profileID)
+			fmt.Printf("Deleted profile %s from AGNTCY Directory\n", profileID)
 
 			return nil
 		},

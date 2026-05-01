@@ -18,7 +18,7 @@ discover agents by capability, and manage directory records.`,
 
 	cmd.AddCommand(NewRegisterCmd())
 	cmd.AddCommand(NewDiscoverCmd())
-	cmd.AddCommand(NewDeregisterCmd())
+	cmd.AddCommand(NewDeleteCmd())
 	cmd.AddCommand(NewShowCmd())
 
 	return cmd
