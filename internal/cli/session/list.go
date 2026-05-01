@@ -24,6 +24,11 @@ func NewListCmd() *cobra.Command {
 			statusFilter, _ := cmd.Flags().GetString("status")
 			tierFilter, _ := cmd.Flags().GetString("tier")
 			workspaceFilter, _ := cmd.Flags().GetString("workspace")
+			typeFilter, _ := cmd.Flags().GetString("type")
+
+			if err := validateTypeFilter(typeFilter); err != nil {
+				return err
+			}
 
 			registry := session.GetRegistry()
 			sessions := registry.List()
@@ -33,7 +38,7 @@ func NewListCmd() *cobra.Command {
 				return nil
 			}
 
-			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter, workspaceFilter)
+			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter, workspaceFilter, typeFilter)
 
 			if len(sessions) == 0 {
 				fmt.Println(styles.Dim.Render("No sessions match the specified filters"))
@@ -76,15 +81,43 @@ func NewListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("profile", "", "Filter sessions by profile ID")
+	// --profile and --workspace are persistent globals (T-0376); reads via
+	// cmd.Flags().GetString resolve through the inherited PersistentFlags.
 	cmd.Flags().String("status", "", "Filter sessions by status (active, inactive, errored)")
 	cmd.Flags().String("tier", "", "Filter sessions by tier (basic, standard, premium)")
-	cmd.Flags().StringP("workspace", "w", "", "Filter sessions by workspace ID")
+	cmd.Flags().String("type", "", "Filter sessions by type (standard, voice); default = all")
 
 	return cmd
 }
 
-func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter, tierFilter, workspaceFilter string) []*session.SessionInfo {
+// validateTypeFilter accepts "", "standard", or "voice".
+func validateTypeFilter(typeFilter string) error {
+	switch typeFilter {
+	case "", "standard", "voice":
+		return nil
+	default:
+		return fmt.Errorf("invalid --type %q (expected: standard, voice)", typeFilter)
+	}
+}
+
+// matchesTypeFilter returns true when the session's Type matches the
+// CLI filter. Empty filter matches all. "standard" matches the
+// zero-value SessionType (legacy entries written before the field
+// existed) so unfiltered listings stay backward-compatible.
+func matchesTypeFilter(s *session.SessionInfo, typeFilter string) bool {
+	switch typeFilter {
+	case "":
+		return true
+	case "standard":
+		return s.Type == session.SessionTypeStandard
+	case "voice":
+		return s.Type == session.SessionTypeVoice
+	default:
+		return false
+	}
+}
+
+func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter, tierFilter, workspaceFilter, typeFilter string) []*session.SessionInfo {
 	var filtered []*session.SessionInfo
 
 	for _, s := range sessions {
@@ -98,6 +131,9 @@ func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter
 			continue
 		}
 		if workspaceFilter != "" && s.WorkspaceID != workspaceFilter {
+			continue
+		}
+		if !matchesTypeFilter(s, typeFilter) {
 			continue
 		}
 		filtered = append(filtered, s)
