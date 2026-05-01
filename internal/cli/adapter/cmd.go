@@ -29,7 +29,7 @@ func NewAdapterCmd() *cobra.Command {
 	cmd.AddCommand(newAttachCmd())
 	cmd.AddCommand(newDetachCmd())
 	cmd.AddCommand(newPresenceCmd())
-	cmd.AddCommand(newSetPermissionsCmd())
+	cmd.AddCommand(newPermissionsCmd())
 
 	// Messenger device integration (Plan 8)
 	cmd.AddCommand(newChannelsCmd())
@@ -38,6 +38,9 @@ func NewAdapterCmd() *cobra.Command {
 
 	// Script adapter execution
 	cmd.AddCommand(newExecCmd())
+
+	// Messenger alias (T-0363) — type-scoped shorthand for messenger devices.
+	cmd.AddCommand(NewMessengerCmd())
 
 	return cmd
 }
