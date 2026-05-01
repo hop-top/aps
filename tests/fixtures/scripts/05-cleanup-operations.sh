@@ -9,7 +9,7 @@ echo
 echo "1. Creating test profiles..."
 for i in 1 2 3; do
     PROFILE_ID="cleanup-test-$$-$i"
-    aps profile new "$PROFILE_ID" --display-name "Cleanup Test $i"
+    aps profile create "$PROFILE_ID" --display-name "Cleanup Test $i"
     echo "✓ Created profile: $PROFILE_ID"
 done
 echo

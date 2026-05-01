@@ -9,7 +9,7 @@ PROFILE_ID="exec-test-$$"
 
 # Create profile
 echo "1. Creating profile for execution test..."
-aps profile new "$PROFILE_ID" --display-name "Execution Test"
+aps profile create "$PROFILE_ID" --display-name "Execution Test"
 echo "✓ Profile created"
 echo
 

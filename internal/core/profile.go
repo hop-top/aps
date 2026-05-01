@@ -426,7 +426,7 @@ func CreateProfile(id string, config Profile) error {
 	}
 
 	// Handle Force: if force is true and profile exists, we might need to remove it first or just overwrite?
-	// Spec T013 just says "Implement aps profile new command handler with flags"
+	// Spec T013 just says "Implement aps profile create command handler with flags"
 	// Spec 12.4 says "Refuse overwrite unless --force is provided"
 	// CreateProfile returns error if exists.
 	// But actually, we are in core package here. The logic logic is inside CreateProfile.

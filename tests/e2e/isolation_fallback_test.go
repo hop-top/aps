@@ -207,7 +207,7 @@ isolation:
 	require.NoError(t, err)
 
 	// Create profile without specifying isolation level
-	_, _, err = runAPS(t, home, "profile", "new", "default-level-profile")
+	_, _, err = runAPS(t, home, "profile", "create", "default-level-profile")
 	require.NoError(t, err)
 
 	// Profile should use default level from global config

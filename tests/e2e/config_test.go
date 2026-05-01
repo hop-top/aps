@@ -26,7 +26,7 @@ func TestCustomPrefixConfig(t *testing.T) {
 	// runAPS in helpers_test.go might not support custom env yet, let's check it.
 
 	// Create profile
-	_, _, err = runAPSWithEnv(t, home, map[string]string{"XDG_CONFIG_HOME": xdgConfigHome}, "profile", "new", "config-agent")
+	_, _, err = runAPSWithEnv(t, home, map[string]string{"XDG_CONFIG_HOME": xdgConfigHome}, "profile", "create", "config-agent")
 	require.NoError(t, err)
 
 	// Run env

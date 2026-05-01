@@ -13,12 +13,11 @@ import (
 
 func newConflictsResolveCmd() *cobra.Command {
 	var (
-		workspaceID string
-		strategy    string
-		choice      string
-		dryRun      bool
-		force       bool
-		jsonOutput  bool
+		strategy   string
+		choice     string
+		dryRun     bool
+		force      bool
+		jsonOutput bool
 	)
 
 	cmd := &cobra.Command{
@@ -33,6 +32,10 @@ Strategies:
 Use --dry-run to see what would happen without applying changes.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			workspaceID, _ := cmd.Flags().GetString("workspace")
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runConflictResolve(
 				args[0], workspaceID, strategy, choice,
 				dryRun, force, jsonOutput,
@@ -40,9 +43,6 @@ Use --dry-run to see what would happen without applying changes.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID (required)")
-	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().StringVar(&strategy, "strategy", "lww",
 		"Resolution strategy: lww, manual")
 	cmd.Flags().StringVar(&choice, "choice", "",

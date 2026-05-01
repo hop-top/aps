@@ -23,7 +23,7 @@ func TestGlobalConfigIsolationDefaults(t *testing.T) {
 	err = os.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	_, _, err = runAPS(t, home, "profile", "new", "default-iso-profile")
+	_, _, err = runAPS(t, home, "profile", "create", "default-iso-profile")
 	require.NoError(t, err)
 
 	stdout, _, err := runAPS(t, home, "profile", "show", "default-iso-profile")
@@ -49,7 +49,7 @@ isolation:
 	err = os.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	_, _, err = runAPS(t, home, "profile", "new", "custom-iso-profile")
+	_, _, err = runAPS(t, home, "profile", "create", "custom-iso-profile")
 	require.NoError(t, err)
 
 	stdout, _, err := runAPS(t, home, "profile", "show", "custom-iso-profile")
@@ -74,7 +74,7 @@ isolation:
 	err = os.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	_, _, err = runAPS(t, home, "profile", "new", "invalid-iso-profile")
+	_, _, err = runAPS(t, home, "profile", "create", "invalid-iso-profile")
 	require.NoError(t, err)
 
 	stdout, _, err := runAPS(t, home, "profile", "show", "invalid-iso-profile")

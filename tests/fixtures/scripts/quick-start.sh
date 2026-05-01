@@ -49,7 +49,7 @@ echo
 
 echo "Testing profile creation..."
 docker compose -f docker-compose.test.yml run --rm test-env \
-    /usr/local/bin/aps profile new quick-test --display-name "Quick Test"
+    /usr/local/bin/aps profile create quick-test --display-name "Quick Test"
 echo "✓ Profile creation works"
 echo
 

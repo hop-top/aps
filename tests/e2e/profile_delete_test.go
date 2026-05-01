@@ -18,7 +18,7 @@ func TestProfileDelete(t *testing.T) {
 	home := t.TempDir()
 
 	// Create a profile.
-	_, _, err := runAPS(t, home, "profile", "new", "doomed", "--display-name", "Doomed")
+	_, _, err := runAPS(t, home, "profile", "create", "doomed", "--display-name", "Doomed")
 	require.NoError(t, err)
 
 	// Sanity: it shows up in the list.

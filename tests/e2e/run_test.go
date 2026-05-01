@@ -15,7 +15,7 @@ func TestExecutionInjection(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", "exec-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "exec-agent")
 	require.NoError(t, err)
 
 	// Run env
@@ -32,7 +32,7 @@ func TestSecretInjection(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", "secret-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "secret-agent")
 	require.NoError(t, err)
 
 	// Modify secrets.env
@@ -57,7 +57,7 @@ func TestShorthandExecution(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", "short-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "short-agent")
 	require.NoError(t, err)
 
 	// Run command using shorthand: aps <profile> <cmd>

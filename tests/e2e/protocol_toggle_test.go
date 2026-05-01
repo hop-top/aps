@@ -19,7 +19,7 @@ func TestA2AToggle_Enable(t *testing.T) {
 	profileID := "test-a2a-enable"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test A2A")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test A2A")
 	require.NoError(t, err)
 
 	// Enable A2A with toggle command
@@ -44,7 +44,7 @@ func TestA2AToggle_Disable(t *testing.T) {
 	profileID := "test-a2a-disable"
 
 	// Create profile and enable A2A
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test A2A")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test A2A")
 	require.NoError(t, err)
 
 	_, _, err = runAPS(t, home, "a2a", "toggle", "--profile", profileID)
@@ -69,7 +69,7 @@ func TestA2AToggle_CustomConfig(t *testing.T) {
 	profileID := "test-a2a-custom"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test A2A Custom")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test A2A Custom")
 	require.NoError(t, err)
 
 	// Enable A2A with custom protocol and port
@@ -92,7 +92,7 @@ func TestA2AToggle_ForceEnable(t *testing.T) {
 	profileID := "test-a2a-force"
 
 	// Create profile and enable A2A
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test A2A Force")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test A2A Force")
 	require.NoError(t, err)
 
 	_, _, err = runAPS(t, home, "a2a", "toggle", "--profile", profileID)
@@ -117,7 +117,7 @@ func TestA2AServer_AutoEnable(t *testing.T) {
 	profileID := "test-a2a-server-auto"
 
 	// Create profile (without enabling A2A)
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test A2A Server Auto")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test A2A Server Auto")
 	require.NoError(t, err)
 
 	// Start server with timeout (it auto-enables and starts listening)
@@ -152,7 +152,7 @@ func TestACPToggle_Enable(t *testing.T) {
 	profileID := "test-acp-enable"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test ACP")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test ACP")
 	require.NoError(t, err)
 
 	// Enable ACP with toggle command
@@ -176,7 +176,7 @@ func TestACPToggle_Disable(t *testing.T) {
 	profileID := "test-acp-disable"
 
 	// Create profile and enable ACP
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test ACP")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test ACP")
 	require.NoError(t, err)
 
 	_, _, err = runAPS(t, home, "acp", "toggle", "--profile", profileID)
@@ -200,7 +200,7 @@ func TestACPToggle_CustomConfig(t *testing.T) {
 	profileID := "test-acp-custom"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test ACP Custom")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test ACP Custom")
 	require.NoError(t, err)
 
 	// Enable ACP with custom transport and port
@@ -223,7 +223,7 @@ func TestACPServer_AutoEnable(t *testing.T) {
 	profileID := "test-acp-server-auto"
 
 	// Create profile (without enabling ACP)
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test ACP Server Auto")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test ACP Server Auto")
 	require.NoError(t, err)
 
 	// Start server - it should auto-enable ACP
@@ -257,7 +257,7 @@ func TestWebhookToggle_Enable(t *testing.T) {
 	profileID := "test-webhook-enable"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test Webhook")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test Webhook")
 	require.NoError(t, err)
 
 	// Enable Webhook with toggle command
@@ -278,7 +278,7 @@ func TestWebhookToggle_Disable(t *testing.T) {
 	profileID := "test-webhook-disable"
 
 	// Create profile and enable Webhook
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test Webhook")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test Webhook")
 	require.NoError(t, err)
 
 	_, _, err = runAPS(t, home, "webhook", "toggle", "--profile", profileID)
@@ -302,7 +302,7 @@ func TestWebhookToggle_ForceDisable(t *testing.T) {
 	profileID := "test-webhook-force-off"
 
 	// Create profile and enable Webhook
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test Webhook Force")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test Webhook Force")
 	require.NoError(t, err)
 
 	_, _, err = runAPS(t, home, "webhook", "toggle", "--profile", profileID, "--enabled=on")
@@ -326,7 +326,7 @@ func TestWebhookServer_AutoEnable(t *testing.T) {
 	profileID := "test-webhook-server-auto"
 
 	// Create profile (without enabling webhooks)
-	_, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", "Test Webhook Server Auto")
+	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test Webhook Server Auto")
 	require.NoError(t, err)
 
 	// Start server with --profile - it should auto-enable webhooks
@@ -358,7 +358,7 @@ func TestToggle_InvalidEnabledValue(t *testing.T) {
 	profileID := "test-invalid"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Try A2A toggle with invalid value
@@ -373,7 +373,7 @@ func TestToggle_InvalidProtocol(t *testing.T) {
 	profileID := "test-invalid-proto"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Try A2A toggle with invalid protocol
@@ -388,7 +388,7 @@ func TestToggle_InvalidTransport(t *testing.T) {
 	profileID := "test-invalid-transport"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Try ACP toggle with invalid transport

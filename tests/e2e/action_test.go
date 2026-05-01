@@ -15,7 +15,7 @@ func TestActionDiscovery(t *testing.T) {
 	profileID := "action-agent"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Create a script
@@ -36,7 +36,7 @@ func TestActionRun(t *testing.T) {
 	profileID := "run-agent"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Create script
@@ -57,7 +57,7 @@ func TestActionPayload(t *testing.T) {
 	profileID := "payload-agent"
 
 	// Create profile
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	// Create script that echoes stdin

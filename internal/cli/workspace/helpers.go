@@ -94,15 +94,17 @@ func newTabWriter() *tabwriter.Writer {
 	return tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 }
 
-// addWorkspaceFlag adds the -w/--workspace flag to a command.
-func addWorkspaceFlag(cmd *cobra.Command) {
-	cmd.Flags().StringP("workspace", "w", "", "Workspace ID (uses active workspace if not set)")
-}
+// addWorkspaceFlag is a no-op. --workspace is a persistent global flag
+// declared in cli.Config.Globals (T-0376). Subcommands read it via
+// cmd.Flags().GetString("workspace") which falls through to the
+// persistent flag set.
+func addWorkspaceFlag(cmd *cobra.Command) {}
 
-// addProfileFlag adds the -p/--profile flag to a command.
-func addProfileFlag(cmd *cobra.Command) {
-	cmd.Flags().StringP("profile", "p", "", "Profile ID (uses APS_PROFILE if not set)")
-}
+// addProfileFlag is a no-op. --profile is a persistent global flag
+// declared in cli.Config.Globals (T-0376). Subcommands read it via
+// cmd.Flags().GetString("profile") which falls through to the
+// persistent flag set.
+func addProfileFlag(cmd *cobra.Command) {}
 
 // addJSONFlag adds the --json flag to a command.
 func addJSONFlag(cmd *cobra.Command) {

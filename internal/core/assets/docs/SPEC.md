@@ -399,11 +399,11 @@ Output:
 
 - one profile id per line
 
-### 12.4 aps profile new
+### 12.4 aps profile create
 
 Usage:
 
-- `aps profile new <profile-id> [flags]`
+- `aps profile create <profile-id> [flags]`
 
 Flags:
 
@@ -708,7 +708,7 @@ Runtime (optional depending on usage):
 
 ### 17.1 Profiles
 
-- `aps profile new agent-a --display-name "Agent A" --email a@x.com --github agent-a`
+- `aps profile create agent-a --display-name "Agent A" --email a@x.com --github agent-a`
 - `aps profile list`
 - `aps profile show agent-a`
 - `aps run agent-a -- env` includes required injected variables

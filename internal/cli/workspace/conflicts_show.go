@@ -12,8 +12,7 @@ import (
 
 func newConflictsShowCmd() *cobra.Command {
 	var (
-		workspaceID string
-		jsonOutput  bool
+		jsonOutput bool
 	)
 
 	cmd := &cobra.Command{
@@ -22,13 +21,14 @@ func newConflictsShowCmd() *cobra.Command {
 		Long:  `Show full details of a conflict including both versions and their values.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			workspaceID, _ := cmd.Flags().GetString("workspace")
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runConflictShow(args[0], workspaceID, jsonOutput)
 		},
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID (required)")
-	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
 	return cmd
