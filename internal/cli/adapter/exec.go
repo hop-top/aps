@@ -126,7 +126,7 @@ func resolveFromAddress(
 	if profile.Email == "" {
 		return "", fmt.Errorf(
 			"profile %q has no email; use --from or "+
-				"set email via: aps profile new %s --email <addr>",
+				"set email via: aps profile create %s --email <addr>",
 			profileID, profileID,
 		)
 	}

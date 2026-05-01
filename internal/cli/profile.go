@@ -62,8 +62,8 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
-var profileNewCmd = &cobra.Command{
-	Use:   "new [id]",
+var profileCreateCmd = &cobra.Command{
+	Use:   "create [id]",
 	Short: "Create a new profile",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -468,7 +468,7 @@ var profileDeleteCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(profileCmd)
 	profileCmd.AddCommand(profileListCmd)
-	profileCmd.AddCommand(profileNewCmd)
+	profileCmd.AddCommand(profileCreateCmd)
 	profileCmd.AddCommand(profileShowCmd)
 	profileCmd.AddCommand(profileStatusCmd)
 	profileCmd.AddCommand(profileShareCmd)
@@ -478,9 +478,9 @@ func init() {
 	profileCapabilityCmd.AddCommand(profileRemoveCapCmd)
 	profileCmd.AddCommand(profileDeleteCmd)
 
-	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
-	profileNewCmd.Flags().String("email", "", "Email for profile and git config")
-	profileNewCmd.Flags().Bool("force", false, "Overwrite existing profile")
+	profileCreateCmd.Flags().String("display-name", "", "Display name for the profile")
+	profileCreateCmd.Flags().String("email", "", "Email for profile and git config")
+	profileCreateCmd.Flags().Bool("force", false, "Overwrite existing profile")
 	profileStatusCmd.Flags().Bool("verbose", false, "Show full resolved scope and env var keys per bundle")
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
