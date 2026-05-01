@@ -15,11 +15,13 @@
 package bus
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
 	"hop.top/aps/internal/events"
+	kitbus "hop.top/kit/go/runtime/bus"
 )
 
 // busPropagationDeadline is the wall-clock budget for a child process
@@ -169,22 +171,109 @@ func TestBusProfileDeleted_CrossProcess(t *testing.T) {
 // subscriber resumes receiving events after the hub is killed and a
 // new hub comes up at the same address.
 //
-// SKIPPED today: T-0177 verified that kit/bus's NetworkAdapter does
-// NOT relay events between peers in a star topology — the outbound
-// forwarder skips events tagged with networkOriginKey, so events
-// arriving over WS are never forwarded back out. Hub receives, never
-// relays.
+// Closes T-0177. Unblocked by T-0182 (kit/bus star-topology relay).
 //
-// All three implementation options previously listed (aps daemon, aps
-// bus tail, story 051 listener-daemon) hit the same wall: routing,
-// not reconnect. The reconnect mechanics in NetworkAdapter
-// (reconnectLoop, Connect) are fine.
+// Topology: hub (relay on) bound to a stable 127.0.0.1:port + two
+// peers that dial in — publisher P and subscriber S. Both peers run
+// in-process kit/bus.NetworkAdapters with tight reconnect backoff so
+// the test does not stall during redial.
 //
-// Tracked as kit-side gap: T-0182 — kit/bus relay mode for
-// star-topology peer-to-peer. Once that lands, this test can
-// un-skip with any of the three aps-side patterns above.
+// Phases:
+//  1. baseline — P publishes "reconnect.test", S receives via hub relay.
+//  2. kill — hub server is shut down; both peers' WS conns fail and
+//     enter reconnectLoop.
+//  3. restart — successor hub binds the same port; reconnectLoop
+//     redials successfully on both peers.
+//  4. resume — P publishes again; S still receives via the new hub.
 //
-// Refs T-0177 + T-0182 in tools-showcase-scenarios.
+// Counter assertions catch regressions where (a) reconnect silently
+// drops, (b) relay gets disabled across hub restart, (c) loop
+// prevention misfires on the redial path.
 func TestBusReconnect_AfterHubRestart(t *testing.T) {
-	t.Skip("blocked on T-0182: kit/bus NetworkAdapter does not relay events peer-to-peer; reconnect mechanics fine but routing absent")
+	const (
+		topic        = "reconnect.test"
+		dialBackoff  = 50 * time.Millisecond
+		dialMaxWait  = 5 * time.Second
+		eventTimeout = 3 * time.Second
+		settleAfter  = 200 * time.Millisecond
+	)
+
+	hub := setupRelayBusHub(t)
+
+	// Publisher peer.
+	pubBus := kitbus.New()
+	pub := kitbus.NewNetworkAdapter(
+		pubBus,
+		kitbus.WithOriginID("test-publisher"),
+		kitbus.WithAuth(hub.authenticator()),
+		kitbus.WithBackoff(dialBackoff, 500*time.Millisecond),
+	)
+	t.Cleanup(func() { _ = pub.Close() })
+
+	// Subscriber peer + waitFor on its bus.
+	subBus := kitbus.New()
+	sub := kitbus.NewNetworkAdapter(
+		subBus,
+		kitbus.WithOriginID("test-subscriber"),
+		kitbus.WithAuth(hub.authenticator()),
+		kitbus.WithBackoff(dialBackoff, 500*time.Millisecond),
+	)
+	t.Cleanup(func() { _ = sub.Close() })
+
+	waitFor := subscribeOnBus(t, subBus, topic)
+
+	dialCtx, dialCancel := context.WithTimeout(context.Background(), dialMaxWait)
+	defer dialCancel()
+	if err := pub.Connect(dialCtx, hub.addr); err != nil {
+		t.Fatalf("publisher initial connect: %v", err)
+	}
+	if err := sub.Connect(dialCtx, hub.addr); err != nil {
+		t.Fatalf("subscriber initial connect: %v", err)
+	}
+
+	// Allow auth ack + first peerOriginID-learning frame to settle.
+	time.Sleep(settleAfter)
+
+	// Phase 1 — baseline: P publish → hub relay → S receive.
+	if err := pubBus.Publish(context.Background(), kitbus.NewEvent(topic, "P", "pre-restart")); err != nil {
+		t.Fatalf("baseline publish: %v", err)
+	}
+	got := waitFor(eventTimeout, 1)
+	if len(got) != 1 {
+		t.Fatalf("phase 1 baseline: want 1 event, got %d (%+v)", len(got), got)
+	}
+
+	// Phase 2 — kill hub. Peers' WS conns fail; reconnectLoop spins.
+	hub.stop(t)
+
+	// Phase 3 — successor hub on same port.
+	hub.restart(t)
+
+	// Wait for both peers to redial. We do not have a public hook on
+	// the adapter for "connected to addr", so poll by sending
+	// liveness publishes from the publisher and treating the first
+	// successful relay-then-receive as the redial signal.
+	redialDeadline := time.Now().Add(5 * time.Second)
+	var redialed bool
+	for time.Now().Before(redialDeadline) {
+		_ = pubBus.Publish(context.Background(), kitbus.NewEvent(topic, "P", "probe"))
+		if probe := waitFor(200*time.Millisecond, 2); len(probe) >= 2 {
+			redialed = true
+			break
+		}
+	}
+	if !redialed {
+		t.Fatalf("redial: subscriber did not receive any post-restart events within deadline")
+	}
+
+	// Phase 4 — confirm steady-state delivery resumes. Subscriber must
+	// keep receiving events on the new hub.
+	preCount := len(waitFor(0, 0))
+	if err := pubBus.Publish(context.Background(), kitbus.NewEvent(topic, "P", "post-restart")); err != nil {
+		t.Fatalf("post-restart publish: %v", err)
+	}
+	final := waitFor(eventTimeout, preCount+1)
+	if len(final) <= preCount {
+		t.Fatalf("phase 4 resume: want >%d events post-restart, got %d (%+v)", preCount, len(final), final)
+	}
 }
