@@ -18,6 +18,12 @@ As a maintainer, I want platform-specific sandbox adapters (process, container, 
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/isolation_test.go::TestIsolation_AdapterExactMatch`
+- planned: `tests/e2e/isolation_test.go::TestIsolation_StrictModeFailsWithoutFallback`
+- planned: `tests/e2e/isolation_test.go::TestIsolation_GracefulDegradationFallsBack`
+- planned: `tests/e2e/isolation_test.go::TestIsolation_DarwinSandboxOnMacOS`
+
 ### Unit
 - `tests/unit/core/isolation/manager_test.go` — `TestNewManager`, `TestRegisterAndGet`, `TestGetNotRegistered`, `TestIsolationLevels`
 - `tests/unit/core/isolation/process_test.go` — `TestProcessIsolation_PrepareContext`, `TestProcessIsolation_SetupEnvironment`, `TestProcessIsolation_Validate`, `TestProcessIsolation_Cleanup`

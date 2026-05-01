@@ -15,4 +15,5 @@ As a user, I want to generate local documentation so that I have offline access 
 
 ## Tests
 
-_No dedicated tests yet._
+### E2E
+- planned: `tests/e2e/docs_test.go::TestDocsGenerate_PopulatesDataDir`

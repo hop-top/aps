@@ -16,6 +16,10 @@ As a user, I want to integrate the a2a-go SDK and generate Agent Cards for my AP
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/a2a_agentcard_test.go::TestAgentCard_GeneratedFromProfileIsValid`
+- planned: `tests/e2e/a2a_agentcard_test.go::TestAgentCard_ReflectsCapabilitiesAndSecurity`
+
 ### Unit
 - `internal/a2a/agentcard_generation_test.go` — `TestGenerateAgentCardFromProfile_Enabled`, `TestGenerateAgentCardFromProfile_Disabled`, `TestGenerateAgentCardFromProfile_NoA2AConfig`, `TestGenerateAgentCardForProfile`, `TestGenerateAgentCardForProfile_InvalidID`
 - `internal/a2a/agentcard_validation_test.go` — `TestValidateAgentCard_ValidCard`, `TestValidateAgentCard_MissingName`, `TestValidateAgentCard_MissingURL`, `TestValidateAgentCard_EmptySkills`

@@ -44,5 +44,13 @@ As a user, I want to start, stop, and check the status of the voice backend serv
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StartLaunchesBackend`
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StartFailsWhenNoBackendConfigured`
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StopTerminatesProcess`
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StopNoOpWhenNotRunning`
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StatusRunning`
+- planned: `tests/e2e/voice_service_test.go::TestVoiceService_StatusStopped`
+
 ### Unit
 - `internal/voice/backend_test.go` — `Start`, `Stop`, `IsRunning`; external URL no-op; missing binary error

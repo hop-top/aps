@@ -67,6 +67,18 @@ As a user, I want to start voice sessions on different channels, list active ses
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_StartOnWebChannel`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_StartOnTUIChannel`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_FromTelegramAudio`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_FromTwilioCall`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_ListActive`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_ListEmpty`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_CloseTransitionsState`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_SwitchProfileMidSession`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_GetByID`
+- planned: `tests/e2e/voice_sessions_test.go::TestVoiceSession_LookupNotFound`
+
 ### Unit
 - `internal/voice/session_test.go` — Create, Get, List, Close, SwitchProfile; not-found errors
 - `internal/voice/channel_test.go` — ChannelSession and ChannelAdapter interface contracts

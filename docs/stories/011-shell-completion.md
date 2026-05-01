@@ -16,4 +16,6 @@ As a user, I want tab completion for profiles so that I can easily select the ri
 
 ## Tests
 
-_No dedicated tests yet._
+### E2E
+- planned: `tests/e2e/completion_test.go::TestCompletion_ProfileSuggestions`
+- planned: `tests/e2e/completion_test.go::TestCompletion_ProfileSubcommandFallback`

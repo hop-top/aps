@@ -16,5 +16,9 @@ As a user, I want specific tools to be automatically configured without remember
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/capability_link_test.go::TestCapability_SmartLinkCopilot`
+- planned: `tests/e2e/capability_link_test.go::TestCapability_WatchToolWindsurf`
+
 ### Unit
 - `tests/unit/core/capability/capability_test.go` — `TestSmartLinking`

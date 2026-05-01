@@ -64,6 +64,18 @@ As a user, I want to enable voice on a profile and configure its backend, channe
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_EnableOnProfile`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_BackendTypeSelection`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_DelegateExternalBackend`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_AutoDetectBackendByPlatform`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_EnableWebAndTUIChannels`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_EnableTelegramChannel`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_EnableTwilioChannel`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_CustomPromptTemplate`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_PersonaDerivedPrompt`
+- planned: `tests/e2e/voice_config_test.go::TestVoiceConfig_VoiceIDSelection`
+
 ### Unit
 - `internal/voice/config_test.go` — Config type defaults and YAML unmarshalling
 - `internal/voice/prompt_test.go` — Prompt generation from persona fields; custom template override

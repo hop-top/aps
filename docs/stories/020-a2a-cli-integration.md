@@ -16,4 +16,6 @@ As a user, I want CLI commands to manage A2A tasks so that I can create, list, a
 
 ## Tests
 
-_No dedicated tests yet._
+### E2E
+- planned: `tests/e2e/a2a_cli_test.go::TestA2A_TasksSendReturnsID`
+- planned: `tests/e2e/a2a_cli_test.go::TestA2A_TasksListShowsAllStatuses`
