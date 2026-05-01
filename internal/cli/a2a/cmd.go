@@ -19,14 +19,8 @@ The a2a command group provides operations for:
 - Discovering other agents`,
 	}
 
-	cmd.AddCommand(NewListTasksCmd())
-	cmd.AddCommand(NewGetTaskCmd())
-	cmd.AddCommand(NewSendTaskCmd())
-	cmd.AddCommand(NewSendStreamCmd())
-	cmd.AddCommand(NewCancelTaskCmd())
-	cmd.AddCommand(NewSubscribeTaskCmd())
-	cmd.AddCommand(NewShowCardCmd())
-	cmd.AddCommand(NewFetchCardCmd())
+	cmd.AddCommand(NewTasksCmd())
+	cmd.AddCommand(NewCardCmd())
 	cmd.AddCommand(NewServerCmd())
 	cmd.AddCommand(NewToggleCmd())
 

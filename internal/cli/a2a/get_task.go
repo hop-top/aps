@@ -22,8 +22,8 @@ func NewGetTaskCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get-task <task-id>",
-		Short: "Get details of a specific A2A task",
+		Use:   "show <task-id>",
+		Short: "Show details of a specific A2A task",
 		Long:  `Retrieve detailed information about a specific A2A task including its message history.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

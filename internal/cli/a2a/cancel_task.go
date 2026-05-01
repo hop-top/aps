@@ -14,7 +14,7 @@ func NewCancelTaskCmd() *cobra.Command {
 	var targetProfile string
 
 	cmd := &cobra.Command{
-		Use:   "cancel-task <task-id>",
+		Use:   "cancel <task-id>",
 		Short: "Cancel a running A2A task",
 		Long:  `Cancel a running A2A task on a target profile.`,
 		Args:  cobra.ExactArgs(1),

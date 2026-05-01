@@ -14,7 +14,7 @@ func NewSendStreamCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "send-stream",
+		Use:   "stream",
 		Short: "Send a message with streaming updates (not yet supported)",
 		Long:  `Send a message with streaming updates. This feature requires SDK support for streaming.`,
 		RunE: func(cmd *cobra.Command, args []string) error {

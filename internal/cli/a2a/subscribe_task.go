@@ -17,12 +17,12 @@ func NewSubscribeTaskCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "subscribe-task <task-id>",
+		Use:   "subscribe <task-id>",
 		Short: "Subscribe to push notifications for an A2A task",
 		Long: `Subscribe to push notifications for task updates via webhook.
 
 Example:
-  aps a2a subscribe-task <task-id> --target worker --webhook http://localhost:9000/hook`,
+  aps a2a tasks subscribe <task-id> --target worker --webhook http://localhost:9000/hook`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
