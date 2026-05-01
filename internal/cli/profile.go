@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -177,9 +178,10 @@ var profileShowCmd = &cobra.Command{
 
 		// Show modules status
 		fmt.Println("\nModules:")
-		secrets, _ := core.LoadProfileSecrets(id)
-		if len(secrets) > 0 {
+		dir, _ := core.GetProfileDir(id)
+		if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
 			fmt.Println("- Secrets: present")
+			secrets, _ := core.LoadProfileSecrets(id)
 			for k := range secrets {
 				fmt.Printf("  - %s: ***redacted***\n", k)
 			}
