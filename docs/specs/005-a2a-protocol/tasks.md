@@ -189,12 +189,12 @@ description: "Task list for A2A Protocol adoption in APS"
 ### Implementation for User Story 5
 
 - [ ] T065 [P] [US5] Create a2a command group in internal/cli/a2a/cmd.go
-- [ ] T066 [P] [US5] Implement `aps a2a list-tasks` command in internal/cli/a2a/list_tasks.go
-- [ ] T067 [P] [US5] Implement `aps a2a get-task` command in internal/cli/a2a/get_task.go
-- [ ] T068 [P] [US5] Implement `aps a2a send-task` command in internal/cli/a2a/send_task.go
-- [ ] T069 [P] [US5] Implement `aps a2a send-stream` command in internal/cli/a2a/send_stream.go
-- [ ] T070 [P] [US5] Implement `aps a2a cancel-task` command in internal/cli/a2a/cancel_task.go
-- [ ] T071 [P] [US5] Implement `aps a2a subscribe-task` command in internal/cli/a2a/subscribe_task.go
+- [ ] T066 [P] [US5] Implement `aps a2a tasks list` command in internal/cli/a2a/list_tasks.go
+- [ ] T067 [P] [US5] Implement `aps a2a tasks show` command in internal/cli/a2a/get_task.go
+- [ ] T068 [P] [US5] Implement `aps a2a tasks send` command in internal/cli/a2a/send_task.go
+- [ ] T069 [P] [US5] Implement `aps a2a tasks stream` command in internal/cli/a2a/send_stream.go
+- [ ] T070 [P] [US5] Implement `aps a2a tasks cancel` command in internal/cli/a2a/cancel_task.go
+- [ ] T071 [P] [US5] Implement `aps a2a tasks subscribe` command in internal/cli/a2a/subscribe_task.go
 - [ ] T072 [P] [US5] Implement `aps a2a show-agent-card` command in internal/cli/a2a/show_card.go
 - [ ] T073 [P] [US5] Implement `aps a2a fetch-agent-card` command in internal/cli/a2a/fetch_card.go
 - [ ] T074 [P] [US5] Implement `aps a2a register` command in internal/cli/a2a/register.go

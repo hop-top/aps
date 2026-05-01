@@ -133,7 +133,7 @@ make docker-test-shell
 
 # Run manual tests
 aps --help
-aps profile new test-agent
+aps profile create test-agent
 aps run test-agent -- echo "Hello"
 
 # Exit and cleanup

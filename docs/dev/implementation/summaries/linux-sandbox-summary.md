@@ -165,7 +165,7 @@ sudo pacman -S util-linux acl sudo tmux openssh
 
 ```bash
 # Create new profile with platform isolation
-aps profile new linux-sandbox --isolation-level platform
+aps profile create linux-sandbox --isolation-level platform
 
 # Edit profile.yaml
 cat > ~/.local/share/aps/profiles/linux-sandbox/profile.yaml << EOF
@@ -373,7 +373,7 @@ go tool cover -html=coverage.out
 
 ```bash
 # Create test profile
-aps profile new test-linux --isolation-level platform
+aps profile create test-linux --isolation-level platform
 
 # Test command execution
 aps run test-linux -- whoami

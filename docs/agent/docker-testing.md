@@ -74,7 +74,7 @@ which aps
 
 ```bash
 # Create a test profile
-aps profile new test-agent --display-name "Test Agent"
+aps profile create test-agent --display-name "Test Agent"
 
 # List all profiles
 aps profile list
@@ -109,15 +109,15 @@ aps run test-agent -- pwd
 
 ```bash
 # Process isolation (default)
-aps profile new process-agent
+aps profile create process-agent
 aps run process-agent -- ps aux | grep $USER
 
 # Platform isolation (Linux only)
-aps profile new platform-agent --isolation-level platform
+aps profile create platform-agent --isolation-level platform
 aps run platform-agent -- whoami
 
 # Container isolation (requires Docker)
-aps profile new container-agent --isolation-level container
+aps profile create container-agent --isolation-level container
 aps run container-agent -- cat /etc/os-release
 ```
 
@@ -125,7 +125,7 @@ aps run container-agent -- cat /etc/os-release
 
 ```bash
 # Create profile with capabilities
-aps profile new capable-agent \
+aps profile create capable-agent \
     --add-capability shell \
     --add-capability execution \
     --add-capability development
@@ -140,7 +140,7 @@ aps run capable-agent -- python3 --version
 
 ```bash
 # Create profile with secrets
-aps profile new secret-agent --email "user@example.com"
+aps profile create secret-agent --email "user@example.com"
 
 # Add secrets
 aps profile edit secret-agent
@@ -369,7 +369,7 @@ aps run test-agent -- curl https://api.github.com
 
 ```bash
 # Measure setup time
-time aps profile new perf-test
+time aps profile create perf-test
 
 # Measure execution overhead
 time aps run perf-test -- echo "test"
@@ -423,7 +423,7 @@ ls -la ~/.local/share/aps/
 rm -rf ~/.local/share/aps/profiles/test-agent
 
 # Try again
-aps profile new test-agent
+aps profile create test-agent
 ```
 
 ### No Output Expected

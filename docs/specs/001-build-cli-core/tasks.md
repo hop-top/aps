@@ -24,7 +24,7 @@
 ## Phase 3: Profile Management (User Story 1)
 
 **Goal**: Enable creation and listing of agent profiles.
-**Independent Test**: `aps profile list` returns empty, `aps profile new test` creates files, `aps profile list` shows `test`.
+**Independent Test**: `aps profile list` returns empty, `aps profile create test` creates files, `aps profile list` shows `test`.
 
 - [x] T009 [US1] Implement `CreateProfile(id, config)` logic in `internal/core/profile.go` (including default files generation)
 - [x] T010 [US1] Implement `ListProfiles()` logic in `internal/core/profile.go` (scanning `~/.agents/profiles`)

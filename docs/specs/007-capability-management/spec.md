@@ -44,7 +44,7 @@ As a user, I want specific tools to be automatically configured without remember
 As a user, I want to enable specific capabilities only for certain profiles, so that my "Work" profile has different tools than my "Personal" profile.
 
 **Acceptance Scenarios**:
-1.  **Given** profile `work-agent`, **When** I run `aps profile add-capability work-agent git-enterprise`, **Then** the `git-enterprise` config is active when I run `aps run work-agent`.
+1.  **Given** profile `work-agent`, **When** I run `aps profile capability add work-agent git-enterprise`, **Then** the `git-enterprise` config is active when I run `aps run work-agent`.
 
 ## Requirements
 
@@ -81,8 +81,8 @@ aps capability adopt <system_path> --name <id>    # Import: System -> APS (mv + 
 aps capability watch <system_path> --name <id>    # Inbound: System -> APS (link only)
 
 # Profile Association
-aps profile add-capability <profile> <id>
-aps profile remove-capability <profile> <id>
+aps profile capability add <profile> <id>
+aps profile capability remove <profile> <id>
 ```
 
 ## Success Criteria

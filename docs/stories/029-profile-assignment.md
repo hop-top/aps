@@ -11,7 +11,7 @@ As a user, I want to enable specific capabilities only for certain profiles so t
 
 ## Acceptance Scenarios
 
-1. **Given** profile `work-agent`, **When** I run `aps profile add-capability work-agent git-enterprise`, **Then** the `git-enterprise` config is active when I run `aps run work-agent`.
+1. **Given** profile `work-agent`, **When** I run `aps profile capability add work-agent git-enterprise`, **Then** the `git-enterprise` config is active when I run `aps run work-agent`.
 
 ## Tests
 

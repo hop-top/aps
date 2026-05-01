@@ -448,10 +448,10 @@ func GenerateAgentCard(profile *core.Profile) (*a2a.AgentCard, error) {
 | Old Command (Custom) | New Command (A2A) | A2A Operation |
 |---------------------|-------------------|----------------|
 | `aps a2a start-duo` | `aps a2a create-task` | SendMessage |
-| `aps a2a list-conversations` | `aps a2a list-tasks` | ListTasks |
-| `aps a2a show-conversation` | `aps a2a get-task` | GetTask |
-| `aps a2a send` | `aps a2a send-task` | SendMessage |
-| `aps a2a subscribe` | `aps a2a subscribe-task` | SubscribeToTask |
+| `aps a2a list-conversations` | `aps a2a tasks list` | ListTasks |
+| `aps a2a show-conversation` | `aps a2a tasks show` | GetTask |
+| `aps a2a send` | `aps a2a tasks send` | SendMessage |
+| `aps a2a subscribe` | `aps a2a tasks subscribe` | SubscribeToTask |
 | `aps a2a register` | `aps a2a publish-card` | Agent Card |
 
 ### Example Commands
@@ -469,17 +469,17 @@ aps a2a create-task worker \
   --stream
 
 # List tasks
-aps a2a list-tasks --status working
+aps a2a tasks list --status working
 
 # Get task details
-aps a2a get-task <task-id> --history
+aps a2a tasks show <task-id> --history
 
 # Subscribe to task
-aps a2a subscribe-task <task-id> \
+aps a2a tasks subscribe <task-id> \
   --webhook http://localhost:9000/hook
 
 # Cancel task
-aps a2a cancel-task <task-id>
+aps a2a tasks cancel <task-id>
 ```
 
 ---

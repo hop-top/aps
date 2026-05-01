@@ -261,7 +261,7 @@ This document summarizes performance benchmarks for APS isolation tiers.
 
 ### Test Scenarios
 1. **Basic command execution**: `aps run profile -- whoami`
-2. **Profile creation**: `aps profile new test-profile --isolation-level <tier>`
+2. **Profile creation**: `aps profile create test-profile --isolation-level <tier>`
 3. **Session creation**: `aps run profile -- sleep 60` (then Ctrl+Z)
 4. **Session attach**: `aps session attach <session-id>`
 5. **Session cleanup**: `aps session delete <session-id>`

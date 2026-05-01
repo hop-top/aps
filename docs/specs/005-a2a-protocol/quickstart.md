@@ -28,7 +28,7 @@ A2A (Agent2Agent) Protocol is an **open standard** developed by Google and donat
 
 ```bash
 # Create new profile with A2A enabled
-aps profile new orchestrator \
+aps profile create orchestrator \
   --display-name "Task Orchestrator" \
   --enable-a2a
 
@@ -57,12 +57,12 @@ A2A uses a task-based model. Create a task to send a message to another profile.
 
 ```bash
 # Send a task request (synchronous)
-aps a2a send-task worker \
+aps a2a tasks send worker \
   --type query \
   --payload '{"query": "status"}'
 
 # Send a task request with streaming (real-time updates)
-aps a2a send-stream worker \
+aps a2a tasks stream worker \
   --type task \
   --payload '{"command": "deploy", "target": "app1"}'
 ```
@@ -80,19 +80,19 @@ aps a2a send-stream worker \
 
 ```bash
 # List all tasks for a profile
-aps a2a list-tasks orchestrator
+aps a2a tasks list orchestrator
 
 # List tasks by status
-aps a2a list-tasks orchestrator --status working
+aps a2a tasks list orchestrator --status working
 
 # List tasks by context (grouping)
-aps a2a list-tasks orchestrator --context deploy-team
+aps a2a tasks list orchestrator --context deploy-team
 
 # View task details and message history
-aps a2a get-task <task-id>
+aps a2a tasks show <task-id>
 
 # Cancel a task
-aps a2a cancel-task <task-id>
+aps a2a tasks cancel <task-id>
 ```
 
 **Task States**:
@@ -164,7 +164,7 @@ Profile A (orchestrator) delegates tasks to Profile B (worker):
 
 ```bash
 # Profile A creates task for Profile B
-aps a2a send-task worker \
+aps a2a tasks send worker \
   --type task \
   --payload '{"command": "deploy", "target": "app1"}'
 
@@ -189,7 +189,7 @@ Profile A streams task updates from Profile B:
 
 ```bash
 # Profile A creates streaming task
-aps a2a send-stream worker \
+aps a2a tasks stream worker \
   --type task \
   --payload '{"command": "deploy"}'
 
@@ -212,13 +212,13 @@ Multiple profiles collaborate on a task:
 
 ```bash
 # Profile A creates task for group
-aps a2a send-task deploy-team \
+aps a2a tasks send deploy-team \
   --to worker,monitor \
   --type task \
   --payload '{"command": "deploy", "target": "app1"}'
 
 # Task message history tracks all messages
-aps a2a get-task <task-id> --history
+aps a2a tasks show <task-id> --history
 ```
 
 **Message History**:
@@ -260,7 +260,7 @@ aps a2a register \
 aps a2a discover --network 192.168.1.0/24
 
 # Create task for remote profile
-aps a2a send-task agent-a@10.0.0.1:8080 \
+aps a2a tasks send agent-a@10.0.0.1:8080 \
   --type query \
   --payload '{"query": "status"}'
 ```
@@ -279,7 +279,7 @@ Subscribe to task updates via webhook:
 
 ```bash
 # Subscribe to task push notifications
-aps a2a subscribe-task <task-id> \
+aps a2a tasks subscribe <task-id> \
   --webhook http://localhost:9000/hook
 
 # Task continues processing in background
@@ -366,42 +366,42 @@ a2a:
 
 ```bash
 # List all tasks
-aps a2a list-tasks
+aps a2a tasks list
 
 # Filter by status
-aps a2a list-tasks --status working
+aps a2a tasks list --status working
 
 # Filter by context (grouping)
-aps a2a list-tasks --context deploy-team
+aps a2a tasks list --context deploy-team
 
 # Pagination
-aps a2a list-tasks --page-size 50 --page-token <token>
+aps a2a tasks list --page-size 50 --page-token <token>
 
 # Include artifacts in results
-aps a2a list-tasks --include-artifacts
+aps a2a tasks list --include-artifacts
 ```
 
 ### Task Details
 
 ```bash
 # Show task metadata and status
-aps a2a get-task <task-id>
+aps a2a tasks show <task-id>
 
 # Show message history
-aps a2a get-task <task-id> --history
+aps a2a tasks show <task-id> --history
 
 # Show artifacts (outputs)
-aps a2a get-task <task-id> --artifacts
+aps a2a tasks show <task-id> --artifacts
 
 # Show last N messages
-aps a2a get-task <task-id> --history-limit 10
+aps a2a tasks show <task-id> --history-limit 10
 ```
 
 ### Task Lifecycle
 
 ```bash
 # Cancel long-running task
-aps a2a cancel-task <task-id>
+aps a2a tasks cancel <task-id>
 
 # Archive task (read-only)
 aps a2a archive-task <task-id>
@@ -630,10 +630,10 @@ aps a2a stats <task-id>
 
 ```bash
 # Check task exists
-aps a2a list-tasks --all
+aps a2a tasks list --all
 
 # Check task ID format (should be UUID)
-aps a2a get-task <task-id>
+aps a2a tasks show <task-id>
 ```
 
 ### Agent Card Not Found
@@ -656,7 +656,7 @@ aps a2a status transport
 # Check IPC permissions (local communication)
 
 # Try fallback transport
-aps a2a send-task <target> --protocol-binding http
+aps a2a tasks send <target> --protocol-binding http
 ```
 
 ### Isolation Issues

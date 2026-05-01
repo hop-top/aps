@@ -347,20 +347,20 @@ Disable a capability on a profile.
 aps cap disable <profile> <capability>
 ```
 
-### `aps profile add-capability`
+### `aps profile capability add`
 
 Add a capability to a profile.
 
 ```bash
-aps profile add-capability <profile> <capability>
+aps profile capability add <profile> <capability>
 ```
 
-### `aps profile remove-capability`
+### `aps profile capability remove`
 
 Remove a capability from a profile.
 
 ```bash
-aps profile remove-capability <profile> <capability>
+aps profile capability remove <profile> <capability>
 ```
 
 ## Session Commands

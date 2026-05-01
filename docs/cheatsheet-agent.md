@@ -22,11 +22,11 @@ Config: XDG (`~/.config/aps/`); data: `$APS_DATA_PATH`
 
 ```
 1. Orient     →  aps profile list / GET /profiles
-2. Discover   →  aps collab agents --cap <cap> / aps directory discover
-3. Coordinate →  aps collab use <ws> / aps collab send <agent> --action <act>
+2. Discover   →  aps workspace agents --cap <cap> / aps directory discover
+3. Coordinate →  aps workspace use <ws> / aps workspace send <agent> --action <act>
 4. Execute    →  aps run <profile> -- <cmd> / aps action run <profile> <action>
 5. Observe    →  aps session inspect <id> / aps session logs <id>
-6. Report     →  aps collab ctx set <key> <result>
+6. Report     →  aps workspace ctx set <key> <result>
 ```
 
 **DO:** resolve profile + workspace before sending tasks.
@@ -126,33 +126,33 @@ aps action run <profile> <action>    # execute; blocks until done
 Primary coordination path for agent-to-agent work within a shared workspace.
 
 ```bash
-aps collab use <workspace>           # set active workspace (persists per session)
-aps collab list                      # enumerate workspaces
-aps collab show <ws>                 # details: members, policy, conflicts
-aps collab join <ws>                 # register agent presence
-aps collab members                   # list members + roles (uses active ws)
-aps collab agents --cap <capability> # discover agents by capability
+aps workspace use <workspace>           # set active workspace (persists per session)
+aps workspace list                      # enumerate workspaces
+aps workspace show <ws>                 # details: members, policy, conflicts
+aps workspace join <ws>                 # register agent presence
+aps workspace members                   # list members + roles (uses active ws)
+aps workspace agents --cap <capability> # discover agents by capability
 
 # Send a task to another agent
-aps collab send <recipient> \
+aps workspace send <recipient> \
   --action <act> \
   --set key=val \
   --timeout 5m                       # optional; default no timeout
 
 # Monitor tasks
-aps collab tasks                     # all workspace tasks
-aps collab task <id>                 # single task detail + status
+aps workspace tasks                     # all workspace tasks
+aps workspace task <id>                 # single task detail + status
 
 # Shared context (broadcast state to all members)
-aps collab ctx list                  # all k/v pairs
-aps collab ctx set <key> <value>     # write
-aps collab ctx get <key>             # read
-aps collab ctx history <key>         # mutation log (versioned)
+aps workspace ctx list                  # all k/v pairs
+aps workspace ctx set <key> <value>     # write
+aps workspace ctx get <key>             # read
+aps workspace ctx history <key>         # mutation log (versioned)
 
 # Conflicts
-aps collab conflicts                 # list unresolved conflicts
-aps collab resolve <id>              # resolve conflict
-aps collab policy show               # active resolution policy
+aps workspace conflicts                 # list unresolved conflicts
+aps workspace resolve <id>              # resolve conflict
+aps workspace policy show               # active resolution policy
 ```
 
 ---
@@ -162,18 +162,18 @@ aps collab policy show               # active resolution policy
 Use when targeting agents by URL rather than workspace membership.
 
 ```bash
-aps a2a show-card <profile>          # emit agent card (share with remote agents)
-aps a2a fetch-card <url>             # fetch remote agent's card
+aps a2a card show <profile>          # emit agent card (share with remote agents)
+aps a2a card fetch <url>             # fetch remote agent's card
 
 # Task lifecycle
-aps a2a send-task <profile> \
+aps a2a tasks send <profile> \
   --to <agent-url> \
   --msg "<message>"                  # create or continue task → returns task ID
 
-aps a2a get-task <task-id>           # poll task state
-aps a2a list-tasks <profile>         # all tasks for profile
-aps a2a subscribe-task <task-id>     # push notification (webhook-based)
-aps a2a cancel-task <task-id>        # cancel running task
+aps a2a tasks show <task-id>           # poll task state
+aps a2a tasks list <profile>         # all tasks for profile
+aps a2a tasks subscribe <task-id>     # push notification (webhook-based)
+aps a2a tasks cancel <task-id>        # cancel running task
 
 # Server mode (expose profile as A2A endpoint)
 aps a2a server <profile> \
@@ -205,10 +205,10 @@ Start with `aps serve`; then use REST equivalents.
 | `aps session list` | `GET /sessions` |
 | `aps session inspect <id>` | `GET /sessions/{id}` |
 | `aps action run <p> <a>` | `POST /profiles/{p}/actions/{a}` |
-| `aps collab list` | `GET /workspaces` |
-| `aps collab ctx set` | `PUT /workspaces/{ws}/ctx/{key}` |
-| `aps a2a send-task` | `POST /a2a/tasks` |
-| `aps a2a get-task` | `GET /a2a/tasks/{id}` |
+| `aps workspace list` | `GET /workspaces` |
+| `aps workspace ctx set` | `PUT /workspaces/{ws}/ctx/{key}` |
+| `aps a2a tasks send` | `POST /a2a/tasks` |
+| `aps a2a tasks show` | `GET /a2a/tasks/{id}` |
 
 Auth (if `--auth-token` set): `Authorization: Bearer <token>`
 
@@ -250,8 +250,8 @@ aps directory discover \
 
 ```bash
 aps policy show <workspace>          # effective access policy
-aps audit <workspace>                # full access audit log
-aps collab audit                     # collaboration event trail
+aps workspace audit                # full access audit log
+aps workspace audit                     # collaboration event trail
 ```
 
 ---
@@ -262,9 +262,9 @@ aps collab audit                     # collaboration event trail
 |-----------|----------|
 | Profile not found | `aps profile list`; check `$APS_DATA_PATH` |
 | Session stuck | `aps session inspect <id>`; terminate + clean up |
-| A2A task failed | `aps a2a get-task <id>` → check error; `cancel-task` + retry |
-| Collab task not delivered | `aps collab task <id>`; check recipient presence with `members` |
-| Conflict blocks workspace | `aps collab conflicts`; resolve before sending more tasks |
+| A2A task failed | `aps a2a tasks show <id>` → check error; `cancel-task` + retry |
+| Collab task not delivered | `aps workspace task <id>`; check recipient presence with `members` |
+| Conflict blocks workspace | `aps workspace conflicts`; resolve before sending more tasks |
 | Capability missing | `aps capability list`; install with `aps capability install <src>` |
 | APS server not reachable | Verify `aps serve` running; check `--addr`; use CLI fallback |
 | Auth rejected | Confirm `--auth-token` matches; use `Authorization: Bearer <tok>` |

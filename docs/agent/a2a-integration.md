@@ -80,18 +80,18 @@ When you want to **send** tasks to other agents:
 
 1. **Send a task**:
 ```bash
-aps a2a send-task --target <other-profile> --message "Your request here"
+aps a2a tasks send --target <other-profile> --message "Your request here"
 ```
 
 2. **Check task status**:
 ```bash
-aps a2a list-tasks --profile <other-profile>
-aps a2a get-task <task-id> --profile <other-profile>
+aps a2a tasks list --profile <other-profile>
+aps a2a tasks show <task-id> --profile <other-profile>
 ```
 
 3. **Cancel if needed**:
 ```bash
-aps a2a cancel-task <task-id> --target <other-profile>
+aps a2a tasks cancel <task-id> --target <other-profile>
 ```
 
 ---
@@ -110,10 +110,10 @@ You ← Response ← Other Agent
 **Example**:
 ```bash
 # Send task
-aps a2a send-task --target worker --message "Get status"
+aps a2a tasks send --target worker --message "Get status"
 
 # Get result
-aps a2a get-task <task-id> --profile worker
+aps a2a tasks show <task-id> --profile worker
 ```
 
 ### Fire-and-Forget (Asynchronous)
@@ -129,10 +129,10 @@ You → Check status later
 **Example**:
 ```bash
 # Send task
-aps a2a send-task --target worker --message "Process large dataset"
+aps a2a tasks send --target worker --message "Process large dataset"
 
 # Check later
-aps a2a list-tasks --profile worker --status completed
+aps a2a tasks list --profile worker --status completed
 ```
 
 ### Streaming (Real-time Updates)
@@ -148,7 +148,7 @@ You ← Final ← Other Agent
 
 **Example** (when supported):
 ```bash
-aps a2a send-stream --target worker --message "Long operation"
+aps a2a tasks stream --target worker --message "Long operation"
 ```
 
 ### Push Notifications (Webhooks)
@@ -163,7 +163,7 @@ Other Agent → Webhook → Your server
 **Example**:
 ```bash
 # Subscribe to task updates
-aps a2a subscribe-task <task-id> --target worker --webhook http://your-server/hook
+aps a2a tasks subscribe <task-id> --target worker --webhook http://your-server/hook
 ```
 
 ---
@@ -184,14 +184,14 @@ Orchestrator ← Results ← Workers
 **Implementation**:
 ```bash
 # Orchestrator sends tasks
-aps a2a send-task --target worker-1 --message "Task A"
-aps a2a send-task --target worker-2 --message "Task B"
-aps a2a send-task --target worker-3 --message "Task C"
+aps a2a tasks send --target worker-1 --message "Task A"
+aps a2a tasks send --target worker-2 --message "Task B"
+aps a2a tasks send --target worker-3 --message "Task C"
 
 # Collect results
-aps a2a list-tasks --profile worker-1
-aps a2a list-tasks --profile worker-2
-aps a2a list-tasks --profile worker-3
+aps a2a tasks list --profile worker-1
+aps a2a tasks list --profile worker-2
+aps a2a tasks list --profile worker-3
 ```
 
 ### Pattern 2: Pipeline
@@ -262,12 +262,12 @@ Supervisor → Commands → Worker
 
 1. **Known profiles**: You already know the profile ID
 ```bash
-aps a2a show-card --profile known-worker
+aps a2a card show --profile known-worker
 ```
 
 2. **Agent Card URL**: You have the URL
 ```bash
-aps a2a fetch-card --url http://remote-agent:8081/.well-known/agent-card
+aps a2a card fetch --url http://remote-agent:8081/.well-known/agent-card
 ```
 
 3. **Discovery service** (future): Central registry of agents
@@ -335,17 +335,17 @@ a2a:
 
 ```bash
 # List all tasks
-aps a2a list-tasks --profile <your-profile>
+aps a2a tasks list --profile <your-profile>
 
 # Check specific task
-aps a2a get-task <task-id> --profile <your-profile>
+aps a2a tasks show <task-id> --profile <your-profile>
 ```
 
 ### View Task History
 
 ```bash
 # Get task with full history
-aps a2a get-task <task-id> --profile <your-profile>
+aps a2a tasks show <task-id> --profile <your-profile>
 
 # Output shows all messages exchanged
 ```
@@ -416,7 +416,7 @@ Tasks are stored in:
 
 ```bash
 # 1. Orchestrator sends raw data to Parser
-aps a2a send-task --target parser --message "Parse dataset.csv"
+aps a2a tasks send --target parser --message "Parse dataset.csv"
 
 # 2. Parser processes and sends to Transformer
 # (Parser would programmatically send to next agent)
@@ -425,7 +425,7 @@ aps a2a send-task --target parser --message "Parse dataset.csv"
 # (Transformer would programmatically send to next agent)
 
 # 4. Orchestrator checks final result
-aps a2a list-tasks --profile analyzer --status completed
+aps a2a tasks list --profile analyzer --status completed
 ```
 
 ### Example 2: Distributed Computation
@@ -434,14 +434,14 @@ aps a2a list-tasks --profile analyzer --status completed
 
 ```bash
 # Split work into chunks
-aps a2a send-task --target worker-1 --message "Compute chunk 1"
-aps a2a send-task --target worker-2 --message "Compute chunk 2"
-aps a2a send-task --target worker-3 --message "Compute chunk 3"
+aps a2a tasks send --target worker-1 --message "Compute chunk 1"
+aps a2a tasks send --target worker-2 --message "Compute chunk 2"
+aps a2a tasks send --target worker-3 --message "Compute chunk 3"
 
 # Monitor progress
-aps a2a list-tasks --profile worker-1
-aps a2a list-tasks --profile worker-2
-aps a2a list-tasks --profile worker-3
+aps a2a tasks list --profile worker-1
+aps a2a tasks list --profile worker-2
+aps a2a tasks list --profile worker-3
 
 # Collect results when all complete
 ```
@@ -452,11 +452,11 @@ aps a2a list-tasks --profile worker-3
 
 ```bash
 # Supervisor periodically checks worker status
-aps a2a send-task --target worker --message "Status check"
-aps a2a get-task <task-id> --profile worker
+aps a2a tasks send --target worker --message "Status check"
+aps a2a tasks show <task-id> --profile worker
 
 # If worker is overloaded, cancel pending tasks
-aps a2a cancel-task <task-id> --target worker
+aps a2a tasks cancel <task-id> --target worker
 ```
 
 ---
@@ -475,17 +475,17 @@ aps a2a cancel-task <task-id> --target worker
 ### Server Commands
 ```bash
 aps a2a server --profile <id>                    # Start server
-aps a2a show-card --profile <id>                # Show Agent Card
-aps a2a list-tasks --profile <id>               # List tasks
-aps a2a get-task <task-id> --profile <id>       # Get task details
+aps a2a card show --profile <id>                # Show Agent Card
+aps a2a tasks list --profile <id>               # List tasks
+aps a2a tasks show <task-id> --profile <id>       # Get task details
 ```
 
 ### Client Commands
 ```bash
-aps a2a send-task -t <target> -m <message>      # Send task
-aps a2a cancel-task <task-id> -t <target>       # Cancel task
-aps a2a fetch-card --url <url>                   # Fetch Agent Card
-aps a2a subscribe-task <task-id> -t <target> \
+aps a2a tasks send -t <target> -m <message>      # Send task
+aps a2a tasks cancel <task-id> -t <target>       # Cancel task
+aps a2a card fetch --url <url>                   # Fetch Agent Card
+aps a2a tasks subscribe <task-id> -t <target> \
   --webhook <url>                                # Subscribe to updates
 ```
 

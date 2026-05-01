@@ -49,9 +49,9 @@ it does not.
 | ------------------- | ------------------------------------------------- | ------------------------ |
 | Create              | `core.CreateProfile` (profile.go:343)             | `aps profile new`        |
 | Save / update       | `core.SaveProfile` (profile.go:315)               | various                  |
-| Add capability      | `core.AddCapabilityToProfile`                     | `aps profile add-capability` |
-| Remove capability   | `core.RemoveCapabilityFromProfile` (profile.go:447) | `aps profile remove-capability` |
-| Link workspace      | `core.SetProfileWorkspace`                        | `aps profile set-workspace` |
+| Add capability      | `core.AddCapabilityToProfile`                     | `aps profile capability add` |
+| Remove capability   | `core.RemoveCapabilityFromProfile` (profile.go:447) | `aps profile capability remove` |
+| Link workspace      | `core.SetProfileWorkspace`                        | `aps profile workspace set` |
 | Export              | profile_export.go                                 | `aps profile share`      |
 | Import              | profile_bundle.go                                 | `aps profile import`     |
 | Delete              | `core.DeleteProfile` (profile.go:476)             | `aps profile delete`     |

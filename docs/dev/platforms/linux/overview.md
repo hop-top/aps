@@ -94,10 +94,10 @@ sudo visudo -c /etc/sudoers.d/99-aps-user
 
 ```bash
 # Create new profile with platform isolation
-aps profile new linux-sandbox --isolation-level platform
+aps profile create linux-sandbox --isolation-level platform
 
 # Or create manually
-aps profile new linux-sandbox
+aps profile create linux-sandbox
 # Edit: ~/.local/share/aps/profiles/linux-sandbox/profile.yaml
 # Add:
 #   isolation:

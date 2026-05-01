@@ -28,10 +28,10 @@ As a user, I want to create and manage agent profiles so that I can maintain iso
 **Acceptance Scenarios**:
 
 1. **Given** no existing profiles, **When** I run `aps profile list`, **Then** I see no output (or empty list).
-2. **Given** no profile `agent-a`, **When** I run `aps profile new agent-a`, **Then** the profile directory structure is created with default files.
+2. **Given** no profile `agent-a`, **When** I run `aps profile create agent-a`, **Then** the profile directory structure is created with default files.
 3. **Given** an existing profile `agent-a`, **When** I run `aps profile list`, **Then** `agent-a` is listed.
 4. **Given** an existing profile `agent-a`, **When** I run `aps profile show agent-a`, **Then** I see the profile configuration and modules.
-5. **Given** an existing profile `agent-a`, **When** I run `aps profile new agent-a` without force, **Then** it fails to overwrite.
+5. **Given** an existing profile `agent-a`, **When** I run `aps profile create agent-a` without force, **Then** it fails to overwrite.
 
 ---
 
