@@ -146,6 +146,12 @@ func Execute() error {
 	// renders help (root.Execute calls applyGroupVisibility internally
 	// after our hook has run).
 	applyCommandGroups()
+	// Drain in-flight bus events before returning so short-lived CLI
+	// invocations don't exit before async network forwarders flush
+	// their writes to the hub. drainBus is a no-op when the bus is
+	// disabled or no publishes occurred. See internal/cli/bus.go and
+	// T-0176. Deferred so it runs on RunE error paths too.
+	defer drainBus()
 	err := root.Execute(context.Background())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))
