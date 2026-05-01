@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"fmt"
@@ -162,7 +162,7 @@ func newCtxListCmd() *cobra.Command {
 				fmt.Println(styles.Dim.Render("No context variables set."))
 				fmt.Println()
 				fmt.Println(styles.Dim.Render("  Set one:"))
-				fmt.Println(styles.Dim.Render("    aps collab ctx set <key> <value>"))
+				fmt.Println(styles.Dim.Render("    aps workspace ctx set <key> <value>"))
 				return nil
 			}
 

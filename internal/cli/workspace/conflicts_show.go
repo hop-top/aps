@@ -1,4 +1,4 @@
-package conflict
+package workspace
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newShowCmd() *cobra.Command {
+func newConflictsShowCmd() *cobra.Command {
 	var (
 		workspaceID string
 		jsonOutput  bool
@@ -101,7 +101,7 @@ func runConflictShow(conflictID, workspaceID string, jsonOut bool) error {
 		}
 	} else {
 		fmt.Printf("  %s\n", dimStyle.Render("To resolve:"))
-		fmt.Printf("    aps conflict resolve %s --workspace %s --strategy lww\n",
+		fmt.Printf("    aps workspace conflicts resolve %s --workspace %s --strategy lww\n",
 			conflictID, workspaceID)
 	}
 

@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func NewListCmd() *cobra.Command {
 				fmt.Println(styles.Dim.Render("No collaboration workspaces yet."))
 				fmt.Println()
 				fmt.Println(styles.Dim.Render("  Create your first:"))
-				fmt.Println(styles.Dim.Render("    aps collab new my-team --profile <profile>"))
+				fmt.Println(styles.Dim.Render("    aps workspace new my-team --profile <profile>"))
 				return nil
 			}
 

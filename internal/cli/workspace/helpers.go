@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"encoding/json"
@@ -14,7 +14,16 @@ import (
 	"hop.top/aps/internal/styles"
 )
 
-var collabTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+var (
+	collabTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+
+	// Shared styles used by merged conflict/audit subcommands.
+	headerStyle  = styles.Title
+	dimStyle     = styles.Dim
+	boldStyle    = styles.Bold
+	successStyle = styles.Success
+	tableHeader  = collabTableHeader
+)
 
 // resolveWorkspace determines the workspace ID from flag or active context.
 func resolveWorkspace(cmd *cobra.Command, args []string) (string, error) {
@@ -35,7 +44,7 @@ func resolveWorkspace(cmd *cobra.Command, args []string) (string, error) {
 	mgr := collab.NewManager(store)
 	active, err := mgr.GetActiveWorkspace(cmd.Context())
 	if err != nil || active == "" {
-		return "", fmt.Errorf("no workspace specified and no active workspace set\n\n  Set one: aps collab use <workspace>")
+		return "", fmt.Errorf("no workspace specified and no active workspace set\n\n  Set one: aps workspace use <workspace>")
 	}
 	return active, nil
 }

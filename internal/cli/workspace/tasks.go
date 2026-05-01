@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"fmt"
@@ -60,7 +60,7 @@ func NewTasksCmd() *cobra.Command {
 				fmt.Println(styles.Dim.Render("No tasks in this workspace."))
 				fmt.Println()
 				fmt.Println(styles.Dim.Render("  Send one:"))
-				fmt.Println(styles.Dim.Render("    aps collab send <agent> --action <action>"))
+				fmt.Println(styles.Dim.Render("    aps workspace send <agent> --action <action>"))
 				return nil
 			}
 

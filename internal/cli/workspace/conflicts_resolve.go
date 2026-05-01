@@ -1,4 +1,4 @@
-package conflict
+package workspace
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"hop.top/aps/internal/styles"
 )
 
-func newResolveCmd() *cobra.Command {
+func newConflictsResolveCmd() *cobra.Command {
 	var (
 		workspaceID string
 		strategy    string

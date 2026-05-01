@@ -1,11 +1,10 @@
-package conflict
+package workspace
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
-	"time"
 
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
@@ -13,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newListCmd() *cobra.Command {
+func newConflictsListCmd() *cobra.Command {
 	var (
 		includeResolved bool
 		jsonOutput      bool
@@ -138,19 +137,4 @@ func runConflictList(workspaceID string, includeResolved, jsonOut bool) error {
 	fmt.Printf("\n%s\n", dimStyle.Render(summary))
 
 	return nil
-}
-
-func formatAge(t time.Time) string {
-	d := time.Since(t)
-	if d < time.Minute {
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%dm", int(d.Minutes()))
-	}
-	if d < 24*time.Hour {
-		return fmt.Sprintf("%dh", int(d.Hours()))
-	}
-	days := int(d.Hours()) / 24
-	return fmt.Sprintf("%dd", days)
 }

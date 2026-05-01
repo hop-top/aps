@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"fmt"
@@ -80,8 +80,8 @@ exchange tasks, and resolve conflicts.`,
 			fmt.Printf("Created workspace '%s'\n", name)
 			fmt.Println()
 			fmt.Println("  Next steps:")
-			fmt.Printf("    aps collab join %s\n", name)
-			fmt.Printf("    aps collab use %s\n", name)
+			fmt.Printf("    aps workspace join %s\n", name)
+			fmt.Printf("    aps workspace use %s\n", name)
 
 			return nil
 		},

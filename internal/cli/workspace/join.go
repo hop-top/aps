@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"fmt"
@@ -40,8 +40,8 @@ You must specify your profile to identify which agent is joining.`,
 			fmt.Printf("Joined '%s' as contributor\n", wsID)
 			fmt.Println()
 			fmt.Println("  Next steps:")
-			fmt.Printf("    aps collab use %s\n", wsID)
-			fmt.Printf("    aps collab members %s\n", wsID)
+			fmt.Printf("    aps workspace use %s\n", wsID)
+			fmt.Printf("    aps workspace members %s\n", wsID)
 
 			return nil
 		},

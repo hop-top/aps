@@ -1,4 +1,4 @@
-package collab
+package workspace
 
 import (
 	"encoding/json"
