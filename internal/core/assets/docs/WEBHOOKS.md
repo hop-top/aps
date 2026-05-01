@@ -16,7 +16,7 @@ APS webhooks allow external services to trigger profile actions via HTTP POST re
 ### 1. Create Profile with Action
 
 ```bash
-aps profile new webhook-receiver \
+aps profile create webhook-receiver \
   --display-name "Webhook Receiver"
 ```
 

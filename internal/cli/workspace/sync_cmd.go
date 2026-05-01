@@ -94,7 +94,7 @@ func runSync(workspaceID, deviceID string, jsonOut bool) error {
 		if result.ManualPending > 0 {
 			fmt.Printf(" (%d need manual resolution)", result.ManualPending)
 		}
-		fmt.Printf("\n  aps conflict list %s\n", workspaceID)
+		fmt.Printf("\n  aps workspace conflicts list %s\n", workspaceID)
 	}
 
 	return nil

@@ -85,11 +85,11 @@ Notes:
 | aps  | policy {list,show,set} | internal/cli/policy/*.go         | --json bool |
 | aps  | session inspect      | internal/cli/session/inspect.go    | --json bool |
 | aps  | collab (helpers)     | internal/cli/collab/helpers.go:100 | --json bool |
-| aps  | a2a fetch-card       | internal/cli/a2a/fetch_card.go     | -f --format string (text\|json) |
-| aps  | a2a get-task         | internal/cli/a2a/get_task.go       | -f --format string (text\|json) |
-| aps  | a2a list-tasks       | internal/cli/a2a/list_tasks.go     | -f --format string (table\|json) |
-| aps  | a2a send-task        | internal/cli/a2a/send_task.go      | -f --format string (text\|json) |
-| aps  | a2a show-card        | internal/cli/a2a/show_card.go      | -f --format string (text\|json) |
+| aps  | a2a card fetch       | internal/cli/a2a/fetch_card.go     | -f --format string (text\|json) |
+| aps  | a2a tasks show         | internal/cli/a2a/get_task.go       | -f --format string (text\|json) |
+| aps  | a2a tasks list       | internal/cli/a2a/list_tasks.go     | -f --format string (table\|json) |
+| aps  | a2a tasks send        | internal/cli/a2a/send_task.go      | -f --format string (text\|json) |
+| aps  | a2a card show        | internal/cli/a2a/show_card.go      | -f --format string (text\|json) |
 | tlc  | version              | internal/cli/version.go:42         | --json bool |
 | tlc  | prompt task          | internal/cli/prompt_context.go:283 | --json bool |
 | pod  | (per-cmd --format)   | internal/cli/flags.go:42           | --format default table |

@@ -449,9 +449,9 @@ actions:
 ### One Profile Per Agent
 ```bash
 # Create focused profiles
-aps profile new github-triage --display-name "GitHub Issue Triage"
-aps profile new slack-responder --display-name "Slack Auto-Responder"
-aps profile new payment-processor --display-name "Payment Link Generator"
+aps profile create github-triage --display-name "GitHub Issue Triage"
+aps profile create slack-responder --display-name "Slack Auto-Responder"
+aps profile create payment-processor --display-name "Payment Link Generator"
 ```
 
 **Each profile:**

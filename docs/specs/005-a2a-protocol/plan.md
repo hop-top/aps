@@ -206,8 +206,8 @@ internal/
 | Old (Custom) | New (Official A2A) |
 |---------------|-------------------|
 | `aps a2a start-duo` | Create new task via A2A Client |
-| `aps a2a list-conversations` | `aps a2a list-tasks` |
-| `aps a2a show-conversation` | `aps a2a get-task` |
+| `aps a2a list-conversations` | `aps a2a tasks list` |
+| `aps a2a show-conversation` | `aps a2a tasks show` |
 | `aps a2a send` | Client.SendMessage() |
 | `aps a2a subscribe` | Client.SendMessageStream() |
 
@@ -355,7 +355,7 @@ internal/
 
 ```bash
 # Create profile with A2A enabled (unchanged)
-aps profile new agent-a --display-name "Agent A" --enable-a2a
+aps profile create agent-a --display-name "Agent A" --enable-a2a
 
 # List A2A-enabled profiles
 aps a2a list-profiles
@@ -374,26 +374,26 @@ aps a2a discover --network 192.168.1.0/24
 
 ```bash
 # Create task (request/response)
-aps a2a send-task agent-b \
+aps a2a tasks send agent-b \
   --type query \
   --payload '{"query": "status"}'
 
 # Create streaming task
-aps a2a send-stream agent-b \
+aps a2a tasks stream agent-b \
   --type task \
   --payload '{"command": "deploy"}'
 
 # List tasks
-aps a2a list-tasks --profile agent-a --status working
+aps a2a tasks list --profile agent-a --status working
 
 # Get task details
-aps a2a get-task <task-id>
+aps a2a tasks show <task-id>
 
 # Cancel task
-aps a2a cancel-task <task-id>
+aps a2a tasks cancel <task-id>
 
 # Subscribe to task updates (push notifications)
-aps a2a subscribe-task <task-id> --webhook http://localhost:9000/hook
+aps a2a tasks subscribe <task-id> --webhook http://localhost:9000/hook
 ```
 
 ### Agent Card Commands

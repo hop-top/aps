@@ -545,3 +545,60 @@ func TestCleanupInactive_SkipsErroredSessions(t *testing.T) {
 		t.Errorf("stale-errored should remain in registry: %v", err)
 	}
 }
+
+// TestSessionType_DefaultsToStandardAndPersists ensures the new Type
+// field round-trips through disk and that the zero value reads back
+// as SessionTypeStandard so legacy registry files don't need migration.
+func TestSessionType_DefaultsToStandardAndPersists(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+
+	r := freshRegistry()
+	if err := r.Register(&SessionInfo{ID: "std", ProfileID: "p1"}); err != nil {
+		t.Fatalf("Register std: %v", err)
+	}
+	if err := r.Register(&SessionInfo{ID: "voc", ProfileID: "p1", Type: SessionTypeVoice}); err != nil {
+		t.Fatalf("Register voice: %v", err)
+	}
+
+	reloaded := freshRegistry()
+	if err := reloaded.LoadFromDisk(); err != nil {
+		t.Fatalf("LoadFromDisk: %v", err)
+	}
+	std, err := reloaded.Get("std")
+	if err != nil {
+		t.Fatalf("Get std: %v", err)
+	}
+	if std.Type != SessionTypeStandard {
+		t.Errorf("std.Type = %q, want SessionTypeStandard (empty)", std.Type)
+	}
+	voc, err := reloaded.Get("voc")
+	if err != nil {
+		t.Fatalf("Get voc: %v", err)
+	}
+	if voc.Type != SessionTypeVoice {
+		t.Errorf("voc.Type = %q, want SessionTypeVoice", voc.Type)
+	}
+}
+
+// TestListByType filters sessions by SessionType.
+func TestListByType(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	r := NewForTesting()
+
+	if err := r.Register(&SessionInfo{ID: "a", ProfileID: "p1"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Register(&SessionInfo{ID: "b", ProfileID: "p1", Type: SessionTypeVoice}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Register(&SessionInfo{ID: "c", ProfileID: "p1", Type: SessionTypeVoice}); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := r.ListByType(SessionTypeVoice); len(got) != 2 {
+		t.Errorf("ListByType(voice) = %d, want 2", len(got))
+	}
+	if got := r.ListByType(SessionTypeStandard); len(got) != 1 {
+		t.Errorf("ListByType(standard) = %d, want 1", len(got))
+	}
+}

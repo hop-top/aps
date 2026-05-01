@@ -24,7 +24,7 @@ func NewListTasksCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list-tasks",
+		Use:   "list",
 		Short: "List A2A tasks for a profile",
 		Long:  `List A2A tasks for a profile with optional filtering by status.`,
 		RunE: func(cmd *cobra.Command, args []string) error {

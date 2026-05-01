@@ -1121,7 +1121,7 @@ internal/
 
 ```bash
 # Create new profile with platform isolation
-aps profile new secure-agent --isolation-level platform
+aps profile create secure-agent --isolation-level platform
 
 # Or update existing profile
 # Edit: ~/.agents/profiles/agent-a/profile.yaml

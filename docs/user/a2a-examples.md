@@ -17,7 +17,7 @@ This directory contains examples demonstrating the A2A (Agent-to-Agent) protocol
 
 ```bash
 # Create worker profile with A2A enabled
-aps profile new worker --display-name "Worker Agent"
+aps profile create worker --display-name "Worker Agent"
 
 # Enable A2A for worker profile
 # Edit ~/.local/share/aps/profiles/worker/profile.yaml and add:
@@ -28,7 +28,7 @@ aps profile new worker --display-name "Worker Agent"
 #   public_endpoint: "http://localhost:8081"
 
 # Create orchestrator profile
-aps profile new orchestrator --display-name "Orchestrator Agent"
+aps profile create orchestrator --display-name "Orchestrator Agent"
 ```
 
 #### Step 2: Start A2A Server
@@ -47,7 +47,7 @@ aps a2a server --profile worker
 
 ```bash
 # Terminal 2: Fetch the worker's Agent Card
-aps a2a fetch-card --url http://127.0.0.1:8081/.well-known/agent-card
+aps a2a card fetch --url http://127.0.0.1:8081/.well-known/agent-card
 
 # Output:
 # Agent Card fetched from: http://127.0.0.1:8081/.well-known/agent-card
@@ -59,7 +59,7 @@ aps a2a fetch-card --url http://127.0.0.1:8081/.well-known/agent-card
 
 ```bash
 # Send a task to worker profile
-aps a2a send-task --target worker --message "Process deployment for app1"
+aps a2a tasks send --target worker --message "Process deployment for app1"
 
 # Output:
 # Task created/updated: task-abc123
@@ -71,14 +71,14 @@ aps a2a send-task --target worker --message "Process deployment for app1"
 
 ```bash
 # List all tasks for worker profile
-aps a2a list-tasks --profile worker
+aps a2a tasks list --profile worker
 
 # Output:
 # TASK ID      STATUS      CREATED              MESSAGES
 # task-abc123  completed   2026-01-30 10:15:30  2
 
 # Get detailed task information
-aps a2a get-task task-abc123 --profile worker
+aps a2a tasks show task-abc123 --profile worker
 
 # Output:
 # Task ID: task-abc123
@@ -98,13 +98,13 @@ aps a2a get-task task-abc123 --profile worker
 
 ```bash
 # Send a long-running task
-aps a2a send-task --target worker --message "Long running operation"
+aps a2a tasks send --target worker --message "Long running operation"
 
 # Cancel the task
-aps a2a cancel-task <task-id> --target worker
+aps a2a tasks cancel <task-id> --target worker
 
 # Verify cancellation
-aps a2a get-task <task-id> --profile worker
+aps a2a tasks show <task-id> --profile worker
 # Status should show: cancelled
 ```
 
@@ -116,10 +116,10 @@ aps a2a get-task <task-id> --profile worker
 nc -l 9000
 
 # Terminal 2: Subscribe to task updates
-aps a2a subscribe-task <task-id> --target worker --webhook http://localhost:9000/hook
+aps a2a tasks subscribe <task-id> --target worker --webhook http://localhost:9000/hook
 
 # Terminal 3: Send a message to trigger updates
-aps a2a send-task --target worker --task-id <task-id> --message "Update task"
+aps a2a tasks send --target worker --task-id <task-id> --message "Update task"
 
 # Terminal 1 will receive webhook notifications as the task progresses
 ```
@@ -128,7 +128,7 @@ aps a2a send-task --target worker --task-id <task-id> --message "Update task"
 
 ```bash
 # Show Agent Card for a profile
-aps a2a show-card --profile worker
+aps a2a card show --profile worker
 
 # Output:
 # Agent Card for Profile: worker
@@ -143,7 +143,7 @@ aps a2a show-card --profile worker
 #   - State Transition History: false
 
 # Fetch and save Agent Card as JSON
-aps a2a fetch-card --url http://127.0.0.1:8081/.well-known/agent-card --format json > worker-card.json
+aps a2a card fetch --url http://127.0.0.1:8081/.well-known/agent-card --format json > worker-card.json
 ```
 
 ### 5. Multi-Profile Workflow
@@ -152,9 +152,9 @@ aps a2a fetch-card --url http://127.0.0.1:8081/.well-known/agent-card --format j
 
 ```bash
 # Create multiple worker profiles
-aps profile new worker-1
-aps profile new worker-2
-aps profile new worker-3
+aps profile create worker-1
+aps profile create worker-2
+aps profile create worker-3
 
 # Start servers for all workers (in separate terminals)
 aps a2a server --profile worker-1 &  # Port 8081
@@ -164,14 +164,14 @@ aps a2a server --profile worker-3 &  # Port 8083
 # Note: Configure each worker with different listen_addr in profile.yaml
 
 # Send tasks from orchestrator to all workers
-aps a2a send-task --target worker-1 --message "Deploy service-a"
-aps a2a send-task --target worker-2 --message "Deploy service-b"
-aps a2a send-task --target worker-3 --message "Deploy service-c"
+aps a2a tasks send --target worker-1 --message "Deploy service-a"
+aps a2a tasks send --target worker-2 --message "Deploy service-b"
+aps a2a tasks send --target worker-3 --message "Deploy service-c"
 
 # Monitor all tasks
 for worker in worker-1 worker-2 worker-3; do
   echo "=== Tasks for $worker ==="
-  aps a2a list-tasks --profile $worker
+  aps a2a tasks list --profile $worker
 done
 ```
 

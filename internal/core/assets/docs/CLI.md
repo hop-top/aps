@@ -47,12 +47,12 @@ test-agent
 dev-agent
 ```
 
-### `aps profile new`
+### `aps profile create`
 
 Create a new profile.
 
 ```bash
-aps profile new <profile-id> [flags]
+aps profile create <profile-id> [flags]
 ```
 
 **Flags:**
@@ -68,13 +68,13 @@ aps profile new <profile-id> [flags]
 
 ```bash
 # Minimal profile
-aps profile new myagent
+aps profile create myagent
 
 # Profile with display name
-aps profile new myagent --display-name "My AI Agent"
+aps profile create myagent --display-name "My AI Agent"
 
 # Profile with git config
-aps profile new myagent --display-name "Agent" --email "agent@example.com"
+aps profile create myagent --display-name "Agent" --email "agent@example.com"
 
 # Profile with social accounts
 aps profile openai-agent \
@@ -83,7 +83,7 @@ aps profile openai-agent \
   --github "openai-bot"
 
 # Overwrite existing profile
-aps profile new myagent --force
+aps profile create myagent --force
 ```
 
 **What gets created:**
@@ -347,20 +347,20 @@ Disable a capability on a profile.
 aps cap disable <profile> <capability>
 ```
 
-### `aps profile add-capability`
+### `aps profile capability add`
 
 Add a capability to a profile.
 
 ```bash
-aps profile add-capability <profile> <capability>
+aps profile capability add <profile> <capability>
 ```
 
-### `aps profile remove-capability`
+### `aps profile capability remove`
 
 Remove a capability from a profile.
 
 ```bash
-aps profile remove-capability <profile> <capability>
+aps profile capability remove <profile> <capability>
 ```
 
 ## Session Commands

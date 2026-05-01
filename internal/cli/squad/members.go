@@ -7,9 +7,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newMembersCmd returns the `squad members` mid-level command grouping
+// membership operations (add, remove).
+func newMembersCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "members",
+		Short: "Manage squad membership",
+	}
+	cmd.AddCommand(newAddMemberCmd())
+	cmd.AddCommand(newRemoveMemberCmd())
+	return cmd
+}
+
 func newAddMemberCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "add-member <squad-id> <profile-id>",
+		Use:   "add <squad-id> <profile-id>",
 		Short: "Add a member to a squad",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +41,7 @@ func runAddMember(squadID, profileID string) error {
 
 func newRemoveMemberCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "remove-member <squad-id> <profile-id>",
+		Use:   "remove <squad-id> <profile-id>",
 		Short: "Remove a member from a squad",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {

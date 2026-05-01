@@ -13,10 +13,10 @@ Get started with A2A (Agent-to-Agent) protocol in 5 minutes.
 
 ```bash
 # Create worker profile
-aps profile new worker --display-name "Worker Agent"
+aps profile create worker --display-name "Worker Agent"
 
 # Create orchestrator profile
-aps profile new orchestrator --display-name "Orchestrator Agent"
+aps profile create orchestrator --display-name "Orchestrator Agent"
 ```
 
 ### 2. Enable A2A for Worker Profile
@@ -57,7 +57,7 @@ Leave this running and open a new terminal.
 In a new terminal:
 
 ```bash
-aps a2a send-task --target worker --message "Hello from A2A!"
+aps a2a tasks send --target worker --message "Hello from A2A!"
 ```
 
 Output:
@@ -71,10 +71,10 @@ Last message ID: msg-01HN123DEF789
 
 ```bash
 # List all tasks
-aps a2a list-tasks --profile worker
+aps a2a tasks list --profile worker
 
 # Get specific task details
-aps a2a get-task task-01HN123ABC456 --profile worker
+aps a2a tasks show task-01HN123ABC456 --profile worker
 ```
 
 ## What Just Happened?
@@ -91,16 +91,16 @@ aps a2a get-task task-01HN123ABC456 --profile worker
 
 ```bash
 # View the Agent Card
-aps a2a show-card --profile worker
+aps a2a card show --profile worker
 
 # Fetch Agent Card from URL
-aps a2a fetch-card --url http://127.0.0.1:8081/.well-known/agent-card
+aps a2a card fetch --url http://127.0.0.1:8081/.well-known/agent-card
 
 # Cancel a task
-aps a2a cancel-task <task-id> --target worker
+aps a2a tasks cancel <task-id> --target worker
 
 # Subscribe to task updates
-aps a2a subscribe-task <task-id> --target worker --webhook http://localhost:9000/hook
+aps a2a tasks subscribe <task-id> --target worker --webhook http://localhost:9000/hook
 ```
 
 ### Create a Multi-Agent Workflow
@@ -225,7 +225,7 @@ chmod 700 ~/.local/share/aps/a2a
 # Get help for any command
 aps a2a --help
 aps a2a server --help
-aps a2a send-task --help
+aps a2a tasks send --help
 
 # View profile configuration
 aps profile show worker

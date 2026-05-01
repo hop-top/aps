@@ -482,7 +482,7 @@ docker rmi test-image
 
 ```bash
 # Create test profile with container isolation
-aps profile new test-container --isolation-level container
+aps profile create test-container --isolation-level container
 
 # Edit profile.yaml
 # Add container configuration
@@ -563,7 +563,7 @@ aps profile delete test-container
 
 ```bash
 # Create new profile
-aps profile new container-profile
+aps profile create container-profile
 
 # Edit profile.yaml
 cat > ~/.local/share/aps/profiles/container-profile/profile.yaml << EOF

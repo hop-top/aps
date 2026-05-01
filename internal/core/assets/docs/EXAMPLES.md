@@ -6,7 +6,7 @@ Practical examples and common use cases for APS.
 
 **Profile Setup:**
 ```bash
-aps profile new triage-bot \
+aps profile create triage-bot \
   --display-name "Issue Triage Bot" \
   --email "triage@example.com" \
   --github "triage-bot"
@@ -126,7 +126,7 @@ aps action run openai-assistant chat.py --payload-file message.json
 
 **Profile Setup:**
 ```bash
-aps profile new data-processor \
+aps profile create data-processor \
   --display-name "Data Processing Agent"
 ```
 
@@ -203,7 +203,7 @@ aps action run data-processor validate.py --payload-file data.json
 
 **Development Profile:**
 ```bash
-aps profile new dev \
+aps profile create dev \
   --display-name "Development" \
   --email "dev@example.com"
 
@@ -214,7 +214,7 @@ nano ~/.agents/profiles/dev/secrets.env
 
 **Staging Profile:**
 ```bash
-aps profile new staging \
+aps profile create staging \
   --display-name "Staging" \
   --email "staging@example.com"
 
@@ -225,7 +225,7 @@ nano ~/.agents/profiles/staging/secrets.env
 
 **Production Profile:**
 ```bash
-aps profile new prod \
+aps profile create prod \
   --display-name "Production" \
   --email "prod@example.com"
 
@@ -264,7 +264,7 @@ aps prod -- npm run deploy
 
 **Profile Setup:**
 ```bash
-aps profile new reddit-bot \
+aps profile create reddit-bot \
   --display-name "Reddit Bot" \
   --email "reddit@example.com" \
   --reddit "mybot"
@@ -330,7 +330,7 @@ aps action run reddit-bot post.py --payload-file post.json
 
 **Profile Setup:**
 ```bash
-aps profile new git-automator \
+aps profile create git-automator \
   --display-name "Git Automator" \
   --email "bot@example.com"
 ```
@@ -392,7 +392,7 @@ aps action run git-automator pr.sh -- "New feature" "Implements XYZ"
 
 **Profile Setup:**
 ```bash
-aps profile new webhook-handler \
+aps profile create webhook-handler \
   --display-name "Webhook Handler" \
   --email "webhook@example.com"
 ```
@@ -433,7 +433,7 @@ curl -X POST http://127.0.0.1:8080/webhook \
 
 **Profile Setup:**
 ```bash
-aps profile new db-migrator \
+aps profile create db-migrator \
   --display-name "Database Migrator"
 ```
 
@@ -475,7 +475,7 @@ aps action run db-migrator migrate.sh -- 001_initial.sql
 
 **Profile Setup:**
 ```bash
-aps profile new custom-shell \
+aps profile create custom-shell \
   --display-name "Custom Shell" \
   --email "shell@example.com"
 ```
@@ -521,7 +521,7 @@ aps action run custom-shell setup.sh
 **Test Profiles:**
 ```bash
 # Unit tests profile
-aps profile new unit-tests \
+aps profile create unit-tests \
   --display-name "Unit Tests"
 
 nano ~/.agents/profiles/unit-tests/secrets.env
@@ -529,7 +529,7 @@ nano ~/.agents/profiles/unit-tests/secrets.env
 # Add: ENV=test
 
 # Integration tests profile
-aps profile new integration-tests \
+aps profile create integration-tests \
   --display-name "Integration Tests"
 
 nano ~/.agents/profiles/integration-tests/secrets.env
@@ -537,7 +537,7 @@ nano ~/.agents/profiles/integration-tests/secrets.env
 # Add: ENV=integration
 
 # E2E tests profile
-aps profile new e2e-tests \
+aps profile create e2e-tests \
   --display-name "E2E Tests"
 
 nano ~/.agents/profiles/e2e-tests/secrets.env

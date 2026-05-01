@@ -17,7 +17,7 @@ func NewShowCardCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "show-card",
+		Use:   "show",
 		Short: "Show the Agent Card for a profile",
 		Long:  `Display the A2A Agent Card for a specified profile.`,
 		RunE: func(cmd *cobra.Command, args []string) error {

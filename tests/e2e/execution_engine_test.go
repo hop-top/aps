@@ -41,7 +41,7 @@ func TestExecutionEngineWithDefaultIsolation(t *testing.T) {
 	home := t.TempDir()
 
 	// Create profile without isolation level (should use default)
-	_, _, err := runAPS(t, home, "profile", "new", "default-exec-profile")
+	_, _, err := runAPS(t, home, "profile", "create", "default-exec-profile")
 	require.NoError(t, err)
 
 	// Run command should work
@@ -186,7 +186,7 @@ func TestExecutionEngineBackwardCompatibility(t *testing.T) {
 	home := t.TempDir()
 
 	// Create old-style profile without isolation section
-	_, _, err := runAPS(t, home, "profile", "new", "old-style-profile")
+	_, _, err := runAPS(t, home, "profile", "create", "old-style-profile")
 	require.NoError(t, err)
 
 	// Add a secret to verify environment injection

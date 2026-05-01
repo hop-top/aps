@@ -16,7 +16,7 @@ A **profile** is the unit APS works with. It bundles an identity,
 a capability set, and configuration. Create one:
 
 ```bash
-aps profile new hello --display-name "Hello World"
+aps profile create hello --display-name "Hello World"
 ```
 
 You should see confirmation that the profile was created. Verify:
@@ -169,7 +169,7 @@ repo. Either run from inside one, or create the profile without a
 workspace link, or link a workspace:
 
 ```bash
-aps profile set-workspace hello <workspace-name>
+aps profile workspace set hello <workspace-name>
 ```
 
 See `aps workspace --help`.

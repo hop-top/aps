@@ -19,12 +19,12 @@ func NewFetchCardCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "fetch-card",
+		Use:   "fetch",
 		Short: "Fetch an Agent Card from a URL",
 		Long: `Fetch an A2A Agent Card from a remote URL (typically /.well-known/agent-card).
 
 Example:
-  aps a2a fetch-card --url http://localhost:8081/.well-known/agent-card`,
+  aps a2a card fetch --url http://localhost:8081/.well-known/agent-card`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 

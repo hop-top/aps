@@ -18,7 +18,7 @@ A profile is an isolated environment containing:
 ### Basic Profile
 
 ```bash
-aps profile new myagent
+aps profile create myagent
 ```
 
 Creates:
@@ -33,7 +33,7 @@ Creates:
 ### Profile with Metadata
 
 ```bash
-aps profile new openai-agent \
+aps profile create openai-agent \
   --display-name "OpenAI Agent" \
   --email "openai@example.com" \
   --github "openai-bot" \
@@ -202,7 +202,7 @@ aps myagent -- git commit -m "Auto-commit"
 
 **Or create with email flag:**
 ```bash
-aps profile new myagent --email "agent@example.com"
+aps profile create myagent --email "agent@example.com"
 ```
 
 ### SSH Module
@@ -381,7 +381,7 @@ rm -rf ~/.agents/profiles/myagent
 ### GitHub Bot
 
 ```bash
-aps profile new github-bot \
+aps profile create github-bot \
   --display-name "GitHub Bot" \
   --email "bot@example.com" \
   --github "mybot"
@@ -405,7 +405,7 @@ aps action run github-bot label.sh
 ### OpenAI Agent
 
 ```bash
-aps profile new openai-agent \
+aps profile create openai-agent \
   --display-name "OpenAI Agent"
 
 # Add secrets
@@ -443,7 +443,7 @@ echo '{"message": "Hello!"}' | aps action run openai-agent chat.py --payload-std
 
 ```bash
 # Development profile
-aps profile new dev-agent \
+aps profile create dev-agent \
   --display-name "Dev Agent" \
   --email "dev@example.com"
 
@@ -452,7 +452,7 @@ nano ~/.agents/profiles/dev-agent/secrets.env
 # Add: API_KEY=dev_xxxxxxxxxx
 
 # Production profile
-aps profile new prod-agent \
+aps profile create prod-agent \
   --display-name "Prod Agent" \
   --email "prod@example.com"
 

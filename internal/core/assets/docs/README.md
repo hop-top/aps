@@ -17,7 +17,7 @@ make build
 
 ```bash
 # Create a new profile
-./aps profile new myagent --display-name "My AI Agent" --email "agent@example.com"
+./aps profile create myagent --display-name "My AI Agent" --email "agent@example.com"
 ```
 
 This creates a profile at `~/.agents/profiles/myagent/` with:

@@ -266,7 +266,7 @@ Consistent with existing toggles (`a2a`, `webhooks`, `agent-protocol`):
 ```
 aps directory register [--profile <id>]
 aps directory discover --capability <query>
-aps directory deregister [--profile <id>]
+aps directory delete [--profile <id>]
 aps directory show [--profile <id>]
 
 aps identity init [--profile <id>] [--method did:web|did:key]

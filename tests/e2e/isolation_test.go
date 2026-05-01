@@ -13,7 +13,7 @@ func TestIsolationManager_ProcessLevel(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	_, _, err := runAPS(t, home, "profile", "new", "iso-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "iso-agent")
 	require.NoError(t, err)
 
 	stdout, _, err := runAPS(t, home, "run", "iso-agent", "--", "env")
@@ -39,7 +39,7 @@ func TestIsolationManager_Sequence(t *testing.T) {
 	profileIDs := []string{"agent-1", "agent-2", "agent-3"}
 
 	for _, id := range profileIDs {
-		_, _, err := runAPS(t, home, "profile", "new", id)
+		_, _, err := runAPS(t, home, "profile", "create", id)
 		require.NoError(t, err)
 
 		stdout, _, err := runAPS(t, home, "run", id, "--", "echo", id)
@@ -53,7 +53,7 @@ func TestIsolationManager_ActionExecution(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	_, _, err := runAPS(t, home, "profile", "new", "action-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "action-agent")
 	require.NoError(t, err)
 
 	actionScript := `#!/bin/sh
@@ -75,7 +75,7 @@ func TestIsolationManager_WithSecrets(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	_, _, err := runAPS(t, home, "profile", "new", "secret-agent")
+	_, _, err := runAPS(t, home, "profile", "create", "secret-agent")
 	require.NoError(t, err)
 
 	secretsPath := filepath.Join(home, ".local", "share", "aps", "profiles", "secret-agent", "secrets.env")

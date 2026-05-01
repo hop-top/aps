@@ -23,7 +23,7 @@ make build-local
 
 ## Create a Test Profile
 ```bash
-./aps profile new test-agent --display-name "Test Agent"
+./aps profile create test-agent --display-name "Test Agent"
 ```
 
 ## Run a Command

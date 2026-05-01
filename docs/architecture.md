@@ -122,7 +122,7 @@ Capability + action discovery; binary execution logging.
 ### Collaboration (`internal/core/collaboration/`)
 
 Multi-agent workspace primitives: conflict resolution, task
-dispatch, shared context. Powers `aps collab` subcommand.
+dispatch, shared context. Powers `aps workspace` subcommand.
 
 ### Multi-device (`internal/core/multidevice/`)
 
@@ -141,7 +141,7 @@ aps adapter exec <name> <action> [--profile <id>] [--input k=v] [--from email]
 aps adapter [create\|start\|stop\|link\|unlink\|list\|status\|logs]
 aps session [list\|inspect\|logs\|terminate\|delete]
 aps action [list\|show\|run]
-aps collab [use\|list\|show\|join\|members\|agents\|send\|tasks\|task\|ctx\|conflicts\|resolve\|policy]
+aps workspace [use\|list\|show\|join\|members\|agents\|send\|tasks\|task\|ctx\|conflicts\|resolve\|policy]
 aps a2a [show-card\|fetch-card\|send-task\|get-task\|list-tasks\|subscribe-task\|cancel-task\|server]
 aps acp [server\|toggle]
 aps capability [list\|show\|install]

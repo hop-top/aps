@@ -37,20 +37,20 @@ pre-filtered for messenger-type devices.`,
 }
 
 // newMessengerListCmd wraps the list command with --type=messenger preset.
+// Output format is controlled by kit's persistent --format flag (T-0345);
+// the per-command --json flag was removed in T-0363.
 func newMessengerListCmd() *cobra.Command {
 	var profileFilter string
-	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List messenger devices",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList("messenger", profileFilter, jsonOutput)
+			return runList("messenger", profileFilter, false)
 		},
 	}
 
 	cmd.Flags().StringVarP(&profileFilter, "profile", "p", "", "Filter by linked profile")
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
 	return cmd
 }

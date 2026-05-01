@@ -26,7 +26,7 @@ if aps profile list | grep -q "$PROFILE_ID"; then
     aps profile delete "$PROFILE_ID" --force || true
 fi
 
-aps profile new "$PROFILE_ID" --display-name "Test Agent"
+aps profile create "$PROFILE_ID" --display-name "Test Agent"
 echo "✓ Profile created: $PROFILE_ID"
 echo
 

@@ -326,10 +326,10 @@ SubscribeToTask:  Receive push notifications
 | Old (Custom) | New (A2A SDK) | A2A Operation |
 |---------------|------------------|----------------|
 | `aps a2a start-duo` | `aps a2a create-task` | `SendMessage` |
-| `aps a2a list-conversations` | `aps a2a list-tasks` | `ListTasks` |
-| `aps a2a show-conversation` | `aps a2a get-task` | `GetTask` |
-| `aps a2a send` | `aps a2a send-task` | `SendMessage` |
-| `aps a2a subscribe` | `aps a2a subscribe-task` | `SubscribeToTask` |
+| `aps a2a list-conversations` | `aps a2a tasks list` | `ListTasks` |
+| `aps a2a show-conversation` | `aps a2a tasks show` | `GetTask` |
+| `aps a2a send` | `aps a2a tasks send` | `SendMessage` |
+| `aps a2a subscribe` | `aps a2a tasks subscribe` | `SubscribeToTask` |
 | `aps a2a register` | `aps a2a publish-card` | Agent Card |
 
 **Custom CLI Not Chosen**:

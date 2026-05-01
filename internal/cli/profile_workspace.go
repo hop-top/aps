@@ -11,8 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// profileWorkspaceCmd is the `aps profile workspace` mid-level command
+// group hosting workspace-link operations (set).
+var profileWorkspaceCmd = &cobra.Command{
+	Use:   "workspace",
+	Short: "Manage workspace link for a profile",
+}
+
 var profileSetWorkspaceCmd = &cobra.Command{
-	Use:   "set-workspace <profile-id> <workspace-name>",
+	Use:   "set <profile-id> <workspace-name>",
 	Short: "Set workspace link for a profile",
 	Long:  `Associate a profile with a workspace by name.`,
 	Args:  cobra.ExactArgs(2),
@@ -46,5 +53,6 @@ var profileSetWorkspaceCmd = &cobra.Command{
 }
 
 func init() {
-	profileCmd.AddCommand(profileSetWorkspaceCmd)
+	profileCmd.AddCommand(profileWorkspaceCmd)
+	profileWorkspaceCmd.AddCommand(profileSetWorkspaceCmd)
 }

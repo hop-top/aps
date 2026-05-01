@@ -21,13 +21,13 @@ func NewSendTaskCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "send-task",
+		Use:   "send",
 		Short: "Send a message to create or continue an A2A task",
 		Long: `Send a message to create a new A2A task or continue an existing task.
 
 Example:
-  aps a2a send-task --target worker --message "Deploy application"
-  aps a2a send-task --target worker --task-id <id> --message "Continue deployment"`,
+  aps a2a tasks send --target worker --message "Deploy application"
+  aps a2a tasks send --target worker --task-id <id> --message "Continue deployment"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 

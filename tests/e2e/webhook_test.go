@@ -23,7 +23,7 @@ func TestWebhookServer(t *testing.T) {
 	profileID := "hook-agent"
 
 	// Create profile and action
-	_, _, err := runAPS(t, home, "profile", "new", profileID)
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
 	require.NoError(t, err)
 
 	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")

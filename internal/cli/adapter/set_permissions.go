@@ -23,7 +23,7 @@ func newSetPermissionsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "set-permissions <device-id>",
+		Use:   "set <device-id>",
 		Short: "Set device permissions in a workspace",
 		Long: `Set or view permissions for a device in a workspace.
 

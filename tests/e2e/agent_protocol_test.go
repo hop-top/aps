@@ -101,7 +101,7 @@ func startTestServer(t *testing.T, home string, port string) *testServer {
 func createTestProfileAndAction(t *testing.T, home, profileID, actionID, actionScript string) {
 	t.Helper()
 
-	stdout, _, err := runAPS(t, home, "profile", "new", profileID, "--display-name", profileID)
+	stdout, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", profileID)
 	require.NoError(t, err, "Failed to create profile %s: %v\n%s", profileID, err, stdout)
 	assert.Contains(t, stdout, "created successfully")
 
@@ -259,11 +259,11 @@ func TestAgentProtocol_UserStory4_AgentDiscovery(t *testing.T) {
 	server := startTestServer(t, home, "18082")
 	baseURL := server.url
 
-	stdout, _, err := runAPS(t, home, "profile", "new", "agent-a", "--display-name", "Agent A")
+	stdout, _, err := runAPS(t, home, "profile", "create", "agent-a", "--display-name", "Agent A")
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "created successfully")
 
-	stdout, _, err = runAPS(t, home, "profile", "new", "agent-b", "--display-name", "Agent B")
+	stdout, _, err = runAPS(t, home, "profile", "create", "agent-b", "--display-name", "Agent B")
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "created successfully")
 

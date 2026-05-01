@@ -45,7 +45,7 @@ isolation:
 The `email` field is used by:
 - Script adapter exec (`APS_EMAIL_FROM` env var)
 - Bundle template variable (`${PROFILE_EMAIL}`)
-- Set via `aps profile new --email <addr>`
+- Set via `aps profile create --email <addr>`
 
 ## Global Config File
 

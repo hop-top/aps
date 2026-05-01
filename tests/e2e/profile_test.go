@@ -18,7 +18,7 @@ func TestProfileLifecycle(t *testing.T) {
 	assert.Empty(t, strings.TrimSpace(stdout))
 
 	// 2. Create profile
-	stdout, _, err = runAPS(t, home, "profile", "new", "agent-1", "--display-name", "Agent One")
+	stdout, _, err = runAPS(t, home, "profile", "create", "agent-1", "--display-name", "Agent One")
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "created successfully")
 
@@ -40,16 +40,16 @@ func TestProfileOverwrite(t *testing.T) {
 	home := t.TempDir()
 
 	// Create initial
-	_, _, err := runAPS(t, home, "profile", "new", "agent-x")
+	_, _, err := runAPS(t, home, "profile", "create", "agent-x")
 	require.NoError(t, err)
 
 	// Try to overwrite without force - should fail
-	_, stderr, err := runAPS(t, home, "profile", "new", "agent-x")
+	_, stderr, err := runAPS(t, home, "profile", "create", "agent-x")
 	require.Error(t, err)
 	assert.Contains(t, stderr, "already exists")
 
 	// Overwrite with force - should succeed
-	stdout, _, err := runAPS(t, home, "profile", "new", "agent-x", "--force", "--display-name", "Agent X Force")
+	stdout, _, err := runAPS(t, home, "profile", "create", "agent-x", "--force", "--display-name", "Agent X Force")
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "created successfully")
 

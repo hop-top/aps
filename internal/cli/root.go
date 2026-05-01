@@ -21,6 +21,26 @@ var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
 	Short:   "Agent Profile System CLI",
+	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
+	// Subcommands read via root.Viper.GetString("<key>") rather than
+	// declaring local duplicates.
+	Globals: []kitcli.Flag{
+		{Name: "config", Usage: "path to YAML config file"},
+		{Name: "profile", Usage: "profile id (defaults to active profile)"},
+		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
+	},
+	// T-0366/T-0367 — command grouping per ~/.ops/docs/cli-conventions-with-kit.md §4.1.
+	// MANAGEMENT is auto-registered by kit/cli (hidden by default; --help-management
+	// or --help-all to view). Per-group help via --help-<id>.
+	Help: kitcli.HelpConfig{
+		Groups: []kitcli.GroupConfig{
+			{ID: "interact", Title: "INTERACT"},
+			{ID: "organize", Title: "ORGANIZE"},
+			{ID: "pipelines", Title: "PIPELINES"},
+			{ID: "security", Title: "SECURITY"},
+			{ID: "instance", Title: "INSTANCE"},
+		},
+	},
 })
 
 // rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
@@ -122,6 +142,10 @@ ID followed by a command to run that command under the selected profile.`
 // Execute runs the CLI through fang (styled help, version, etc.)
 func Execute() error {
 	rootCmd.SilenceErrors = true
+	// Assign group IDs to every top-level subcommand before kit
+	// renders help (root.Execute calls applyGroupVisibility internally
+	// after our hook has run).
+	applyCommandGroups()
 	err := root.Execute(context.Background())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))

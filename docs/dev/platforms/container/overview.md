@@ -65,10 +65,10 @@ chmod 644 ~/.aps/keys/admin_pub
 
 ```bash
 # Create new profile with container isolation
-aps profile new container-profile --isolation-level container
+aps profile create container-profile --isolation-level container
 
 # Or create manually
-aps profile new container-profile
+aps profile create container-profile
 # Edit: ~/.local/share/aps/profiles/container-profile/profile.yaml
 # Add:
 #   isolation:
@@ -269,7 +269,7 @@ sudo systemctl start docker  # Linux
 docker pull ubuntu:22.04
 
 # Use local images
-aps profile new local-container
+aps profile create local-container
 # Edit: ~/.local/share/aps/profiles/local-container/profile.yaml
 # Set: container.image: "your-local-image"
 
@@ -490,7 +490,7 @@ services:
 ```
 
 ```bash
-aps profile new compose-profile
+aps profile create compose-profile
 # Copy docker-compose.yml to profile directory
 # Run: aps run compose-profile -- docker-compose up
 ```
@@ -535,7 +535,7 @@ make docker-test-e2e-user
 # Interactive testing
 make docker-test-shell
 # Inside container:
-aps profile new container-test --isolation-level container
+aps profile create container-test --isolation-level container
 aps run container-test -- echo "Testing container isolation"
 ```
 
@@ -552,7 +552,7 @@ The test environment uses three persistent volumes:
 **Basic Isolation Test**:
 ```bash
 # Create container profile
-aps profile new iso-test --isolation-level container
+aps profile create iso-test --isolation-level container
 
 # Verify isolation
 aps run iso-test -- whoami  # Should be 'appuser' or container user
@@ -562,7 +562,7 @@ aps run iso-test -- cat /etc/os-release  # Should show Ubuntu 22.04
 **Volume Mount Test**:
 ```bash
 # Create profile with volumes
-aps profile new vol-test --isolation-level container
+aps profile create vol-test --isolation-level container
 # Edit: ~/.local/share/aps/profiles/vol-test/profile.yaml
 # Add: container.volumes: ["/tmp/test:/workspace"]
 
@@ -573,7 +573,7 @@ aps run vol-test -- ls -la /workspace
 **Network Isolation Test**:
 ```bash
 # Create container profile
-aps profile new net-test --isolation-level container
+aps profile create net-test --isolation-level container
 
 # Test network (bridge mode - default)
 aps run net-test -- ping -c 2 google.com

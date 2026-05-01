@@ -13,7 +13,7 @@ func TestProfileIsolationConfig(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	_, _, err := runAPS(t, home, "profile", "new", "iso-test-profile", "--display-name", "Isolation Test Profile")
+	_, _, err := runAPS(t, home, "profile", "create", "iso-test-profile", "--display-name", "Isolation Test Profile")
 	require.NoError(t, err)
 
 	stdout, _, err := runAPS(t, home, "profile", "show", "iso-test-profile")

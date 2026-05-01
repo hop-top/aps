@@ -237,7 +237,7 @@ isolation:
 ### Development Profile
 
 ```bash
-aps profile new dev-agent --display-name "Development Agent"
+aps profile create dev-agent --display-name "Development Agent"
 
 # Use default process isolation
 cat > ~/.agents/profiles/dev-agent/profile.yaml << 'EOF'
@@ -257,7 +257,7 @@ EOF
 ### Production Profile
 
 ```bash
-aps profile new prod-agent --display-name "Production Agent"
+aps profile create prod-agent --display-name "Production Agent"
 
 # Use platform isolation with strict mode
 cat > ~/.agents/profiles/prod-agent/profile.yaml << 'EOF'
@@ -282,7 +282,7 @@ EOF
 ### Maximum Security Profile
 
 ```bash
-aps profile new secure-agent --display-name "Secure Agent"
+aps profile create secure-agent --display-name "Secure Agent"
 
 # Use container isolation with resource limits
 cat > ~/.agents/profiles/secure-agent/profile.yaml << 'EOF'

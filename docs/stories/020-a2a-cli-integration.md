@@ -11,8 +11,8 @@ As a user, I want CLI commands to manage A2A tasks so that I can create, list, a
 
 ## Acceptance Scenarios
 
-1. **Given** a running A2A server, **When** I run `aps a2a send-task`, **Then** a task is created and its ID is returned.
-2. **Given** existing A2A tasks, **When** I run `aps a2a list-tasks`, **Then** I see all tasks with their statuses.
+1. **Given** a running A2A server, **When** I run `aps a2a tasks send`, **Then** a task is created and its ID is returned.
+2. **Given** existing A2A tasks, **When** I run `aps a2a tasks list`, **Then** I see all tasks with their statuses.
 
 ## Tests
 
