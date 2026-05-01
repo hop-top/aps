@@ -191,8 +191,15 @@ var profileShowCmd = &cobra.Command{
 	},
 }
 
+// profileCapabilityCmd is the `aps profile capability` mid-level
+// command group (add, remove).
+var profileCapabilityCmd = &cobra.Command{
+	Use:   "capability",
+	Short: "Manage capabilities on a profile",
+}
+
 var profileAddCapCmd = &cobra.Command{
-	Use:   "add-capability <profile> <capability>",
+	Use:   "add <profile> <capability>",
 	Short: "Add a capability to a profile",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -212,7 +219,7 @@ var profileAddCapCmd = &cobra.Command{
 }
 
 var profileRemoveCapCmd = &cobra.Command{
-	Use:   "remove-capability <profile> <capability>",
+	Use:   "remove <profile> <capability>",
 	Short: "Remove a capability from a profile",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -466,8 +473,9 @@ func init() {
 	profileCmd.AddCommand(profileStatusCmd)
 	profileCmd.AddCommand(profileShareCmd)
 	profileCmd.AddCommand(profileImportCmd)
-	profileCmd.AddCommand(profileAddCapCmd)
-	profileCmd.AddCommand(profileRemoveCapCmd)
+	profileCmd.AddCommand(profileCapabilityCmd)
+	profileCapabilityCmd.AddCommand(profileAddCapCmd)
+	profileCapabilityCmd.AddCommand(profileRemoveCapCmd)
 	profileCmd.AddCommand(profileDeleteCmd)
 
 	profileNewCmd.Flags().String("display-name", "", "Display name for the profile")
