@@ -16,4 +16,6 @@ As a user, I want to generate shell aliases for my profiles so I can invoke them
 
 ## Tests
 
-_No dedicated tests yet._
+### E2E
+- planned: `tests/e2e/alias_test.go::TestAlias_EmitsProfileAlias`
+- planned: `tests/e2e/alias_test.go::TestAlias_WarnsOnSystemCommandCollision`

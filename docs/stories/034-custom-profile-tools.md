@@ -17,5 +17,10 @@ As a user, I want to define custom tools in my profiles so that I can extend the
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/profile_tools_test.go::TestProfileTools_LookupReturnsDefinition`
+- planned: `tests/e2e/profile_tools_test.go::TestProfileTools_EnsureToolInstallsMissing`
+- planned: `tests/e2e/profile_tools_test.go::TestProfileTools_ListShowsProfileScripts`
+
 ### Unit
 - `tests/unit/core/tools_test.go` — `TestToolRegistry_Lookup`, `TestToolRegistry_List`, `TestTool_IsInstalled`, `TestTool_EnsureTool`, `TestTool_ProfileScripts`, `TestTool_ExecuteProfileTool`

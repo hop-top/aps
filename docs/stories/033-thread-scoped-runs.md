@@ -16,4 +16,6 @@ As an external client, I want to scope runs to threads so that I can maintain co
 
 ## Tests
 
-No dedicated tests yet.
+### E2E
+- planned: `tests/e2e/thread_runs_test.go::TestThreadRun_AccessesThreadHistory`
+- planned: `tests/e2e/thread_runs_test.go::TestThreadRun_ListScopedToThread`

@@ -16,5 +16,9 @@ As a user, I want APS to manage my tool configurations by linking them so that I
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/capability_link_test.go::TestCapability_LinkCreatesSymlink`
+- planned: `tests/e2e/capability_link_test.go::TestCapability_AdoptMovesAndSymlinks`
+
 ### Unit
 - `tests/unit/core/capability/capability_test.go` — `TestCapabilityLifecycle`

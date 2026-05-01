@@ -15,5 +15,8 @@ As a user, I want to enable specific capabilities only for certain profiles so t
 
 ## Tests
 
+### E2E
+- planned: `tests/e2e/profile_capability_test.go::TestProfileCapability_AddActivatesOnRun`
+
 ### Unit
 - `tests/unit/core/profile_capability_test.go` — `TestAddCapabilityToProfile`, `TestRemoveCapabilityFromProfile`, `TestProfileHasCapability`, `TestProfilesUsingCapability`, `TestInjectEnvironment_PerProfileCaps`, `TestInjectEnvironment_NonEnabledCapsNotInjected`
