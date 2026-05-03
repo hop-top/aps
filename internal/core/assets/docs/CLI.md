@@ -323,12 +323,12 @@ aps cap watch <path> --name <name>
 aps cap watch --tool <tool> --name <name>
 ```
 
-### `aps capability patterns`
+### `aps capability patterns list`
 
 Show smart patterns and builtin capabilities.
 
 ```bash
-aps cap patterns
+aps cap patterns list
 ```
 
 ### `aps capability enable`

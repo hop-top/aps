@@ -124,24 +124,8 @@ Source of truth: `internal/events/events.go`. Source id: `aps`.
 | `aps.adapter.unlinked`  | emitted   | AdapterUnlinkedPayload   | After adapter unlink from profile          |
 | `aps.session.started`   | emitted   | SessionStartedPayload    | After session register                     |
 | `aps.session.stopped`   | emitted   | SessionStoppedPayload    | After unregister or status→inactive/errored |
-| `aps.webhook.received`  | RESERVED  | WebhookReceivedPayload   | NOT YET WIRED — see §4.1                   |
-| `aps.action.ran`        | RESERVED  | ActionRanPayload         | NOT YET WIRED — see §4.1                   |
 
-### 4.1 Reserved-but-not-emitted
-
-Two constants exist in `events.go` so subscribers can register
-handlers ahead of emit wiring landing. Per T-0093 audit (kit reorg
-adoption, domain-mapping.md):
-
-- `aps.webhook.received` — webhook handlers live in
-  `internal/cli/webhook/`; no unified post-receive hook yet.
-- `aps.action.ran` — actions dispatched through
-  `internal/core/action.go`; no unified post-run hook yet.
-
-Subscribers SHOULD register but MUST NOT assume delivery until
-emit sites land. Track via T-0098 follow-ups.
-
-### 4.2 Payload field reference
+### 4.1 Payload field reference
 
 Concrete struct shapes (Go) — see `internal/events/events.go`:
 
@@ -154,8 +138,6 @@ Concrete struct shapes (Go) — see `internal/events/events.go`:
 | AdapterUnlinkedPayload   | ProfileID, AdapterType, AdapterID                                     |
 | SessionStartedPayload    | SessionID, ProfileID, Command, PID, Tier                              |
 | SessionStoppedPayload    | SessionID, ProfileID, Reason ("unregister"\|"inactive"\|"errored")    |
-| WebhookReceivedPayload   | ProfileID, Event, Source — RESERVED                                   |
-| ActionRanPayload         | ProfileID, ActionID, ExitCode — RESERVED                              |
 
 ## 5. tlc topics
 

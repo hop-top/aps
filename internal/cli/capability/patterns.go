@@ -11,14 +11,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newPatternsCmd builds the `capability patterns` noun-group.
+// T-0396 — noun-list per CLI conventions §3.2: verbs under the noun.
 func newPatternsCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "patterns",
-		Short: "Show smart patterns + builtin capabilities",
+		Short: "Smart patterns + builtin capabilities",
+	}
+
+	cmd.AddCommand(&cobra.Command{
+		Use:   "list",
+		Short: "List smart patterns + builtin capabilities",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPatterns()
 		},
-	}
+	})
+
+	return cmd
 }
 
 func runPatterns() error {

@@ -25,7 +25,7 @@ workspace to avoid repeating its name:
 	}
 
 	// Lifecycle
-	cmd.AddCommand(NewNewCmd())
+	cmd.AddCommand(NewCreateCmd())
 	cmd.AddCommand(NewShowCmd())
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewJoinCmd())

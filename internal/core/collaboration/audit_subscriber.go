@@ -22,7 +22,6 @@ const GlobalAuditWorkspace = "aps:global"
 //   - Session events route to the session's WorkspaceID when set,
 //     falling back to GlobalAuditWorkspace.
 //   - Profile + adapter events route to GlobalAuditWorkspace.
-//   - Webhook + action events (reserved) route to GlobalAuditWorkspace.
 //
 // The returned Unsubscribe detaches the handler. Recording errors are
 // returned from the handler so the bus can log/route them; they do not
@@ -73,12 +72,6 @@ func auditEventFromBusEvent(e bus.Event) (AuditEvent, bool) {
 	case events.SessionStoppedPayload:
 		ae.Resource = "session/" + p.SessionID
 		ae.Details = fmt.Sprintf("profile=%s reason=%s", p.ProfileID, p.Reason)
-	case events.WebhookReceivedPayload:
-		ae.Resource = "webhook/" + p.Source
-		ae.Details = fmt.Sprintf("profile=%s event=%s", p.ProfileID, p.Event)
-	case events.ActionRanPayload:
-		ae.Resource = "action/" + p.ActionID
-		ae.Details = fmt.Sprintf("profile=%s exit=%d", p.ProfileID, p.ExitCode)
 	default:
 		return AuditEvent{}, false
 	}

@@ -25,16 +25,6 @@ const (
 	// Session lifecycle.
 	TopicSessionStarted bus.Topic = "aps.session.started"
 	TopicSessionStopped bus.Topic = "aps.session.stopped"
-
-	// Webhook + action surfaces. Currently reserved: aps does not yet
-	// emit on webhook receipt or action run from a single chokepoint
-	// (webhook handlers live in internal/cli/webhook, actions are
-	// dispatched through internal/core/action.go but lack a unified
-	// post-run hook). Constants are defined here so subscribers can
-	// register handlers ahead of the emit wiring landing — see
-	// docs/plans/2026-04-29-kit-reorg-adoption/domain-mapping.md.
-	TopicWebhookReceived bus.Topic = "aps.webhook.received"
-	TopicActionRan       bus.Topic = "aps.action.ran"
 )
 
 // ProfileCreatedPayload is published after a profile is created.
@@ -87,18 +77,4 @@ type SessionStoppedPayload struct {
 	SessionID string
 	ProfileID string
 	Reason    string // "unregister", "inactive", "errored"
-}
-
-// WebhookReceivedPayload is reserved for future webhook emit wiring.
-type WebhookReceivedPayload struct {
-	ProfileID string
-	Event     string
-	Source    string
-}
-
-// ActionRanPayload is reserved for future action emit wiring.
-type ActionRanPayload struct {
-	ProfileID string
-	ActionID  string
-	ExitCode  int
 }

@@ -28,6 +28,8 @@ var root = kitcli.New(kitcli.Config{
 		{Name: "config", Usage: "path to YAML config file"},
 		{Name: "profile", Usage: "profile id (defaults to active profile)"},
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
+		{Name: "offline", Usage: "disable all network calls"},
+		{Name: "instance", Usage: "backend instance to target (defaults to config)"},
 	},
 	// T-0366/T-0367 — command grouping per ~/.ops/docs/cli-conventions-with-kit.md §4.1.
 	// MANAGEMENT is auto-registered by kit/cli (hidden by default; --help-management

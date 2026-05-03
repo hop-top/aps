@@ -23,6 +23,12 @@ Generates an OASF record from the profile and pushes it to the Directory.
 Example:
   aps directory register --profile worker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0386 — short-circuit when --offline is set; AGNTCY Directory
+			// registration is a network call.
+			if f := cmd.Flag("offline"); f != nil && f.Value.String() == "true" {
+				return fmt.Errorf("directory register requires network: --offline is set")
+			}
+
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)

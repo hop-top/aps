@@ -9,10 +9,11 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 )
 
-// NewNewCmd creates the "collab new" command.
-func NewNewCmd() *cobra.Command {
+// NewCreateCmd creates the "workspace create" command.
+// T-0394 — renamed from "new" per CLI conventions §3.1.
+func NewCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "new <name>",
+		Use:   "create <name>",
 		Short: "Create a collaboration workspace",
 		Long: `Create a new multi-agent collaboration workspace.
 

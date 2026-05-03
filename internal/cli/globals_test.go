@@ -34,6 +34,25 @@ func TestRoot_GlobalWorkspaceFlag(t *testing.T) {
 	}
 }
 
+// T-0386 — --offline and --instance globals mirror tlc's parity addition.
+func TestRoot_GlobalOfflineFlag(t *testing.T) {
+	if f := rootCmd.PersistentFlags().Lookup("offline"); f == nil {
+		t.Fatal("--offline persistent flag not registered on root (T-0386)")
+	}
+	if got := root.Viper.GetBool("offline"); got {
+		t.Errorf(`viper.GetBool("offline") = %v, want false`, got)
+	}
+}
+
+func TestRoot_GlobalInstanceFlag(t *testing.T) {
+	if f := rootCmd.PersistentFlags().Lookup("instance"); f == nil {
+		t.Fatal("--instance persistent flag not registered on root (T-0386)")
+	}
+	if got := root.Viper.GetString("instance"); got != "" {
+		t.Errorf(`viper.GetString("instance") = %q, want ""`, got)
+	}
+}
+
 // TestSessionList_NoLocalProfileFlag asserts the per-command --profile flag
 // on `aps session list` is removed in favor of the global persistent flag.
 func TestSessionList_NoLocalProfileFlag(t *testing.T) {

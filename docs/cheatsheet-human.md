@@ -76,7 +76,7 @@ aps capability link <name> <target>  # symlink cap to path
 aps capability enable <profile> <n>  # enable on profile
 aps capability disable <profile> <n> # disable on profile
 aps capability delete <name>         # remove capability
-aps capability patterns              # show smart patterns + builtins
+aps capability patterns list         # show smart patterns + builtins
 ```
 
 ---
@@ -122,7 +122,7 @@ aps squad delete <id>                # delete squad
 ```bash
 aps workspace use <workspace>           # set active workspace (persists)
 aps workspace list                      # list workspaces
-aps workspace new <name>                # create workspace
+aps workspace create <name>             # create workspace
 aps workspace show <ws>                 # details
 aps workspace join <ws>                 # join as agent
 aps workspace leave <ws>                # leave

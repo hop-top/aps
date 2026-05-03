@@ -46,7 +46,8 @@ func TestWorkspaceMergedSurface(t *testing.T) {
 		assert.Contains(t, stdout, "sync")
 
 		// Merged from collab
-		assert.Contains(t, stdout, "new")
+		// T-0394 — `new` was renamed to `create`.
+		assert.Contains(t, stdout, "create")
 		assert.Contains(t, stdout, "list")
 		assert.Contains(t, stdout, "show")
 		assert.Contains(t, stdout, "join")
@@ -54,12 +55,6 @@ func TestWorkspaceMergedSurface(t *testing.T) {
 		assert.Contains(t, stdout, "members")
 		assert.Contains(t, stdout, "audit")
 		assert.Contains(t, stdout, "conflicts")
-	})
-
-	t.Run("workspace new help works", func(t *testing.T) {
-		stdout, _, err := runAPS(t, home, "workspace", "new", "--help")
-		require.NoError(t, err)
-		assert.Contains(t, strings.ToLower(stdout), "create")
 	})
 
 	t.Run("workspace audit help works", func(t *testing.T) {

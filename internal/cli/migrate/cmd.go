@@ -11,6 +11,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/core/xdg"
 )
 
 var (
@@ -97,7 +98,13 @@ func runMessengersMigrate(dryRun, backup bool, only string) error {
 	}
 
 	if backup {
-		backupDir := filepath.Join(home, ".aps", "backups",
+		// T-0390 — route backup through kit/xdg.DataDir per
+		// cli-conventions-with-kit §7.2.
+		dataDir, err := xdg.DataDir("aps")
+		if err != nil {
+			return fmt.Errorf("xdg data dir: %w", err)
+		}
+		backupDir := filepath.Join(dataDir, "backups",
 			fmt.Sprintf("messengers-%s", time.Now().Format("20060102")))
 		if err := createBackup(messengersDir, backupDir); err != nil {
 			return fmt.Errorf("backup failed: %w", err)
