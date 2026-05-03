@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newLinkCmd() *cobra.Command {
+// newLinkAddCmd creates the `aps adapter link add` subcommand. T-0398
+// renamed from `link` (verb-only) to `add` (CRUD verb under the
+// `link` noun parent).
+func newLinkAddCmd() *cobra.Command {
 	var profileID string
 	var jsonOutput bool
 	var dryRun bool
@@ -24,7 +27,7 @@ func newLinkCmd() *cobra.Command {
 	var defaultAction string
 
 	cmd := &cobra.Command{
-		Use:   "link <device>",
+		Use:   "add <device>",
 		Short: "Link a device to a profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

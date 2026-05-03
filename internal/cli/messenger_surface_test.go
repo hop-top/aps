@@ -24,11 +24,37 @@ func TestMessenger_RegisteredUnderAdapter(t *testing.T) {
 }
 
 // TestMessenger_AdapterListHasMessengerSubcommands asserts the messenger
-// subcommand exposes the expected operations under adapter.
+// subcommand exposes the expected operations under adapter. T-0398
+// reshaped link/links/unlink into a `link` parent with add/list/delete.
 func TestMessenger_AdapterListHasMessengerSubcommands(t *testing.T) {
-	for _, sub := range []string{"list", "link", "unlink", "channels", "links"} {
+	for _, sub := range []string{"list", "link", "channels"} {
 		if cmd := findSubcommand(rootCmd, "adapter", "messenger", sub); cmd == nil {
 			t.Errorf("aps adapter messenger %s not registered", sub)
+		}
+	}
+}
+
+// TestAdapter_LinkParentExposesCRUD asserts the post-T-0398 shape:
+// `aps adapter link` is the parent and it owns add/list/delete.
+func TestAdapter_LinkParentExposesCRUD(t *testing.T) {
+	for _, sub := range []string{"add", "list", "delete"} {
+		if cmd := findSubcommand(rootCmd, "adapter", "link", sub); cmd == nil {
+			t.Errorf("aps adapter link %s not registered (T-0398)", sub)
+		}
+	}
+	for _, sub := range []string{"add", "list", "delete"} {
+		if cmd := findSubcommand(rootCmd, "adapter", "messenger", "link", sub); cmd == nil {
+			t.Errorf("aps adapter messenger link %s not registered (T-0398)", sub)
+		}
+	}
+}
+
+// TestAdapter_FlatLegacyNamesGone asserts the pre-T-0398 flat names
+// (`links`, `unlink`) are no longer registered.
+func TestAdapter_FlatLegacyNamesGone(t *testing.T) {
+	for _, name := range []string{"links", "unlink"} {
+		if c := findSubcommand(rootCmd, "adapter", name); c != nil {
+			t.Errorf("aps adapter %s still registered; expected removal (T-0398)", name)
 		}
 	}
 }

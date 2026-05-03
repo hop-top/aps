@@ -15,8 +15,9 @@ func NewAdapterCmd() *cobra.Command {
 	cmd.AddCommand(newStopCmd())
 	cmd.AddCommand(newStatusCmd())
 	cmd.AddCommand(newLogsCmd())
-	cmd.AddCommand(newLinkCmd())
-	cmd.AddCommand(newUnlinkCmd())
+
+	// T-0398 — link parent (add/list/delete) replaces flat link/links/unlink.
+	cmd.AddCommand(newLinkParentCmd())
 
 	// Mobile device pairing commands
 	cmd.AddCommand(newPairCmd())
@@ -33,7 +34,6 @@ func NewAdapterCmd() *cobra.Command {
 
 	// Messenger device integration (Plan 8)
 	cmd.AddCommand(newChannelsCmd())
-	cmd.AddCommand(newLinksCmd())
 	cmd.AddCommand(newTestMessengerCmd())
 
 	// Script adapter execution

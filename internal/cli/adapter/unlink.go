@@ -10,14 +10,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newUnlinkCmd() *cobra.Command {
+// newLinkDeleteCmd creates the `aps adapter link delete` subcommand.
+// T-0398 renamed from `unlink` (verb-with-un-) to `delete` (CRUD verb
+// under the `link` noun parent). `rm`/`remove` kept as conventional
+// shorthands.
+func newLinkDeleteCmd() *cobra.Command {
 	var profileID string
 	var jsonOutput bool
 	var dryRun bool
 
 	cmd := &cobra.Command{
-		Use:     "unlink <device>",
-		Aliases: []string{"detach"},
+		Use:     "delete <device>",
+		Aliases: []string{"remove", "rm"},
 		Short:   "Unlink a device from a profile",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

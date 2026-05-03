@@ -20,10 +20,9 @@ pre-filtered for messenger-type devices.`,
 
 	// Core messenger operations
 	cmd.AddCommand(newMessengerListCmd())
-	cmd.AddCommand(newMessengerLinkCmd())
-	cmd.AddCommand(newMessengerUnlinkCmd())
+	// T-0398 — link parent (add/list/delete) replaces flat link/links/unlink.
+	cmd.AddCommand(newLinkParentCmd())
 	cmd.AddCommand(newChannelsCmd())
-	cmd.AddCommand(newLinksCmd())
 	cmd.AddCommand(newTestMessengerCmd())
 
 	// Lifecycle commands
@@ -55,12 +54,5 @@ func newMessengerListCmd() *cobra.Command {
 	return cmd
 }
 
-// newMessengerLinkCmd wraps the link command for messenger context.
-func newMessengerLinkCmd() *cobra.Command {
-	return newLinkCmd()
-}
-
-// newMessengerUnlinkCmd wraps the unlink command for messenger context.
-func newMessengerUnlinkCmd() *cobra.Command {
-	return newUnlinkCmd()
-}
+// T-0398 removed newMessengerLinkCmd / newMessengerUnlinkCmd. The
+// link parent (newLinkParentCmd) covers add/list/delete.

@@ -8,7 +8,7 @@
 //  4. asserts the expected event arrives within a deadline.
 //
 // Closes T-0163. Mirrors profile_roundtrip_test.go (T-0162) against the
-// adapter lifecycle topics emitted by `aps adapter link/unlink`. T-0176
+// adapter lifecycle topics emitted by `aps adapter link add/delete`. T-0176
 // drain fix (commit 4c79fac) is a prerequisite — without it, the child
 // can exit before the async forwarder flushes and the event is lost.
 //
@@ -24,7 +24,7 @@ import (
 )
 
 // TestBusAdapterLinked_CrossProcess verifies aps.adapter.linked is
-// published by `aps adapter link` (process B) and received by a
+// published by `aps adapter link add` (process B) and received by a
 // subscriber in the test process (process A) via a real kit/bus hub.
 //
 // Setup creates an adapter via `aps adapter create --type protocol` so
@@ -47,11 +47,11 @@ func TestBusAdapterLinked_CrossProcess(t *testing.T) {
 
 	// Action: link the adapter to a profile id.
 	out, err := runAPSChild(t, home, hub,
-		"adapter", "link", "test-protocol",
+		"adapter", "link", "add", "test-protocol",
 		"--profile", "noor-link",
 	)
 	if err != nil {
-		t.Fatalf("aps adapter link failed: %v\noutput:\n%s", err, out)
+		t.Fatalf("aps adapter link add failed: %v\noutput:\n%s", err, out)
 	}
 	if !strings.Contains(out, "Linked") {
 		t.Fatalf("expected link confirmation; got:\n%s", out)
@@ -89,7 +89,7 @@ func TestBusAdapterLinked_CrossProcess(t *testing.T) {
 // Persistence prerequisite (T-0181): AdapterManifest now carries a
 // `linked_to` field; SaveAdapter writes it, loadAdapterFromPath reads
 // it. Without that, `aps adapter link` (process B) writes the manifest
-// without LinkedTo, then `aps adapter unlink` (process C) reloads with
+// without LinkedTo, then `aps adapter link delete` (process C) reloads with
 // LinkedTo=[] and fails IsLinkedToProfile before reaching publishEvent.
 // In-process tests miss the bug because the same *Adapter pointer
 // carries LinkedTo across calls.
@@ -107,19 +107,19 @@ func TestBusAdapterUnlinked_CrossProcess(t *testing.T) {
 		t.Fatalf("setup adapter create failed: %v\noutput:\n%s", err, out)
 	}
 	if out, err := runAPSChild(t, home, hub,
-		"adapter", "link", "test-protocol",
+		"adapter", "link", "add", "test-protocol",
 		"--profile", "noor-unlink",
 	); err != nil {
-		t.Fatalf("setup adapter link failed: %v\noutput:\n%s", err, out)
+		t.Fatalf("setup adapter link add failed: %v\noutput:\n%s", err, out)
 	}
 
-	// Action: unlink.
+	// Action: unlink (delete the link).
 	out, err := runAPSChild(t, home, hub,
-		"adapter", "unlink", "test-protocol",
+		"adapter", "link", "delete", "test-protocol",
 		"--profile", "noor-unlink",
 	)
 	if err != nil {
-		t.Fatalf("aps adapter unlink failed: %v\noutput:\n%s", err, out)
+		t.Fatalf("aps adapter link delete failed: %v\noutput:\n%s", err, out)
 	}
 
 	got := waitFor(busPropagationDeadline, 2)

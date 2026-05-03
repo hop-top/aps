@@ -13,16 +13,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newLinksCmd() *cobra.Command {
+// newLinkListCmd creates the `aps adapter link list` subcommand. T-0398
+// renamed from `links` (plural-as-list noun) to `list` (CRUD verb
+// under the `link` noun parent). `ls` kept as conventional shorthand.
+func newLinkListCmd() *cobra.Command {
 	var profileID string
 	var jsonOutput bool
 	var verbose bool
 
 	cmd := &cobra.Command{
-		Use:   "links [messenger]",
-		Short: "List messenger-profile links",
-		Long:  "Lists all messenger-profile links, optionally filtered by profile or messenger.",
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "list [messenger]",
+		Aliases: []string{"ls"},
+		Short:   "List messenger-profile links",
+		Long:    "Lists all messenger-profile links, optionally filtered by profile or messenger.",
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var messengerFilter string
 			if len(args) > 0 {

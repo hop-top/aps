@@ -31,6 +31,10 @@ var root = kitcli.New(kitcli.Config{
 		{Name: "offline", Usage: "disable all network calls"},
 		{Name: "instance", Usage: "backend instance to target (defaults to config)"},
 	},
+	// T-0392 — resolve -C/--chdir targets that aren't literal dirs against
+	// aps's workspace + profile registries before kit falls back to the
+	// literal-path "not a directory" error.
+	ChdirResolver: resolveAPSContext,
 	// T-0366/T-0367 — command grouping per ~/.ops/docs/cli-conventions-with-kit.md §4.1.
 	// MANAGEMENT is auto-registered by kit/cli (hidden by default; --help-management
 	// or --help-all to view). Per-group help via --help-<id>.
