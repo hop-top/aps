@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/agntcy/discovery"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 )
 
@@ -25,6 +26,11 @@ Example:
   aps directory discover --capability "invoice-processing"
   aps dir discover --capability a2a --endpoint https://dir.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — gate AGNTCY Directory lookups on --offline.
+			if globals.IsOffline() {
+				return fmt.Errorf("directory discover: %w", globals.ErrOffline)
+			}
+
 			cfg := &core.DirectoryConfig{
 				Endpoint: endpoint,
 			}

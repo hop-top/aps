@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/styles"
@@ -54,6 +55,10 @@ var rootCmd = root.Cmd
 
 func init() {
 	logging.SetViper(root.Viper)
+	// T-0411 — wire tool-level globals so subpackages (a2a, directory,
+	// adapter, …) can gate network paths on --offline without importing
+	// internal/cli (which would form an import cycle).
+	globals.SetViper(root.Viper)
 
 	// Note: kit/go/console/cli.New already calls output.RegisterFlags
 	// and output.RegisterHintFlags by default (gated by Config.Disable.

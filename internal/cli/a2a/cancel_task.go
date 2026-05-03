@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/cli/globals"
 )
 
 func NewCancelTaskCmd() *cobra.Command {
@@ -19,6 +20,11 @@ func NewCancelTaskCmd() *cobra.Command {
 		Long:  `Cancel a running A2A task on a target profile.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — A2A cancel is a network call to the target peer.
+			if globals.IsOffline() {
+				return fmt.Errorf("a2a tasks cancel: %w", globals.ErrOffline)
+			}
+
 			ctx := context.Background()
 			taskID := a2a.TaskID(args[0])
 

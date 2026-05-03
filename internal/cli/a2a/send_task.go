@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/cli/globals"
 )
 
 func NewSendTaskCmd() *cobra.Command {
@@ -29,6 +30,11 @@ Example:
   aps a2a tasks send --target worker --message "Deploy application"
   aps a2a tasks send --target worker --task-id <id> --message "Continue deployment"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — A2A send is a network call to the target peer.
+			if globals.IsOffline() {
+				return fmt.Errorf("a2a tasks send: %w", globals.ErrOffline)
+			}
+
 			ctx := context.Background()
 
 			targetProf, err := loadProfile(targetProfile)

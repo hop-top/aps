@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/cli/globals"
 )
 
 func NewSubscribeTaskCmd() *cobra.Command {
@@ -25,6 +26,11 @@ Example:
   aps a2a tasks subscribe <task-id> --target worker --webhook http://localhost:9000/hook`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — A2A subscribe registers a webhook with the target peer.
+			if globals.IsOffline() {
+				return fmt.Errorf("a2a tasks subscribe: %w", globals.ErrOffline)
+			}
+
 			ctx := context.Background()
 			taskID := a2a.TaskID(args[0])
 

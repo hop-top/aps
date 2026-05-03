@@ -10,6 +10,8 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/globals"
 )
 
 func NewFetchCardCmd() *cobra.Command {
@@ -26,6 +28,11 @@ func NewFetchCardCmd() *cobra.Command {
 Example:
   aps a2a card fetch --url http://localhost:8081/.well-known/agent-card`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — fetching a remote agent card requires network.
+			if globals.IsOffline() {
+				return fmt.Errorf("a2a card fetch: %w", globals.ErrOffline)
+			}
+
 			ctx := context.Background()
 
 			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

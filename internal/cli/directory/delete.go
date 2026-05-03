@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/agntcy/discovery"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 )
 
@@ -23,6 +24,11 @@ func NewDeleteCmd() *cobra.Command {
 Example:
   aps directory delete --profile worker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0411 — gate Directory deregistration on --offline.
+			if globals.IsOffline() {
+				return fmt.Errorf("directory delete: %w", globals.ErrOffline)
+			}
+
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/agntcy/discovery"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 )
 
@@ -23,10 +24,11 @@ Generates an OASF record from the profile and pushes it to the Directory.
 Example:
   aps directory register --profile worker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// T-0386 — short-circuit when --offline is set; AGNTCY Directory
-			// registration is a network call.
-			if f := cmd.Flag("offline"); f != nil && f.Value.String() == "true" {
-				return fmt.Errorf("directory register requires network: --offline is set")
+			// T-0411 — short-circuit when --offline is set; AGNTCY Directory
+			// registration is a network call. (Refactored from the inline
+			// check landed in T-0386 to use the shared accessor.)
+			if globals.IsOffline() {
+				return fmt.Errorf("directory register: %w", globals.ErrOffline)
 			}
 
 			profile, err := core.LoadProfile(profileID)
