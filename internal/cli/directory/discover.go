@@ -10,6 +10,27 @@ import (
 	"hop.top/aps/internal/core"
 )
 
+// resolveInstance is overridable for tests; defaults to core.Resolve.
+var resolveInstance = core.Resolve
+
+// instanceFlagValue reads the --instance global from the root command's
+// persistent flags. kit/cli's Globals create the flag on root and bind
+// it to a private viper, so reading the flag value directly is the
+// portable way to get it from a subpackage.
+func instanceFlagValue(cmd *cobra.Command) string {
+	if cmd == nil {
+		return ""
+	}
+	root := cmd.Root()
+	if root == nil {
+		return ""
+	}
+	if f := root.PersistentFlags().Lookup("instance"); f != nil {
+		return f.Value.String()
+	}
+	return ""
+}
+
 // NewDiscoverCmd creates the directory discover command.
 func NewDiscoverCmd() *cobra.Command {
 	var (
@@ -24,15 +45,30 @@ func NewDiscoverCmd() *cobra.Command {
 
 Example:
   aps directory discover --capability "invoice-processing"
-  aps dir discover --capability a2a --endpoint https://dir.example.com`,
+  aps dir discover --capability a2a --endpoint https://dir.example.com
+  aps --instance prod directory discover --capability a2a`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0411 — gate AGNTCY Directory lookups on --offline.
 			if globals.IsOffline() {
 				return fmt.Errorf("directory discover: %w", globals.ErrOffline)
 			}
 
+			// T-0412 — resolve --instance to a backend bundle. An explicit
+			// --endpoint on this command always wins; --instance only
+			// supplies the default when --endpoint is empty.
+			resolved := endpoint
+			if resolved == "" {
+				if name := instanceFlagValue(cmd); name != "" {
+					inst, err := resolveInstance(name)
+					if err != nil {
+						return fmt.Errorf("resolve instance: %w", err)
+					}
+					resolved = inst.DirectoryEndpoint
+				}
+			}
+
 			cfg := &core.DirectoryConfig{
-				Endpoint: endpoint,
+				Endpoint: resolved,
 			}
 
 			client, err := discovery.NewClient(cfg)
