@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -12,15 +13,25 @@ import (
 	"gopkg.in/yaml.v3"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/core/capability"
 	"hop.top/aps/internal/styles"
 )
 
-// profileRow is the table row shape for `aps profile list`.
-type profileRow struct {
-	ID string `table:"ID" json:"id" yaml:"id"`
+// profileSummaryRow is the table/json/yaml row shape for `aps profile list`.
+// Higher-priority columns survive narrow terminals (kit/output Table
+// drops low-priority columns first when width is constrained).
+type profileSummaryRow struct {
+	ID           string `table:"ID,priority=10"           json:"id"            yaml:"id"`
+	DisplayName  string `table:"DISPLAY NAME,priority=9"  json:"display_name"  yaml:"display_name"`
+	Roles        string `table:"ROLES,priority=8"         json:"roles"         yaml:"roles"`
+	Capabilities string `table:"CAPABILITIES,priority=7"  json:"capabilities"  yaml:"capabilities"`
+	Workspace    string `table:"WORKSPACE,priority=6"     json:"workspace"     yaml:"workspace"`
+	Email        string `table:"EMAIL,priority=5"         json:"email"         yaml:"email"`
+	HasSecrets   bool   `table:"SECRETS,priority=4"       json:"has_secrets"   yaml:"has_secrets"`
+	HasIdentity  bool   `table:"DID,priority=3"           json:"has_identity"  yaml:"has_identity"`
 }
 
 var profileCmd = &cobra.Command{
@@ -33,34 +44,82 @@ var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available profiles",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		profiles, err := core.ListProfiles()
+		profiles, err := core.ListProfilesFull()
 		if err != nil {
 			return fmt.Errorf("listing profiles: %w", err)
 		}
 
+		// Compose the filter predicate from CLI flags. Unset flags
+		// produce nil predicates which All() treats as match-all.
+		capFlag, _ := cmd.Flags().GetString("capability")
+		roleFlag, _ := cmd.Flags().GetString("role")
+		squadFlag, _ := cmd.Flags().GetString("squad")
+		workspaceFlag, _ := cmd.Flags().GetString("workspace")
+		toneFlag, _ := cmd.Flags().GetString("tone")
+		hasIdentity, _ := cmd.Flags().GetBool("has-identity")
+		hasSecrets, _ := cmd.Flags().GetBool("has-secrets")
+
+		pred := listing.All(
+			listing.MatchSlice(func(p core.Profile) []string { return p.Capabilities }, capFlag),
+			listing.MatchSlice(func(p core.Profile) []string { return p.Roles }, roleFlag),
+			listing.MatchSlice(func(p core.Profile) []string { return p.Squads }, squadFlag),
+			listing.MatchString(func(p core.Profile) string {
+				if p.Workspace == nil {
+					return ""
+				}
+				return p.Workspace.Name
+			}, workspaceFlag),
+			listing.MatchString(func(p core.Profile) string { return p.Persona.Tone }, toneFlag),
+			listing.BoolFlag(cmd.Flags().Changed("has-identity"),
+				func(p core.Profile) bool { return p.Identity != nil }, hasIdentity),
+			listing.BoolFlag(cmd.Flags().Changed("has-secrets"),
+				profileHasSecrets, hasSecrets),
+		)
+
+		filtered := listing.Filter(profiles, pred)
+		rows := make([]profileSummaryRow, 0, len(filtered))
+		for _, p := range filtered {
+			rows = append(rows, profileToSummaryRow(p))
+		}
+
 		format := root.Viper.GetString("format")
-		rows := make([]profileRow, len(profiles))
-		for i, p := range profiles {
-			rows[i] = profileRow{ID: p}
+		if format == "" {
+			format = output.Table
 		}
-
-		if format != output.Table {
-			return output.Render(os.Stdout, format, rows)
-		}
-
-		if len(profiles) == 0 {
-			fmt.Fprintln(os.Stderr, styles.Dim.Render("No profiles found."))
-			return nil
-		}
-
-		fmt.Printf("%s\n\n", styles.Title.Render("Profiles"))
-		if err := output.Render(os.Stdout, output.Table, rows); err != nil {
-			return err
-		}
-		fmt.Printf("\n%s\n", styles.Dim.Render(
-			fmt.Sprintf("%d profiles", len(profiles))))
-		return nil
+		return listing.RenderList(os.Stdout, format, rows)
 	},
+}
+
+// profileHasSecrets reports whether the profile has at least one
+// non-empty secret entry. Used by the --has-secrets filter; absence
+// of the file (or an empty file) is treated as "no secrets".
+func profileHasSecrets(p core.Profile) bool {
+	secrets, err := core.LoadProfileSecrets(p.ID)
+	if err != nil {
+		return false
+	}
+	return len(secrets) > 0
+}
+
+// profileToSummaryRow projects a Profile into the row shape rendered
+// by `aps profile list`. Slice fields are joined with ", " for table
+// readability; json/yaml output preserves the same string (callers
+// wanting structured slices should query individual profiles).
+func profileToSummaryRow(p core.Profile) profileSummaryRow {
+	wsName := ""
+	if p.Workspace != nil {
+		wsName = p.Workspace.Name
+	}
+	return profileSummaryRow{
+		ID:           p.ID,
+		DisplayName:  p.DisplayName,
+		Roles:        strings.Join(p.Roles, ", "),
+		Capabilities: strings.Join(p.Capabilities, ", "),
+		Workspace:    wsName,
+		Email:        p.Email,
+		HasSecrets:   profileHasSecrets(p),
+		HasIdentity:  p.Identity != nil,
+	}
 }
 
 var profileCreateCmd = &cobra.Command{
@@ -478,6 +537,16 @@ func init() {
 	profileCapabilityCmd.AddCommand(profileAddCapCmd)
 	profileCapabilityCmd.AddCommand(profileRemoveCapCmd)
 	profileCmd.AddCommand(profileDeleteCmd)
+
+	// `aps profile list` filter flags. --workspace is a kit-owned
+	// global (T-0376) inherited via PersistentFlags; the others are
+	// declared here.
+	profileListCmd.Flags().String("capability", "", "Filter by capability membership")
+	profileListCmd.Flags().String("role", "", "Filter by role membership (owner, assignee, evaluator, auditor)")
+	profileListCmd.Flags().String("squad", "", "Filter by squad membership")
+	profileListCmd.Flags().String("tone", "", "Filter by persona tone")
+	profileListCmd.Flags().Bool("has-identity", false, "Filter to profiles with (true) or without (false) a DID identity")
+	profileListCmd.Flags().Bool("has-secrets", false, "Filter to profiles with (true) or without (false) at least one secret")
 
 	profileCreateCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileCreateCmd.Flags().String("email", "", "Email for profile and git config")

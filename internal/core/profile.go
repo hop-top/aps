@@ -563,6 +563,31 @@ func ListProfiles() ([]string, error) {
 	return profiles, nil
 }
 
+// ListProfilesFull returns fully-loaded Profile objects for every
+// profile on disk. It is the rich counterpart to ListProfiles, used by
+// `aps profile list` to render multi-column rows and apply filter
+// predicates. Each YAML file is loaded once via LoadProfile; profiles
+// that fail to load are skipped (their IDs are silently dropped) so
+// one corrupt file does not break listing for the rest.
+//
+// Cheap callers that only need IDs (capability lookups, action
+// resolution, etc.) should keep using ListProfiles.
+func ListProfilesFull() ([]Profile, error) {
+	ids, err := ListProfiles()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Profile, 0, len(ids))
+	for _, id := range ids {
+		p, err := LoadProfile(id)
+		if err != nil {
+			continue
+		}
+		out = append(out, *p)
+	}
+	return out, nil
+}
+
 // AddCapabilityToProfile adds a capability to a profile (deduplicates)
 func AddCapabilityToProfile(profileID, capName string) error {
 	profile, err := LoadProfile(profileID)
