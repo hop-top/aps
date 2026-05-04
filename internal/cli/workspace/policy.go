@@ -2,11 +2,27 @@ package workspace
 
 import (
 	"fmt"
-
-	collab "hop.top/aps/internal/core/collaboration"
+	"os"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/globals"
+	"hop.top/aps/internal/cli/listing"
+	collab "hop.top/aps/internal/core/collaboration"
 )
+
+// policySummaryRow is the per-rule row rendered by
+// `aps workspace policy [workspace]`. Each Workspace.Policy is
+// expanded to N+1 rows: one for the default strategy plus one row
+// per override key. Resource carries the resource glob the rule
+// targets ("*" for the default fall-through).
+type policySummaryRow struct {
+	Key       string `table:"KEY,priority=10" json:"key" yaml:"key"`
+	Strategy  string `table:"STRATEGY,priority=9" json:"strategy" yaml:"strategy"`
+	Scope     string `table:"SCOPE,priority=6" json:"scope" yaml:"scope"`
+	Resource  string `table:"RESOURCE,priority=7" json:"resource" yaml:"resource"`
+	UpdatedAt string `table:"UPDATED,priority=4" json:"updated_at" yaml:"updated_at"`
+}
 
 // NewPolicyCmd creates the "collab policy" command.
 func NewPolicyCmd() *cobra.Command {
@@ -105,19 +121,28 @@ func showPolicy(cmd *cobra.Command, ws *collab.Workspace) error {
 		return outputJSON(ws.Policy)
 	}
 
-	fmt.Printf("Default: %s\n", ws.Policy.Default)
+	rows := buildPolicyRows(ws)
+	return listing.RenderList(os.Stdout, globals.Format(), rows)
+}
 
-	if len(ws.Policy.Overrides) > 0 {
-		fmt.Println()
-		fmt.Println("Overrides:")
-
-		w := newTabWriter()
-		fmt.Fprintf(w, "  RESOURCE\tSTRATEGY\n")
-		for k, v := range ws.Policy.Overrides {
-			fmt.Fprintf(w, "  %s\t%s\n", k, v)
-		}
-		w.Flush()
+func buildPolicyRows(ws *collab.Workspace) []policySummaryRow {
+	updated := ws.UpdatedAt.Format("2006-01-02 15:04:05")
+	rows := make([]policySummaryRow, 0, 1+len(ws.Policy.Overrides))
+	rows = append(rows, policySummaryRow{
+		Key:       "default",
+		Strategy:  string(ws.Policy.Default),
+		Scope:     "workspace",
+		Resource:  "*",
+		UpdatedAt: updated,
+	})
+	for resource, strategy := range ws.Policy.Overrides {
+		rows = append(rows, policySummaryRow{
+			Key:       resource,
+			Strategy:  string(strategy),
+			Scope:     "override",
+			Resource:  resource,
+			UpdatedAt: updated,
+		})
 	}
-
-	return nil
+	return rows
 }

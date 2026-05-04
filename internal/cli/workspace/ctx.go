@@ -2,12 +2,29 @@ package workspace
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
+	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/styles"
 )
+
+// ctxSummaryRow is the per-context-variable row rendered by
+// `aps workspace ctx list`. Type is inferred from Value (string,
+// number, bool, json) since the underlying ContextVariable stores
+// values as strings without an explicit type tag.
+type ctxSummaryRow struct {
+	Key       string `table:"KEY,priority=10" json:"key" yaml:"key"`
+	Type      string `table:"TYPE,priority=6" json:"type" yaml:"type"`
+	Size      int    `table:"SIZE,priority=5" json:"size" yaml:"size"`
+	Version   int    `table:"VERSION,priority=7" json:"version" yaml:"version"`
+	UpdatedBy string `table:"UPDATED BY,priority=4" json:"updated_by" yaml:"updated_by"`
+	UpdatedAt string `table:"UPDATED,priority=3" json:"updated_at" yaml:"updated_at"`
+}
 
 // NewCtxCmd creates the "collab ctx" command group.
 func NewCtxCmd() *cobra.Command {
@@ -138,59 +155,118 @@ func newCtxListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all context variables",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			wsID, err := resolveWorkspace(cmd, nil)
-			if err != nil {
-				return err
-			}
+		Long: `List context variables in the active or selected workspace.
 
-			store, err := getStorage()
-			if err != nil {
-				return err
-			}
-
-			variables, err := store.LoadContext(wsID)
-			if err != nil {
-				return fmt.Errorf("loading context: %w", err)
-			}
-
-			if isJSON(cmd) {
-				return outputJSON(variables)
-			}
-
-			if len(variables) == 0 {
-				fmt.Println(styles.Dim.Render("No context variables set."))
-				fmt.Println()
-				fmt.Println(styles.Dim.Render("  Set one:"))
-				fmt.Println(styles.Dim.Render("    aps workspace ctx set <key> <value>"))
-				return nil
-			}
-
-			fmt.Printf("%s\n\n", styles.Title.Render("Context"))
-
-			w := newTabWriter()
-			fmt.Fprintln(w, collabTableHeader.Render("KEY")+"\t"+
-				collabTableHeader.Render("VALUE")+"\t"+
-				collabTableHeader.Render("VERSION")+"\t"+
-				collabTableHeader.Render("UPDATED BY"))
-			for _, v := range variables {
-				fmt.Fprintf(w, "%s\t%s\tv%d\t%s\n",
-					v.Key,
-					v.Value,
-					v.Version,
-					v.UpdatedBy,
-				)
-			}
-			w.Flush()
-
-			return nil
-		},
+The --workspace flag is a global (T-0376) and inherits from the
+active workspace when not supplied. Use --key-prefix to narrow
+the listing to keys starting with a given string.`,
+		RunE: runCtxList,
 	}
 
-	addWorkspaceFlag(cmd)
-	addJSONFlag(cmd)
+	cmd.Flags().String("key-prefix", "",
+		"Filter to keys with this prefix (set membership)")
 
 	return cmd
+}
+
+func runCtxList(cmd *cobra.Command, _ []string) error {
+	wsID, err := resolveWorkspace(cmd, nil)
+	if err != nil {
+		return err
+	}
+
+	store, err := getStorage()
+	if err != nil {
+		return err
+	}
+
+	variables, err := store.LoadContext(wsID)
+	if err != nil {
+		return fmt.Errorf("loading context: %w", err)
+	}
+
+	rows := buildCtxRows(variables)
+
+	prefix, _ := cmd.Flags().GetString("key-prefix")
+
+	pred := listing.All(
+		ctxKeyPrefixPredicate(prefix),
+	)
+	rows = listing.Filter(rows, pred)
+
+	return listing.RenderList(os.Stdout, globals.Format(), rows)
+}
+
+func buildCtxRows(vars []collab.ContextVariable) []ctxSummaryRow {
+	rows := make([]ctxSummaryRow, len(vars))
+	for i, v := range vars {
+		rows[i] = ctxSummaryRow{
+			Key:       v.Key,
+			Type:      inferCtxType(v.Value),
+			Size:      len(v.Value),
+			Version:   v.Version,
+			UpdatedBy: v.UpdatedBy,
+			UpdatedAt: v.UpdatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+	return rows
+}
+
+// ctxKeyPrefixPredicate is a per-row predicate for --key-prefix. Empty
+// prefix returns nil (match-all) per the listing helper convention.
+func ctxKeyPrefixPredicate(prefix string) listing.Predicate[ctxSummaryRow] {
+	if prefix == "" {
+		return nil
+	}
+	return func(r ctxSummaryRow) bool {
+		return strings.HasPrefix(r.Key, prefix)
+	}
+}
+
+// inferCtxType returns a coarse type tag derived from the raw stored
+// string. ContextVariable is string-typed at rest, so callers shape
+// values through Set(); we surface the most useful distinction —
+// json blob vs scalar — without re-parsing.
+func inferCtxType(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "string"
+	}
+	switch trimmed[0] {
+	case '{':
+		return "json-object"
+	case '[':
+		return "json-array"
+	case '"':
+		return "json-string"
+	case 't', 'f':
+		if trimmed == "true" || trimmed == "false" {
+			return "bool"
+		}
+	}
+	if trimmed[0] == '-' || (trimmed[0] >= '0' && trimmed[0] <= '9') {
+		// Cheap numeric heuristic: leading sign/digit and no
+		// non-numeric characters except a single decimal point.
+		dotSeen := false
+		numeric := true
+		for i, ch := range trimmed {
+			if i == 0 && ch == '-' {
+				continue
+			}
+			if ch == '.' && !dotSeen {
+				dotSeen = true
+				continue
+			}
+			if ch < '0' || ch > '9' {
+				numeric = false
+				break
+			}
+		}
+		if numeric {
+			return "number"
+		}
+	}
+	return "string"
 }
 
 func newCtxDeleteCmd() *cobra.Command {
