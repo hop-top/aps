@@ -1,15 +1,22 @@
 package capability
 
 import (
-	"fmt"
 	"os"
-	"text/tabwriter"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/capability"
-	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
 )
+
+// patternSummaryRow is the row shape for `aps capability patterns list`.
+// Pattern data differs structurally from capabilities (no source/type),
+// so we keep a distinct row type per task spec.
+type patternSummaryRow struct {
+	Tool        string `table:"TOOL,priority=9" json:"tool" yaml:"tool"`
+	DefaultPath string `table:"DEFAULT PATH,priority=6" json:"default_path" yaml:"default_path"`
+	Description string `table:"DESCRIPTION,priority=4" json:"description,omitempty" yaml:"description,omitempty"`
+}
 
 // newPatternsCmd builds the `capability patterns` noun-group.
 // T-0396 — noun-list per CLI conventions §3.2: verbs under the noun.
@@ -19,49 +26,33 @@ func newPatternsCmd() *cobra.Command {
 		Short: "Smart patterns + builtin capabilities",
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List smart patterns + builtin capabilities",
+		Short: "List smart patterns",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPatterns()
+			format, _ := cmd.Flags().GetString("format")
+			return runPatterns(format)
 		},
-	})
+	}
+	cmd.AddCommand(listCmd)
 
 	return cmd
 }
 
-func runPatterns() error {
-	fmt.Println(headerStyle.Render("Builtin Capabilities"))
-	fmt.Println()
+func runPatterns(format string) error {
+	rows := buildPatternRows()
+	return listing.RenderList(os.Stdout, format, rows)
+}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, tableHeader.Render("NAME")+"\t"+
-		tableHeader.Render("DESCRIPTION"))
-	for _, b := range capability.ListBuiltins() {
-		fmt.Fprintf(w, "%s\t%s\n",
-			styles.KindBadge(b.Name), b.Description)
+func buildPatternRows() []patternSummaryRow {
+	patterns := capability.ListSmartPatterns()
+	rows := make([]patternSummaryRow, 0, len(patterns))
+	for _, p := range patterns {
+		rows = append(rows, patternSummaryRow{
+			Tool:        p.ToolName,
+			DefaultPath: p.DefaultPath,
+			Description: p.Description,
+		})
 	}
-	w.Flush()
-
-	fmt.Println()
-	fmt.Println(headerStyle.Render("Smart Patterns"))
-	fmt.Println()
-
-	w = tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, tableHeader.Render("TOOL")+"\t"+
-		tableHeader.Render("DEFAULT PATH")+"\t"+
-		tableHeader.Render("DESCRIPTION"))
-	for _, p := range capability.ListSmartPatterns() {
-		fmt.Fprintf(w, "%s\t%s\t%s\n",
-			boldStyle.Render(p.ToolName),
-			dimStyle.Render(p.DefaultPath),
-			p.Description)
-	}
-	w.Flush()
-
-	fmt.Printf("\n%s\n", dimStyle.Render(fmt.Sprintf(
-		"%d patterns available. Use 'aps cap link <name> <tool>' for smart linking.",
-		len(capability.ListSmartPatterns()))))
-
-	return nil
+	return rows
 }

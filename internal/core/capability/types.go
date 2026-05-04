@@ -10,6 +10,7 @@ type Capability struct {
 	Source      string            `json:"source,omitempty" yaml:"source,omitempty"`
 	Path        string            `json:"path" yaml:"path"` // Absolute path in ~/.aps/capabilities
 	Description string            `json:"description,omitempty" yaml:"description,omitempty"`
+	Tags        []string          `json:"tags,omitempty" yaml:"tags,omitempty"`
 	InstalledAt time.Time         `json:"installed_at" yaml:"installed_at"`
 	Links       map[string]string `json:"links,omitempty" yaml:"links,omitempty"` // Map of Target -> Source
 	Type        CapabilityType    `json:"type" yaml:"type"`
@@ -34,6 +35,7 @@ const (
 type BuiltinCapability struct {
 	Name        string
 	Description string
+	Tags        []string
 }
 
 // SmartPattern defines a known tool configuration pattern
