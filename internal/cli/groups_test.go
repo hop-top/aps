@@ -65,7 +65,7 @@ func TestCommandGroupsContent(t *testing.T) {
 	want := map[string][]string{
 		"interact":   {"run", "serve", "voice", "session", "listen"},
 		"organize":   {"profile", "capability", "bundle", "squad", "workspace", "contact"},
-		"pipelines":  {"a2a", "acp", "adapter", "webhook", "directory", "action"},
+		"pipelines":  {"a2a", "acp", "adapter", "webhook", "directory", "action", "skill"},
 		"security":   {"identity", "policy"},
 		"instance":   {"observability"},
 		"management": {"alias", "docs", "env", "migrate", "upgrade", "toolspec", "version"},

@@ -30,6 +30,7 @@ var commandGroups = map[string]string{
 	"webhook":   "pipelines",
 	"directory": "pipelines",
 	"action":    "pipelines",
+	"skill":     "pipelines",
 
 	// SECURITY — trust + access.
 	"identity": "security",
