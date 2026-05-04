@@ -51,6 +51,38 @@ func TestActionRun(t *testing.T) {
 	assert.Contains(t, stdout, "Greetings run-agent")
 }
 
+// TestActionList_TypeFilter exercises --type sh|py|js (T-0439). Seeds
+// three actions of mixed runtimes and asserts only sh entries render
+// when --type sh is passed.
+func TestActionList_TypeFilter(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	profileID := "type-agent"
+
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
+	require.NoError(t, err)
+
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
+	require.NoError(t, os.MkdirAll(actionsDir, 0o755))
+	for _, f := range []string{"build.sh", "report.py", "lint.js"} {
+		require.NoError(t, os.WriteFile(filepath.Join(actionsDir, f), []byte("#!/bin/sh\n"), 0o755))
+	}
+
+	// Without filter: all three present.
+	stdout, _, err := runAPS(t, home, "action", "list", profileID)
+	require.NoError(t, err)
+	for _, want := range []string{"build", "report", "lint"} {
+		assert.Contains(t, stdout, want)
+	}
+
+	// --type sh: only build.
+	stdout, _, err = runAPS(t, home, "action", "list", profileID, "--type", "sh")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "build")
+	assert.NotContains(t, stdout, "report")
+	assert.NotContains(t, stdout, "lint")
+}
+
 func TestActionPayload(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()

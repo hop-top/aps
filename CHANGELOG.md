@@ -4,6 +4,76 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
+### Improvements — list-commands-uplift (track: `list-commands-uplift`)
+
+All `aps <noun> list` (and `aps <noun> <subnoun> list`) commands now
+emit rich tabular output via kit/output.Render with consistent filter
+flag conventions. 16 commands migrated; 1 new shared helper package.
+
+**New** — `internal/cli/listing/`: `RenderList[T]` generic dispatch
+to kit/output.Render, `Predicate[T]` combinators (All, Any, Not,
+Filter), CLI-flag-shaped helpers (MatchString, MatchSlice, BoolFlag).
+24 tests; codifies the pattern in package doc.go.
+
+**Migrated commands** (each now: rich row struct with `priority=N`
+tags, json/yaml struct tags, filter flags below, render via
+listing.RenderList):
+
+  aps profile list           --capability, --role, --squad,
+                             --workspace, --has-identity,
+                             --has-secrets, --tone
+  aps session list           --type (existing) + --status,
+                             --profile, --workspace, --tier
+  aps workspace list         --member, --owner, --archived
+  aps squad list             --member, --role
+  aps bundle list            --tag, --builtin, --user
+  aps capability list        --tag, --builtin, --external,
+                             --enabled-on
+  aps capability patterns    same treatment as parent
+  aps contact list           --org, --has-email
+                             (existing --addressbook preserved)
+  aps adapter list           --type, --status, --workspace
+  aps adapter messenger list --platform, --status
+  aps adapter links          --profile, --messenger
+  aps a2a tasks list         --profile (global), --status
+  aps action list            --type (sh|py|js)
+  aps skill list             --profile (global), --source
+  aps workspace conflicts list  --workspace (global), --unresolved
+  aps workspace ctx list     --workspace (global), --key-prefix
+  aps workspace policy list  (workspace stays positional;
+                             rich row only)
+
+**Removed flags** (canonicalization via shared listing helper):
+
+- `aps skill list --verbose` — kit/output's table priority tags
+  drop low-value columns on narrow terminals automatically; full
+  fields available via `--format json|yaml`.
+- `aps skill list --profile` (local) — superseded by the kit-owned
+  global `--profile` (T-0376) bound on root.
+
+**Backing data additions**:
+
+- `core.ListProfilesFull() ([]Profile, error)` — loads each profile
+  YAML once; cheap `ListProfiles() []string` retained for callers
+  that only need IDs.
+- `core/bundle.Bundle.Tags []string` (yaml-tagged; existing assets
+  unaffected).
+- `core/capability.Capability.Tags`, `BuiltinCapability.Tags`.
+- `internal/cli/globals.Profile()` and `globals.Format()` accessors —
+  let non-`internal/cli` subpackages read kit-owned globals without
+  forming an import cycle.
+- `aps skill` now wired to rootCmd (was previously defined but
+  unreachable). Lives in PIPELINES group alongside a2a/acp/etc.
+
+**Internal**: `core/skills.Registry.SourceLabel(...)` exported for
+the cli row builder (was internal `getSourceLabel`).
+
+Closes the §6 partial-compliance finding in
+`~/.ops/reviews/aps-cli-review-2026-04-30.md` (kit/output not fully
+adopted across the surface). Convention doc
+`~/.ops/docs/cli-conventions-with-kit.md` §3.3 now cites listing.
+RenderList as the canonical aps pattern.
+
 ### Breaking changes — cli-surface-refactor (track: `cli-surface-refactor`)
 
 This wave consolidates the aps command surface from 30 top-level commands

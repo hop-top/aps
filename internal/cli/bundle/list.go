@@ -1,145 +1,127 @@
 package bundle
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
-	"text/tabwriter"
 
+	"hop.top/aps/internal/cli/listing"
 	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
 )
 
+// bundleSummaryRow is the table/json/yaml row for `aps bundle list`.
+type bundleSummaryRow struct {
+	Name         string   `table:"NAME,priority=9" json:"name" yaml:"name"`
+	Source       string   `table:"SOURCE,priority=8" json:"source" yaml:"source"`
+	Capabilities int      `table:"CAPS,priority=6" json:"capabilities" yaml:"capabilities"`
+	Tags         []string `table:"TAGS,priority=4" json:"tags,omitempty" yaml:"tags,omitempty"`
+	Description  string   `table:"DESCRIPTION,priority=3" json:"description,omitempty" yaml:"description,omitempty"`
+}
+
 func newListCmd() *cobra.Command {
-	var jsonOutput bool
+	var (
+		tag         string
+		builtinOnly bool
+		userOnly    bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List built-in and user bundles",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(jsonOutput)
+			if builtinOnly && userOnly {
+				return fmt.Errorf("--builtin and --user are mutually exclusive")
+			}
+			format, _ := cmd.Flags().GetString("format")
+			return runList(format, tag, builtinOnly, userOnly)
 		},
 	}
 
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	cmd.Flags().StringVar(&tag, "tag", "",
+		"Filter to bundles carrying this tag")
+	cmd.Flags().BoolVar(&builtinOnly, "builtin", false,
+		"Show only built-in bundles")
+	cmd.Flags().BoolVar(&userOnly, "user", false,
+		"Show only user bundles (incl. overrides)")
 
 	return cmd
 }
 
-type bundleRow struct {
-	Name        string `json:"name"`
-	Source      string `json:"source"`
-	Description string `json:"description"`
+func runList(format, tag string, builtinOnly, userOnly bool) error {
+	rows, err := loadBundleRows()
+	if err != nil {
+		return err
+	}
+
+	pred := listing.All(
+		listing.MatchSlice(func(r bundleSummaryRow) []string { return r.Tags }, tag),
+		sourcePredicate(builtinOnly, userOnly),
+	)
+	rows = listing.Filter(rows, pred)
+	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
+
+	return listing.RenderList(os.Stdout, format, rows)
 }
 
-func runList(jsonOut bool) error {
+// loadBundleRows merges builtins and user overrides into summary rows.
+// User-named bundles override builtins (rendered with "user (overrides …)").
+func loadBundleRows() ([]bundleSummaryRow, error) {
 	builtins, err := corebundle.LoadBuiltins()
 	if err != nil {
-		return fmt.Errorf("failed to load built-in bundles: %w", err)
+		return nil, fmt.Errorf("failed to load built-in bundles: %w", err)
 	}
-
 	userBundles, err := corebundle.LoadUserOverrides()
 	if err != nil {
-		return fmt.Errorf("failed to load user bundles: %w", err)
+		return nil, fmt.Errorf("failed to load user bundles: %w", err)
 	}
 
-	// Build set of built-in names for override detection.
 	builtinNames := make(map[string]bool, len(builtins))
 	for _, b := range builtins {
 		builtinNames[b.Name] = true
 	}
-
-	// Build set of user bundle names.
 	userNames := make(map[string]bool, len(userBundles))
 	for _, b := range userBundles {
 		userNames[b.Name] = true
 	}
 
-	var rows []bundleRow
-
-	// Built-ins that are NOT overridden.
+	var rows []bundleSummaryRow
 	for _, b := range builtins {
 		if userNames[b.Name] {
-			continue // will show as user (overrides built-in)
+			continue // user copy will be emitted with override marker
 		}
-		rows = append(rows, bundleRow{
-			Name:        b.Name,
-			Source:      "built-in",
-			Description: b.Description,
-		})
+		rows = append(rows, toRow(b, "built-in"))
 	}
-
-	// User bundles.
 	for _, b := range userBundles {
 		source := "user"
 		if builtinNames[b.Name] {
 			source = "user (overrides built-in)"
 		}
-		rows = append(rows, bundleRow{
-			Name:        b.Name,
-			Source:      source,
-			Description: b.Description,
-		})
+		rows = append(rows, toRow(b, source))
 	}
-
-	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
-
-	if jsonOut {
-		data, err := json.MarshalIndent(rows, "", "  ")
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(data))
-		return nil
-	}
-
-	if len(rows) == 0 {
-		fmt.Println(dimStyle.Render("No bundles found."))
-		return nil
-	}
-
-	fmt.Printf("%s\n\n", headerStyle.Render("Bundles"))
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, tableHeader.Render("NAME")+"\t"+
-		tableHeader.Render("SOURCE")+"\t"+
-		tableHeader.Render("DESCRIPTION"))
-
-	for _, r := range rows {
-		src := renderSource(r.Source)
-		desc := r.Description
-		if desc == "" {
-			desc = dimStyle.Render("--")
-		}
-		fmt.Fprintf(w, "%-20s\t%s\t%s\n", r.Name, src, desc)
-	}
-	w.Flush()
-
-	builtinCount := 0
-	userCount := 0
-	for _, r := range rows {
-		if r.Source == "built-in" {
-			builtinCount++
-		} else {
-			userCount++
-		}
-	}
-	fmt.Printf("\n%s\n", dimStyle.Render(fmt.Sprintf(
-		"%d bundles (%d built-in, %d user)", len(rows), builtinCount, userCount)))
-
-	return nil
+	return rows, nil
 }
 
-func renderSource(source string) string {
-	switch source {
-	case "built-in":
-		return builtinStyle.Render("built-in")
-	case "user":
-		return userStyle.Render("user")
+func toRow(b corebundle.Bundle, source string) bundleSummaryRow {
+	return bundleSummaryRow{
+		Name:         b.Name,
+		Source:       source,
+		Capabilities: len(b.Capabilities),
+		Tags:         b.Tags,
+		Description:  b.Description,
+	}
+}
+
+// sourcePredicate gates rows on --builtin / --user. Caller validates
+// mutual exclusion before constructing.
+func sourcePredicate(builtinOnly, userOnly bool) listing.Predicate[bundleSummaryRow] {
+	switch {
+	case builtinOnly:
+		return func(r bundleSummaryRow) bool { return r.Source == "built-in" }
+	case userOnly:
+		return func(r bundleSummaryRow) bool { return r.Source != "built-in" }
 	default:
-		// "user (overrides built-in)"
-		return userStyle.Render(source)
+		return nil
 	}
 }
