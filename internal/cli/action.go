@@ -7,14 +7,19 @@ import (
 	"github.com/spf13/cobra"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
 )
 
-// actionRow is the table row shape for `aps action list`.
-type actionRow struct {
-	ID    string `table:"ID,priority=9"    json:"id"    yaml:"id"`
-	Title string `table:"TITLE,priority=8" json:"title" yaml:"title"`
+// actionSummaryRow is the table row shape for `aps action list`.
+//
+// Type surfaces the resolved runtime (sh|py|js|unknown) derived from
+// the entrypoint extension; --type filters on it.
+type actionSummaryRow struct {
+	ID    string `table:"ID,priority=10"    json:"id"    yaml:"id"`
+	Title string `table:"TITLE,priority=8"  json:"title" yaml:"title"`
+	Type  string `table:"TYPE,priority=6"   json:"type"  yaml:"type"`
 }
 
 var actionCmd = &cobra.Command{
@@ -33,17 +38,26 @@ var actionListCmd = &cobra.Command{
 			return fmt.Errorf("loading actions: %w", err)
 		}
 
+		typeFilter, _ := cmd.Flags().GetString("type")
 		format := root.Viper.GetString("format")
-		rows := make([]actionRow, len(actions))
+
+		rows := make([]actionSummaryRow, len(actions))
 		for i, a := range actions {
-			rows[i] = actionRow{ID: a.ID, Title: a.Title}
+			rows[i] = actionSummaryRow{ID: a.ID, Title: a.Title, Type: a.Type}
 		}
 
-		if format != output.Table {
-			return output.Render(os.Stdout, format, rows)
+		pred := listing.All(
+			listing.MatchString(func(r actionSummaryRow) string { return r.Type }, typeFilter),
+		)
+		rows = listing.Filter(rows, pred)
+
+		// Non-table formats: emit raw rows and skip the header / dim
+		// placeholders so JSON/YAML consumers see clean data.
+		if format != "" && format != output.Table {
+			return listing.RenderList(os.Stdout, format, rows)
 		}
 
-		if len(actions) == 0 {
+		if len(rows) == 0 {
 			fmt.Println(styles.Dim.Render("No actions found."))
 			return nil
 		}
@@ -56,11 +70,11 @@ var actionListCmd = &cobra.Command{
 				rows[i].Title = styles.Dim.Render("(no description)")
 			}
 		}
-		if err := output.Render(os.Stdout, output.Table, rows); err != nil {
+		if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
 			return err
 		}
 		fmt.Printf("\n%s\n", styles.Dim.Render(
-			fmt.Sprintf("%d actions", len(actions))))
+			fmt.Sprintf("%d actions", len(rows))))
 		return nil
 	},
 }
@@ -147,6 +161,9 @@ func init() {
 	actionCmd.AddCommand(actionListCmd)
 	actionCmd.AddCommand(actionShowCmd)
 	actionCmd.AddCommand(actionRunCmd)
+
+	actionListCmd.Flags().String("type", "",
+		"Filter by runtime type (sh, py, js)")
 
 	actionRunCmd.Flags().String("payload-file", "", "File to send to action stdin")
 	actionRunCmd.Flags().Bool("payload-stdin", false, "Read stdin and forward to action") // effectively default if interactive, but explicit flag requested
