@@ -6,6 +6,7 @@ type Bundle struct {
 	Description      string                     `yaml:"description"`
 	Version          string                     `yaml:"version"`
 	Extends          string                     `yaml:"extends,omitempty"`
+	Tags             []string                   `yaml:"tags,omitempty"`
 	Capabilities     []string                   `yaml:"capabilities,omitempty"`
 	Scope            BundleScope                `yaml:"scope,omitempty"`
 	Env              map[string]string          `yaml:"env,omitempty"`
