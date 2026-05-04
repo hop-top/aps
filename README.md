@@ -46,20 +46,20 @@ make build
 ### Create Your First Profile
 
 ```bash
-./aps profile new myagent --display-name "My AI Agent" --email "agent@example.com"
+./aps profile create myagent --display-name "My AI Agent" --email "agent@example.com"
 ```
 
 ### Choose Your Isolation Level
 
 ```bash
 # Process isolation (default, fastest)
-./aps profile new myagent
+./aps profile create myagent
 
 # Platform isolation (macOS/Linux only, user-level sandbox)
-./aps profile new myagent --isolation-level platform
+./aps profile create myagent --isolation-level platform
 
 # Container isolation (strongest isolation, requires Docker)
-./aps profile new myagent --isolation-level container
+./aps profile create myagent --isolation-level container
 ```
 
 ### Run Commands
@@ -74,6 +74,19 @@ make build
 # Start an interactive shell
 ./aps myagent
 ```
+
+Profile secrets (`secrets.env`) are injected as environment variables, so
+any LLM CLI inherits the profile's API keys:
+
+```bash
+# Profile-scoped LLM session (foo reads ANTHROPIC/OPENAI_API_KEY from
+# myagent's secrets.env)
+./aps run myagent -- foo "summarize this branch's changes"
+```
+
+Native `aps chat <profile>` — REPL with the profile as the assistant
+identity, persona-as-system-prompt, sessions persisted in the registry —
+is on the roadmap (story 055).
 
 ### Generate Documentation
 
@@ -295,7 +308,7 @@ For detailed documentation, see [Docker testing user guide](docs/agent/docker-te
 aps                    # Launch TUI
 aps help               # Show help
 aps profile list       # List all profiles
-aps profile new <id>   # Create a new profile
+aps profile create <id>   # Create a new profile
 aps profile show <id>  # Show profile details
 aps run <id> -- <cmd>  # Run command under profile
 aps action list <id>   # List profile actions
