@@ -3,17 +3,34 @@ package session
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 )
 
-var (
-	tableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
-)
+// tableHeader is the legacy bold-dim header style used by sibling
+// subcommands (inspect, etc.) that still hand-roll tabwriter output.
+// Kept here because list.go was the original definer; removing it
+// would break those callsites without delivering scope.
+var tableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+
+// sessionSummaryRow is the table/json/yaml row shape for `aps session
+// list`. Higher-priority columns survive narrow terminals.
+type sessionSummaryRow struct {
+	ID          string `table:"ID,priority=10"         json:"id"            yaml:"id"`
+	Profile     string `table:"PROFILE,priority=9"     json:"profile_id"    yaml:"profile_id"`
+	Status      string `table:"STATUS,priority=8"      json:"status"        yaml:"status"`
+	Workspace   string `table:"WORKSPACE,priority=7"   json:"workspace_id"  yaml:"workspace_id"`
+	Type        string `table:"TYPE,priority=6"        json:"type"          yaml:"type"`
+	Tier        string `table:"TIER,priority=5"        json:"tier"          yaml:"tier"`
+	CreatedAt   string `table:"CREATED,priority=4"     json:"created_at"    yaml:"created_at"`
+	LastSeenAt  string `table:"LAST SEEN,priority=3"   json:"last_seen_at"  yaml:"last_seen_at"`
+}
 
 func NewListCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -33,51 +50,25 @@ func NewListCmd() *cobra.Command {
 			registry := session.GetRegistry()
 			sessions := registry.List()
 
-			if len(sessions) == 0 {
-				fmt.Println(styles.Dim.Render("No active sessions"))
-				return nil
+			pred := listing.All(
+				listing.MatchString(func(s *session.SessionInfo) string { return s.ProfileID }, profileFilter),
+				listing.MatchString(func(s *session.SessionInfo) string { return string(s.Status) }, statusFilter),
+				listing.MatchString(func(s *session.SessionInfo) string { return string(s.Tier) }, tierFilter),
+				listing.MatchString(func(s *session.SessionInfo) string { return s.WorkspaceID }, workspaceFilter),
+				typePredicate(typeFilter),
+			)
+			filtered := listing.Filter(sessions, pred)
+
+			rows := make([]sessionSummaryRow, 0, len(filtered))
+			for _, s := range filtered {
+				rows = append(rows, sessionToSummaryRow(s))
 			}
 
-			sessions = filterSessions(sessions, profileFilter, statusFilter, tierFilter, workspaceFilter, typeFilter)
-
-			if len(sessions) == 0 {
-				fmt.Println(styles.Dim.Render("No sessions match the specified filters"))
-				return nil
+			format, _ := cmd.Flags().GetString("format")
+			if format == "" {
+				format = output.Table
 			}
-
-			fmt.Printf("%s\n\n", styles.Title.Render("Sessions"))
-
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, tableHeader.Render("ID")+"\t"+
-				tableHeader.Render("PROFILE")+"\t"+
-				tableHeader.Render("WORKSPACE")+"\t"+
-				tableHeader.Render("PID")+"\t"+
-				tableHeader.Render("STATUS")+"\t"+
-				tableHeader.Render("TIER")+"\t"+
-				tableHeader.Render("CREATED")+"\t"+
-				tableHeader.Render("LAST SEEN"))
-
-			for _, s := range sessions {
-				wsID := s.WorkspaceID
-				if wsID == "" {
-					wsID = styles.Dim.Render("--")
-				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
-					s.ID,
-					s.ProfileID,
-					wsID,
-					s.PID,
-					styles.SessionStatusBadge(string(s.Status)),
-					styles.TierBadge(string(s.Tier)),
-					styles.Dim.Render(s.CreatedAt.Format("2006-01-02 15:04:05")),
-					styles.Dim.Render(s.LastSeenAt.Format("15:04:05")))
-			}
-			w.Flush()
-
-			summary := fmt.Sprintf("%d sessions", len(sessions))
-			fmt.Printf("\n%s\n", styles.Dim.Render(summary))
-
-			return nil
+			return listing.RenderList(os.Stdout, format, rows)
 		},
 	}
 
@@ -88,6 +79,43 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().String("type", "", "Filter sessions by type (standard, voice); default = all")
 
 	return cmd
+}
+
+// sessionToSummaryRow projects a SessionInfo into the row shape
+// rendered by `aps session list`. Times are formatted in local time
+// for table mode; json/yaml emit the same string so structured
+// consumers see consistent values across formats.
+func sessionToSummaryRow(s *session.SessionInfo) sessionSummaryRow {
+	t := string(s.Type)
+	if t == "" {
+		// Empty SessionType is the legacy "standard" zero value;
+		// surface it explicitly so users see something useful in
+		// the TYPE column.
+		t = "standard"
+	}
+	return sessionSummaryRow{
+		ID:         s.ID,
+		Profile:    s.ProfileID,
+		Status:     string(s.Status),
+		Workspace:  s.WorkspaceID,
+		Type:       t,
+		Tier:       string(s.Tier),
+		CreatedAt:  s.CreatedAt.Format("2006-01-02 15:04:05"),
+		LastSeenAt: s.LastSeenAt.Format("2006-01-02 15:04:05"),
+	}
+}
+
+// typePredicate wraps the existing matchesTypeFilter helper so the
+// type filter (which has special "" → "standard" semantics for legacy
+// registry entries) can be composed alongside generic listing.MatchString
+// predicates.
+func typePredicate(typeFilter string) listing.Predicate[*session.SessionInfo] {
+	if typeFilter == "" {
+		return nil
+	}
+	return func(s *session.SessionInfo) bool {
+		return matchesTypeFilter(s, typeFilter)
+	}
 }
 
 // validateTypeFilter accepts "", "standard", or "voice".
@@ -117,27 +145,15 @@ func matchesTypeFilter(s *session.SessionInfo, typeFilter string) bool {
 	}
 }
 
+// filterSessions retains the legacy signature so list_test.go keeps
+// working. New callers should compose listing.Predicate directly.
 func filterSessions(sessions []*session.SessionInfo, profileFilter, statusFilter, tierFilter, workspaceFilter, typeFilter string) []*session.SessionInfo {
-	var filtered []*session.SessionInfo
-
-	for _, s := range sessions {
-		if profileFilter != "" && s.ProfileID != profileFilter {
-			continue
-		}
-		if statusFilter != "" && string(s.Status) != statusFilter {
-			continue
-		}
-		if tierFilter != "" && string(s.Tier) != tierFilter {
-			continue
-		}
-		if workspaceFilter != "" && s.WorkspaceID != workspaceFilter {
-			continue
-		}
-		if !matchesTypeFilter(s, typeFilter) {
-			continue
-		}
-		filtered = append(filtered, s)
-	}
-
-	return filtered
+	pred := listing.All(
+		listing.MatchString(func(s *session.SessionInfo) string { return s.ProfileID }, profileFilter),
+		listing.MatchString(func(s *session.SessionInfo) string { return string(s.Status) }, statusFilter),
+		listing.MatchString(func(s *session.SessionInfo) string { return string(s.Tier) }, tierFilter),
+		listing.MatchString(func(s *session.SessionInfo) string { return s.WorkspaceID }, workspaceFilter),
+		typePredicate(typeFilter),
+	)
+	return listing.Filter(sessions, pred)
 }
