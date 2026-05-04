@@ -46,13 +46,21 @@ func compileBinary() error {
 	return cmd.Run()
 }
 
-// writeUserBundle writes a YAML bundle into <home>/.config/aps/bundles.
-// We set XDG_CONFIG_HOME=<home>/.config in the child env so os.UserConfigDir()
-// resolves there on every platform (macOS would otherwise pick
-// ~/Library/Application Support).
+// userConfigDirFor mirrors what `os.UserConfigDir` returns under HOME=h.
+// On darwin: ~/Library/Application Support. On linux/others: $XDG_CONFIG_HOME
+// when set, else ~/.config.
+func userConfigDirFor(home string) string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(home, "Library", "Application Support")
+	}
+	return filepath.Join(home, ".config")
+}
+
+// writeUserBundle writes a YAML bundle under the platform's user-config
+// path so the spawned aps binary finds it via os.UserConfigDir.
 func writeUserBundle(t *testing.T, home, name string, tags []string) {
 	t.Helper()
-	dir := filepath.Join(home, ".config", "aps", "bundles")
+	dir := filepath.Join(userConfigDirFor(home), "aps", "bundles")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatalf("mkdir bundles: %v", err)
 	}
@@ -78,6 +86,9 @@ func runBundle(t *testing.T, home string, args ...string) (string, string, error
 	cmd := exec.Command(apsBinary, args...)
 	cmd.Env = append(os.Environ(),
 		"HOME="+home,
+		// Linux honors XDG_CONFIG_HOME via os.UserConfigDir; darwin ignores
+		// it and walks straight to ~/Library/Application Support. We set
+		// both to keep tests stable on either OS.
 		"XDG_CONFIG_HOME="+filepath.Join(home, ".config"),
 	)
 	var stdout, stderr strings.Builder
