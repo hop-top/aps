@@ -123,6 +123,14 @@ func (r *Registry) ListBySource() map[string][]*Skill {
 	return bySource
 }
 
+// SourceLabel exposes the human-readable label for a skill's
+// SourcePath (Profile, Global, User, Claude Code, Cursor, …). Used by
+// `aps skill list` to surface the source as a column and to back the
+// --source filter via listing.MatchString.
+func (r *Registry) SourceLabel(sourcePath string) string {
+	return r.getSourceLabel(sourcePath)
+}
+
 // getSourceLabel returns a human-readable label for a source path
 func (r *Registry) getSourceLabel(sourcePath string) string {
 	switch {

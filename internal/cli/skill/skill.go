@@ -5,17 +5,31 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"text/tabwriter"
 	"time"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/skills"
 	"hop.top/aps/internal/styles"
 )
 
-var skillTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+// skillSummaryRow is the table row shape for `aps skill list` (T-0440).
+//
+// Description is truncated to keep the table scannable; JSON/YAML
+// formats keep the full string by reading from the raw skill instead.
+// Scripts is the count of files under <skill>/scripts/ — gives quick
+// signal for which skills carry executable runners vs. instructions.
+type skillSummaryRow struct {
+	Name        string `table:"NAME,priority=10"        json:"name"        yaml:"name"`
+	Description string `table:"DESCRIPTION,priority=8"  json:"description" yaml:"description"`
+	Source      string `table:"SOURCE,priority=7"       json:"source"      yaml:"source"`
+	Profile     string `table:"PROFILE,priority=6"      json:"profile"     yaml:"profile"`
+	Scripts     int    `table:"SCRIPTS,priority=4"      json:"scripts"     yaml:"scripts"`
+}
+
+const skillDescriptionWidth = 60
 
 // NewSkillCmd creates the skill command group
 func NewSkillCmd() *cobra.Command {
@@ -36,32 +50,38 @@ func NewSkillCmd() *cobra.Command {
 	return cmd
 }
 
-// newListCmd creates the 'skill list' command
+// newListCmd creates the 'skill list' command.
+//
+// T-0440 audit: the pre-uplift command exposed --profile and --verbose
+// only. --verbose is dropped — kit/output's table renderer carries
+// column priorities so narrow terminals already drop low-value
+// columns; the JSON/YAML formats expose every field. Per the T-0427
+// convention the surviving filters are --profile (inherits from the
+// --profile global) and --source (set membership over the source
+// label: Profile / Global / User / Claude Code / Cursor / …).
 func newListCmd() *cobra.Command {
-	var profileID string
-	var verbose bool
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List available skills",
 		Long:  `List all skills available in configured skill directories.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
+			profileID := globals.Profile()
+			sourceFilter, _ := cmd.Flags().GetString("source")
+
 			cfg := skills.DefaultConfig()
-			// TODO: Load from ~/.config/aps/config.yaml and merge
-
-			// Create registry
 			registry := skills.NewRegistry(profileID, cfg.SkillSources, cfg.AutoDetectIDEPaths)
-
-			// Discover skills
 			if err := registry.Discover(); err != nil {
 				return fmt.Errorf("failed to discover skills: %w", err)
 			}
 
-			// Display by source
-			bySource := registry.ListBySource()
+			rows := buildSkillRows(registry, profileID)
+			pred := listing.All(
+				listing.MatchString(func(r skillSummaryRow) string { return r.Source }, sourceFilter),
+			)
+			rows = listing.Filter(rows, pred)
 
-			if len(bySource) == 0 {
+			format := globals.Format()
+			if len(rows) == 0 && (format == "" || format == "table") {
 				fmt.Println(styles.Dim.Render("No skills found."))
 				fmt.Println()
 				fmt.Println(styles.Dim.Render("To install skills:"))
@@ -69,43 +89,38 @@ func newListCmd() *cobra.Command {
 				return nil
 			}
 
-			fmt.Printf("%s\n\n", styles.Title.Render(
-				fmt.Sprintf("Skills (%d)", registry.Count())))
-
-			for source, skillList := range bySource {
-				fmt.Printf("%s (%d):\n", styles.Bold.Render(source), len(skillList))
-				if verbose {
-					for _, skill := range skillList {
-						fmt.Printf("  • %s\n", skill.Name)
-						fmt.Printf("    %s\n", styles.Dim.Render(skill.Description))
-						if skill.License != "" {
-							fmt.Printf("    License: %s\n", styles.Dim.Render(skill.License))
-						}
-						fmt.Printf("    Location: %s\n", styles.Dim.Render(skill.BasePath))
-						fmt.Println()
-					}
-				} else {
-					w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-					fmt.Fprintln(w, "  "+skillTableHeader.Render("NAME")+"\t"+
-						skillTableHeader.Render("DESCRIPTION"))
-					for _, skill := range skillList {
-						fmt.Fprintf(w, "  %s\t%s\n",
-							skill.Name,
-							styles.Dim.Render(skill.Description))
-					}
-					w.Flush()
-				}
-				fmt.Println()
-			}
-
-			return nil
+			return listing.RenderList(os.Stdout, format, rows)
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID to list skills for")
-	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show detailed information")
-
+	cmd.Flags().String("source", "",
+		"Filter by source label (Profile, Global, User, Claude Code, Cursor, Zed, VS Code, Windsurf)")
 	return cmd
+}
+
+// buildSkillRows projects the registry's discovered skills into table
+// rows. Description is right-truncated to skillDescriptionWidth so a
+// 120-col terminal still fits Source + Profile + Scripts on one line;
+// JSON/YAML callers see the full description (kit/output uses the json
+// tag, not the truncated table cell).
+func buildSkillRows(registry *skills.Registry, profileID string) []skillSummaryRow {
+	all := registry.List()
+	rows := make([]skillSummaryRow, 0, len(all))
+	for _, s := range all {
+		desc := s.Description
+		if n := skillDescriptionWidth; len(desc) > n {
+			desc = desc[:n-1] + "…"
+		}
+		scripts, _ := s.ListScripts()
+		rows = append(rows, skillSummaryRow{
+			Name:        s.Name,
+			Description: desc,
+			Source:      registry.SourceLabel(s.SourcePath),
+			Profile:     profileID,
+			Scripts:     len(scripts),
+		})
+	}
+	return rows
 }
 
 // newShowCmd creates the 'skill show' command
