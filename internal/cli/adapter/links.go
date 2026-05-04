@@ -1,91 +1,83 @@
 package adapter
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
+	"time"
 
+	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/globals"
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
-
-	"github.com/spf13/cobra"
 )
+
+// linkSummaryRow is the row shape for `aps adapter link list` (T-0437).
+// Inherits messenger type-scoping per messenger_alias.go: the listing
+// surfaces device-profile links across messenger adapters only.
+type linkSummaryRow struct {
+	Profile     string `table:"PROFILE,priority=10"     json:"profile"     yaml:"profile"`
+	Device      string `table:"DEVICE,priority=9"       json:"device"      yaml:"device"`
+	Permissions string `table:"PERMISSIONS,priority=7"  json:"permissions" yaml:"permissions"`
+	LinkedAt    string `table:"LINKED AT,priority=5"    json:"linked_at"   yaml:"linked_at"`
+}
 
 // newLinkListCmd creates the `aps adapter link list` subcommand. T-0398
 // renamed from `links` (plural-as-list noun) to `list` (CRUD verb
 // under the `link` noun parent). `ls` kept as conventional shorthand.
+//
+// T-0437 — moved off tabwriter to listing.RenderList; filters consolidated
+// to --profile and --messenger.
 func newLinkListCmd() *cobra.Command {
-	var profileID string
-	var jsonOutput bool
-	var verbose bool
+	var profileFilter, messengerFilter string
 
 	cmd := &cobra.Command{
-		Use:     "list [messenger]",
+		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List messenger-profile links",
 		Long:    "Lists all messenger-profile links, optionally filtered by profile or messenger.",
-		Args:    cobra.MaximumNArgs(1),
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var messengerFilter string
-			if len(args) > 0 {
-				messengerFilter = args[0]
-			}
-			return runLinks(profileID, messengerFilter, jsonOutput, verbose)
+			return runLinks(profileFilter, messengerFilter)
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Filter by profile")
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show verbose output")
+	cmd.Flags().StringVarP(&profileFilter, "profile", "p", "", "Filter by profile id")
+	cmd.Flags().StringVar(&messengerFilter, "messenger", "", "Filter by messenger device name")
 
 	return cmd
 }
 
-type linkRow struct {
-	Messenger     string `json:"messenger"`
-	ProfileID     string `json:"profile_id"`
-	ChannelID     string `json:"channel_id"`
-	Action        string `json:"action"`
-	Status        string `json:"status"`
-	DefaultAction string `json:"default_action,omitempty"`
-}
-
-func runLinks(profileID, messengerFilter string, jsonOut, verbose bool) error {
-	rows, err := collectLinkRows(profileID, messengerFilter)
+func runLinks(profileFilter, messengerFilter string) error {
+	rows, err := collectLinkRows(profileFilter)
 	if err != nil {
 		return err
 	}
 
-	if jsonOut {
-		return renderLinksJSON(rows)
-	}
+	pred := listing.All(
+		listing.MatchString(func(r linkSummaryRow) string { return r.Device }, messengerFilter),
+	)
+	rows = listing.Filter(rows, pred)
 
-	if len(rows) == 0 {
-		return renderLinksEmpty()
-	}
-
-	return renderLinksTable(rows, verbose)
+	return listing.RenderList(os.Stdout, globals.Format(), rows)
 }
 
-func collectLinkRows(profileID, messengerFilter string) ([]linkRow, error) {
+func collectLinkRows(profileFilter string) ([]linkSummaryRow, error) {
 	var allLinks []msgtypes.ProfileMessengerLink
 
-	if profileID != "" {
-		// Filter by specific profile
-		links, err := messengerManager.GetProfileLinks(profileID)
+	if profileFilter != "" {
+		links, err := messengerManager.GetProfileLinks(profileFilter)
 		if err != nil {
 			return nil, err
 		}
 		allLinks = links
 	} else {
-		// Scan all profiles
 		profileIDs, err := core.ListProfiles()
 		if err != nil {
 			return nil, err
 		}
-
 		for _, pid := range profileIDs {
 			links, err := messengerManager.GetProfileLinks(pid)
 			if err != nil {
@@ -95,97 +87,39 @@ func collectLinkRows(profileID, messengerFilter string) ([]linkRow, error) {
 		}
 	}
 
-	var rows []linkRow
-	for _, link := range allLinks {
-		if messengerFilter != "" && link.MessengerName != messengerFilter {
-			continue
-		}
-
-		status := "active"
-		if !link.Enabled {
-			status = "disabled"
-		}
-
-		// Add rows for each channel mapping
-		for channelID, action := range link.Mappings {
-			rows = append(rows, linkRow{
-				Messenger: link.MessengerName,
-				ProfileID: link.ProfileID,
-				ChannelID: channelID,
-				Action:    action,
-				Status:    status,
-			})
-		}
-
-		// Add default action row if present
-		if link.DefaultAction != "" {
-			rows = append(rows, linkRow{
-				Messenger:     link.MessengerName,
-				ProfileID:     link.ProfileID,
-				ChannelID:     "*  (default)",
-				Action:        link.DefaultAction,
-				Status:        status,
-				DefaultAction: link.DefaultAction,
-			})
-		}
+	rows := make([]linkSummaryRow, 0, len(allLinks))
+	for _, l := range allLinks {
+		rows = append(rows, linkSummaryRow{
+			Profile:     l.ProfileID,
+			Device:      l.MessengerName,
+			Permissions: permissionsSummary(l),
+			LinkedAt:    formatLinkedAt(l.CreatedAt),
+		})
 	}
-
 	return rows, nil
 }
 
-func renderLinksJSON(rows []linkRow) error {
-	data := map[string]any{
-		"links": rows,
-		"count": len(rows),
+// permissionsSummary renders a compact "what this link can do" string:
+// state (enabled/disabled), routes count, and default-action flag. The
+// table column stays narrow while still answering the question agents
+// ask first ("does this link route messages and to where?").
+func permissionsSummary(l msgtypes.ProfileMessengerLink) string {
+	state := "enabled"
+	if !l.Enabled {
+		state = "disabled"
 	}
-	out, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return err
+	def := "-"
+	if l.DefaultAction != "" {
+		def = l.DefaultAction
 	}
-	fmt.Println(string(out))
-	return nil
+	return fmt.Sprintf("%s,routes=%d,default=%s", state, len(l.Mappings), def)
 }
 
-func renderLinksEmpty() error {
-	fmt.Println("No messenger links found.")
-	fmt.Println()
-	fmt.Println("  Link a messenger:")
-	fmt.Println("    aps device link telegram -p research-agent \\")
-	fmt.Println("      --mapping \"<channel_id>=<action>\"")
-	fmt.Println()
-	fmt.Println("  Available messengers:")
-	fmt.Println("    aps device list --type=messenger")
-	return nil
-}
-
-func renderLinksTable(rows []linkRow, verbose bool) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "  "+tableHeader.Render("MESSENGER")+"\t"+
-		tableHeader.Render("PROFILE")+"\t"+
-		tableHeader.Render("CHANNEL")+"\t"+
-		tableHeader.Render("ACTION")+"\t"+
-		tableHeader.Render("STATUS"))
-
-	for _, r := range rows {
-		statusStr := successStyle.Render(r.Status)
-		if r.Status == "disabled" {
-			statusStr = dimStyle.Render(r.Status)
-		}
-
-		fmt.Fprintf(w, "  %-12s\t%-18s\t%-20s\t%-18s\t%s\n",
-			r.Messenger, r.ProfileID, r.ChannelID, r.Action, statusStr)
+func formatLinkedAt(t time.Time) string {
+	if t.IsZero() {
+		return ""
 	}
-	w.Flush()
-
-	// Count unique messengers
-	messengers := make(map[string]bool)
-	for _, r := range rows {
-		messengers[r.Messenger] = true
-	}
-
-	fmt.Printf("\n  %d mappings across %d messengers\n", len(rows), len(messengers))
-
-	return nil
+	return t.Format(time.RFC3339)
 }
 
 // getAllLinkedMessengerNames returns the names of all messenger devices
