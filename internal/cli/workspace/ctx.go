@@ -324,7 +324,14 @@ func newCtxDeleteCmd() *cobra.Command {
 			// before the in-memory delete + persist fans out. Vetoes
 			// surface as *policy.PolicyDeniedError, mapped to exit 4
 			// via the domain.ErrConflict unwrap in internal/cli/exit.
-			policyCtx, err = policygate.PublishDeletePrePersisted(policyCtx, "workspace_context", key)
+			//
+			// T-1308 — workspace_id is stuffed into request_attrs so the
+			// aps principal resolver can look up the calling profile's
+			// per-workspace AgentRole and surface it as principal.role.
+			policyCtx, err = policygate.PublishDeletePrePersistedWithAttrs(
+				policyCtx, "workspace_context", key,
+				map[string]any{"workspace_id": wsID},
+			)
 			if err != nil {
 				return err
 			}

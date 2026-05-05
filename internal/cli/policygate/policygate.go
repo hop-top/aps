@@ -54,7 +54,19 @@ func SetBus(b bus.Bus) { processBus = b }
 // Adopter-authored rules can extend the taxonomy without code changes
 // by gating on different context.request_attrs.kind values.
 func PublishDeletePrePersisted(ctx context.Context, kind, id string) (context.Context, error) {
-	ctx = withKind(ctx, kind)
+	return PublishDeletePrePersistedWithAttrs(ctx, kind, id, nil)
+}
+
+// PublishDeletePrePersistedWithAttrs is the workspace-aware variant of
+// PublishDeletePrePersisted. extra is merged into request_attrs alongside
+// the kind discriminator; nil is equivalent to PublishDeletePrePersisted.
+//
+// The conventional key is "workspace_id" (T-1308) — the aps principal
+// resolver reads it to look up the calling profile's workspace role for
+// principal.role. Other keys can be added without code changes; CEL
+// rules read context.request_attrs.<key>.
+func PublishDeletePrePersistedWithAttrs(ctx context.Context, kind, id string, extra map[string]any) (context.Context, error) {
+	ctx = withRequestAttrs(ctx, kind, extra)
 	if processBus == nil {
 		return ctx, nil
 	}
@@ -99,10 +111,14 @@ func asCLIError(err error) error {
 	return err
 }
 
-// withKind merges {kind: <kind>} into ctx's request_attrs map so CEL
-// rules can read context.request_attrs.kind. Preserves any pre-existing
-// note (set by clinote.WithContext) and other attrs.
-func withKind(ctx context.Context, kind string) context.Context {
+// withRequestAttrs merges {kind: <kind>, ...extra} into ctx's
+// request_attrs map so CEL rules can read context.request_attrs.<key>.
+// Preserves any pre-existing note (set by clinote.WithContext) and any
+// other attrs already on ctx. extra takes precedence over existing
+// request_attrs entries with the same key, and kind always wins over an
+// explicit "kind" in extra so callers can't accidentally shadow the
+// discriminator.
+func withRequestAttrs(ctx context.Context, kind string, extra map[string]any) context.Context {
 	existing, _ := ctx.Value(policy.ContextAttrsKey).(map[string]any)
 	merged := make(map[string]any, len(existing)+1)
 	var existingAttrs map[string]any
@@ -115,8 +131,11 @@ func withKind(ctx context.Context, kind string) context.Context {
 		}
 		merged[k] = v
 	}
-	attrs := make(map[string]any, len(existingAttrs)+1)
+	attrs := make(map[string]any, len(existingAttrs)+len(extra)+1)
 	for k, v := range existingAttrs {
+		attrs[k] = v
+	}
+	for k, v := range extra {
 		attrs[k] = v
 	}
 	attrs["kind"] = kind

@@ -283,6 +283,244 @@ func TestWorkspaceCtxDelete_AllowWithNote(t *testing.T) {
 	}
 }
 
+// seedWorkspace writes a minimal manifest.yaml + state.json for a
+// workspace under the same data root LoadWorkspace reads from. agents
+// is the membership list seeded into state.json. T-1308 e2e tests
+// exercise the workspace-aware principal resolver against real on-disk
+// fixtures; this helper keeps them readable.
+func seedWorkspace(t *testing.T, home, wsID string, agents []collab.AgentInfo) {
+	t.Helper()
+	wsDir := filepath.Join(home, ".local", "share", "aps", "collaboration", wsID)
+	if err := os.MkdirAll(wsDir, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", wsDir, err)
+	}
+	manifest := []byte("name: " + wsID + "\nowner_profile_id: noor\n")
+	if err := os.WriteFile(filepath.Join(wsDir, "manifest.yaml"), manifest, 0o644); err != nil {
+		t.Fatalf("write manifest.yaml: %v", err)
+	}
+	state := map[string]any{
+		"id":         wsID,
+		"state":      "active",
+		"agents":     agents,
+		"policy":     map[string]any{"default": "priority"},
+		"created_at": time.Now().UTC().Format(time.RFC3339),
+		"updated_at": time.Now().UTC().Format(time.RFC3339),
+	}
+	body, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal workspace state: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(wsDir, "state.json"), body, 0o644); err != nil {
+		t.Fatalf("write state.json: %v", err)
+	}
+}
+
+// writeRolePolicy writes a policy file that exercises principal.role
+// composition with the default note rules. Adds an observer-only-deny
+// rule on workspace_context deletes; combined with deny-overrides this
+// tests T-1308's workspace-aware principal resolver end-to-end.
+func writeRolePolicy(t *testing.T, path string) {
+	t.Helper()
+	body := `policies:
+  - name: delete-workspace-context-requires-note
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || context.note != ""'
+    effect: allow
+    otherwise: deny
+    message: "deleting a workspace context variable requires --note explaining why"
+
+  - name: workspace-context-write-requires-owner
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || principal.role == "owner"'
+    effect: allow
+    otherwise: deny
+    message: "only role:owner may delete workspace context variables"
+`
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		t.Fatalf("mkdir policy dir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatalf("write policies.yaml: %v", err)
+	}
+}
+
+// TestWorkspaceCtxDelete_OwnerAllowed — T-1308 acceptance: an owner
+// session passes the role gate.
+func TestWorkspaceCtxDelete_OwnerAllowed(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{Key: "feature.alpha", Value: "true", Version: 1, UpdatedBy: "noor", UpdatedAt: now},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeRolePolicy(t, policyFile)
+
+	stdout, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "noor",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "obsoleted",
+	)
+	if err != nil {
+		t.Fatalf("owner delete denied: %v\nstderr: %s", err, stderr)
+	}
+	if !strings.Contains(stdout, "Deleted 'feature.alpha'") {
+		t.Errorf("expected delete confirmation; got: %s", stdout)
+	}
+}
+
+// TestWorkspaceCtxDelete_ContributorDenied — T-1308 acceptance: a
+// contributor hits the role gate even with --note.
+func TestWorkspaceCtxDelete_ContributorDenied(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{Key: "feature.alpha", Value: "true", Version: 1, UpdatedBy: "noor", UpdatedAt: now},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+		{ProfileID: "sami", Role: collab.RoleContributor, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeRolePolicy(t, policyFile)
+
+	_, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "sami",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "trying to clean up",
+	)
+	if err == nil {
+		t.Fatalf("contributor delete should have been denied; stderr=%q", stderr)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("expected *exec.ExitError; got %T (%v)", err, err)
+	}
+	if got := exitErr.ExitCode(); got != 4 {
+		t.Errorf("exit code = %d; want 4. stderr=%q", got, stderr)
+	}
+	if !strings.Contains(stderr, "workspace-context-write-requires-owner") {
+		t.Errorf("stderr missing role policy name; got: %s", stderr)
+	}
+}
+
+// TestWorkspaceCtxDelete_NoMembershipDenied — T-1308 acceptance: a
+// profile with no membership has empty principal.role and is denied.
+func TestWorkspaceCtxDelete_NoMembershipDenied(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{Key: "feature.alpha", Value: "true", Version: 1, UpdatedBy: "noor", UpdatedAt: now},
+	})
+	// Workspace has only noor as a member; ghost is not in the list.
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeRolePolicy(t, policyFile)
+
+	_, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "ghost",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "outsider",
+	)
+	if err == nil {
+		t.Fatalf("non-member delete should have been denied; stderr=%q", stderr)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("expected *exec.ExitError; got %T (%v)", err, err)
+	}
+	if got := exitErr.ExitCode(); got != 4 {
+		t.Errorf("exit code = %d; want 4. stderr=%q", got, stderr)
+	}
+}
+
+// TestWorkspaceCtxDelete_EnvFallbackForUnknownWorkspace — T-1308
+// acceptance: when workspace_id resolves to a non-existent workspace,
+// the resolver falls open to KIT_POLICY_ROLE without crashing. With
+// KIT_POLICY_ROLE=owner the role-gate rule allows the op. Verifies the
+// "no workspace context" failure mode required by the task spec.
+func TestWorkspaceCtxDelete_EnvFallbackForUnknownWorkspace(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-missing"
+	now := time.Now().UTC().Truncate(time.Second)
+	// Seed context but NOT the workspace manifest — the workspace
+	// directory has only context.json, so LoadWorkspace returns
+	// WorkspaceNotFoundError. Resolver must fall through to the env path
+	// rather than panic.
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{Key: "feature.alpha", Value: "true", Version: 1, UpdatedBy: "noor", UpdatedAt: now},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeRolePolicy(t, policyFile)
+
+	cmd := exec.Command(apsBinary,
+		"--profile", "noor",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "kicking the env fallback",
+	)
+	override := map[string]bool{
+		"HOME":             true,
+		"USERPROFILE":      true,
+		"XDG_DATA_HOME":    true,
+		"XDG_CONFIG_HOME":  true,
+		"APS_DATA_PATH":    true,
+		"APS_POLICY_FILE":  true,
+		"APS_BUS_TOKEN":    true,
+		"APS_BUS_ADDR":     true,
+		"BUS_TOKEN":        true,
+		"KIT_POLICY_ROLE":  true,
+		"KIT_POLICY_DISABLE": true,
+	}
+	env := []string{
+		"HOME=" + home,
+		"USERPROFILE=" + home,
+		"XDG_DATA_HOME=" + filepath.Join(home, ".local", "share"),
+		"XDG_CONFIG_HOME=" + filepath.Join(home, ".config"),
+		"APS_DATA_PATH=" + filepath.Join(home, ".local", "share", "aps"),
+		"APS_POLICY_FILE=" + policyFile,
+		"APS_BUS_TOKEN=test-token-for-policy-e2e",
+		"APS_BUS_ADDR=ws://127.0.0.1:1/unused",
+		"KIT_POLICY_ROLE=owner",
+	}
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if override[key] {
+			continue
+		}
+		env = append(env, e)
+	}
+	cmd.Env = env
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("env-fallback delete failed: %v\nstderr: %s", err, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Deleted 'feature.alpha'") {
+		t.Errorf("expected delete confirmation; got: %s", stdout.String())
+	}
+}
+
 func TestPolicyEngine_BadYAMLFailsLoud(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()

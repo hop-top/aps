@@ -3,10 +3,14 @@ package cli
 import (
 	_ "embed"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
+
+	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/storage"
 
 	"hop.top/kit/go/runtime/bus"
 	"hop.top/kit/go/runtime/policy"
@@ -147,13 +151,151 @@ func ensureDefaultPoliciesFile() (string, error) {
 	return path, nil
 }
 
-// apsPrincipalResolver picks principal from ctx → KIT_POLICY_ROLE env
-// → $USER. Aps profile lookup is a deliberate follow-up — kit's
-// DefaultPrincipalResolver already covers the env path; the seam exists
-// so a future change can layer aps profile / workspace ownership into
-// the principal without touching the wiring sites.
-func apsPrincipalResolver(ctx context.Context) policy.Principal {
-	return policy.DefaultPrincipalResolver(ctx)
+// workspaceRoleLookup resolves a profile's AgentRole in a workspace.
+// Indirected through a package var so tests can swap the storage
+// backend without spinning up a real on-disk collaboration tree.
+// Returns ("", nil) when the profile has no membership; non-nil error
+// for IO / parse failures (callers fail open to "no role" — see
+// apsPrincipalResolver).
+var workspaceRoleLookup = func(workspaceID, profileID string) (collab.AgentRole, error) {
+	if workspaceID == "" || profileID == "" {
+		return "", nil
+	}
+	store, err := storage.NewCollaborationStorage("")
+	if err != nil {
+		return "", fmt.Errorf("policy: open collaboration storage: %w", err)
+	}
+	ws, err := store.LoadWorkspace(workspaceID)
+	if err != nil {
+		// Workspace not found is a normal "no membership" path — keep it
+		// quiet so the env fallback can still kick in.
+		var notFound *collab.WorkspaceNotFoundError
+		if errors.As(err, &notFound) {
+			return "", nil
+		}
+		return "", fmt.Errorf("policy: load workspace %q: %w", workspaceID, err)
+	}
+	agent, err := ws.GetAgent(profileID)
+	if err != nil {
+		// Profile not a member; treat as no role.
+		return "", nil
+	}
+	return agent.Role, nil
+}
+
+// callingProfileResolver resolves the calling profile id from CLI
+// context. Order:
+//
+//  1. root.Viper key "profile" — set by the global -p/--profile flag
+//     (T-0376). Most aps invocations carry one.
+//  2. APS_PROFILE env var — operator-explicit fallback for cron / non-
+//     interactive entry points where the flag isn't plumbed.
+//  3. "" — caller falls through to kit's DefaultPrincipalResolver,
+//     which surfaces $USER.
+//
+// Indirected through a package var for tests. Wired in init() to avoid
+// the package-init cycle that would arise from a literal initializer
+// (apsPrincipalResolver → callingProfileResolver → root → ...).
+var callingProfileResolver func() string
+
+func init() {
+	callingProfileResolver = func() string {
+		if root.Viper != nil {
+			if pid := root.Viper.GetString("profile"); pid != "" {
+				return pid
+			}
+		}
+		if pid := os.Getenv("APS_PROFILE"); pid != "" {
+			return pid
+		}
+		return ""
+	}
+}
+
+// apsPrincipalResolver layers aps workspace membership over kit's
+// DefaultPrincipalResolver. Resolution order for principal.role:
+//
+//  1. context.request_attrs.workspace_id + active profile → AgentRole
+//     looked up from the workspace's membership list. Surfaces
+//     "owner"|"contributor"|"observer" as principal.role.
+//  2. Kit default — KIT_POLICY_ROLE env var (or empty). Operator
+//     escape hatch for emergency overrides; documented in
+//     docs/policies.md.
+//
+// principal.id mirrors the calling profile id when known, otherwise
+// falls back to kit's default ($USER).
+//
+// Failure modes (T-1308):
+//
+//   - workspace_id missing or unparseable → fall back to kit default.
+//     The CLI plumbs workspace_id only for state-changing commands
+//     that target a specific workspace (workspace ctx delete, etc.);
+//     other commands keep KIT_POLICY_ROLE behavior unchanged.
+//   - workspace_id points at a non-existent workspace → no role,
+//     fall through to kit default.
+//   - profile not a member of the workspace → no role, fall through.
+//   - Storage IO panic → recovered, no role, fall through. The
+//     resolver runs BEFORE the entity-mutating call; a panic here must
+//     not crash the policy engine.
+func apsPrincipalResolver(ctx context.Context) (p policy.Principal) {
+	// Panic-safety: recover into the kit default so the policy engine
+	// never crashes on a malformed registry / FS error / etc. The
+	// principal feeds CEL evaluation; an empty role + env fallback is
+	// strictly better than a CLI panic before the user's command runs.
+	defer func() {
+		if r := recover(); r != nil {
+			p = policy.DefaultPrincipalResolver(ctx)
+		}
+	}()
+
+	base := policy.DefaultPrincipalResolver(ctx)
+
+	wsID := workspaceIDFromContext(ctx)
+	if wsID == "" {
+		return base
+	}
+
+	if callingProfileResolver == nil {
+		return base
+	}
+	profileID := callingProfileResolver()
+	if profileID == "" {
+		return base
+	}
+
+	role, err := workspaceRoleLookup(wsID, profileID)
+	if err != nil || role == "" {
+		// Lookup failure or no membership — keep kit's resolution and
+		// let the rule layer decide via KIT_POLICY_ROLE / explicit
+		// allow rules. Empty role triggers deny on rules that gate on
+		// principal.role in [...].
+		return base
+	}
+
+	return policy.Principal{
+		ID:     profileID,
+		Role:   string(role),
+		Source: "aps.workspace",
+	}
+}
+
+// workspaceIDFromContext reads request_attrs.workspace_id from ctx.
+// Returns "" when missing or wrong type. Mirrors the request_attrs
+// shape stamped by policygate.withRequestAttrs.
+func workspaceIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	attrs, ok := ctx.Value(policy.ContextAttrsKey).(map[string]any)
+	if !ok {
+		return ""
+	}
+	ra, ok := attrs["request_attrs"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	wsID, _ := ra["workspace_id"].(string)
+	return wsID
 }
 
 // closePolicy unsubscribes the engine handlers. Called from Execute's

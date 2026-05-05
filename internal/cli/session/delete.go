@@ -56,7 +56,17 @@ func NewDeleteCmd() *cobra.Command {
 			// Unregister bypasses domain.Service[Session], so the
 			// gate has to live in the CLI layer until the registry
 			// is restructured.
-			ctx, err = policygate.PublishDeletePrePersisted(ctx, "session", sessionID)
+			//
+			// T-1308 — when the session is bound to a workspace, stuff
+			// workspace_id into request_attrs so the aps principal
+			// resolver can surface the calling profile's workspace role
+			// as principal.role. Sessions without a WorkspaceID fall
+			// through to the env-fallback path (KIT_POLICY_ROLE).
+			attrs := map[string]any{}
+			if sess.WorkspaceID != "" {
+				attrs["workspace_id"] = sess.WorkspaceID
+			}
+			ctx, err = policygate.PublishDeletePrePersistedWithAttrs(ctx, "session", sessionID, attrs)
 			if err != nil {
 				return err
 			}
