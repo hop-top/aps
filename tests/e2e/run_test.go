@@ -44,8 +44,12 @@ func TestSecretInjection(t *testing.T) {
 	_, err = f.WriteString("\nMY_SUPER_SECRET=TopSecretValue123\n")
 	require.NoError(t, err)
 
-	// Run env
-	stdout, _, err := runAPS(t, home, "run", "secret-agent", "--", "env")
+	// Run env. Use --no-redact: this test asserts the secret IS
+	// injected into the child env — exactly the surface T-0460
+	// redacts by default. The new tests in redact_test.go cover
+	// the redacting-by-default path; here we verify injection
+	// itself with redaction explicitly bypassed.
+	stdout, _, err := runAPS(t, home, "--no-redact", "run", "secret-agent", "--", "env")
 	require.NoError(t, err)
 
 	// Verify secret

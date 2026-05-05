@@ -65,6 +65,39 @@ func SetViperForRedact(v *viper.Viper) {
 	vMu.Unlock()
 }
 
+// SetRedactEnabled is the explicit setter the CLI calls after
+// parsing --no-redact. Faster path than wiring through the full
+// viper instance and avoids the import cycle the closure-style
+// Hook would have introduced (the kitcli root value cannot be
+// captured by a function literal embedded in its own Config).
+//
+// Layering: SetRedactEnabled wins over SetViperForRedact when
+// both are set, because the CLI flag is the most explicit signal.
+// APS_DEBUG_NO_REDACT=1 still wins over both.
+func SetRedactEnabled(enabled bool) {
+	v := viperOrLocal()
+	v.Set(ViperKeyEnabled, enabled)
+}
+
+// viperOrLocal returns viperRef if set, else a process-local viper
+// kept solely so SetRedactEnabled has somewhere to record state when
+// the logger hasn't been initialized yet (rare, but possible in
+// tests).
+func viperOrLocal() *viper.Viper {
+	vMu.RLock()
+	v := viperRef
+	vMu.RUnlock()
+	if v != nil {
+		return v
+	}
+	vMu.Lock()
+	defer vMu.Unlock()
+	if viperRef == nil {
+		viperRef = viper.New()
+	}
+	return viperRef
+}
+
 // Redactor returns the package-singleton redactor. First call eagerly
 // loads the vendored gitleaks corpus + Presidio PII pack via
 // redact.Default(). Subsequent calls return the same instance.
@@ -90,8 +123,27 @@ func Redactor() *redact.Redactor {
 	defaultOnce.Do(func() {
 		r := redact.Default()
 		// Pass-through known-safe placeholders so docs/test fixtures
-		// don't get mangled.
-		r.Allow("sk-test", "AKIAIOSFODNN7EXAMPLE", "ghp_test")
+		// don't get mangled. The Presidio PII pack matches IPs and
+		// emails generically; we suppress matches against
+		// non-sensitive local-loopback / RFC1918 ranges and the
+		// in-tree contributor / fixture email domains so log lines
+		// like "webhook server listening addr=127.0.0.1:8080" stay
+		// readable. Production secrets do not look like 127.0.0.1.
+		r.Allow(
+			"sk-test", "AKIAIOSFODNN7EXAMPLE", "ghp_test",
+			// Local loopback + RFC1918 leading octets. Substring
+			// match: "127." catches 127.0.0.1, 127.0.0.0/8.
+			"127.", "0.0.0.0", "::1",
+			"10.", "192.168.", "172.16.", "172.17.", "172.18.",
+			"172.19.", "172.20.", "172.21.", "172.22.", "172.23.",
+			"172.24.", "172.25.", "172.26.", "172.27.", "172.28.",
+			"172.29.", "172.30.", "172.31.",
+			// Documentation IPv6 ranges.
+			"fe80:", "fc00:", "fd00:",
+			// Fixture/test domains. example.com is RFC2606-reserved.
+			"@example.com", "@example.org", "@example.net",
+			"@hop.top", "@ideacrafters.com",
+		)
 		// aps-domain rules. Order matters: header-shape rules fire
 		// first so they keep the key name visible; the bare Bearer
 		// rule mops up tokens not in a header context.

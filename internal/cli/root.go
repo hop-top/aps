@@ -20,10 +20,26 @@ import (
 
 // noRedactFlag holds the parsed --no-redact value. The flag is
 // declared as a kitcli Global so it shows up in --help and binds to
-// the root viper. PersistentPreRun (further down) inverts the bool
-// into the redact.enabled viper key that internal/logging/redact.go
-// reads.
+// the root viper. applyNoRedactToggle (the kitcli PrePersistentRunE
+// hook) inverts the bool into the redact.enabled viper key that
+// internal/logging/redact.go reads.
 var noRedactFlag bool
+
+// applyNoRedactToggle is the kitcli PrePersistentRunE hook. It runs
+// after kit's built-in chain (chdir → identity → peer init) and
+// before the subcommand's RunE. Idempotent and safe to call many
+// times.
+//
+// Defined as a top-level function (not a closure inside Config) to
+// avoid the initialization cycle: `root` is the value being declared
+// and a closure that captured `root.Viper` would force the compiler
+// to evaluate `root` while still building it. This function reads
+// the parsed flag pointer (noRedactFlag) and the cmd-tree's root
+// flags directly, neither of which is on the cycle.
+func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
+	logging.SetRedactEnabled(!noRedactFlag)
+	return nil
+}
 
 var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
@@ -45,6 +61,13 @@ var root = kitcli.New(kitcli.Config{
 			Usage:   "disable redaction of secrets/PII in logs and output (DEBUG ONLY)",
 			BoolVar: &noRedactFlag,
 		},
+	},
+	// T-0460 — use kit's Hooks slot so the redact toggle is wired
+	// into the kit-managed PersistentPreRunE chain (chdir → identity
+	// → peer init → here). Setting cmd.PersistentPreRun directly is
+	// silently superseded when kit installs its own PersistentPreRunE.
+	Hooks: kitcli.Hooks{
+		PrePersistentRunE: applyNoRedactToggle,
 	},
 	// T-0392 — resolve -C/--chdir targets that aren't literal dirs against
 	// aps's workspace + profile registries before kit falls back to the
@@ -146,10 +169,6 @@ ID followed by a command to run that command under the selected profile.`
 	}
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
-		// T-0460 — invert --no-redact into the redact.enabled key.
-		// internal/logging/redact.go reads this on every Apply call.
-		root.Viper.Set(logging.ViperKeyEnabled, !noRedactFlag)
-
 		if cmd.Name() == "upgrade" {
 			return
 		}
