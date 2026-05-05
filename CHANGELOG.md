@@ -4,6 +4,36 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
+### Improvements — aps-tabwriter-sweep (track: `aps-tabwriter-sweep`)
+
+Five additional `tabwriter.NewWriter` callsites — surfaced as scope
+creep during the Wave 2 audit migration (story 059) and held back —
+now route through `listing.RenderList`. After this ships,
+`grep -rn "tabwriter.NewWriter" internal/ cmd/` returns zero;
+every tabular list in aps inherits the kit-themed styled renderer
+on TTY writers.
+
+**Migrated callsites** (T-0473..T-0477):
+
+  aps workspace activity   event log table
+  aps device presence      device presence table
+  aps device pending       pending-approvals table
+  aps device channels      channel-discovery table
+  aps squad check          topology-validation report
+
+**JSON shape preserved** — `aps device presence --json` keeps
+`sync_lag` and `offline_queue` as ints (table path projects to
+suffixed strings via a separate `presenceTableRow`). `aps device
+pending --json` keeps the exact 5-key field set the prior inline
+`pendingDevice` struct emitted.
+
+**Cleanup** — `internal/cli/adapter/styles.go` drops the
+`tableHeader = lipgloss.NewStyle()…` var (last consumer migrated)
+and the `charm.land/lipgloss/v2` import; header styling now flows
+from the active kit/cli theme via the styled renderer. Story 060
+documents the sweep and closes the 2026-05-04 kit-integration
+audit's §1.1 scorecard ⚠️ row for "Tabular/JSON/YAML render".
+
 ### Improvements — kit-styled-table-rollout (track: `kit-styled-table-rollout`)
 
 Tables rendered through `listing.RenderList` and the migrated non-list

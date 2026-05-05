@@ -5,14 +5,26 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"text/tabwriter"
 	"time"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 )
+
+// activityRow is the table/json/yaml row shape for `aps workspace
+// activity`. T-0473 — moved off hand-rolled tabwriter so styled
+// tables activate on a TTY via the listing wrapper. Higher-priority
+// columns survive narrow terminals.
+type activityRow struct {
+	Timestamp string `table:"TIMESTAMP,priority=10" json:"timestamp" yaml:"timestamp"`
+	Event     string `table:"EVENT,priority=9"      json:"event"     yaml:"event"`
+	Device    string `table:"DEVICE,priority=7"     json:"device"    yaml:"device"`
+	Detail    string `table:"DETAIL,priority=8"     json:"detail"    yaml:"detail"`
+}
 
 // NewActivityCmd creates the workspace activity command.
 func NewActivityCmd() *cobra.Command {
@@ -111,25 +123,22 @@ func renderActivityTable(
 	fmt.Printf("%s\n\n",
 		styles.Title.Render(fmt.Sprintf("Activity: %s", workspaceID)))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	hdr := styles.Bold
-	fmt.Fprintln(w,
-		hdr.Render("TIMESTAMP")+"\t"+
-			hdr.Render("EVENT")+"\t"+
-			hdr.Render("DEVICE")+"\t"+
-			hdr.Render("DETAIL"))
-
+	rows := make([]activityRow, 0, len(events))
 	for _, evt := range events {
-		ts := evt.Timestamp.Format("15:04:05")
-		eventBadge := styles.EventTypeBadge(string(evt.EventType))
 		dev := evt.DeviceID
 		if dev == "" {
 			dev = styles.Dim.Render("--")
 		}
-		detail := extractDetail(evt)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", ts, eventBadge, dev, detail)
+		rows = append(rows, activityRow{
+			Timestamp: evt.Timestamp.Format("15:04:05"),
+			Event:     styles.EventTypeBadge(string(evt.EventType)),
+			Device:    dev,
+			Detail:    extractDetail(evt),
+		})
 	}
-	w.Flush()
+	if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+		return err
+	}
 
 	fmt.Printf("\n%s\n",
 		styles.Dim.Render(fmt.Sprintf("%d events", len(events))))

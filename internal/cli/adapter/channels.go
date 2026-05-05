@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
+	"hop.top/aps/internal/cli/listing"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 )
 
 var messengerManager = msgtypes.NewManager()
@@ -32,10 +33,15 @@ func newChannelsCmd() *cobra.Command {
 	return cmd
 }
 
+// channelRow is the table/json/yaml row shape for `aps device
+// channels`. T-0476 — added `table:"COL,priority=N"` + yaml tags
+// so styled tables activate on a TTY via the listing wrapper. The
+// JSON envelope (renderChannelsJSON) wraps these rows under
+// `{messenger, channels, count}` and is unchanged.
 type channelRow struct {
-	ChannelID string `json:"channel_id"`
-	MappedTo  string `json:"mapped_to,omitempty"`
-	ProfileID string `json:"profile_id,omitempty"`
+	ChannelID string `table:"CHANNEL ID,priority=10" json:"channel_id"           yaml:"channel_id"`
+	MappedTo  string `table:"MAPPED TO,priority=9"   json:"mapped_to,omitempty"  yaml:"mapped_to,omitempty"`
+	ProfileID string `json:"profile_id,omitempty"    yaml:"profile_id,omitempty"`
 }
 
 func runChannels(messengerName string, jsonOut bool) error {
@@ -118,18 +124,20 @@ func renderChannelsTable(messengerName string, rows []channelRow) error {
 
 	fmt.Printf("Channel discovery for %s\n\n", messengerName)
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "  "+tableHeader.Render("CHANNEL ID")+"\t"+
-		tableHeader.Render("MAPPED TO"))
-
-	for _, r := range rows {
-		mapped := dimStyle.Render("(unmapped)")
-		if r.MappedTo != "" {
-			mapped = r.MappedTo
+	tableRows := make([]channelRow, len(rows))
+	for i, r := range rows {
+		mapped := r.MappedTo
+		if mapped == "" {
+			mapped = dimStyle.Render("(unmapped)")
 		}
-		fmt.Fprintf(w, "  %-24s\t%s\n", r.ChannelID, mapped)
+		tableRows[i] = channelRow{
+			ChannelID: r.ChannelID,
+			MappedTo:  mapped,
+		}
 	}
-	w.Flush()
+	if err := listing.RenderList(os.Stdout, output.Table, tableRows); err != nil {
+		return err
+	}
 
 	if formatHint != "" {
 		fmt.Println()

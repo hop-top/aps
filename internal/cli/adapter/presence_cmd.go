@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 )
 
 func newPresenceCmd() *cobra.Command {
@@ -45,12 +46,31 @@ Displays device status, last heartbeat, and sync lag information.`,
 	return cmd
 }
 
+// presenceRow is the json/yaml row shape for `aps device presence
+// --json`. Numeric fields (sync_lag, offline_queue) stay ints so
+// downstream tools can consume the structured output without parsing
+// suffixed strings ("5 events", "3 pending"). T-0474 — added yaml
+// tags for parity with json since structured callers may opt into
+// either format.
 type presenceRow struct {
-	DeviceID     string `json:"device_id"`
-	State        string `json:"state"`
-	LastSeen     string `json:"last_seen"`
-	SyncLag      int    `json:"sync_lag"`
-	OfflineQueue int    `json:"offline_queue"`
+	DeviceID     string `json:"device_id"     yaml:"device_id"`
+	State        string `json:"state"         yaml:"state"`
+	LastSeen     string `json:"last_seen"     yaml:"last_seen"`
+	SyncLag      int    `json:"sync_lag"      yaml:"sync_lag"`
+	OfflineQueue int    `json:"offline_queue" yaml:"offline_queue"`
+}
+
+// presenceTableRow is the human-readable row for the table path.
+// State, SyncLag, and Queue are pre-rendered with badges + suffixes
+// ("5 events", "3 pending"). T-0474 — separate from `presenceRow`
+// so structured (--json/--yaml) consumers keep ints for sync_lag
+// + offline_queue while the table path shows units.
+type presenceTableRow struct {
+	DeviceID string `table:"DEVICE,priority=10"   json:"device_id"  yaml:"device_id"`
+	State    string `table:"STATUS,priority=9"    json:"state"      yaml:"state"`
+	LastSeen string `table:"LAST SEEN,priority=8" json:"last_seen"  yaml:"last_seen"`
+	SyncLag  string `table:"SYNC LAG,priority=7"  json:"sync_lag"   yaml:"sync_lag"`
+	Queue    string `table:"QUEUE,priority=6"     json:"queue"      yaml:"queue"`
 }
 
 func runPresence(workspaceID string, jsonOut bool) error {
@@ -98,15 +118,8 @@ func runPresence(workspaceID string, jsonOut bool) error {
 	fmt.Printf("%s\n\n",
 		headerStyle.Render(fmt.Sprintf("Device Presence: %s", workspaceID)))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, tableHeader.Render("DEVICE")+"\t"+
-		tableHeader.Render("STATUS")+"\t"+
-		tableHeader.Render("LAST SEEN")+"\t"+
-		tableHeader.Render("SYNC LAG")+"\t"+
-		tableHeader.Render("QUEUE"))
-
-	for _, r := range rows {
-		badge := styles.PresenceBadge(r.State)
+	tableRows := make([]presenceTableRow, len(rows))
+	for i, r := range rows {
 		lagStr := "--"
 		if r.SyncLag > 0 {
 			lagStr = fmt.Sprintf("%d events", r.SyncLag)
@@ -115,10 +128,17 @@ func runPresence(workspaceID string, jsonOut bool) error {
 		if r.OfflineQueue > 0 {
 			queueStr = fmt.Sprintf("%d pending", r.OfflineQueue)
 		}
-		fmt.Fprintf(w, "%-18s\t%s\t%s\t%s\t%s\n",
-			r.DeviceID, badge, r.LastSeen, lagStr, queueStr)
+		tableRows[i] = presenceTableRow{
+			DeviceID: r.DeviceID,
+			State:    styles.PresenceBadge(r.State),
+			LastSeen: r.LastSeen,
+			SyncLag:  lagStr,
+			Queue:    queueStr,
+		}
 	}
-	w.Flush()
+	if err := listing.RenderList(os.Stdout, output.Table, tableRows); err != nil {
+		return err
+	}
 
 	// Summary
 	online, away, offline := 0, 0, 0

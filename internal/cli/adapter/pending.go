@@ -4,14 +4,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/adapter/mobile"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 )
+
+// pendingTableRow is the table-only row shape for `aps device
+// pending`. T-0475 — moved off hand-rolled tabwriter so styled
+// tables activate on a TTY via the listing wrapper. DEVICE INFO
+// composes "<name>, <os> [version]" at row-build time.
+type pendingTableRow struct {
+	DeviceID   string `table:"DEVICE,priority=10"      json:"device_id"   yaml:"device_id"`
+	Requested  string `table:"REQUESTED,priority=8"    json:"requested"   yaml:"requested"`
+	DeviceInfo string `table:"DEVICE INFO,priority=7"  json:"device_info" yaml:"device_info"`
+}
+
+// pendingJSONRow is the json/yaml row shape for `aps device pending
+// --json`. Keeps the structured field set stable from before the
+// T-0475 migration so downstream tools see no JSON-shape change.
+type pendingJSONRow struct {
+	DeviceID    string `json:"device_id"    yaml:"device_id"`
+	ProfileID   string `json:"profile_id"   yaml:"profile_id"`
+	DeviceName  string `json:"device_name"  yaml:"device_name"`
+	DeviceOS    string `json:"device_os"    yaml:"device_os"`
+	RequestedAt string `json:"requested_at" yaml:"requested_at"`
+}
 
 func newPendingCmd() *cobra.Command {
 	var (
@@ -55,21 +77,10 @@ func runPending(profileID string, jsonOut bool) error {
 
 	fmt.Printf("%s\n\n", headerStyle.Render("Pending Approvals"))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, tableHeader.Render("DEVICE")+"\t"+
-		tableHeader.Render("REQUESTED")+"\t"+
-		tableHeader.Render("DEVICE INFO"))
-
-	for _, d := range pending {
-		ago := formatTimeAgo(d.RegisteredAt)
-		info := fmt.Sprintf("%s, %s", d.AdapterName, d.AdapterOS)
-		if d.AdapterVersion != "" {
-			info += " " + d.AdapterVersion
-		}
-		fmt.Fprintf(w, "%-24s\t%s\t%s\n",
-			d.AdapterID, dimStyle.Render(ago), info)
+	tableRows := buildPendingTableRows(pending)
+	if err := listing.RenderList(os.Stdout, output.Table, tableRows); err != nil {
+		return err
 	}
-	w.Flush()
 
 	fmt.Printf("\n%s\n\n", dimStyle.Render(fmt.Sprintf("  %d devices pending approval.", len(pending))))
 	fmt.Println("  Approve: aps device approve <device-id> --profile=<profile>")
@@ -84,18 +95,30 @@ func runPending(profileID string, jsonOut bool) error {
 	return nil
 }
 
-func renderPendingJSON(devices []*mobile.MobileAdapter) error {
-	type pendingDevice struct {
-		DeviceID    string `json:"device_id"`
-		ProfileID   string `json:"profile_id"`
-		DeviceName  string `json:"device_name"`
-		DeviceOS    string `json:"device_os"`
-		RequestedAt string `json:"requested_at"`
-	}
-
-	var out []pendingDevice
+// buildPendingTableRows is the human table projection of the
+// pending-device list. Pre-renders the REQUESTED dim badge and
+// composes the DEVICE INFO column so the styled renderer just
+// lays cells out.
+func buildPendingTableRows(devices []*mobile.MobileAdapter) []pendingTableRow {
+	rows := make([]pendingTableRow, 0, len(devices))
 	for _, d := range devices {
-		out = append(out, pendingDevice{
+		info := fmt.Sprintf("%s, %s", d.AdapterName, d.AdapterOS)
+		if d.AdapterVersion != "" {
+			info += " " + d.AdapterVersion
+		}
+		rows = append(rows, pendingTableRow{
+			DeviceID:   d.AdapterID,
+			Requested:  dimStyle.Render(formatTimeAgo(d.RegisteredAt)),
+			DeviceInfo: info,
+		})
+	}
+	return rows
+}
+
+func renderPendingJSON(devices []*mobile.MobileAdapter) error {
+	out := make([]pendingJSONRow, 0, len(devices))
+	for _, d := range devices {
+		out = append(out, pendingJSONRow{
 			DeviceID:    d.AdapterID,
 			ProfileID:   d.ProfileID,
 			DeviceName:  d.AdapterName,
