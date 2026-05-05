@@ -44,8 +44,8 @@ Existing scripts that called the destructive subcommands without
 `--note` exit 4 after upgrade. The default policy file ships two
 rules:
 
-- `session-delete-requires-note` — blocks `aps session delete`
-- `workspace-ctx-delete-requires-note` — blocks `aps workspace ctx delete`
+- `delete-session-requires-note` — blocks `aps session delete`
+- `delete-workspace-context-requires-note` — blocks `aps workspace ctx delete`
 
 Upgrade path:
 
@@ -58,21 +58,26 @@ Upgrade path:
    aps workspace ctx delete CHANNEL_ID -n "redacted PII"
    ```
 
-2. **Per-shell bypass for CI / tests** — point `$APS_POLICY_FILE`
-   at an empty policies file:
+2. **Per-shell bypass with the engine still loaded** — point
+   `$APS_POLICY_FILE` at an empty policies file. Useful in CI
+   and tests because the engine still exercises the load + parse
+   path; only rule evaluation is empty:
 
    ```bash
    echo "policies: []" > /tmp/aps-policies-empty.yaml
    export APS_POLICY_FILE=/tmp/aps-policies-empty.yaml
    ```
 
-   There is **no environment variable that disables the policy
-   engine globally** in this version — kit ships no
-   `KIT_POLICY_DISABLE` (or equivalent). Once a policy file
-   loads, enforcement is always-on. The empty-file approach above
-   is the closest available knob.
+3. **Emergency disable** — set `KIT_POLICY_DISABLE=1` to
+   short-circuit the engine bootstrap entirely (no load, no
+   rules evaluated). Intended for emergency operator override
+   and CI debugging; not recommended for normal use:
 
-3. **Permanent loosening** — edit
+   ```bash
+   KIT_POLICY_DISABLE=1 aps session delete <id>
+   ```
+
+4. **Permanent loosening** — edit
    `$XDG_CONFIG_HOME/aps/policies.yaml` and remove or adjust the
    default rules. Aps does not re-seed once a user file exists, so
    the change persists across upgrades.

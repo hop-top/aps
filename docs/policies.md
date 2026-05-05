@@ -17,14 +17,14 @@ state by requiring an audit `--note`:
 
 ```yaml
 policies:
-  - name: session-delete-requires-note
+  - name: delete-session-requires-note
     on: kit.runtime.entity.pre_persisted
     when: 'payload.Op != "delete" || context.note != ""'
     effect: allow
     otherwise: deny
     message: "deleting a session requires --note explaining why"
 
-  - name: workspace-ctx-delete-requires-note
+  - name: delete-workspace-context-requires-note
     on: kit.runtime.entity.pre_persisted
     when: 'payload.Op != "delete" || context.note != ""'
     effect: allow
@@ -37,7 +37,7 @@ Effect: `aps session delete` and `aps workspace ctx delete` without
 
 ```text
 $ aps session delete sess-7c41
-Error: policy "session-delete-requires-note" denied: deleting a session requires --note explaining why
+Error: policy "delete-session-requires-note" denied: deleting a session requires --note explaining why
 $ echo $?
 4
 ```
@@ -92,11 +92,11 @@ When multiple policies match a single event, kit applies
 **deny-overrides**: ANY policy resolving to `deny` wins, and the
 first denying policy's message is surfaced. See ADR-0008 §8.
 
-Worked example — pulling apart `session-delete-requires-note`:
+Worked example — pulling apart `delete-session-requires-note`:
 
 | Field | Value | Why |
 |-------|-------|-----|
-| `name` | `session-delete-requires-note` | Surfaced in errors and logs; must be unique within the file |
+| `name` | `delete-session-requires-note` | Surfaced in errors and logs; must be unique within the file |
 | `on` | `kit.runtime.entity.pre_persisted` | Fires after validation, before the SessionManager removes the row |
 | `when` | `payload.Op != "delete" \|\| context.note != ""` | Match (allow) on every non-delete op; for deletes, only match when `--note` was supplied |
 | `effect` | `allow` | When `when` is true, allow the op |
@@ -187,7 +187,7 @@ aps profile delete noor --note "rotated identity to noor-2"
 ### Compose with the default
 
 Aps applies deny-overrides across all matching policies. With both
-the default `session-delete-requires-note` and the
+the default `delete-session-requires-note` and the
 `profile-delete-admin-only` rule above active, profile deletes need
 both `--note` AND `role:admin`. Order in the file does not matter;
 the first denying policy's message is surfaced.
@@ -250,16 +250,26 @@ Error: policy "<name>" denied: <message>
   `SessionStoppedPayload.Note`, `ProfileDeletedPayload.Note` —
   see `internal/events/events.go`) and surfaces to any subscriber
   that audits aps state changes.
-- There is **no operator-visible escape hatch** for the policy
-  engine in this version. Once a policy file loads (default or
-  user-supplied), enforcement is always-on. The only way to
-  loosen enforcement is to edit the user policy file at
-  `$XDG_CONFIG_HOME/aps/policies.yaml` and remove or relax the
-  rules. Aps does not re-seed once a user file exists, so the
-  change persists across upgrades.
-- `$APS_POLICY_FILE=/path/to/empty.yaml` (an empty `policies: []`
-  file) is the closest thing to a per-shell bypass — useful in CI
-  and tests. It is not intended for production use.
+- **`KIT_POLICY_DISABLE=1`** short-circuits the engine bootstrap
+  entirely: the engine never loads, no rules evaluate, every
+  state change is allowed. Intended for emergency operator
+  override and CI debugging — not recommended for normal use.
+  Set in the shell or per-invocation:
+
+  ```bash
+  KIT_POLICY_DISABLE=1 aps session delete <id>
+  ```
+
+- **`APS_POLICY_FILE=<path>`** overrides the default lookup at
+  `$XDG_CONFIG_HOME/aps/policies.yaml`. Pointing it at an empty
+  rule file (`policies: []`) gives per-shell bypass without
+  disabling the engine — useful in CI and tests because it still
+  exercises the load + parse path.
+
+- To loosen enforcement without bypass, edit the user policy
+  file at `$XDG_CONFIG_HOME/aps/policies.yaml` and remove or
+  relax the rules. Aps does not re-seed once a user file
+  exists, so the change persists across upgrades.
 
 ## Troubleshooting
 
