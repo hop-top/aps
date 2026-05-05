@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"hop.top/aps/internal/core/protocol"
+	"hop.top/aps/internal/logging"
 	"hop.top/kit/go/ai/ext"
 	kitapi "hop.top/kit/go/transport/api"
 )
@@ -561,11 +562,15 @@ func (a *AgentProtocolAdapter) handleRunCancelFromPath(w http.ResponseWriter, r 
 // the legacy ErrorResponse for backward compatibility with existing
 // clients and tests. Internally it delegates to kitapi.JSON so the
 // JSON-encoding path is shared with the rest of the kit-based stack.
+//
+// T-0460 — message is redacted via logging.Apply before serialization.
+// Wrapped errors from core.ExecuteRun can echo action stdout/stderr
+// (W3 in docs/cli/redact-inventory.md) which may carry tokens.
 func (a *AgentProtocolAdapter) sendError(w http.ResponseWriter, code int, message string) {
 	kitapi.JSON(w, code, ErrorResponse{
 		Error:   http.StatusText(code),
 		Code:    code,
-		Message: message,
+		Message: logging.Apply(message),
 	})
 }
 
@@ -578,8 +583,17 @@ func (a *AgentProtocolAdapter) sendDomainError(w http.ResponseWriter, err error)
 	a.sendError(w, apiErr.Status, err.Error())
 }
 
+// sendJSON marshals data and writes it as the response body. T-0460 —
+// the body is filtered through logging.ApplyBytes before w.Write so
+// the W3 surface in docs/cli/redact-inventory.md (errors echoing
+// action stdio) is covered for non-error 200/201 paths too.
 func (a *AgentProtocolAdapter) sendJSON(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(data)
+	body, err := json.Marshal(data)
+	if err != nil {
+		json.NewEncoder(w).Encode(data)
+		return
+	}
+	w.Write(logging.ApplyBytes(body))
 }

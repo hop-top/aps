@@ -18,6 +18,13 @@ import (
 	"hop.top/kit/go/core/upgrade"
 )
 
+// noRedactFlag holds the parsed --no-redact value. The flag is
+// declared as a kitcli Global so it shows up in --help and binds to
+// the root viper. PersistentPreRun (further down) inverts the bool
+// into the redact.enabled viper key that internal/logging/redact.go
+// reads.
+var noRedactFlag bool
+
 var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
@@ -31,6 +38,13 @@ var root = kitcli.New(kitcli.Config{
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
 		{Name: "offline", Usage: "disable all network calls"},
 		{Name: "instance", Usage: "backend instance to target (defaults to config)"},
+		// T-0460 — emergency bypass for kit/core/redact filtering.
+		// Default false (redaction ON). See docs/cli/redaction.md.
+		{
+			Name:    "no-redact",
+			Usage:   "disable redaction of secrets/PII in logs and output (DEBUG ONLY)",
+			BoolVar: &noRedactFlag,
+		},
 	},
 	// T-0392 — resolve -C/--chdir targets that aren't literal dirs against
 	// aps's workspace + profile registries before kit falls back to the
@@ -132,6 +146,10 @@ ID followed by a command to run that command under the selected profile.`
 	}
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		// T-0460 — invert --no-redact into the redact.enabled key.
+		// internal/logging/redact.go reads this on every Apply call.
+		root.Viper.Set(logging.ViperKeyEnabled, !noRedactFlag)
+
 		if cmd.Name() == "upgrade" {
 			return
 		}

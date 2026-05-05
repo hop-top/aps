@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
+	"hop.top/aps/internal/logging"
 )
 
 func newExecCmd() *cobra.Command {
@@ -69,7 +70,11 @@ Examples:
 				return err
 			}
 
-			fmt.Print(out)
+			// T-0460 — `out` is action output (O3 in
+			// docs/cli/redact-inventory.md). Action stdout is
+			// external content by definition; redact before
+			// printing to terminal.
+			_, _ = logging.Print(out)
 			return nil
 		},
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/core/session"
+	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/styles"
 )
 
@@ -69,8 +70,12 @@ func outputTable(sess *session.SessionInfo) error {
 	if len(sess.Environment) > 0 {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, tableHeader.Render("ENVIRONMENT")+"\t"+tableHeader.Render("VALUE"))
+		// T-0460 — Environment can include OPENAI_API_KEY, GITHUB_TOKEN,
+		// anything propagated by buildEnvVars (O8 in
+		// docs/cli/redact-inventory.md). Redact each value before
+		// writing to the tabwriter.
 		for k, v := range sess.Environment {
-			fmt.Fprintf(w, "%s\t%s\n", k, v)
+			fmt.Fprintf(w, "%s\t%s\n", k, logging.Apply(v))
 		}
 	}
 
@@ -91,6 +96,8 @@ func outputJSON(sess *session.SessionInfo, pretty bool) error {
 		return fmt.Errorf("failed to marshal session: %w", err)
 	}
 
-	fmt.Println(string(data))
+	// T-0460 — JSON shape includes the Environment map (O9 in
+	// docs/cli/redact-inventory.md). Redact the serialized bytes.
+	_, _ = logging.Println(string(data))
 	return nil
 }

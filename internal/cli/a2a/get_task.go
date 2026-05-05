@@ -12,6 +12,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/logging"
 )
 
 func NewGetTaskCmd() *cobra.Command {
@@ -92,7 +93,9 @@ func printTaskDetails(task *a2a.Task) error {
 		for j, part := range msg.Parts {
 			switch p := part.(type) {
 			case a2a.TextPart:
-				fmt.Printf("  Part %d [text]: %s\n", j+1, p.Text)
+				// T-0460 — text parts are peer-supplied (O5 in
+				// docs/cli/redact-inventory.md). Redact value.
+				fmt.Printf("  Part %d [text]: %s\n", j+1, logging.Apply(p.Text))
 			case a2a.FilePart:
 				fmt.Printf("  Part %d [file]\n", j+1)
 			case a2a.DataPart:

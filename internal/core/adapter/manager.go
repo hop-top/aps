@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"hop.top/aps/internal/logging"
 	"hop.top/cxr"
 )
 
@@ -210,8 +211,13 @@ func (m *Manager) startSubprocess(ctx context.Context, device *Adapter, ph *cxr.
 		stdout.Close()
 		return ErrStartFailed(device.Name, err)
 	}
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+	// T-0460 — wrap persisted log writers with the redact filter so
+	// any secret the subprocess echoes is tagged on disk. The child
+	// receives the full secrets.env environment (see buildAdapterEnv +
+	// cxr ProcessHandler) so the persisted log files (mode 0644) are
+	// the O4 surface in docs/cli/redact-inventory.md.
+	cmd.Stdout = logging.NewWriter(stdout)
+	cmd.Stderr = logging.NewWriter(stderr)
 
 	if err := cmd.Start(); err != nil {
 		stdout.Close()
