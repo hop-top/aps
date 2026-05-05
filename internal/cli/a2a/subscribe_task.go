@@ -9,6 +9,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/cli/globals"
+	"hop.top/kit/go/console/progress"
 )
 
 func NewSubscribeTaskCmd() *cobra.Command {
@@ -31,8 +32,15 @@ Example:
 				return fmt.Errorf("a2a tasks subscribe: %w", globals.ErrOffline)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
 			taskID := a2a.TaskID(args[0])
+
+			// T-0463 — structured progress per §6.5.
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: "connect", Item: targetProfile})
 
 			targetProf, err := loadProfile(targetProfile)
 			if err != nil {
@@ -44,9 +52,14 @@ Example:
 				return fmt.Errorf("failed to create A2A client: %w", err)
 			}
 
+			r.Emit(ctx, progress.Event{Phase: "register", Item: string(taskID)})
 			if err := client.SubscribeToTask(ctx, taskID, webhookURL); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "register", Item: string(taskID), OK: &okFalse})
 				return fmt.Errorf("failed to subscribe to task: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: "register", Item: string(taskID), OK: &okTrue})
 
 			fmt.Printf("Subscribed to task %s\n", taskID)
 			fmt.Printf("Webhook URL: %s\n", webhookURL)
