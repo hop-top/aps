@@ -15,6 +15,77 @@ type Config struct {
 	Isolation         GlobalIsolationConfig `yaml:"isolation,omitempty"`
 	CapabilitySources []string              `yaml:"capability_sources,omitempty"`
 	Secrets           SecretsConfig         `yaml:"secrets,omitempty"`
+	Profile           ProfileDefaultsConfig `yaml:"profile,omitempty"`
+}
+
+// ProfileDefaultsConfig controls default behaviour when creating profiles.
+// Color is tri-state ("true"|"false"|"auto"); unset == false. Avatar is a
+// nested block — see ProfileAvatarConfig.
+type ProfileDefaultsConfig struct {
+	Color  AutoMode            `yaml:"color,omitempty"`
+	Avatar ProfileAvatarConfig `yaml:"avatar,omitempty"`
+}
+
+// ProfileAvatarConfig configures the avatar provider used when
+// auto-generating avatars on profile create. Enabled is the tri-state
+// toggle; the remaining fields are passed through to the kit/avatar
+// provider. Empty Provider falls back to kit/avatar's default.
+type ProfileAvatarConfig struct {
+	Enabled  AutoMode `yaml:"enabled,omitempty"`
+	Provider string   `yaml:"provider,omitempty"`
+	Style    string   `yaml:"style,omitempty"`
+	Size     int      `yaml:"size,omitempty"`
+	Format   string   `yaml:"format,omitempty"`
+}
+
+// AutoMode is a tri-state toggle ("true" | "false" | "auto").
+// Yaml accepts native booleans for ergonomics (true/false) plus the
+// string "auto"; anything else is treated as the zero value (false).
+type AutoMode string
+
+const (
+	AutoModeFalse AutoMode = "false"
+	AutoModeTrue  AutoMode = "true"
+	AutoModeAuto  AutoMode = "auto"
+)
+
+// UnmarshalYAML accepts bool or string ("auto") for AutoMode.
+func (m *AutoMode) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Tag {
+	case "!!bool":
+		if value.Value == "true" {
+			*m = AutoModeTrue
+		} else {
+			*m = AutoModeFalse
+		}
+	case "!!str":
+		switch value.Value {
+		case "true":
+			*m = AutoModeTrue
+		case "auto":
+			*m = AutoModeAuto
+		default:
+			*m = AutoModeFalse
+		}
+	default:
+		*m = AutoModeFalse
+	}
+	return nil
+}
+
+// ShouldAutoAssign reports whether auto-assignment should run given that
+// no explicit value was supplied. interactive=true means the user was
+// (or could have been) prompted; in that case "auto" defers to the
+// (currently empty) value rather than overriding silently.
+func (m AutoMode) ShouldAutoAssign(interactive bool) bool {
+	switch m {
+	case AutoModeTrue:
+		return true
+	case AutoModeAuto:
+		return !interactive
+	default:
+		return false
+	}
 }
 
 // SecretsConfig selects the kit/storage/secret backend used for profile secrets.

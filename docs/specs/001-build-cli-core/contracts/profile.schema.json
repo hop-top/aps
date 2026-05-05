@@ -5,6 +5,9 @@
   "properties": {
     "id": { "type": "string" },
     "display_name": { "type": "string" },
+    "email": { "type": "string" },
+    "avatar": { "type": "string", "description": "URL or local path to profile image" },
+    "color": { "type": "string", "description": "Hex color (e.g. #3b82f6) for UI rendering" },
     "persona": {
       "type": "object",
       "properties": {

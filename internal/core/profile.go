@@ -85,6 +85,8 @@ type Profile struct {
 	ID           string             `yaml:"id"`
 	DisplayName  string             `yaml:"display_name"`
 	Email        string             `yaml:"email,omitempty"`
+	Avatar       string             `yaml:"avatar,omitempty"` // URL or local path to profile image
+	Color        string             `yaml:"color,omitempty"`  // hex color (e.g. "#3b82f6") for UI rendering
 	Persona      Persona            `yaml:"persona,omitempty"`
 	Capabilities []string           `yaml:"capabilities,omitempty"`
 	Accounts     map[string]Account `yaml:"accounts,omitempty"`

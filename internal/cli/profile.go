@@ -32,6 +32,8 @@ type profileSummaryRow struct {
 	Email        string `table:"EMAIL,priority=5"         json:"email"         yaml:"email"`
 	HasSecrets   bool   `table:"SECRETS,priority=4"       json:"has_secrets"   yaml:"has_secrets"`
 	HasIdentity  bool   `table:"DID,priority=3"           json:"has_identity"  yaml:"has_identity"`
+	Color        string `table:"COLOR,priority=2"         json:"color"         yaml:"color"`
+	Avatar       string `table:"AVATAR,priority=1"        json:"avatar"        yaml:"avatar"`
 }
 
 var profileCmd = &cobra.Command{
@@ -90,6 +92,22 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
+// dedupeStrings returns s with duplicates removed, preserving order of
+// first occurrence. Used by `profile edit` to avoid listing the same
+// field twice when both --avatar and --auto-avatar are passed.
+func dedupeStrings(s []string) []string {
+	seen := make(map[string]struct{}, len(s))
+	out := make([]string, 0, len(s))
+	for _, v := range s {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
 // profileHasSecrets reports whether the profile has at least one
 // non-empty secret entry. Used by the --has-secrets filter; absence
 // of the file (or an empty file) is treated as "no secrets".
@@ -119,6 +137,8 @@ func profileToSummaryRow(p core.Profile) profileSummaryRow {
 		Email:        p.Email,
 		HasSecrets:   profileHasSecrets(p),
 		HasIdentity:  p.Identity != nil,
+		Color:        p.Color,
+		Avatar:       p.Avatar,
 	}
 }
 
@@ -130,7 +150,49 @@ var profileCreateCmd = &cobra.Command{
 		id := args[0]
 		displayName, _ := cmd.Flags().GetString("display-name")
 		email, _ := cmd.Flags().GetString("email")
+		avatarVal, _ := cmd.Flags().GetString("avatar")
+		colorVal, _ := cmd.Flags().GetString("color")
 		force, _ := cmd.Flags().GetBool("force")
+
+		// Resolve auto-assignment policy. Explicit --auto-avatar/--auto-color
+		// flags override config; otherwise fall back to ProfileDefaultsConfig.
+		cfg, _ := core.LoadConfig()
+		avatarMode := core.AutoModeFalse
+		colorMode := core.AutoModeFalse
+		avatarCfg := core.ProfileAvatarConfig{}
+		if cfg != nil {
+			avatarMode = cfg.Profile.Avatar.Enabled
+			colorMode = cfg.Profile.Color
+			avatarCfg = cfg.Profile.Avatar
+		}
+		// Per-call flag overrides for the avatar generator.
+		if v, _ := cmd.Flags().GetString("avatar-provider"); v != "" {
+			avatarCfg.Provider = v
+		}
+		if v, _ := cmd.Flags().GetString("avatar-style"); v != "" {
+			avatarCfg.Style = v
+		}
+		if cmd.Flags().Changed("avatar-size") {
+			v, _ := cmd.Flags().GetInt("avatar-size")
+			avatarCfg.Size = v
+		}
+		if v, _ := cmd.Flags().GetString("avatar-format"); v != "" {
+			avatarCfg.Format = v
+		}
+		if cmd.Flags().Changed("auto-avatar") {
+			if v, _ := cmd.Flags().GetBool("auto-avatar"); v {
+				avatarMode = core.AutoModeTrue
+			} else {
+				avatarMode = core.AutoModeFalse
+			}
+		}
+		if cmd.Flags().Changed("auto-color") {
+			if v, _ := cmd.Flags().GetBool("auto-color"); v {
+				colorMode = core.AutoModeTrue
+			} else {
+				colorMode = core.AutoModeFalse
+			}
+		}
 
 		// Interactive prompts when flags not provided and stdin is a terminal
 		interactive := term.IsTerminal(int(os.Stdin.Fd()))
@@ -152,9 +214,21 @@ var profileCreateCmd = &cobra.Command{
 			}
 		}
 
+		// Auto-assign when no explicit value given. We treat the
+		// avatar/color prompts as non-interactive (no huh prompt for
+		// them), so auto mode generates rather than defers.
+		if avatarVal == "" && avatarMode.ShouldAutoAssign(false) {
+			avatarVal = core.GenerateProfileAvatar(id, avatarCfg)
+		}
+		if colorVal == "" && colorMode.ShouldAutoAssign(false) {
+			colorVal = core.GenerateProfileColor(id)
+		}
+
 		config := core.Profile{
 			DisplayName: displayName,
 			Email:       email,
+			Avatar:      avatarVal,
+			Color:       colorVal,
 			Git: core.GitConfig{
 				Enabled: email != "",
 			},
@@ -181,6 +255,83 @@ var profileCreateCmd = &cobra.Command{
 		// ProfileCreated event is emitted by core.CreateProfile.
 
 		fmt.Printf("Profile '%s' created successfully.\n", id)
+		return nil
+	},
+}
+
+var profileEditCmd = &cobra.Command{
+	Use:   "edit [id]",
+	Short: "Edit fields on an existing profile",
+	Long: `Update display name, email, avatar, or color on an existing profile.
+
+Only flags that are explicitly passed are applied; unset flags leave the
+existing value unchanged. To clear a field, pass the flag with an empty
+string (e.g. --avatar "").
+
+The --auto-avatar / --auto-color flags generate a deterministic value
+from the profile id and overwrite the existing value when set.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		profile, err := core.LoadProfile(id)
+		if err != nil {
+			return fmt.Errorf("loading profile: %w", err)
+		}
+
+		var fields []string
+		if cmd.Flags().Changed("display-name") {
+			profile.DisplayName, _ = cmd.Flags().GetString("display-name")
+			fields = append(fields, "display_name")
+		}
+		if cmd.Flags().Changed("email") {
+			profile.Email, _ = cmd.Flags().GetString("email")
+			fields = append(fields, "email")
+		}
+		if cmd.Flags().Changed("avatar") {
+			profile.Avatar, _ = cmd.Flags().GetString("avatar")
+			fields = append(fields, "avatar")
+		}
+		if cmd.Flags().Changed("color") {
+			profile.Color, _ = cmd.Flags().GetString("color")
+			fields = append(fields, "color")
+		}
+		if v, _ := cmd.Flags().GetBool("auto-avatar"); v {
+			cfg, _ := core.LoadConfig()
+			avatarCfg := core.ProfileAvatarConfig{}
+			if cfg != nil {
+				avatarCfg = cfg.Profile.Avatar
+			}
+			if v, _ := cmd.Flags().GetString("avatar-provider"); v != "" {
+				avatarCfg.Provider = v
+			}
+			if v, _ := cmd.Flags().GetString("avatar-style"); v != "" {
+				avatarCfg.Style = v
+			}
+			if cmd.Flags().Changed("avatar-size") {
+				v, _ := cmd.Flags().GetInt("avatar-size")
+				avatarCfg.Size = v
+			}
+			if v, _ := cmd.Flags().GetString("avatar-format"); v != "" {
+				avatarCfg.Format = v
+			}
+			profile.Avatar = core.GenerateProfileAvatar(id, avatarCfg)
+			fields = append(fields, "avatar")
+		}
+		if v, _ := cmd.Flags().GetBool("auto-color"); v {
+			profile.Color = core.GenerateProfileColor(id)
+			fields = append(fields, "color")
+		}
+
+		if len(fields) == 0 {
+			return fmt.Errorf("no fields specified; pass at least one of --display-name, --email, --avatar, --color, --auto-avatar, --auto-color")
+		}
+
+		if err := core.SaveProfile(profile); err != nil {
+			return fmt.Errorf("saving profile: %w", err)
+		}
+		core.PublishProfileUpdated(id, dedupeStrings(fields))
+
+		fmt.Printf("Profile '%s' updated (%s).\n", id, strings.Join(dedupeStrings(fields), ", "))
 		return nil
 	},
 }
@@ -529,6 +680,7 @@ func init() {
 	rootCmd.AddCommand(profileCmd)
 	profileCmd.AddCommand(profileListCmd)
 	profileCmd.AddCommand(profileCreateCmd)
+	profileCmd.AddCommand(profileEditCmd)
 	profileCmd.AddCommand(profileShowCmd)
 	profileCmd.AddCommand(profileStatusCmd)
 	profileCmd.AddCommand(profileShareCmd)
@@ -550,7 +702,26 @@ func init() {
 
 	profileCreateCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileCreateCmd.Flags().String("email", "", "Email for profile and git config")
+	profileCreateCmd.Flags().String("avatar", "", "URL or local path to profile image")
+	profileCreateCmd.Flags().String("color", "", "Hex color (e.g. #3b82f6) for UI rendering")
+	profileCreateCmd.Flags().Bool("auto-avatar", false, "Generate a deterministic avatar via the configured provider (overrides config)")
+	profileCreateCmd.Flags().Bool("auto-color", false, "Generate a deterministic palette color (overrides config)")
+	profileCreateCmd.Flags().String("avatar-provider", "", "Avatar provider name (default: kit/avatar's default — dicebear)")
+	profileCreateCmd.Flags().String("avatar-style", "", "Provider-specific style (e.g. dicebear: shapes, bottts, identicon)")
+	profileCreateCmd.Flags().Int("avatar-size", 0, "Avatar size in pixels (0 = provider default)")
+	profileCreateCmd.Flags().String("avatar-format", "", "Avatar format: svg, png, webp (provider-dependent)")
 	profileCreateCmd.Flags().Bool("force", false, "Overwrite existing profile")
+
+	profileEditCmd.Flags().String("display-name", "", "Display name for the profile")
+	profileEditCmd.Flags().String("email", "", "Email for profile and git config")
+	profileEditCmd.Flags().String("avatar", "", "URL or local path to profile image (pass empty string to clear)")
+	profileEditCmd.Flags().String("color", "", "Hex color (e.g. #3b82f6) for UI rendering (pass empty string to clear)")
+	profileEditCmd.Flags().Bool("auto-avatar", false, "Generate and apply a deterministic avatar via the configured provider")
+	profileEditCmd.Flags().Bool("auto-color", false, "Generate and apply a deterministic palette color")
+	profileEditCmd.Flags().String("avatar-provider", "", "Avatar provider name for --auto-avatar")
+	profileEditCmd.Flags().String("avatar-style", "", "Provider-specific style for --auto-avatar")
+	profileEditCmd.Flags().Int("avatar-size", 0, "Avatar size in pixels for --auto-avatar")
+	profileEditCmd.Flags().String("avatar-format", "", "Avatar format for --auto-avatar")
 	profileStatusCmd.Flags().Bool("verbose", false, "Show full resolved scope and env var keys per bundle")
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
