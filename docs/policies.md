@@ -12,8 +12,9 @@ This doc covers aps-specific adoption only.
 
 ## Default policies
 
-Aps ships two rules — both gate destructive operations on shared
-state by requiring an audit `--note`:
+Aps ships three rules. Two gate destructive operations by requiring
+an audit `--note`; the third gates cross-agent deletion of shared
+workspace context by requiring workspace owner role.
 
 ```yaml
 policies:
@@ -30,10 +31,19 @@ policies:
     effect: allow
     otherwise: deny
     message: "deleting a workspace context variable requires --note explaining why"
+
+  - name: cross-agent-context-delete-requires-owner
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || !has(context.request_attrs.visibility) || context.request_attrs.visibility != "shared" || principal.role == "owner"'
+    effect: allow
+    otherwise: deny
+    message: "deleting a shared workspace context variable requires workspace owner role"
 ```
 
 Effect: `aps session delete` and `aps workspace ctx delete` without
-`--note` are rejected with exit 4.
+`--note` are rejected with exit 4. Cross-profile deletion of a
+**shared** workspace ctx variable additionally requires
+`principal.role == "owner"` — contributors and observers exit 4.
 
 ```text
 $ aps session delete sess-7c41
@@ -47,14 +57,41 @@ $ aps session delete sess-7c41 --note "stale; profile retired"
 Deleted session sess-7c41
 ```
 
+```text
+$ aps -p sami workspace ctx delete feature.alpha --workspace ws-team --note "obsolete"
+Error: policy "cross-agent-context-delete-requires-owner" denied: deleting a shared workspace context variable requires workspace owner role
+$ echo $?
+4
+```
+
+### T-1302 decision table
+
+The cross-agent rule keys on `(payload.Op, request_attrs.kind,
+request_attrs.visibility, principal.role)`. The decision table:
+
+| Op       | Kind                  | Visibility | principal.role | Outcome |
+|----------|-----------------------|------------|----------------|---------|
+| not delete | (any)               | (any)      | (any)          | allow   |
+| delete   | not `workspace_context` | (any)    | (any)          | allow   |
+| delete   | `workspace_context`   | not `shared` | (any)        | allow   |
+| delete   | `workspace_context`   | `shared`   | `owner`        | allow   |
+| delete   | `workspace_context`   | `shared`   | other / empty  | **deny**|
+
+Private variables are exempt because the storage-layer visibility
+filter (T-1309) already returns "not found" to non-writers; if a
+caller reaches the delete path on a private variable, the variable
+is theirs. The owner gate fires only on cross-profile deletion of a
+workspace-wide variable.
+
+This rule composes with `delete-workspace-context-requires-note`
+under deny-overrides — both must allow. An owner without `--note` is
+denied by the note rule; a contributor with `--note` is denied by
+the owner rule. The first-declared denying rule's message is the one
+surfaced on stderr.
+
 Non-destructive transitions (create, update, attach, link, …) are
 not gated by default — adopters opt in by adding rules to their
 own file.
-
-A future rule, `cross-agent-context-access-requires-role`, will
-gate `aps workspace ctx set` cross-profile reads/writes by
-`principal.role`. Ships in T-1302; not enforced by the current
-default file.
 
 ## Where the policy file lives
 

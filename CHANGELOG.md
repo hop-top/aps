@@ -23,6 +23,13 @@ All notable changes to `aps` are documented in this file.
 - Bus event payloads carry the `--note` value (e.g.
   `SessionStoppedPayload.Note`, `ProfileDeletedPayload.Note`,
   `AdapterUnlinkedPayload.Note` — see `internal/events/events.go`).
+- Cross-agent shared workspace-context delete now requires
+  `principal.role == owner` (default policy
+  `cross-agent-context-delete-requires-owner`, T-1302). Private
+  variables remain exempt — the storage-layer visibility filter
+  (T-1309) already keeps them invisible to non-writers, so reaching
+  the delete path means the variable belongs to the caller. Decision
+  table in [docs/policies.md](docs/policies.md#t-1302-decision-table).
 - Documentation: [docs/policies.md](docs/policies.md) (policy
   engine, default rules, anatomy, troubleshooting) and
   [docs/cli/reference.md](docs/cli/reference.md) (global flags,
@@ -82,9 +89,10 @@ Upgrade path:
    default rules. Aps does not re-seed once a user file exists, so
    the change persists across upgrades.
 
-A future rule, `cross-agent-context-access-requires-role` (T-1302),
-will further gate cross-profile context reads/writes by
-`principal.role`. Not enforced yet.
+The `cross-agent-context-delete-requires-owner` rule (T-1302) is
+now in the bundled defaults — see "Added" above. Read/list of
+shared variables remain ungated; visibility filtering for private
+variables happens at the storage layer.
 
 ### Improvements — aps-tabwriter-sweep (track: `aps-tabwriter-sweep`)
 
