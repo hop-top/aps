@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"hop.top/aps/internal/cli/globals"
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/styles"
@@ -59,6 +60,11 @@ func init() {
 	// adapter, …) can gate network paths on --offline without importing
 	// internal/cli (which would form an import cycle).
 	globals.SetViper(root.Viper)
+	// T-0450 — install the kit-themed TableStyle so listing.RenderList
+	// forwards it via output.WithTableStyle on TTY writers. Non-TTY paths
+	// (pipes, files, test buffers) keep emitting plain tabwriter output;
+	// the styled renderer is gated on writerIsTTY in kit/output.
+	listing.SetTableStyle(root.TableStyle())
 
 	// Note: kit/go/console/cli.New already calls output.RegisterFlags
 	// and output.RegisterHintFlags by default (gated by Config.Disable.
