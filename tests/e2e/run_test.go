@@ -1,8 +1,10 @@
 package e2e
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -69,4 +71,89 @@ func TestShorthandExecution(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout, "APS_PROFILE_ID=short-agent")
+}
+
+func TestProfileScopedExternalLLMCLIs(t *testing.T) {
+	t.Parallel()
+
+	for _, cliName := range []string{"claude", "codex", "gemini", "opencode"} {
+		cliName := cliName
+		t.Run(cliName, func(t *testing.T) {
+			t.Parallel()
+
+			home := t.TempDir()
+			binDir := t.TempDir()
+			writeLLMStub(t, binDir, cliName, 0)
+
+			_, _, err := runAPS(t, home, "profile", "create", "llm-agent")
+			require.NoError(t, err)
+
+			secretsPath := filepath.Join(home, ".local", "share", "aps", "profiles", "llm-agent", "secrets.env")
+			f, err := os.OpenFile(secretsPath, os.O_APPEND|os.O_WRONLY, 0600)
+			require.NoError(t, err)
+			_, err = f.WriteString("\nANTHROPIC_API_KEY=test-anthropic-key\nOPENAI_API_KEY=test-openai-key\n")
+			require.NoError(t, err)
+			require.NoError(t, f.Close())
+
+			env := map[string]string{
+				"PATH": binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
+			}
+
+			stdout, stderr, err := runAPSWithEnv(t, home, env, "--no-redact", "run", "llm-agent", "--", cliName, "hello", "--model", "stub")
+			require.NoError(t, err)
+			assert.Contains(t, stdout, "CLI="+cliName)
+			assert.Contains(t, stdout, "PROFILE=llm-agent")
+			assert.Contains(t, stdout, "ARGS=hello --model stub")
+			assert.Contains(t, stdout, "ANTHROPIC=test-anthropic-key")
+			assert.Contains(t, stdout, "OPENAI=test-openai-key")
+			assert.Contains(t, stderr, "STDERR="+cliName)
+
+			stdout, _, err = runAPSWithEnv(t, home, env, "--no-redact", "llm-agent", cliName, "short")
+			require.NoError(t, err)
+			assert.Contains(t, stdout, "CLI="+cliName)
+			assert.Contains(t, stdout, "PROFILE=llm-agent")
+			assert.Contains(t, stdout, "ARGS=short")
+		})
+	}
+}
+
+func TestProfileScopedExternalLLMCLIExitCode(t *testing.T) {
+	t.Parallel()
+
+	home := t.TempDir()
+	binDir := t.TempDir()
+	writeLLMStub(t, binDir, "claude", 42)
+
+	_, _, err := runAPS(t, home, "profile", "create", "llm-exit-agent")
+	require.NoError(t, err)
+
+	env := map[string]string{
+		"PATH": binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}
+
+	stdout, stderr, err := runAPSWithEnv(t, home, env, "run", "llm-exit-agent", "--", "claude", "fail")
+	require.Error(t, err)
+	assert.Contains(t, stdout, "CLI=claude")
+	assert.Contains(t, stderr, "STDERR=claude")
+
+	var exitErr *exec.ExitError
+	require.True(t, errors.As(err, &exitErr))
+	assert.Equal(t, 42, exitErr.ExitCode())
+	assert.Contains(t, stderr, "exit status 42")
+}
+
+func writeLLMStub(t *testing.T, dir, name string, exitCode int) {
+	t.Helper()
+
+	path := filepath.Join(dir, name)
+	body := fmt.Sprintf(`#!/bin/sh
+echo "CLI=%s"
+echo "PROFILE=${APS_PROFILE_ID}"
+echo "ARGS=$*"
+echo "ANTHROPIC=${ANTHROPIC_API_KEY}"
+echo "OPENAI=${OPENAI_API_KEY}"
+echo "STDERR=%s" >&2
+exit %d
+`, name, name, exitCode)
+	require.NoError(t, os.WriteFile(path, []byte(body), 0755))
 }
