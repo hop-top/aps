@@ -6,6 +6,7 @@ import (
 	"hop.top/aps/internal/core"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/progress"
 )
 
 var runCmd = &cobra.Command{
@@ -35,9 +36,22 @@ var runCmd = &cobra.Command{
 		commandName := commandArgs[0]
 		commandRest := commandArgs[1:]
 
+		// T-0463 — structured progress per cli-conventions-with-kit.md
+		// §6.5. The user-supplied subprocess is opaque; aps emits an
+		// envelope (exec start + exit ok/fail) so agents reading the
+		// JSONL stream see a uniform progress contract without aps
+		// touching the child's stdio.
+		ctx := cmd.Context()
+		r := progress.FromContext(ctx)
+		r.Emit(ctx, progress.Event{Phase: "exec", Item: commandName})
+
 		if err := core.RunCommand(profileID, commandName, commandRest); err != nil {
+			okFalse := false
+			r.Emit(ctx, progress.Event{Phase: "exit", Item: commandName, OK: &okFalse})
 			return fmt.Errorf("running command: %w", err)
 		}
+		okTrue := true
+		r.Emit(ctx, progress.Event{Phase: "exit", Item: commandName, OK: &okTrue})
 		return nil
 	},
 }
