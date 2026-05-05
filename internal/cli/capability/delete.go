@@ -3,6 +3,7 @@ package capability
 import (
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
@@ -41,6 +42,7 @@ func newDeleteCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&force, "force", false, "Skip link warning")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

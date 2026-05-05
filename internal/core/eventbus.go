@@ -1,6 +1,29 @@
 package core
 
-import "context"
+import (
+	"context"
+
+	"hop.top/kit/go/runtime/policy"
+)
+
+// NoteFromContext returns the audit note attached to ctx via
+// policy.ContextAttrsKey, or "" when none is set. The CLI layer attaches
+// it from the --note|-n flag (T-1291) before invoking core mutators so
+// that event payloads can populate their Note field without changing
+// every core function's signature.
+func NoteFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	attrs, ok := ctx.Value(policy.ContextAttrsKey).(map[string]any)
+	if !ok {
+		return ""
+	}
+	if v, ok := attrs["note"].(string); ok {
+		return v
+	}
+	return ""
+}
 
 // EventPublisher is the seam used by core operations to emit lifecycle
 // events. The CLI layer wires a concrete bus-backed publisher via

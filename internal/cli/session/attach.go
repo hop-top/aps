@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/session"
 )
@@ -50,6 +51,7 @@ func NewAttachCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&mode, "mode", "m", "control", "Attachment mode (view|control)")
 	cmd.Flags().BoolVarP(&latest, "latest", "l", false, "Attach to the most recent session")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"hop.top/aps/internal/cli/clinote"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +22,7 @@ func newMembersCmd() *cobra.Command {
 }
 
 func newAddMemberCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "add <squad-id> <profile-id>",
 		Short: "Add a member to a squad",
 		Args:  cobra.ExactArgs(2),
@@ -28,6 +30,8 @@ func newAddMemberCmd() *cobra.Command {
 			return runAddMember(args[0], args[1])
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }
 
 func runAddMember(squadID, profileID string) error {
@@ -40,7 +44,7 @@ func runAddMember(squadID, profileID string) error {
 }
 
 func newRemoveMemberCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "remove <squad-id> <profile-id>",
 		Short: "Remove a member from a squad",
 		Args:  cobra.ExactArgs(2),
@@ -48,6 +52,8 @@ func newRemoveMemberCmd() *cobra.Command {
 			return runRemoveMember(args[0], args[1])
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }
 
 func runRemoveMember(squadID, profileID string) error {

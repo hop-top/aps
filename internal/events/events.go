@@ -28,12 +28,17 @@ const (
 )
 
 // ProfileCreatedPayload is published after a profile is created.
+//
+// Note carries the optional --note|-n value supplied by the operator at
+// the CLI layer (T-1291). Empty when the flag is unset. Policy engines
+// can read it as `context.note` from CEL via policy.ContextAttrsKey.
 type ProfileCreatedPayload struct {
 	ProfileID    string
 	DisplayName  string
 	Email        string
 	Department   string
 	Capabilities []string
+	Note         string
 }
 
 // ProfileUpdatedPayload is published after a profile is updated.
@@ -41,11 +46,13 @@ type ProfileUpdatedPayload struct {
 	ProfileID  string
 	Fields     []string // changed field names
 	Department string
+	Note       string
 }
 
 // ProfileDeletedPayload is published after a profile is deleted.
 type ProfileDeletedPayload struct {
 	ProfileID string
+	Note      string
 }
 
 // AdapterLinkedPayload is published after an adapter is linked to a profile.
@@ -53,6 +60,7 @@ type AdapterLinkedPayload struct {
 	ProfileID   string
 	AdapterType string
 	AdapterID   string
+	Note        string
 }
 
 // AdapterUnlinkedPayload is published after an adapter is unlinked from a profile.
@@ -60,6 +68,7 @@ type AdapterUnlinkedPayload struct {
 	ProfileID   string
 	AdapterType string
 	AdapterID   string
+	Note        string
 }
 
 // SessionStartedPayload is published after a session is registered.
@@ -69,6 +78,7 @@ type SessionStartedPayload struct {
 	Command   string
 	PID       int
 	Tier      string
+	Note      string
 }
 
 // SessionStoppedPayload is published after a session is unregistered or
@@ -77,4 +87,5 @@ type SessionStoppedPayload struct {
 	SessionID string
 	ProfileID string
 	Reason    string // "unregister", "inactive", "errored"
+	Note      string
 }

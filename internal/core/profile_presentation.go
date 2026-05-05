@@ -67,8 +67,16 @@ func GenerateProfileAvatar(id string, cfg ProfileAvatarConfig) string {
 // outside core (notably the CLI edit command) can announce mutations without
 // duplicating the bus plumbing.
 func PublishProfileUpdated(profileID string, fields []string) {
-	publish(context.Background(), string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+	PublishProfileUpdatedWithContext(context.Background(), profileID, fields)
+}
+
+// PublishProfileUpdatedWithContext is the ctx-aware variant; reads
+// NoteFromContext(ctx) for the Note field on ProfileUpdatedPayload
+// (T-1291).
+func PublishProfileUpdatedWithContext(ctx context.Context, profileID string, fields []string) {
+	publish(ctx, string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
 		ProfileID: profileID,
 		Fields:    fields,
+		Note:      NoteFromContext(ctx),
 	})
 }

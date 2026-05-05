@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 	coreadapter "hop.top/aps/internal/core/adapter"
 )
@@ -28,6 +29,7 @@ func newStopCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Force stop (SIGKILL)")
 	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be stopped without stopping")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
 
 	return cmd
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/multidevice"
 
 	"github.com/spf13/cobra"
@@ -38,6 +39,7 @@ Roles control what the device can do:
 	cmd.Flags().StringVar(&role, "role", "viewer",
 		"Device role: owner, collaborator, viewer")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

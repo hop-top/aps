@@ -5,6 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/session"
 )
 
@@ -32,6 +33,7 @@ func NewDetachCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "Detach from all sessions")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

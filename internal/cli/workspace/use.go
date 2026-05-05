@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/clinote"
 )
 
 // NewUseCmd creates the "collab use" command.
@@ -24,7 +26,8 @@ when no --workspace flag is provided.`,
 				return err
 			}
 
-			if err := mgr.SetActiveWorkspace(cmd.Context(), wsID); err != nil {
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			if err := mgr.SetActiveWorkspace(ctx, wsID); err != nil {
 				return err
 			}
 
@@ -42,6 +45,8 @@ when no --workspace flag is provided.`,
 			return nil
 		},
 	}
+
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

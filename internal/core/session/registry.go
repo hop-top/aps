@@ -171,6 +171,13 @@ func startReaper(ctx context.Context, r *SessionRegistry, tick time.Duration) {
 }
 
 func (r *SessionRegistry) Register(session *SessionInfo) error {
+	return r.RegisterWithContext(context.Background(), session)
+}
+
+// RegisterWithContext is the ctx-aware variant of Register; reads the
+// audit note attached via policy.ContextAttrsKey by the CLI layer
+// (T-1291) and surfaces it in the SessionStarted bus payload.
+func (r *SessionRegistry) RegisterWithContext(ctx context.Context, session *SessionInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -187,17 +194,25 @@ func (r *SessionRegistry) Register(session *SessionInfo) error {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 
-	publish(context.Background(), string(events.TopicSessionStarted), "", events.SessionStartedPayload{
+	publish(ctx, string(events.TopicSessionStarted), "", events.SessionStartedPayload{
 		SessionID: session.ID,
 		ProfileID: session.ProfileID,
 		Command:   session.Command,
 		PID:       session.PID,
 		Tier:      string(session.Tier),
+		Note:      noteFromContext(ctx),
 	})
 	return nil
 }
 
 func (r *SessionRegistry) Unregister(sessionID string) error {
+	return r.UnregisterWithContext(context.Background(), sessionID)
+}
+
+// UnregisterWithContext is the ctx-aware variant; reads the audit note
+// attached via policy.ContextAttrsKey by the CLI layer (T-1291) and
+// surfaces it in the SessionStopped bus payload.
+func (r *SessionRegistry) UnregisterWithContext(ctx context.Context, sessionID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -212,10 +227,11 @@ func (r *SessionRegistry) Unregister(sessionID string) error {
 	}
 
 	if existed {
-		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+		publish(ctx, string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
 			SessionID: sessionID,
 			ProfileID: prev.ProfileID,
 			Reason:    "unregister",
+			Note:      noteFromContext(ctx),
 		})
 	}
 	return nil
@@ -309,6 +325,53 @@ func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) e
 			SessionID: sessionID,
 			ProfileID: session.ProfileID,
 			Reason:    reason,
+		})
+	}
+	return nil
+}
+
+// UpdateStatusWithContext is the ctx-aware variant of UpdateStatus
+// (T-1291). When the transition lands in a terminal state, the audit
+// note attached to ctx via policy.ContextAttrsKey is surfaced in the
+// SessionStopped payload.
+//
+// We re-implement the body rather than calling UpdateStatus + a
+// follow-up event because publishing a second SessionStopped after the
+// fact would deliver a duplicate to subscribers.
+func (r *SessionRegistry) UpdateStatusWithContext(ctx context.Context, sessionID string, status SessionStatus) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	session, exists := r.sessions[sessionID]
+	if !exists {
+		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	if err := r.checkTransition(session.Status, status); err != nil {
+		return fmt.Errorf("session %s: %w", sessionID, err)
+	}
+
+	prevStatus := session.Status
+	prevSeen := session.LastSeenAt
+	session.Status = status
+	session.LastSeenAt = time.Now()
+
+	if err := r.saveToDiskLocked(); err != nil {
+		session.Status = prevStatus
+		session.LastSeenAt = prevSeen
+		return fmt.Errorf("failed to persist session registry: %w", err)
+	}
+
+	if prevStatus != status && (status == SessionInactive || status == SessionErrored) {
+		reason := "inactive"
+		if status == SessionErrored {
+			reason = "errored"
+		}
+		publish(ctx, string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: sessionID,
+			ProfileID: session.ProfileID,
+			Reason:    reason,
+			Note:      noteFromContext(ctx),
 		})
 	}
 	return nil

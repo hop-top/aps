@@ -3,6 +3,7 @@ package capability
 import (
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ func newAdoptCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Name of capability")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

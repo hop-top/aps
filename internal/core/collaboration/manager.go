@@ -6,7 +6,27 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"hop.top/kit/go/runtime/policy"
 )
+
+// noteFromContext returns the audit note attached to ctx via
+// policy.ContextAttrsKey by the CLI layer (T-1291). Empty when none is
+// set. Used by recordEvent to surface the operator-supplied reason in
+// the workspace audit log.
+func noteFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	attrs, ok := ctx.Value(policy.ContextAttrsKey).(map[string]any)
+	if !ok {
+		return ""
+	}
+	if v, ok := attrs["note"].(string); ok {
+		return v
+	}
+	return ""
+}
 
 // Manager orchestrates workspace lifecycle operations.
 // It delegates persistence to a Storage implementation and records audit events
@@ -31,7 +51,7 @@ func (m *Manager) Create(ctx context.Context, config WorkspaceConfig) (*Workspac
 		return nil, fmt.Errorf("saving workspace: %w", err)
 	}
 
-	_ = m.recordEvent(ws.ID, config.OwnerProfileID, "workspace.create", ws.ID, "")
+	_ = m.recordEvent(ws.ID, config.OwnerProfileID, "workspace.create", ws.ID, "", noteFromContext(ctx))
 	return ws, nil
 }
 
@@ -92,7 +112,7 @@ func (m *Manager) Archive(ctx context.Context, id string) error {
 		return fmt.Errorf("saving workspace %q: %w", id, err)
 	}
 
-	_ = m.recordEvent(ws.ID, "system", "workspace.archive", ws.ID, "")
+	_ = m.recordEvent(ws.ID, "system", "workspace.archive", ws.ID, "", noteFromContext(ctx))
 	return nil
 }
 
@@ -112,7 +132,7 @@ func (m *Manager) Join(ctx context.Context, workspaceID, profileID string) (*Age
 		return nil, fmt.Errorf("saving workspace %q: %w", workspaceID, err)
 	}
 
-	_ = m.recordEvent(workspaceID, profileID, "agent.join", profileID, "")
+	_ = m.recordEvent(workspaceID, profileID, "agent.join", profileID, "", noteFromContext(ctx))
 	return agent, nil
 }
 
@@ -131,7 +151,7 @@ func (m *Manager) Leave(ctx context.Context, workspaceID, profileID string) erro
 		return fmt.Errorf("saving workspace %q: %w", workspaceID, err)
 	}
 
-	_ = m.recordEvent(workspaceID, profileID, "agent.leave", profileID, "")
+	_ = m.recordEvent(workspaceID, profileID, "agent.leave", profileID, "", noteFromContext(ctx))
 	return nil
 }
 
@@ -160,7 +180,7 @@ func (m *Manager) Remove(ctx context.Context, workspaceID, targetProfileID, acto
 	}
 
 	details := fmt.Sprintf("removed by %s", actorProfileID)
-	_ = m.recordEvent(workspaceID, actorProfileID, "agent.remove", targetProfileID, details)
+	_ = m.recordEvent(workspaceID, actorProfileID, "agent.remove", targetProfileID, details, noteFromContext(ctx))
 	return nil
 }
 
@@ -184,7 +204,7 @@ func (m *Manager) SetRole(ctx context.Context, workspaceID, profileID string, ro
 	}
 
 	details := fmt.Sprintf("role changed to %s", role)
-	_ = m.recordEvent(workspaceID, "system", "agent.role_change", profileID, details)
+	_ = m.recordEvent(workspaceID, "system", "agent.role_change", profileID, details, noteFromContext(ctx))
 	return nil
 }
 
@@ -223,7 +243,12 @@ func (m *Manager) GetActiveWorkspace(ctx context.Context) (string, error) {
 }
 
 // recordEvent appends an audit event to the workspace's audit log.
-func (m *Manager) recordEvent(workspaceID, actor, event, resource, details string) error {
+//
+// note carries the operator-supplied --note|-n value (T-1291), or "" when
+// the flag is unset. It is stored alongside details so audit consumers
+// can present "what" (event/resource) and "why" (note) without parsing
+// details.
+func (m *Manager) recordEvent(workspaceID, actor, event, resource, details, note string) error {
 	existing, err := m.storage.LoadAuditEvents(workspaceID)
 	if err != nil {
 		existing = []AuditEvent{}
@@ -236,6 +261,7 @@ func (m *Manager) recordEvent(workspaceID, actor, event, resource, details strin
 		Event:       event,
 		Resource:    resource,
 		Details:     details,
+		Note:        note,
 		Timestamp:   time.Now(),
 	}
 	existing = append(existing, entry)

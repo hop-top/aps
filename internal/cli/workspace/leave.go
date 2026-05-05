@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 )
 
@@ -46,7 +47,8 @@ If no workspace is specified, the active workspace is used.`,
 				return err
 			}
 
-			if err := mgr.Leave(cmd.Context(), wsID, profile); err != nil {
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			if err := mgr.Leave(ctx, wsID, profile); err != nil {
 				return err
 			}
 
@@ -68,6 +70,7 @@ If no workspace is specified, the active workspace is used.`,
 	addProfileFlag(cmd)
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

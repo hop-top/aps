@@ -1,9 +1,11 @@
 package session
 
 import (
+	"context"
 	"fmt"
 	"os"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/session"
 
@@ -39,16 +41,21 @@ func NewDeleteCmd() *cobra.Command {
 				}
 			}
 
-			return deleteSession(sess)
+			// T-1291 — attach --note to ctx BEFORE the registry
+			// mutation so the SessionStopped event payload carries the
+			// audit note and policy engines can read it from CEL.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			return deleteSession(ctx, sess)
 		},
 	}
 
 	cmd.Flags().Bool("force", false, "Force delete without confirmation")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }
 
-func deleteSession(sess *session.SessionInfo) error {
+func deleteSession(ctx context.Context, sess *session.SessionInfo) error {
 	if sess.TmuxSocket != "" {
 		if err := killTmuxSession(sess); err != nil {
 			// Non-benign tmux errors are logged but do not abort
@@ -59,7 +66,7 @@ func deleteSession(sess *session.SessionInfo) error {
 	}
 
 	registry := session.GetRegistry()
-	_ = registry.Unregister(sess.ID)
+	_ = registry.UnregisterWithContext(ctx, sess.ID)
 
 	fmt.Printf("Session %s deleted\n", sess.ID)
 	return nil

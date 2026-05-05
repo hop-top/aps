@@ -256,11 +256,14 @@ type ContextVariable struct {
 
 // ContextMutation records a change to a context variable.
 type ContextMutation struct {
-	Key       string    `json:"key" yaml:"key"`
-	OldValue  string    `json:"old_value,omitempty" yaml:"old_value,omitempty"`
-	NewValue  string    `json:"new_value" yaml:"new_value"`
-	Version   int       `json:"version" yaml:"version"`
-	AgentID   string    `json:"agent_id" yaml:"agent_id"`
+	Key      string `json:"key" yaml:"key"`
+	OldValue string `json:"old_value,omitempty" yaml:"old_value,omitempty"`
+	NewValue string `json:"new_value" yaml:"new_value"`
+	Version  int    `json:"version" yaml:"version"`
+	AgentID  string `json:"agent_id" yaml:"agent_id"`
+	// Note carries the optional --note|-n value supplied by the
+	// operator at the CLI layer (T-1291). Empty when the flag is unset.
+	Note      string    `json:"note,omitempty" yaml:"note,omitempty"`
 	Timestamp time.Time `json:"timestamp" yaml:"timestamp"`
 }
 
@@ -272,7 +275,10 @@ type AuditEvent struct {
 	Event       string    `json:"event" yaml:"event"` // "agent.join", "task.create", etc.
 	Resource    string    `json:"resource,omitempty" yaml:"resource,omitempty"`
 	Details     string    `json:"details,omitempty" yaml:"details,omitempty"`
-	Timestamp   time.Time `json:"timestamp" yaml:"timestamp"`
+	// Note carries the optional --note|-n value supplied by the
+	// operator at the CLI layer (T-1291). Empty when the flag is unset.
+	Note      string    `json:"note,omitempty" yaml:"note,omitempty"`
+	Timestamp time.Time `json:"timestamp" yaml:"timestamp"`
 }
 
 // PolicyConfig holds conflict resolution policy for a workspace or resource.

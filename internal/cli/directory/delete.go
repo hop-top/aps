@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/agntcy/discovery"
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 )
@@ -40,7 +41,8 @@ Example:
 			}
 			defer client.Close()
 
-			if err := client.Deregister(cmd.Context(), profileID); err != nil {
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			if err := client.Deregister(ctx, profileID); err != nil {
 				return fmt.Errorf("failed to delete record: %w", err)
 			}
 
@@ -52,6 +54,7 @@ Example:
 
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.MarkFlagRequired("profile")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

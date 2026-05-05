@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,6 +89,14 @@ func ExportProfileBundle(profileID, destPath string) (*ProfileBundle, error) {
 }
 
 func ImportProfileBundle(bundlePath, newID string, force bool) (*Profile, *ProfileBundle, error) {
+	return ImportProfileBundleWithContext(context.Background(), bundlePath, newID, force)
+}
+
+// ImportProfileBundleWithContext is the ctx-aware variant of
+// ImportProfileBundle. The note attached via policy.ContextAttrsKey
+// (T-1291) flows into the ProfileCreatedPayload emitted by the inner
+// CreateProfileWithContext call.
+func ImportProfileBundleWithContext(ctx context.Context, bundlePath, newID string, force bool) (*Profile, *ProfileBundle, error) {
 	if bundlePath == "" {
 		return nil, nil, fmt.Errorf("bundle path is required")
 	}
@@ -125,7 +134,7 @@ func ImportProfileBundle(bundlePath, newID string, force bool) (*Profile, *Profi
 
 	profile := bundle.Profile
 	profile.ID = targetID
-	if err := CreateProfile(targetID, profile); err != nil {
+	if err := CreateProfileWithContext(ctx, targetID, profile); err != nil {
 		return nil, nil, err
 	}
 

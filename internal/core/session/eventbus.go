@@ -1,6 +1,29 @@
 package session
 
-import "context"
+import (
+	"context"
+
+	"hop.top/kit/go/runtime/policy"
+)
+
+// noteFromContext returns the audit note attached to ctx via
+// policy.ContextAttrsKey by the CLI layer (T-1291). Empty when none is
+// set. Used by event publishers in this package to surface the note in
+// SessionStarted / SessionStopped payloads without changing every
+// registry method's signature.
+func noteFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	attrs, ok := ctx.Value(policy.ContextAttrsKey).(map[string]any)
+	if !ok {
+		return ""
+	}
+	if v, ok := attrs["note"].(string); ok {
+		return v
+	}
+	return ""
+}
 
 // EventPublisher is the seam used by session lifecycle methods to emit
 // events. The CLI layer wires a concrete bus-backed publisher via

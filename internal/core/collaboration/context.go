@@ -97,6 +97,13 @@ func NewWorkspaceContextFromState(variables []ContextVariable, acls map[string]A
 // pair is not part of the entity payload and a permission denial
 // must short-circuit before any publisher subscriber sees the event.
 func (wc *WorkspaceContext) Set(key, value, agentID string, role AgentRole) (*ContextVariable, error) {
+	return wc.SetWithContext(context.Background(), key, value, agentID, role)
+}
+
+// SetWithContext is the ctx-aware variant of Set; reads the audit note
+// from policy.ContextAttrsKey (T-1291) and stores it on the resulting
+// ContextMutation.
+func (wc *WorkspaceContext) SetWithContext(ctx context.Context, key, value, agentID string, role AgentRole) (*ContextVariable, error) {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
 
@@ -123,12 +130,12 @@ func (wc *WorkspaceContext) Set(key, value, agentID string, role AgentRole) (*Co
 	}
 
 	if exists {
-		if err := wc.service.Update(context.Background(), &v); err != nil {
+		if err := wc.service.Update(ctx, &v); err != nil {
 			return nil, fmt.Errorf("update context variable: %w", err)
 		}
 		wc.publishAlias(TopicContextVariableUpdated, v)
 	} else {
-		if err := wc.service.Create(context.Background(), &v); err != nil {
+		if err := wc.service.Create(ctx, &v); err != nil {
 			return nil, fmt.Errorf("create context variable: %w", err)
 		}
 		wc.publishAlias(TopicContextVariableCreated, v)
@@ -140,6 +147,7 @@ func (wc *WorkspaceContext) Set(key, value, agentID string, role AgentRole) (*Co
 		NewValue:  value,
 		Version:   version,
 		AgentID:   agentID,
+		Note:      noteFromContext(ctx),
 		Timestamp: now,
 	})
 
@@ -160,6 +168,13 @@ func (wc *WorkspaceContext) Get(key string) (*ContextVariable, bool) {
 
 // Delete removes a context variable, checking ACL permissions.
 func (wc *WorkspaceContext) Delete(key, agentID string, role AgentRole) error {
+	return wc.DeleteWithContext(context.Background(), key, agentID, role)
+}
+
+// DeleteWithContext is the ctx-aware variant of Delete; reads the audit
+// note from policy.ContextAttrsKey (T-1291) and stores it on the
+// resulting ContextMutation.
+func (wc *WorkspaceContext) DeleteWithContext(ctx context.Context, key, agentID string, role AgentRole) error {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
 
@@ -172,7 +187,7 @@ func (wc *WorkspaceContext) Delete(key, agentID string, role AgentRole) error {
 		return fmt.Errorf("context variable %q not found", key)
 	}
 
-	if err := wc.service.Delete(context.Background(), key); err != nil {
+	if err := wc.service.Delete(ctx, key); err != nil {
 		// Translate the kit ErrNotFound back to the legacy message
 		// so existing callers and tests don't see a surface change.
 		if errors.Is(err, domain.ErrNotFound) {
@@ -188,6 +203,7 @@ func (wc *WorkspaceContext) Delete(key, agentID string, role AgentRole) error {
 		NewValue:  "",
 		Version:   existing.Version + 1,
 		AgentID:   agentID,
+		Note:      noteFromContext(ctx),
 		Timestamp: time.Now(),
 	})
 

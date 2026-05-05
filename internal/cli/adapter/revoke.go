@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/adapter/mobile"
@@ -49,6 +50,7 @@ The device must re-pair via a new QR code to reconnect.`,
 	cmd.Flags().BoolVar(&revokeAll, "all", false, "Revoke all devices")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
+	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
 
 	return cmd
 }

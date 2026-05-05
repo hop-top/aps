@@ -249,10 +249,14 @@ var profileCreateCmd = &cobra.Command{
 			}
 		}
 
-		if err := core.CreateProfile(id, config); err != nil {
+		// T-1291 — attach --note to ctx via policy.ContextAttrsKey
+		// BEFORE the entity-mutating call so kit's policy engine and
+		// the bus event payload can both surface it.
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+		if err := core.CreateProfileWithContext(ctx, id, config); err != nil {
 			return fmt.Errorf("creating profile: %w", err)
 		}
-		// ProfileCreated event is emitted by core.CreateProfile.
+		// ProfileCreated event is emitted by core.CreateProfileWithContext.
 
 		fmt.Printf("Profile '%s' created successfully.\n", id)
 		return nil
@@ -326,10 +330,13 @@ from the profile id and overwrite the existing value when set.`,
 			return fmt.Errorf("no fields specified; pass at least one of --display-name, --email, --avatar, --color, --auto-avatar, --auto-color")
 		}
 
+		// T-1291 — attach --note to ctx BEFORE the save so the
+		// ProfileUpdated event payload carries the audit note.
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
 		if err := core.SaveProfile(profile); err != nil {
 			return fmt.Errorf("saving profile: %w", err)
 		}
-		core.PublishProfileUpdated(id, dedupeStrings(fields))
+		core.PublishProfileUpdatedWithContext(ctx, id, dedupeStrings(fields))
 
 		fmt.Printf("Profile '%s' updated (%s).\n", id, strings.Join(dedupeStrings(fields), ", "))
 		return nil
@@ -418,7 +425,9 @@ var profileAddCapCmd = &cobra.Command{
 		if !capability.Exists(capName) {
 			return fmt.Errorf("capability '%s' does not exist", capName)
 		}
-		if err := core.AddCapabilityToProfile(profileID, capName); err != nil {
+		// T-1291 — attach --note before mutating profile capabilities.
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+		if err := core.AddCapabilityToProfileWithContext(ctx, profileID, capName); err != nil {
 			return err
 		}
 		// ProfileUpdated event is emitted by core.AddCapabilityToProfile.
@@ -435,7 +444,9 @@ var profileRemoveCapCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID, capName := args[0], args[1]
-		if err := core.RemoveCapabilityFromProfile(profileID, capName); err != nil {
+		// T-1291 — attach --note before mutating profile capabilities.
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+		if err := core.RemoveCapabilityFromProfileWithContext(ctx, profileID, capName); err != nil {
 			return err
 		}
 		// ProfileUpdated event is emitted by core.RemoveCapabilityFromProfile.
@@ -611,7 +622,9 @@ var profileImportCmd = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		force, _ := cmd.Flags().GetBool("force")
 
-		profile, bundle, err := core.ImportProfileBundle(bundlePath, id, force)
+		// T-1291 — attach --note before importing (which calls Create).
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+		profile, bundle, err := core.ImportProfileBundleWithContext(ctx, bundlePath, id, force)
 		if err != nil {
 			return fmt.Errorf("importing profile bundle: %w", err)
 		}
@@ -659,7 +672,9 @@ var profileDeleteCmd = &cobra.Command{
 			}
 		}
 
-		if err := core.DeleteProfile(id, force); err != nil {
+		// T-1291 — attach --note to ctx BEFORE the delete.
+		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+		if err := core.DeleteProfileWithContext(ctx, id, force); err != nil {
 			if errors.Is(err, core.ErrProfileHasActiveSessions) {
 				return fmt.Errorf(
 					"cannot delete profile '%s': %w\n\nHint: terminate the blocking sessions first, or pass --force to delete anyway",
@@ -728,4 +743,15 @@ func init() {
 	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
 	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
 	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
+
+	// T-1291 — --note|-n on every state-changing profile subcommand.
+	// The note is attached to ctx via policy.ContextAttrsKey before the
+	// core mutator runs (so policy.engine sees `context.note` from CEL)
+	// and surfaces in the bus event payload for audit downstream.
+	AddNoteFlag(profileCreateCmd)
+	AddNoteFlag(profileEditCmd)
+	AddNoteFlag(profileDeleteCmd)
+	AddNoteFlag(profileImportCmd)
+	AddNoteFlag(profileAddCapCmd)
+	AddNoteFlag(profileRemoveCapCmd)
 }

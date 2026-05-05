@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	coreadapter "hop.top/aps/internal/core/adapter"
 )
 
@@ -60,6 +61,7 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&strategy, "strategy", "", "Loading strategy (subprocess, script, builtin)")
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Create as profile-scoped device")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

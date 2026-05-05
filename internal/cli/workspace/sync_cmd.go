@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
 
@@ -38,6 +39,7 @@ Use this command when:
 	cmd.Flags().StringVar(&deviceID, "device", "",
 		"Device ID to sync (defaults to current device)")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

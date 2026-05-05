@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 )
 
@@ -40,7 +41,8 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 				return err
 			}
 
-			if err := mgr.Archive(cmd.Context(), wsID); err != nil {
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			if err := mgr.Archive(ctx, wsID); err != nil {
 				return err
 			}
 
@@ -60,6 +62,7 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 	addWorkspaceFlag(cmd)
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

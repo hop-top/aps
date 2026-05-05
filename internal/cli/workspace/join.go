@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"hop.top/aps/internal/cli/clinote"
 )
 
 // NewJoinCmd creates the "collab join" command.
@@ -28,7 +30,8 @@ You must specify your profile to identify which agent is joining.`,
 				return err
 			}
 
-			agent, err := mgr.Join(cmd.Context(), wsID, profile)
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			agent, err := mgr.Join(ctx, wsID, profile)
 			if err != nil {
 				return err
 			}
@@ -50,6 +53,7 @@ You must specify your profile to identify which agent is joining.`,
 	addProfileFlag(cmd)
 	_ = cmd.MarkFlagRequired("profile")
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

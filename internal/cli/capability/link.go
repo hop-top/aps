@@ -3,6 +3,7 @@ package capability
 import (
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
@@ -39,6 +40,7 @@ func newLinkCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&target, "target", "", "Target path for symlink")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

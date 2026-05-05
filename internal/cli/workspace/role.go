@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
 )
 
@@ -64,7 +65,8 @@ If role is not provided, an interactive selector is shown.`,
 				return err
 			}
 
-			if err := mgr.SetRole(cmd.Context(), wsID, agent, role); err != nil {
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			if err := mgr.SetRole(ctx, wsID, agent, role); err != nil {
 				return err
 			}
 
@@ -84,6 +86,7 @@ If role is not provided, an interactive selector is shown.`,
 
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

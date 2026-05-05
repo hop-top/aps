@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
@@ -87,15 +88,17 @@ func newCtxSetCmd() *cobra.Command {
 				variables = []collab.ContextVariable{}
 			}
 
-			ctx := collab.NewWorkspaceContextFromState(variables, nil)
+			wc := collab.NewWorkspaceContextFromState(variables, nil)
 
-			v, err := ctx.Set(key, value, profile, collab.RoleOwner)
+			// T-1291 — attach --note before mutating shared context.
+			policyCtx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			v, err := wc.SetWithContext(policyCtx, key, value, profile, collab.RoleOwner)
 			if err != nil {
 				return err
 			}
 
 			// Save back
-			snapshot, _ := ctx.Snapshot()
+			snapshot, _ := wc.Snapshot()
 			if err := store.SaveContext(wsID, snapshot); err != nil {
 				return fmt.Errorf("saving context: %w", err)
 			}
@@ -113,6 +116,7 @@ func newCtxSetCmd() *cobra.Command {
 	addWorkspaceFlag(cmd)
 	addProfileFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }
@@ -309,13 +313,15 @@ func newCtxDeleteCmd() *cobra.Command {
 				return fmt.Errorf("loading context: %w", err)
 			}
 
-			ctx := collab.NewWorkspaceContextFromState(variables, nil)
+			wc := collab.NewWorkspaceContextFromState(variables, nil)
 
-			if err := ctx.Delete(key, profile, collab.RoleOwner); err != nil {
+			// T-1291 — attach --note before mutating shared context.
+			policyCtx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			if err := wc.DeleteWithContext(policyCtx, key, profile, collab.RoleOwner); err != nil {
 				return err
 			}
 
-			snapshot, _ := ctx.Snapshot()
+			snapshot, _ := wc.Snapshot()
 			if err := store.SaveContext(wsID, snapshot); err != nil {
 				return fmt.Errorf("saving context: %w", err)
 			}
@@ -337,6 +343,7 @@ func newCtxDeleteCmd() *cobra.Command {
 	addProfileFlag(cmd)
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

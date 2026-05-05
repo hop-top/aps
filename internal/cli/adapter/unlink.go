@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/events"
 
@@ -25,7 +26,7 @@ func newLinkDeleteCmd() *cobra.Command {
 		Short:   "Unlink a device from a profile",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runUnlink(args[0], profileID, jsonOutput, dryRun)
+			return runUnlink(args[0], profileID, jsonOutput, dryRun, clinote.FromCmd(cmd))
 		},
 	}
 
@@ -33,11 +34,12 @@ func newLinkDeleteCmd() *cobra.Command {
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be unlinked without unlinking")
+	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
 
 	return cmd
 }
 
-func runUnlink(deviceName, profileID string, jsonOut, dryRun bool) error {
+func runUnlink(deviceName, profileID string, jsonOut, dryRun bool, note string) error {
 	dev, err := coreadapter.LoadAdapter(deviceName)
 	if err != nil {
 		return err
@@ -60,6 +62,7 @@ func runUnlink(deviceName, profileID string, jsonOut, dryRun bool) error {
 		ProfileID:   profileID,
 		AdapterType: string(dev.Type),
 		AdapterID:   deviceName,
+		Note:        note,
 	})
 
 	if jsonOut {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
@@ -73,6 +74,7 @@ Valid strategies:
 	cmd.Flags().String("set", "", "Set default resolution strategy")
 	cmd.Flags().String("key", "", "Resource key for override (use with --set)")
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

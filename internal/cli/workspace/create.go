@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
 )
 
@@ -69,7 +70,9 @@ exchange tasks, and resolve conflicts.`,
 				DefaultPolicy:  collab.ResolutionStrategy(policy),
 			}
 
-			ws, err := mgr.Create(cmd.Context(), config)
+			// T-1291 — attach --note to ctx BEFORE the manager call.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			ws, err := mgr.Create(ctx, config)
 			if err != nil {
 				return err
 			}
@@ -93,6 +96,7 @@ exchange tasks, and resolve conflicts.`,
 	cmd.Flags().String("description", "", "Workspace description")
 	cmd.Flags().String("policy", "priority", "Conflict resolution policy")
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/agntcy/discovery"
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 )
@@ -46,7 +47,8 @@ Example:
 			}
 			defer client.Close()
 
-			record, err := client.Register(cmd.Context(), profile)
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			record, err := client.Register(ctx, profile)
 			if err != nil {
 				return fmt.Errorf("failed to register: %w", err)
 			}
@@ -65,6 +67,7 @@ Example:
 
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.MarkFlagRequired("profile")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }
