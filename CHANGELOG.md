@@ -4,6 +4,83 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
+### Added — kit/runtime/policy adoption (track: `aps-policy-adoption`, T-1290..T-1293)
+
+`aps` now adopts kit's runtime policy engine
+(`hop.top/kit/go/runtime/policy`) to gate destructive state changes.
+
+**Added**
+
+- `--note|-n` flag on every state-changing subcommand (52 entries
+  spanning profile, identity, session, workspace, capability,
+  bundle, squad, adapter, and directory groups). Inventory in
+  [docs/cli/reference.md](docs/cli/reference.md); CI verification
+  via `scripts/verify_note_flag.sh`.
+- Policy adoption from `kit/runtime/policy`: bundled defaults at
+  `internal/config/policies_default.yaml`, seeded into
+  `$XDG_CONFIG_HOME/aps/policies.yaml` on first boot. Override
+  path via `$APS_POLICY_FILE`.
+- Bus event payloads carry the `--note` value (e.g.
+  `SessionStoppedPayload.Note`, `ProfileDeletedPayload.Note`,
+  `AdapterUnlinkedPayload.Note` — see `internal/events/events.go`).
+- Documentation: [docs/policies.md](docs/policies.md) (policy
+  engine, default rules, anatomy, troubleshooting) and
+  [docs/cli/reference.md](docs/cli/reference.md) (global flags,
+  exit codes, full `--note` inventory).
+
+**Changed**
+
+- `SessionManager` and `WorkspaceContext` are now backed by
+  `hop.top/kit/go/runtime/domain.Service` (T-1290 refactor).
+  Operator-visible behavior is the same except that mutations now
+  publish `kit.runtime.entity.pre_validated` and
+  `kit.runtime.entity.pre_persisted` events on the bus before any
+  state change. Successful mutations still fan out the existing
+  `aps.session.*` and `aps.profile.*` notification topics.
+
+**Operator note (transition)**
+
+Existing scripts that called the destructive subcommands without
+`--note` exit 4 after upgrade. The default policy file ships two
+rules:
+
+- `session-delete-requires-note` — blocks `aps session delete`
+- `workspace-ctx-delete-requires-note` — blocks `aps workspace ctx delete`
+
+Upgrade path:
+
+1. **Recommended** — pass `--note "<reason>"` on every state
+   change. The note flows into bus event payloads for audit and is
+   exposed to policy CEL as `context.note`.
+
+   ```bash
+   aps session delete sess-7c41 --note "stale; profile retired"
+   aps workspace ctx delete CHANNEL_ID -n "redacted PII"
+   ```
+
+2. **Per-shell bypass for CI / tests** — point `$APS_POLICY_FILE`
+   at an empty policies file:
+
+   ```bash
+   echo "policies: []" > /tmp/aps-policies-empty.yaml
+   export APS_POLICY_FILE=/tmp/aps-policies-empty.yaml
+   ```
+
+   There is **no environment variable that disables the policy
+   engine globally** in this version — kit ships no
+   `KIT_POLICY_DISABLE` (or equivalent). Once a policy file
+   loads, enforcement is always-on. The empty-file approach above
+   is the closest available knob.
+
+3. **Permanent loosening** — edit
+   `$XDG_CONFIG_HOME/aps/policies.yaml` and remove or adjust the
+   default rules. Aps does not re-seed once a user file exists, so
+   the change persists across upgrades.
+
+A future rule, `cross-agent-context-access-requires-role` (T-1302),
+will further gate cross-profile context reads/writes by
+`principal.role`. Not enforced yet.
+
 ### Improvements — aps-tabwriter-sweep (track: `aps-tabwriter-sweep`)
 
 Five additional `tabwriter.NewWriter` callsites — surfaced as scope
