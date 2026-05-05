@@ -99,10 +99,33 @@ func asCLIError(err error) error {
 	return err
 }
 
+// WithContextVariableAttrs (T-1309) merges the visibility attribute
+// into ctx's request_attrs map so CEL rules can read
+// context.request_attrs.visibility. The kind discriminator
+// ("workspace_context") is set in lockstep so a single rule can
+// gate on the (kind, visibility) tuple — e.g.
+//
+//	when: 'context.request_attrs.kind == "workspace_context"
+//	       && context.request_attrs.visibility == "private"'
+//
+// Other request_attrs already on ctx (e.g. note from
+// clinote.WithContext) are preserved.
+func WithContextVariableAttrs(ctx context.Context, visibility string) context.Context {
+	ctx = withKind(ctx, "workspace_context")
+	return withRequestAttr(ctx, "visibility", visibility)
+}
+
 // withKind merges {kind: <kind>} into ctx's request_attrs map so CEL
 // rules can read context.request_attrs.kind. Preserves any pre-existing
 // note (set by clinote.WithContext) and other attrs.
 func withKind(ctx context.Context, kind string) context.Context {
+	return withRequestAttr(ctx, "kind", kind)
+}
+
+// withRequestAttr merges {<key>: <value>} into ctx's
+// request_attrs map under policy.ContextAttrsKey. Preserves all
+// pre-existing keys (note, kind, visibility, …).
+func withRequestAttr(ctx context.Context, key string, value any) context.Context {
 	existing, _ := ctx.Value(policy.ContextAttrsKey).(map[string]any)
 	merged := make(map[string]any, len(existing)+1)
 	var existingAttrs map[string]any
@@ -119,7 +142,7 @@ func withKind(ctx context.Context, kind string) context.Context {
 	for k, v := range existingAttrs {
 		attrs[k] = v
 	}
-	attrs["kind"] = kind
+	attrs[key] = value
 	merged["request_attrs"] = attrs
 	return context.WithValue(ctx, policy.ContextAttrsKey, merged)
 }
