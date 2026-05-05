@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
+	"hop.top/aps/internal/cli/policygate"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/styles"
 	"hop.top/kit/go/console/output"
@@ -317,6 +318,17 @@ func newCtxDeleteCmd() *cobra.Command {
 
 			// T-1291 — attach --note before mutating shared context.
 			policyCtx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+
+			// T-1292 — synchronous policy gate. Publishes the kit
+			// pre_persisted topic with Op=delete and kind=workspace_context
+			// before the in-memory delete + persist fans out. Vetoes
+			// surface as *policy.PolicyDeniedError, mapped to exit 4
+			// via the domain.ErrConflict unwrap in internal/cli/exit.
+			policyCtx, err = policygate.PublishDeletePrePersisted(policyCtx, "workspace_context", key)
+			if err != nil {
+				return err
+			}
+
 			if err := wc.DeleteWithContext(policyCtx, key, profile, collab.RoleOwner); err != nil {
 				return err
 			}

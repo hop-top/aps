@@ -1,0 +1,29 @@
+# aps default policy bundle.  Loaded by internal/cli/policy_engine.go
+# when no user policies file is present at $XDG_CONFIG_HOME/aps/policies.yaml,
+# and seeded into that path on first boot for adopters to extend.
+#
+# Trivial defaults (T-1292): destructive deletes targeting session and
+# workspace context entries must carry a non-empty `--note` so the audit
+# trail records why state went away. Non-destructive transitions stay
+# open by default — additional rules belong in the user file.
+#
+# The cross-agent-context-access rule is intentionally NOT bundled here
+# (T-1302 owns that decision; needs role taxonomy + sharing semantics).
+#
+# The CLI delete handlers stuff `request_attrs.kind` into the policy
+# context (via clinote.WithContextAttrs) so a single pre_persisted topic
+# can host kind-specific rules with kind-specific messages.
+policies:
+  - name: delete-session-requires-note
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "session" || context.note != ""'
+    effect: allow
+    otherwise: deny
+    message: "deleting a session requires --note explaining why"
+
+  - name: delete-workspace-context-requires-note
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || context.note != ""'
+    effect: allow
+    otherwise: deny
+    message: "deleting a workspace context variable requires --note explaining why"

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"hop.top/aps/internal/cli/adapter"
+	"hop.top/aps/internal/cli/policygate"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/core/session"
@@ -74,6 +75,13 @@ func init() {
 	adapter.SetPublisher(publisher)
 	core.SetEventPublisher(publisher)
 	session.SetEventPublisher(publisher)
+
+	// Expose the bus to the policy gate so CLI delete handlers in the
+	// session/ + workspace/ subpackages can fire pre_persisted vetoes
+	// synchronously (T-1292). Subpackages can't import internal/cli
+	// (parent-imports-child cycle), so the bus is published through
+	// internal/cli/policygate as a side-channel seam.
+	policygate.SetBus(eventBus)
 
 	// Wire the workspace audit log as a bus subscriber. Storage init is
 	// best-effort: if it fails (no data dir yet, etc.) we skip silently
