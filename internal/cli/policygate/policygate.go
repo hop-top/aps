@@ -118,7 +118,58 @@ func asCLIError(err error) error {
 // request_attrs entries with the same key, and kind always wins over an
 // explicit "kind" in extra so callers can't accidentally shadow the
 // discriminator.
+//
+// Used by PublishDeletePrePersistedWithAttrs (T-1308) for bulk merges
+// like (kind=session, workspace_id=...). Single-attr callers use
+// withRequestAttr / withKind / WithContextVariableAttrs (T-1309).
 func withRequestAttrs(ctx context.Context, kind string, extra map[string]any) context.Context {
+	merged := copyMergedAttrs(ctx, len(extra)+1)
+	attrs := merged["request_attrs"].(map[string]any)
+	for k, v := range extra {
+		attrs[k] = v
+	}
+	attrs["kind"] = kind
+	return context.WithValue(ctx, policy.ContextAttrsKey, merged)
+}
+
+// WithContextVariableAttrs (T-1309) merges the visibility attribute
+// into ctx's request_attrs map so CEL rules can read
+// context.request_attrs.visibility. The kind discriminator
+// ("workspace_context") is set in lockstep so a single rule can
+// gate on the (kind, visibility) tuple — e.g.
+//
+//	when: 'context.request_attrs.kind == "workspace_context"
+//	       && context.request_attrs.visibility == "private"'
+//
+// Other request_attrs already on ctx (e.g. note from
+// clinote.WithContext) are preserved.
+func WithContextVariableAttrs(ctx context.Context, visibility string) context.Context {
+	ctx = withKind(ctx, "workspace_context")
+	return withRequestAttr(ctx, "visibility", visibility)
+}
+
+// withKind merges {kind: <kind>} into ctx's request_attrs map so CEL
+// rules can read context.request_attrs.kind. Preserves any pre-existing
+// note (set by clinote.WithContext) and other attrs.
+func withKind(ctx context.Context, kind string) context.Context {
+	return withRequestAttr(ctx, "kind", kind)
+}
+
+// withRequestAttr merges {<key>: <value>} into ctx's
+// request_attrs map under policy.ContextAttrsKey. Preserves all
+// pre-existing keys (note, kind, visibility, …).
+func withRequestAttr(ctx context.Context, key string, value any) context.Context {
+	merged := copyMergedAttrs(ctx, 1)
+	merged["request_attrs"].(map[string]any)[key] = value
+	return context.WithValue(ctx, policy.ContextAttrsKey, merged)
+}
+
+// copyMergedAttrs returns a fresh policy.ContextAttrsKey map with
+// existing top-level keys (note, …) preserved and request_attrs
+// initialized as a fresh map containing the previously-set attrs.
+// hint sizes the inner request_attrs map for the caller's expected
+// additions; callers mutate the returned map's "request_attrs" entry.
+func copyMergedAttrs(ctx context.Context, hint int) map[string]any {
 	existing, _ := ctx.Value(policy.ContextAttrsKey).(map[string]any)
 	merged := make(map[string]any, len(existing)+1)
 	var existingAttrs map[string]any
@@ -131,14 +182,10 @@ func withRequestAttrs(ctx context.Context, kind string, extra map[string]any) co
 		}
 		merged[k] = v
 	}
-	attrs := make(map[string]any, len(existingAttrs)+len(extra)+1)
+	attrs := make(map[string]any, len(existingAttrs)+hint)
 	for k, v := range existingAttrs {
 		attrs[k] = v
 	}
-	for k, v := range extra {
-		attrs[k] = v
-	}
-	attrs["kind"] = kind
 	merged["request_attrs"] = attrs
-	return context.WithValue(ctx, policy.ContextAttrsKey, merged)
+	return merged
 }

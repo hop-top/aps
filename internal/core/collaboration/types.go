@@ -245,6 +245,35 @@ type TaskDependency struct {
 	DependsOnID  string `json:"depends_on_id" yaml:"depends_on_id"`
 }
 
+// ContextVisibility names the per-variable visibility scope.
+//
+// Default zero-value reads as VisibilityShared so every variable
+// stored before T-1309 (which had no visibility field) round-trips
+// as a workspace-wide variable — see NormalizeVisibility.
+type ContextVisibility string
+
+const (
+	// VisibilityShared variables are visible to every member of the
+	// workspace, gated only by the per-key ACL (T-1306). This is the
+	// default and matches the pre-T-1309 behaviour.
+	VisibilityShared ContextVisibility = "shared"
+	// VisibilityPrivate variables are visible only to the writer
+	// (the profile recorded in UpdatedBy at the time of the last
+	// successful Set). Reads by other profiles behave as
+	// "not found" so existence does not leak.
+	VisibilityPrivate ContextVisibility = "private"
+)
+
+// NormalizeVisibility maps the zero-value to VisibilityShared. Used
+// at every read seam so existing yaml/json without a visibility field
+// reads as shared without a migration step.
+func NormalizeVisibility(v ContextVisibility) ContextVisibility {
+	if v == "" {
+		return VisibilityShared
+	}
+	return v
+}
+
 // ContextVariable represents a key-value variable in workspace shared context.
 type ContextVariable struct {
 	Key       string    `json:"key" yaml:"key"`
@@ -252,6 +281,29 @@ type ContextVariable struct {
 	Version   int       `json:"version" yaml:"version"`
 	UpdatedBy string    `json:"updated_by" yaml:"updated_by"`
 	UpdatedAt time.Time `json:"updated_at" yaml:"updated_at"`
+	// Visibility scopes the variable to the workspace ("shared",
+	// default) or to the writer profile only ("private"). The zero
+	// value reads as VisibilityShared via NormalizeVisibility, so
+	// existing on-disk state without the field continues to work
+	// unchanged. Set explicitly via WithVisibility on Set/SetWithContext.
+	Visibility ContextVisibility `json:"visibility,omitempty" yaml:"visibility,omitempty"`
+}
+
+// EffectiveVisibility returns Visibility normalized to VisibilityShared
+// when zero-valued. Use this at every read site that branches on
+// visibility — never compare ContextVariable.Visibility directly.
+func (v ContextVariable) EffectiveVisibility() ContextVisibility {
+	return NormalizeVisibility(v.Visibility)
+}
+
+// IsVisibleTo returns true when profileID may observe v under T-1309
+// visibility rules: shared variables are visible to every profile;
+// private variables are visible only to UpdatedBy.
+func (v ContextVariable) IsVisibleTo(profileID string) bool {
+	if v.EffectiveVisibility() == VisibilityShared {
+		return true
+	}
+	return v.UpdatedBy == profileID
 }
 
 // ContextMutation records a change to a context variable.

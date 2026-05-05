@@ -31,13 +31,18 @@ type ctxHistoryRow struct {
 // `aps workspace ctx list`. Type is inferred from Value (string,
 // number, bool, json) since the underlying ContextVariable stores
 // values as strings without an explicit type tag.
+//
+// T-1309: Visibility is rendered with priority=2 so it drops first
+// on narrow terminals — operators normally only care when a private
+// variable is in play, and the writer can always tell from --json.
 type ctxSummaryRow struct {
-	Key       string `table:"KEY,priority=10" json:"key" yaml:"key"`
-	Type      string `table:"TYPE,priority=6" json:"type" yaml:"type"`
-	Size      int    `table:"SIZE,priority=5" json:"size" yaml:"size"`
-	Version   int    `table:"VERSION,priority=7" json:"version" yaml:"version"`
-	UpdatedBy string `table:"UPDATED BY,priority=4" json:"updated_by" yaml:"updated_by"`
-	UpdatedAt string `table:"UPDATED,priority=3" json:"updated_at" yaml:"updated_at"`
+	Key        string `table:"KEY,priority=10" json:"key" yaml:"key"`
+	Type       string `table:"TYPE,priority=6" json:"type" yaml:"type"`
+	Size       int    `table:"SIZE,priority=5" json:"size" yaml:"size"`
+	Version    int    `table:"VERSION,priority=7" json:"version" yaml:"version"`
+	UpdatedBy  string `table:"UPDATED BY,priority=4" json:"updated_by" yaml:"updated_by"`
+	UpdatedAt  string `table:"UPDATED,priority=3" json:"updated_at" yaml:"updated_at"`
+	Visibility string `table:"VISIBILITY,priority=2" json:"visibility" yaml:"visibility"`
 }
 
 // NewCtxCmd creates the "collab ctx" command group.
@@ -65,7 +70,13 @@ func newCtxSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <key> <value>",
 		Short: "Set a context variable",
-		Args:  cobra.ExactArgs(2),
+		Long: `Set a context variable in the workspace.
+
+By default variables are workspace-wide ("shared"): visible to every
+member, gated by the per-key ACL. Pass --private to scope the
+variable to the current profile only — private variables are
+invisible to other profiles' workspace ctx get/list (T-1309).`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key, value := args[0], args[1]
 
@@ -91,9 +102,25 @@ func newCtxSetCmd() *cobra.Command {
 
 			wc := collab.NewWorkspaceContextFromState(variables, nil)
 
-			// T-1291 — attach --note before mutating shared context.
+			// T-1309 — surface Visibility on the policygate request_attrs
+			// vocabulary so CEL rules can read context.request_attrs.visibility.
+			private, _ := cmd.Flags().GetBool("private")
+			visibility := collab.VisibilityShared
+			if private {
+				visibility = collab.VisibilityPrivate
+			}
+
+			// T-1291 — attach --note; T-1292 — kind discriminator;
+			// T-1309 — visibility for context_variable rules.
 			policyCtx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
-			v, err := wc.SetWithContext(policyCtx, key, value, profile, collab.RoleOwner)
+			policyCtx = policygate.WithContextVariableAttrs(policyCtx, string(visibility))
+
+			var setOpts []collab.SetOption
+			if private {
+				setOpts = append(setOpts, collab.WithVisibility(collab.VisibilityPrivate))
+			}
+
+			v, err := wc.SetWithContext(policyCtx, key, value, profile, collab.RoleOwner, setOpts...)
 			if err != nil {
 				return err
 			}
@@ -118,6 +145,8 @@ func newCtxSetCmd() *cobra.Command {
 	addProfileFlag(cmd)
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+	cmd.Flags().Bool("private", false,
+		"Scope variable to the current profile (default: shared workspace-wide)")
 
 	return cmd
 }
@@ -135,6 +164,11 @@ func newCtxGetCmd() *cobra.Command {
 				return err
 			}
 
+			// T-1309 — visibility filter. When --profile is unset we
+			// fall through to the raw view (compat with shell scripts
+			// that don't pass a profile).
+			profile, _ := resolveProfile(cmd)
+
 			store, err := getStorage()
 			if err != nil {
 				return err
@@ -147,7 +181,7 @@ func newCtxGetCmd() *cobra.Command {
 
 			ctx := collab.NewWorkspaceContextFromState(variables, nil)
 
-			v, ok := ctx.Get(key)
+			v, ok := ctx.GetForProfile(key, profile)
 			if !ok {
 				return fmt.Errorf("context variable %q not found", key)
 			}
@@ -163,6 +197,7 @@ func newCtxGetCmd() *cobra.Command {
 	}
 
 	addWorkspaceFlag(cmd)
+	addProfileFlag(cmd)
 	addJSONFlag(cmd)
 
 	return cmd
@@ -192,6 +227,12 @@ func runCtxList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	// T-1309 — apply the visibility filter when a profile is in
+	// scope. resolveProfile returns an error when --profile and
+	// APS_PROFILE are both empty; a profile-less list is the legacy
+	// raw view (used by tooling and tests), so we tolerate that.
+	profile, _ := resolveProfile(cmd)
+
 	store, err := getStorage()
 	if err != nil {
 		return err
@@ -202,7 +243,10 @@ func runCtxList(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("loading context: %w", err)
 	}
 
-	rows := buildCtxRows(variables)
+	wc := collab.NewWorkspaceContextFromState(variables, nil)
+	visible := wc.ListForProfile(profile)
+
+	rows := buildCtxRows(visible)
 
 	prefix, _ := cmd.Flags().GetString("key-prefix")
 
@@ -218,12 +262,13 @@ func buildCtxRows(vars []collab.ContextVariable) []ctxSummaryRow {
 	rows := make([]ctxSummaryRow, len(vars))
 	for i, v := range vars {
 		rows[i] = ctxSummaryRow{
-			Key:       v.Key,
-			Type:      inferCtxType(v.Value),
-			Size:      len(v.Value),
-			Version:   v.Version,
-			UpdatedBy: v.UpdatedBy,
-			UpdatedAt: v.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Key:        v.Key,
+			Type:       inferCtxType(v.Value),
+			Size:       len(v.Value),
+			Version:    v.Version,
+			UpdatedBy:  v.UpdatedBy,
+			UpdatedAt:  v.UpdatedAt.Format("2006-01-02 15:04:05"),
+			Visibility: string(v.EffectiveVisibility()),
 		}
 	}
 	return rows
@@ -318,6 +363,17 @@ func newCtxDeleteCmd() *cobra.Command {
 
 			// T-1291 — attach --note before mutating shared context.
 			policyCtx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+
+			// T-1309 — surface the variable's visibility on the
+			// request_attrs vocabulary so CEL rules keying on
+			// context.request_attrs.visibility see the correct value.
+			// Falls back to "shared" when the variable is missing
+			// (the subsequent delete will fail with not-found anyway).
+			vizForGate := string(collab.VisibilityShared)
+			if existing, ok := wc.GetForProfile(key, profile); ok {
+				vizForGate = string(existing.EffectiveVisibility())
+			}
+			policyCtx = policygate.WithContextVariableAttrs(policyCtx, vizForGate)
 
 			// T-1292 — synchronous policy gate. Publishes the kit
 			// pre_persisted topic with Op=delete and kind=workspace_context

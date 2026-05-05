@@ -88,6 +88,29 @@ func NewWorkspaceContextFromState(variables []ContextVariable, acls map[string]A
 	return wc
 }
 
+// SetOption configures an individual Set/SetWithContext call. Used
+// instead of a positional parameter so the public Set signature stays
+// stable as new per-write attributes are introduced (T-1309).
+type SetOption func(*setOptions)
+
+// setOptions is the resolved bag for a single Set call.
+type setOptions struct {
+	visibility    ContextVisibility
+	visibilitySet bool
+}
+
+// WithVisibility opts the resulting ContextVariable into a specific
+// visibility scope. When unset the existing variable's visibility is
+// preserved (or VisibilityShared on first write); explicitly passing
+// VisibilityShared on a previously private variable promotes it back
+// to shared.
+func WithVisibility(v ContextVisibility) SetOption {
+	return func(o *setOptions) {
+		o.visibility = v
+		o.visibilitySet = true
+	}
+}
+
 // Set sets a context variable, checking ACL permissions.
 //
 // Routing: a first write for a key is dispatched to service.Create
@@ -96,23 +119,40 @@ func NewWorkspaceContextFromState(variables []ContextVariable, acls map[string]A
 // validate. ACL is checked on this side because the (agentID, role)
 // pair is not part of the entity payload and a permission denial
 // must short-circuit before any publisher subscriber sees the event.
-func (wc *WorkspaceContext) Set(key, value, agentID string, role AgentRole) (*ContextVariable, error) {
-	return wc.SetWithContext(context.Background(), key, value, agentID, role)
+func (wc *WorkspaceContext) Set(key, value, agentID string, role AgentRole, opts ...SetOption) (*ContextVariable, error) {
+	return wc.SetWithContext(context.Background(), key, value, agentID, role, opts...)
 }
 
 // SetWithContext is the ctx-aware variant of Set; reads the audit note
 // from policy.ContextAttrsKey (T-1291) and stores it on the resulting
 // ContextMutation.
-func (wc *WorkspaceContext) SetWithContext(ctx context.Context, key, value, agentID string, role AgentRole) (*ContextVariable, error) {
+//
+// T-1309: accepts SetOption values (e.g. WithVisibility) without
+// breaking existing positional-only callers.
+func (wc *WorkspaceContext) SetWithContext(ctx context.Context, key, value, agentID string, role AgentRole, opts ...SetOption) (*ContextVariable, error) {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
+
+	now := time.Now()
+	existing, exists := wc.repo.variables[key]
+
+	// T-1309: writes to a private variable owned by another profile
+	// behave as "not found" so the caller cannot probe for the
+	// variable's existence (and cannot clobber it). The check sits
+	// before the ACL gate intentionally — a permission-denied error
+	// would itself leak existence.
+	if exists && !existing.IsVisibleTo(agentID) {
+		return nil, fmt.Errorf("context variable %q not found", key)
+	}
 
 	if err := wc.checkPermission(key, role, PermWrite); err != nil {
 		return nil, err
 	}
 
-	now := time.Now()
-	existing, exists := wc.repo.variables[key]
+	var sopts setOptions
+	for _, o := range opts {
+		o(&sopts)
+	}
 
 	version := 1
 	var oldValue string
@@ -121,12 +161,28 @@ func (wc *WorkspaceContext) SetWithContext(ctx context.Context, key, value, agen
 		oldValue = existing.Value
 	}
 
+	// Visibility resolution rule (T-1309):
+	//   1. If the caller passed WithVisibility, honour it verbatim.
+	//   2. Otherwise on update preserve the existing variable's
+	//      Visibility (no implicit demotion / promotion).
+	//   3. On first write fall through to the zero value, which reads
+	//      as VisibilityShared via NormalizeVisibility — and we do NOT
+	//      set the field on the entity so existing yaml without
+	//      visibility round-trips byte-stable until an operator opts in.
+	visibility := ContextVisibility("")
+	if sopts.visibilitySet {
+		visibility = sopts.visibility
+	} else if exists {
+		visibility = existing.Visibility
+	}
+
 	v := ContextVariable{
-		Key:       key,
-		Value:     value,
-		Version:   version,
-		UpdatedBy: agentID,
-		UpdatedAt: now,
+		Key:        key,
+		Value:      value,
+		Version:    version,
+		UpdatedBy:  agentID,
+		UpdatedAt:  now,
+		Visibility: visibility,
 	}
 
 	if exists {
@@ -154,13 +210,37 @@ func (wc *WorkspaceContext) SetWithContext(ctx context.Context, key, value, agen
 	return &v, nil
 }
 
-// Get returns a context variable by key.
+// Get returns a context variable by key WITHOUT a visibility filter.
+//
+// This is the raw access path used by storage round-trips, metrics,
+// and tests. CLI handlers that act on behalf of a specific profile
+// MUST use GetForProfile so private variables don't leak across
+// profiles (T-1309).
 func (wc *WorkspaceContext) Get(key string) (*ContextVariable, bool) {
 	wc.mu.RLock()
 	defer wc.mu.RUnlock()
 
 	v, ok := wc.repo.variables[key]
 	if !ok {
+		return nil, false
+	}
+	return &v, true
+}
+
+// GetForProfile returns a context variable visible to profileID
+// (T-1309). Private variables written by another profile behave as
+// "not found" so existence does not leak across profiles. Pass an
+// empty profileID to opt out of the visibility filter (equivalent to
+// Get).
+func (wc *WorkspaceContext) GetForProfile(key, profileID string) (*ContextVariable, bool) {
+	wc.mu.RLock()
+	defer wc.mu.RUnlock()
+
+	v, ok := wc.repo.variables[key]
+	if !ok {
+		return nil, false
+	}
+	if profileID != "" && !v.IsVisibleTo(profileID) {
 		return nil, false
 	}
 	return &v, true
@@ -174,15 +254,25 @@ func (wc *WorkspaceContext) Delete(key, agentID string, role AgentRole) error {
 // DeleteWithContext is the ctx-aware variant of Delete; reads the audit
 // note from policy.ContextAttrsKey (T-1291) and stores it on the
 // resulting ContextMutation.
+//
+// T-1309: when the variable is private and the caller is not the
+// writer, the call surfaces "not found" rather than "permission
+// denied" so existence does not leak across profiles.
 func (wc *WorkspaceContext) DeleteWithContext(ctx context.Context, key, agentID string, role AgentRole) error {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
+
+	existing, exists := wc.repo.variables[key]
+	if exists && !existing.IsVisibleTo(agentID) {
+		// Private var owned by another profile: behave as
+		// "not found" so the caller cannot probe for existence.
+		return fmt.Errorf("context variable %q not found", key)
+	}
 
 	if err := wc.checkPermission(key, role, PermDelete); err != nil {
 		return err
 	}
 
-	existing, exists := wc.repo.variables[key]
 	if !exists {
 		return fmt.Errorf("context variable %q not found", key)
 	}
@@ -210,11 +300,35 @@ func (wc *WorkspaceContext) DeleteWithContext(ctx context.Context, key, agentID 
 	return nil
 }
 
-// List returns all context variables.
+// List returns all context variables WITHOUT a visibility filter.
+//
+// Like Get, this is the raw access path used by storage round-trips,
+// metrics, and tests. CLI handlers acting on behalf of a profile MUST
+// use ListForProfile so private variables stay scoped to their
+// writer (T-1309).
 func (wc *WorkspaceContext) List() []ContextVariable {
 	wc.mu.RLock()
 	defer wc.mu.RUnlock()
 	return wc.repo.snapshot()
+}
+
+// ListForProfile returns context variables visible to profileID
+// (T-1309). Private variables written by other profiles are omitted.
+// Pass an empty profileID to disable the filter (equivalent to List).
+func (wc *WorkspaceContext) ListForProfile(profileID string) []ContextVariable {
+	wc.mu.RLock()
+	defer wc.mu.RUnlock()
+	all := wc.repo.snapshot()
+	if profileID == "" {
+		return all
+	}
+	out := make([]ContextVariable, 0, len(all))
+	for _, v := range all {
+		if v.IsVisibleTo(profileID) {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // Mutations returns the full mutation history.
