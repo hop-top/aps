@@ -9,6 +9,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/cli/globals"
+	"hop.top/kit/go/console/progress"
 )
 
 func NewCancelTaskCmd() *cobra.Command {
@@ -25,8 +26,15 @@ func NewCancelTaskCmd() *cobra.Command {
 				return fmt.Errorf("a2a tasks cancel: %w", globals.ErrOffline)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
 			taskID := a2a.TaskID(args[0])
+
+			// T-0463 — structured progress per §6.5.
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: "connect", Item: targetProfile})
 
 			targetProf, err := loadProfile(targetProfile)
 			if err != nil {
@@ -38,9 +46,14 @@ func NewCancelTaskCmd() *cobra.Command {
 				return fmt.Errorf("failed to create A2A client: %w", err)
 			}
 
+			r.Emit(ctx, progress.Event{Phase: "cancel", Item: string(taskID)})
 			if err := client.CancelTask(ctx, taskID); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "cancel", Item: string(taskID), OK: &okFalse})
 				return fmt.Errorf("failed to cancel task: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: "cancel", Item: string(taskID), OK: &okTrue})
 
 			fmt.Printf("Task %s cancelled successfully\n", taskID)
 			return nil

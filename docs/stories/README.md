@@ -51,11 +51,12 @@ Authoring convention: see [Story → e2e test linkage](../conventions/stories.md
 | [041](041-voice-backend-service.md) | Voice Backend Service | Voice | User | P2 |
 | [042](042-voice-sessions.md) | Voice Sessions | Voice | User | P2 |
 | [050](050-multi-device-workspace-access.md) | Multi-Device Workspace Access | Multi-Device Workspace | User | P2 |
+| [056](056-progress-on-long-running-ops.md) | Structured Progress on Long-Running Ops | CLI Core | User | P2 |
 
 ## By Feature
 
 ### CLI Core
-[001](001-profile-management.md), [002](002-command-execution.md), [003](003-action-execution.md), [004](004-webhook-server.md), [005](005-documentation-generation.md), [034](034-custom-profile-tools.md), [039](039-webhook-protocol-toggle.md)
+[001](001-profile-management.md), [002](002-command-execution.md), [003](003-action-execution.md), [004](004-webhook-server.md), [005](005-documentation-generation.md), [034](034-custom-profile-tools.md), [039](039-webhook-protocol-toggle.md), [056](056-progress-on-long-running-ops.md)
 
 ### E2E Tests
 [006](006-profile-lifecycle-tests.md), [007](007-execution-environment-tests.md), [008](008-action-discovery-tests.md), [009](009-webhook-integration-tests.md)

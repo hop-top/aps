@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/globals"
+	"hop.top/kit/go/console/progress"
 )
 
 func NewFetchCardCmd() *cobra.Command {
@@ -33,7 +34,14 @@ Example:
 				return fmt.Errorf("a2a card fetch: %w", globals.ErrOffline)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+
+			// T-0463 — structured progress per §6.5.
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: "fetch", Item: url})
 
 			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 			if err != nil {
@@ -42,11 +50,15 @@ Example:
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "fetch", Item: url, OK: &okFalse})
 				return fmt.Errorf("failed to fetch agent card: %w", err)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "fetch", Item: url, OK: &okFalse})
 				return fmt.Errorf("failed to fetch agent card: status %d", resp.StatusCode)
 			}
 
@@ -55,10 +67,14 @@ Example:
 				return fmt.Errorf("failed to read response: %w", err)
 			}
 
+			r.Emit(ctx, progress.Event{Phase: "parse", Item: url, Bytes: int64(len(body))})
+
 			var card a2a.AgentCard
 			if err := json.Unmarshal(body, &card); err != nil {
 				return fmt.Errorf("failed to parse agent card: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: "parse", Item: url, OK: &okTrue})
 
 			switch format {
 			case "json":
