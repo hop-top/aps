@@ -2,11 +2,25 @@ package workspace
 
 import (
 	"fmt"
+	"os"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
 )
+
+// memberRow is the table/json/yaml row shape for `aps workspace members`.
+// T-0456 — moved off hand-rolled tabwriter so the kit-themed styled
+// renderer activates on a TTY. Higher-priority columns survive narrow
+// terminals.
+type memberRow struct {
+	Agent    string `table:"AGENT,priority=10"     json:"agent"      yaml:"agent"`
+	Role     string `table:"ROLE,priority=9"       json:"role"       yaml:"role"`
+	Status   string `table:"STATUS,priority=8"     json:"status"     yaml:"status"`
+	LastSeen string `table:"LAST SEEN,priority=7"  json:"last_seen"  yaml:"last_seen"`
+}
 
 // NewMembersCmd creates the "collab members" command.
 func NewMembersCmd() *cobra.Command {
@@ -42,20 +56,18 @@ func NewMembersCmd() *cobra.Command {
 			fmt.Printf("%s\n\n", styles.Title.Render(
 				fmt.Sprintf("Members (%s)", wsID)))
 
-			w := newTabWriter()
-			fmt.Fprintln(w, collabTableHeader.Render("AGENT")+"\t"+
-				collabTableHeader.Render("ROLE")+"\t"+
-				collabTableHeader.Render("STATUS")+"\t"+
-				collabTableHeader.Render("LAST SEEN"))
+			rows := make([]memberRow, 0, len(members))
 			for _, m := range members {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-					m.ProfileID,
-					styles.RoleBadge(string(m.Role)),
-					m.Status,
-					styles.Dim.Render(m.LastSeen.Format("2006-01-02 15:04:05")),
-				)
+				rows = append(rows, memberRow{
+					Agent:    m.ProfileID,
+					Role:     styles.RoleBadge(string(m.Role)),
+					Status:   m.Status,
+					LastSeen: m.LastSeen.Format("2006-01-02 15:04:05"),
+				})
 			}
-			w.Flush()
+			if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+				return err
+			}
 
 			fmt.Printf("\n%s\n", styles.Dim.Render(
 				fmt.Sprintf("%d members", len(members))))

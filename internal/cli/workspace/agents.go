@@ -2,11 +2,23 @@ package workspace
 
 import (
 	"fmt"
+	"os"
 
+	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
 )
+
+// agentMatchRow is the table row shape for `aps workspace agents`.
+// T-0456 — moved off hand-rolled tabwriter so styled tables activate
+// on a TTY.
+type agentMatchRow struct {
+	Agent string `table:"AGENT,priority=10"  json:"agent" yaml:"agent"`
+	Score string `table:"SCORE,priority=9"   json:"score" yaml:"score"`
+	Match string `table:"MATCH,priority=8"   json:"match" yaml:"match"`
+}
 
 // NewAgentsCmd creates the "collab agents" command.
 func NewAgentsCmd() *cobra.Command {
@@ -74,18 +86,15 @@ against a task description.`,
 				return nil
 			}
 
-			w := newTabWriter()
-			fmt.Fprintf(w, "AGENT\tSCORE\tMATCH\n")
+			rows := make([]agentMatchRow, 0, len(matches))
 			for _, m := range matches {
-				fmt.Fprintf(w, "%s\t%.0f%%\t%s\n",
-					m.Agent.ProfileID,
-					m.Score*100,
-					m.Match,
-				)
+				rows = append(rows, agentMatchRow{
+					Agent: m.Agent.ProfileID,
+					Score: fmt.Sprintf("%.0f%%", m.Score*100),
+					Match: m.Match,
+				})
 			}
-			w.Flush()
-
-			return nil
+			return listing.RenderList(os.Stdout, output.Table, rows)
 		},
 	}
 

@@ -4,20 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/session"
-	"hop.top/aps/internal/styles"
 	"hop.top/kit/go/console/output"
 )
 
-// tableHeader is the legacy bold-dim header style used by sibling
-// subcommands (inspect, etc.) that still hand-roll tabwriter output.
-// Kept here because list.go was the original definer; removing it
-// would break those callsites without delivering scope.
-var tableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+// T-0456 — the package-level `tableHeader` lipgloss style was removed
+// when `aps session inspect` migrated to listing.RenderList. Header
+// styling now flows from the active kit/cli theme via the styled
+// table renderer (TTY-only); non-TTY writers stay on plain tabwriter.
 
 // sessionSummaryRow is the table/json/yaml row shape for `aps session
 // list`. Higher-priority columns survive narrow terminals.
