@@ -4,12 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
+	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
 )
+
+// policyRow is the table row shape for `aps policy list`. T-0456 —
+// moved off hand-rolled tabwriter so styled tables activate on a TTY.
+// Settings ("Mode", "Allowed Devices", "Denied Devices") are emitted
+// as separate rows so per-device entries align in the same table.
+type policyRow struct {
+	Setting string `table:"SETTING,priority=10" json:"setting" yaml:"setting"`
+	Value   string `table:"VALUE,priority=9"    json:"value"   yaml:"value"`
+}
 
 func newListCmd() *cobra.Command {
 	var jsonOutput bool
@@ -47,36 +57,31 @@ func runPolicyList(workspaceID string, jsonOut bool) error {
 	fmt.Printf("%s\n\n",
 		headerStyle.Render(fmt.Sprintf("Policies: %s", workspaceID)))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w,
-		tableHeader.Render("SETTING")+"\t"+
-			tableHeader.Render("VALUE"))
-
-	fmt.Fprintf(w, "Mode\t%s\n", policyModeBadge(string(policy.Mode)))
+	rows := []policyRow{
+		{Setting: "Mode", Value: policyModeBadge(string(policy.Mode))},
+	}
 
 	if len(policy.AllowDevices) > 0 {
 		for i, dev := range policy.AllowDevices {
+			setting := ""
 			if i == 0 {
-				fmt.Fprintf(w, "Allowed Devices\t%s\n", dev)
-			} else {
-				fmt.Fprintf(w, "\t%s\n", dev)
+				setting = "Allowed Devices"
 			}
+			rows = append(rows, policyRow{Setting: setting, Value: dev})
 		}
 	}
 
 	if len(policy.DenyDevices) > 0 {
 		for i, dev := range policy.DenyDevices {
+			setting := ""
 			if i == 0 {
-				fmt.Fprintf(w, "Denied Devices\t%s\n", dev)
-			} else {
-				fmt.Fprintf(w, "\t%s\n", dev)
+				setting = "Denied Devices"
 			}
+			rows = append(rows, policyRow{Setting: setting, Value: dev})
 		}
 	}
 
-	w.Flush()
-
-	return nil
+	return listing.RenderList(os.Stdout, output.Table, rows)
 }
 
 func policyModeBadge(mode string) string {

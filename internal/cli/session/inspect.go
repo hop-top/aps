@@ -4,13 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 )
+
+// sessionPropertyRow is the "PROPERTY/VALUE" row shape rendered by
+// `aps session inspect`. T-0456 — moved off hand-rolled tabwriter so
+// styled tables activate on a TTY.
+type sessionPropertyRow struct {
+	Property string `table:"PROPERTY,priority=10" json:"property" yaml:"property"`
+	Value    string `table:"VALUE,priority=9"     json:"value"    yaml:"value"`
+}
+
+// sessionEnvRow is the "ENVIRONMENT/VALUE" row shape used for the
+// optional environment block in `aps session inspect`. Same shape
+// as sessionPropertyRow but with header text that matches the
+// existing CLI surface.
+type sessionEnvRow struct {
+	Key   string `table:"ENVIRONMENT,priority=10" json:"key"   yaml:"key"`
+	Value string `table:"VALUE,priority=9"        json:"value" yaml:"value"`
+}
 
 func NewInspectCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -46,36 +64,36 @@ func NewInspectCmd() *cobra.Command {
 func outputTable(sess *session.SessionInfo) error {
 	fmt.Printf("%s\n\n", styles.Title.Render("Session: "+sess.ID))
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
-
-	fmt.Fprintln(w, tableHeader.Render("PROPERTY")+"\t"+tableHeader.Render("VALUE"))
-
-	fmt.Fprintf(w, "ID\t%s\n", sess.ID)
-	fmt.Fprintf(w, "Profile ID\t%s\n", sess.ProfileID)
-	fmt.Fprintf(w, "Profile Dir\t%s\n", styles.Dim.Render(sess.ProfileDir))
-	fmt.Fprintf(w, "Command\t%s\n", sess.Command)
-	fmt.Fprintf(w, "PID\t%d\n", sess.PID)
-	fmt.Fprintf(w, "Status\t%s\n", styles.SessionStatusBadge(string(sess.Status)))
-	fmt.Fprintf(w, "Tier\t%s\n", styles.TierBadge(string(sess.Tier)))
-	fmt.Fprintf(w, "Created At\t%s\n",
-		styles.Dim.Render(sess.CreatedAt.Format("2006-01-02 15:04:05")))
-	fmt.Fprintf(w, "Last Seen At\t%s\n",
-		styles.Dim.Render(sess.LastSeenAt.Format("2006-01-02 15:04:05")))
-
+	rows := []sessionPropertyRow{
+		{Property: "ID", Value: sess.ID},
+		{Property: "Profile ID", Value: sess.ProfileID},
+		{Property: "Profile Dir", Value: sess.ProfileDir},
+		{Property: "Command", Value: sess.Command},
+		{Property: "PID", Value: fmt.Sprintf("%d", sess.PID)},
+		{Property: "Status", Value: styles.SessionStatusBadge(string(sess.Status))},
+		{Property: "Tier", Value: styles.TierBadge(string(sess.Tier))},
+		{Property: "Created At", Value: sess.CreatedAt.Format("2006-01-02 15:04:05")},
+		{Property: "Last Seen At", Value: sess.LastSeenAt.Format("2006-01-02 15:04:05")},
+	}
 	if sess.TmuxSocket != "" {
-		fmt.Fprintf(w, "Tmux Socket\t%s\n", sess.TmuxSocket)
+		rows = append(rows, sessionPropertyRow{Property: "Tmux Socket", Value: sess.TmuxSocket})
+	}
+	if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+		return err
 	}
 
 	if len(sess.Environment) > 0 {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, tableHeader.Render("ENVIRONMENT")+"\t"+tableHeader.Render("VALUE"))
+		fmt.Println()
 		// T-0460 — Environment can include OPENAI_API_KEY, GITHUB_TOKEN,
 		// anything propagated by buildEnvVars (O8 in
 		// docs/cli/redact-inventory.md). Redact each value before
-		// writing to the tabwriter.
+		// handing off to the renderer.
+		envRows := make([]sessionEnvRow, 0, len(sess.Environment))
 		for k, v := range sess.Environment {
-			fmt.Fprintf(w, "%s\t%s\n", k, logging.Apply(v))
+			envRows = append(envRows, sessionEnvRow{Key: k, Value: logging.Apply(v)})
+		}
+		if err := listing.RenderList(os.Stdout, output.Table, envRows); err != nil {
+			return err
 		}
 	}
 

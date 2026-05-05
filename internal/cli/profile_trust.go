@@ -4,18 +4,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 )
 
-// profileTrustTableHeader styles tabwriter headers for the trust subcommand
-// (table mode is hand-rolled here, not via output.Render).
-var profileTrustTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
+// trustScoreRow is the table/json/yaml row shape for the per-domain
+// score block of `aps profile trust`. T-0456 — moved off hand-rolled
+// tabwriter so the kit-themed styled renderer activates on a TTY.
+type trustScoreRow struct {
+	Domain string  `table:"DOMAIN,priority=10" json:"domain" yaml:"domain"`
+	Score  float64 `table:"SCORE,priority=9"   json:"score"  yaml:"score"`
+}
+
+// trustHistoryRow is the table row shape for the optional --history
+// block. Times render as a single string for human-friendly column
+// alignment; structured (json/yaml) formats keep them in the same
+// shape because we don't currently expose --format on this subcommand.
+type trustHistoryRow struct {
+	Timestamp  string  `table:"TIMESTAMP,priority=10"  json:"timestamp"  yaml:"timestamp"`
+	Domain     string  `table:"DOMAIN,priority=9"      json:"domain"     yaml:"domain"`
+	Delta      float64 `table:"DELTA,priority=8"       json:"delta"      yaml:"delta"`
+	TaskRef    string  `table:"TASK,priority=7"        json:"task_ref"   yaml:"task_ref"`
+	Difficulty string  `table:"DIFFICULTY,priority=6"  json:"difficulty" yaml:"difficulty"`
+}
 
 var profileTrustCmd = &cobra.Command{
 	Use:   "trust <profile-id>",
@@ -84,19 +100,20 @@ func renderTrustTable(p *core.Profile, domain string, history bool) error {
 
 	// Scores
 	fmt.Println(styles.Bold.Render("Scores"))
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, profileTrustTableHeader.Render("DOMAIN\tSCORE"))
-
 	domains := core.TrustDomains
 	if domain != "" {
 		domains = []string{domain}
 	}
-
+	scoreRows := make([]trustScoreRow, 0, len(domains))
 	for _, d := range domains {
-		score := p.TrustScore(d)
-		fmt.Fprintf(w, "%s\t%.2f\n", d, score)
+		scoreRows = append(scoreRows, trustScoreRow{
+			Domain: d,
+			Score:  p.TrustScore(d),
+		})
 	}
-	w.Flush()
+	if err := listing.RenderList(os.Stdout, output.Table, scoreRows); err != nil {
+		return err
+	}
 
 	// History
 	if history {
@@ -105,15 +122,19 @@ func renderTrustTable(p *core.Profile, domain string, history bool) error {
 			styles.Bold.Render("History"), len(entries))
 
 		if len(entries) > 0 {
-			hw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(hw, profileTrustTableHeader.Render(
-				"TIMESTAMP\tDOMAIN\tDELTA\tTASK\tDIFFICULTY"))
+			historyRows := make([]trustHistoryRow, 0, len(entries))
 			for _, e := range entries {
-				ts := e.Timestamp.Format("2006-01-02 15:04")
-				fmt.Fprintf(hw, "%s\t%s\t%+.2f\t%s\t%s\n",
-					ts, e.Domain, e.Delta, e.TaskRef, e.Difficulty)
+				historyRows = append(historyRows, trustHistoryRow{
+					Timestamp:  e.Timestamp.Format("2006-01-02 15:04"),
+					Domain:     e.Domain,
+					Delta:      e.Delta,
+					TaskRef:    e.TaskRef,
+					Difficulty: e.Difficulty,
+				})
 			}
-			hw.Flush()
+			if err := listing.RenderList(os.Stdout, output.Table, historyRows); err != nil {
+				return err
+			}
 		}
 	}
 

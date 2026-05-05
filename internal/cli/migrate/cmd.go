@@ -6,21 +6,34 @@ import (
 	"path/filepath"
 	"time"
 
+	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/styles"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/core/xdg"
 )
 
+// T-0456 — `tableHeader` (lipgloss bold-dim style) was removed when
+// the dry-run preview migrated to listing.RenderList. Header styling
+// now flows from the active kit/cli theme via the styled table
+// renderer on TTY writers.
 var (
 	headerStyle  = styles.Title
 	dimStyle     = styles.Dim
 	successStyle = styles.Success
 	errorStyle   = styles.Error
-	tableHeader  = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 )
+
+// migrateDryRunRow is the table row shape for `aps migrate messengers
+// --dry-run`. Higher-priority columns survive narrow terminals.
+type migrateDryRunRow struct {
+	Messenger string `table:"MESSENGER,priority=10" json:"messenger" yaml:"messenger"`
+	Type      string `table:"TYPE,priority=8"       json:"type"      yaml:"type"`
+	Scope     string `table:"SCOPE,priority=7"      json:"scope"     yaml:"scope"`
+	Action    string `table:"ACTION,priority=9"     json:"action"    yaml:"action"`
+}
 
 func NewMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -186,22 +199,21 @@ func renderDryRun(messengers []messengerMigrate) error {
 	fmt.Println(headerStyle.Render("Migration Preview: messengers -> adapters"))
 	fmt.Println()
 
-	fmt.Printf("%-16s %-12s %-10s %s\n",
-		tableHeader.Render("MESSENGER"),
-		tableHeader.Render("TYPE"),
-		tableHeader.Render("SCOPE"),
-		tableHeader.Render("ACTION"))
-
+	rows := make([]migrateDryRunRow, 0, len(messengers))
 	for _, m := range messengers {
 		scope := m.Scope
 		if m.ProfileID != "" {
 			scope = fmt.Sprintf("profile (%s)", m.ProfileID)
 		}
-		fmt.Printf("%-16s %-12s %-10s %s\n",
-			m.Name,
-			dimStyle.Render(m.Type),
-			dimStyle.Render(scope),
-			successStyle.Render(m.Status))
+		rows = append(rows, migrateDryRunRow{
+			Messenger: m.Name,
+			Type:      m.Type,
+			Scope:     scope,
+			Action:    m.Status,
+		})
+	}
+	if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+		return err
 	}
 
 	home, _ := os.UserHomeDir()

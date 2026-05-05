@@ -11,7 +11,19 @@ import (
 	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 )
+
+// ctxHistoryRow is the table row shape for `aps workspace ctx history`.
+// T-0456 — moved off hand-rolled tabwriter so styled tables activate
+// on a TTY.
+type ctxHistoryRow struct {
+	Version string `table:"VERSION,priority=10" json:"version"  yaml:"version"`
+	Agent   string `table:"AGENT,priority=9"    json:"agent"    yaml:"agent"`
+	Old     string `table:"OLD,priority=8"      json:"old"      yaml:"old"`
+	New     string `table:"NEW,priority=7"      json:"new"      yaml:"new"`
+	Time    string `table:"TIME,priority=6"     json:"time"     yaml:"time"`
+}
 
 // ctxSummaryRow is the per-context-variable row rendered by
 // `aps workspace ctx list`. Type is inferred from Value (string,
@@ -374,24 +386,17 @@ func newCtxHistoryCmd() *cobra.Command {
 			fmt.Printf("%s\n\n", styles.Title.Render(
 				fmt.Sprintf("History: %s", key)))
 
-			w := newTabWriter()
-			fmt.Fprintln(w, collabTableHeader.Render("VERSION")+"\t"+
-				collabTableHeader.Render("AGENT")+"\t"+
-				collabTableHeader.Render("OLD")+"\t"+
-				collabTableHeader.Render("NEW")+"\t"+
-				collabTableHeader.Render("TIME"))
+			rows := make([]ctxHistoryRow, 0, len(mutations))
 			for _, m := range mutations {
-				fmt.Fprintf(w, "v%d\t%s\t%s\t%s\t%s\n",
-					m.Version,
-					m.AgentID,
-					truncate(m.OldValue, 30),
-					truncate(m.NewValue, 30),
-					styles.Dim.Render(m.Timestamp.Format("15:04:05")),
-				)
+				rows = append(rows, ctxHistoryRow{
+					Version: fmt.Sprintf("v%d", m.Version),
+					Agent:   m.AgentID,
+					Old:     truncate(m.OldValue, 30),
+					New:     truncate(m.NewValue, 30),
+					Time:    m.Timestamp.Format("15:04:05"),
+				})
 			}
-			w.Flush()
-
-			return nil
+			return listing.RenderList(os.Stdout, output.Table, rows)
 		},
 	}
 

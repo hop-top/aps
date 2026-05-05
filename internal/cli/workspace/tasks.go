@@ -2,14 +2,28 @@ package workspace
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
 )
+
+// taskRow is the table row shape for `aps workspace tasks`. T-0456 —
+// moved off hand-rolled tabwriter so styled tables activate on a TTY.
+type taskRow struct {
+	ID     string `table:"ID,priority=10"      json:"id"           yaml:"id"`
+	Action string `table:"ACTION,priority=9"   json:"action"       yaml:"action"`
+	From   string `table:"FROM,priority=8"     json:"sender_id"    yaml:"sender_id"`
+	To     string `table:"TO,priority=7"       json:"recipient_id" yaml:"recipient_id"`
+	Status string `table:"STATUS,priority=6"   json:"status"       yaml:"status"`
+	Age    string `table:"AGE,priority=5"      json:"age"          yaml:"age"`
+}
 
 // NewTasksCmd creates the "collab tasks" command.
 func NewTasksCmd() *cobra.Command {
@@ -67,26 +81,20 @@ func NewTasksCmd() *cobra.Command {
 			fmt.Printf("%s\n\n", styles.Title.Render(
 				fmt.Sprintf("Tasks (%s)", wsID)))
 
-			w := newTabWriter()
-			fmt.Fprintln(w, collabTableHeader.Render("ID")+"\t"+
-				collabTableHeader.Render("ACTION")+"\t"+
-				collabTableHeader.Render("FROM")+"\t"+
-				collabTableHeader.Render("TO")+"\t"+
-				collabTableHeader.Render("STATUS")+"\t"+
-				collabTableHeader.Render("AGE"))
+			rows := make([]taskRow, 0, len(tasks))
 			for _, t := range tasks {
-				age := formatAge(t.CreatedAt)
-				short := shortID(t.ID)
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
-					short,
-					t.Action,
-					t.SenderID,
-					t.RecipientID,
-					strings.ToUpper(string(t.Status)),
-					styles.Dim.Render(age),
-				)
+				rows = append(rows, taskRow{
+					ID:     shortID(t.ID),
+					Action: t.Action,
+					From:   t.SenderID,
+					To:     t.RecipientID,
+					Status: strings.ToUpper(string(t.Status)),
+					Age:    formatAge(t.CreatedAt),
+				})
 			}
-			w.Flush()
+			if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+				return err
+			}
 
 			fmt.Printf("\n%s\n", styles.Dim.Render(
 				fmt.Sprintf("%d tasks", len(tasks))))

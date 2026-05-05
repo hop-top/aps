@@ -2,11 +2,23 @@ package workspace
 
 import (
 	"fmt"
+	"os"
 
+	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
 )
+
+// auditRow is the table row shape for `aps workspace audit`. T-0456 —
+// moved off hand-rolled tabwriter so styled tables activate on a TTY.
+type auditRow struct {
+	Time     string `table:"TIME,priority=10"     json:"time"     yaml:"time"`
+	Actor    string `table:"ACTOR,priority=9"     json:"actor"    yaml:"actor"`
+	Event    string `table:"EVENT,priority=8"     json:"event"    yaml:"event"`
+	Resource string `table:"RESOURCE,priority=7"  json:"resource" yaml:"resource"`
+}
 
 // NewAuditCmd creates the "collab audit" command.
 func NewAuditCmd() *cobra.Command {
@@ -58,19 +70,16 @@ Filter with --since, --actor, --event, and --limit.`,
 				return nil
 			}
 
-			w := newTabWriter()
-			fmt.Fprintf(w, "TIME\tACTOR\tEVENT\tRESOURCE\n")
+			rows := make([]auditRow, 0, len(events))
 			for _, e := range events {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-					e.Timestamp.Format("15:04:05"),
-					e.Actor,
-					e.Event,
-					e.Resource,
-				)
+				rows = append(rows, auditRow{
+					Time:     e.Timestamp.Format("15:04:05"),
+					Actor:    e.Actor,
+					Event:    e.Event,
+					Resource: e.Resource,
+				})
 			}
-			w.Flush()
-
-			return nil
+			return listing.RenderList(os.Stdout, output.Table, rows)
 		},
 	}
 

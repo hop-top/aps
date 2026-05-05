@@ -4,6 +4,43 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
+### Improvements — kit-styled-table-rollout (track: `kit-styled-table-rollout`)
+
+Tables rendered through `listing.RenderList` and the migrated non-list
+callsites now switch to a lipgloss-backed styled renderer when stdout
+is a TTY. Non-TTY writers (pipes, files, CI logs) keep emitting the
+existing plain tabwriter output; structured (`--format json|yaml`)
+output is unchanged.
+
+**Wiring** — `internal/cli/listing.SetTableStyle` installs a default
+`output.TableStyle` that `RenderList` forwards via `output.WithTableStyle`.
+`internal/cli/root.go` calls it with `kitcli.Root.TableStyle()` during
+init so the active CLI theme drives the styled renderer.
+
+**Migrated callsites** (T-0456) — five hand-rolled `tabwriter.NewWriter`
+sites cited in the 2026-05-04 kit-integration audit:
+
+  aps profile trust          score + history tables
+  aps workspace members      member list
+  aps workspace tasks        task list
+  aps workspace agents       capability matches
+  aps workspace audit        audit trail
+  aps workspace ctx history  per-key mutation history
+  aps policy list            policy settings table
+  aps session inspect        property + environment tables
+  aps migrate messengers     dry-run preview table
+
+The shared `workspace/helpers.go:newTabWriter` factory plus the
+`tableHeader` lipgloss vars in `policy/cmd.go`, `session/list.go`,
+`migrate/cmd.go`, and `workspace/helpers.go` were removed; header
+styling now flows from the active theme.
+
+**Coverage** — package-level golden-style tests for each migrated
+row type plus `tests/e2e/profile/profile_list_styled_test.go`, which
+attaches `aps profile list` to a real pseudo-terminal pair (creack/pty)
+and asserts ANSI + box-drawing chars on the TTY path versus plain
+output on the non-TTY path with content identity after stripping ANSI.
+
 ### Improvements — list-commands-uplift (track: `list-commands-uplift`)
 
 All `aps <noun> list` (and `aps <noun> <subnoun> list`) commands now

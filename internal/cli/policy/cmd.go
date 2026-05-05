@@ -3,17 +3,18 @@ package policy
 import (
 	"hop.top/aps/internal/styles"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 )
 
+// T-0456 — tableHeader (lipgloss bold-dim style) was removed when
+// `aps policy list` migrated to listing.RenderList; the styled table
+// renderer now applies header styling from the active kit/cli theme.
 var (
 	headerStyle  = styles.Title
 	dimStyle     = styles.Dim
 	boldStyle    = styles.Bold
 	successStyle = styles.Success
 	warnStyle    = styles.Warn
-	tableHeader  = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
 )
 
 // NewPolicyCmd creates the policy command group.

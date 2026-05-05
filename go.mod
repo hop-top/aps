@@ -8,6 +8,7 @@ require (
 	charm.land/log/v2 v2.0.0
 	github.com/a2aproject/a2a-go v0.3.4
 	github.com/charmbracelet/huh v1.0.0
+	github.com/creack/pty v1.1.24
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3

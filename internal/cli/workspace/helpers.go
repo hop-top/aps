@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
-	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	collab "hop.top/aps/internal/core/collaboration"
@@ -15,14 +13,14 @@ import (
 )
 
 var (
-	collabTableHeader = lipgloss.NewStyle().Bold(true).Foreground(styles.ColorDim)
-
 	// Shared styles used by merged conflict/audit subcommands.
+	// T-0456 — collabTableHeader / tableHeader / newTabWriter were
+	// removed when the workspace tables migrated to listing.RenderList
+	// (kit-themed styled output via output.WithTableStyle on TTY).
 	headerStyle  = styles.Title
 	dimStyle     = styles.Dim
 	boldStyle    = styles.Bold
 	successStyle = styles.Success
-	tableHeader  = collabTableHeader
 )
 
 // resolveWorkspace determines the workspace ID from flag or active context.
@@ -87,11 +85,6 @@ func outputJSON(v any) error {
 func isJSON(cmd *cobra.Command) bool {
 	j, _ := cmd.Flags().GetBool("json")
 	return j
-}
-
-// newTabWriter creates a tabwriter for aligned table output.
-func newTabWriter() *tabwriter.Writer {
-	return tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 }
 
 // addWorkspaceFlag is a no-op. --workspace is a persistent global flag
