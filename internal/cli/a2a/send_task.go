@@ -11,6 +11,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/cli/globals"
+	"hop.top/kit/go/console/progress"
 )
 
 func NewSendTaskCmd() *cobra.Command {
@@ -35,7 +36,17 @@ Example:
 				return fmt.Errorf("a2a tasks send: %w", globals.ErrOffline)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+
+			// T-0463 — kit/console/progress on the canonical a2a send
+			// per cli-conventions-with-kit.md §6.5. kit/cli wires the
+			// active reporter into cmd.Context() based on --quiet /
+			// --progress-format / --format.
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: "connect", Item: targetProfile})
 
 			targetProf, err := loadProfile(targetProfile)
 			if err != nil {
@@ -59,10 +70,15 @@ Example:
 				msg.TaskID = a2a.TaskID(taskID)
 			}
 
+			r.Emit(ctx, progress.Event{Phase: "send", Item: targetProfile})
 			task, err := client.SendMessage(ctx, msg)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "ack", Item: targetProfile, OK: &okFalse})
 				return fmt.Errorf("failed to send message: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: "ack", Item: targetProfile, OK: &okTrue})
 
 			switch format {
 			case "json":
