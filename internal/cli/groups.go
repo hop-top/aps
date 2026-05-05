@@ -43,6 +43,7 @@ var commandGroups = map[string]string{
 	// Members hidden from default --help; shown via --help-management
 	// or --help-all.
 	"alias":    "management",
+	"config":   "management",
 	"docs":     "management",
 	"env":      "management",
 	"migrate":  "management",
