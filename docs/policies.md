@@ -138,8 +138,8 @@ The CEL `when` expression sees four bindings (see ADR-0008 §4):
 | `payload.Phase` | string | `"pre_validated"` or `"pre_persisted"` |
 | `payload.from` / `payload.to` | string | Set on `kit.runtime.state.pre_transitioned` (not yet published by aps) |
 | `payload.force` | bool | Set on state transitions (not yet published by aps) |
-| `principal.id` | string | Resolved from kit's `DefaultPrincipalResolver` (today: `$USER`). Aps profile lookup is a follow-up — see T-1302 |
-| `principal.role` | string | From `KIT_POLICY_ROLE` env var. Empty when unset |
+| `principal.id` | string | Calling profile id (`-p/--profile` flag → `APS_PROFILE` env → `$USER`). See "principal.role values" below |
+| `principal.role` | string | Per-workspace `AgentRole` ("owner"/"contributor"/"observer") looked up from workspace membership when the operation carries `request_attrs.workspace_id`; falls back to `KIT_POLICY_ROLE` env. See "principal.role values" below |
 | `context.note` | string | Value passed via `--note\|-n` on every state-changing aps subcommand (T-1291). Aps always sets the key, so an empty value reads as `""` not `unset` |
 | `resource.kind`, `resource.fields` | dyn | Per-event payload reflection — see ADR-0008 §4 |
 
@@ -150,6 +150,52 @@ The full list of subcommands that plumb `--note` is in
 [cli/reference.md](cli/reference.md); 52 entries spanning profile,
 identity, session, workspace, capability, bundle, squad, adapter,
 and directory groups.
+
+### principal.role values (T-1308)
+
+`principal.role` is workspace-aware. The aps principal resolver
+runs synchronously on every CEL evaluation and resolves the role in
+this order:
+
+1. **Workspace membership** — when the operation carries
+   `request_attrs.workspace_id` (currently `aps workspace ctx delete`
+   and `aps session delete` for sessions bound to a workspace), the
+   resolver loads that workspace and surfaces the calling profile's
+   `AgentInfo.Role` ("owner", "contributor", or "observer"). The
+   calling profile id is read from `-p/--profile` first, then
+   `APS_PROFILE` env, then kit's default ($USER).
+2. **`KIT_POLICY_ROLE` env var** — operator escape hatch retained
+   for emergency overrides and commands without a workspace context
+   (most session operations, profile CRUD, adapter ops). When set,
+   `principal.role` mirrors the env value verbatim with
+   `principal.source = "env"`.
+3. **Empty** — no workspace context AND no env var. Rules that gate
+   on `principal.role in [...]` will deny.
+
+`principal.source` records which path supplied the value:
+`"aps.workspace"` for workspace-membership lookups, `"env"` for
+`KIT_POLICY_ROLE`, `"none"` when neither is set, `"ctx"` for tests
+that stuff `policy.ContextPrincipalKey` directly. Failure modes
+(missing workspace, no membership, storage IO panic) all fall open
+to the env path — the resolver never crashes the policy engine.
+
+Example role-gated rule:
+
+```yaml
+policies:
+  - name: workspace-context-write-requires-owner
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || context.request_attrs.kind != "workspace_context" || principal.role == "owner"'
+    effect: allow
+    otherwise: deny
+    message: "only role:owner may delete workspace context variables"
+```
+
+A contributor who runs `aps -p sami workspace ctx delete <key>` is
+denied because the resolver sees their `RoleContributor` membership.
+The same rule lets `aps -p noor ...` pass when noor is the workspace
+owner. Operators can still bypass via `KIT_POLICY_ROLE=owner aps ...`,
+which is documented as an emergency override.
 
 ## Examples
 
