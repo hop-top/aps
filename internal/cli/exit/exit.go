@@ -23,8 +23,10 @@ package exit
 import (
 	"errors"
 	"io/fs"
+	"os/exec"
 
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/runtime/domain"
 )
 
@@ -47,6 +49,14 @@ var ErrUnauthorized = errors.New("unauthorized")
 func Code(err error) int {
 	if err == nil {
 		return int(kitcli.ExitOK)
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode()
+	}
+	var outputErr *output.Error
+	if errors.As(err, &outputErr) && outputErr.ExitCode != 0 {
+		return outputErr.ExitCode
 	}
 	switch {
 	case errors.Is(err, domain.ErrNotFound),

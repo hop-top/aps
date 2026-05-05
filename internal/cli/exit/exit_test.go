@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"os/exec"
 	"testing"
 
 	"hop.top/aps/internal/cli/exit"
+	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/runtime/domain"
 )
 
@@ -29,6 +32,12 @@ func TestCode(t *testing.T) {
 		{"unauthorized", exit.ErrUnauthorized, 5},
 		{"wrapped unauthorized",
 			fmt.Errorf("auth: %w", exit.ErrUnauthorized), 5},
+		{"child exit code",
+			&exec.ExitError{ProcessState: exitProcessState(t, 42)}, 42},
+		{"wrapped child exit code",
+			fmt.Errorf("running command: %w", &exec.ExitError{ProcessState: exitProcessState(t, 37)}), 37},
+		{"structured output error",
+			&output.Error{Code: output.CodeGeneric, Message: "child failed", ExitCode: 42}, 42},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -38,4 +47,16 @@ func TestCode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func exitProcessState(t *testing.T, code int) *os.ProcessState {
+	t.Helper()
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("exit %d", code))
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected exit error for code %d, got %v", code, err)
+	}
+	return exitErr.ProcessState
 }

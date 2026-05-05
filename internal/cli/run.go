@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 
 	"hop.top/aps/internal/core"
 
 	"github.com/spf13/cobra"
+	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/console/progress"
 )
 
@@ -48,6 +51,14 @@ var runCmd = &cobra.Command{
 		if err := core.RunCommand(profileID, commandName, commandRest); err != nil {
 			okFalse := false
 			r.Emit(ctx, progress.Event{Phase: "exit", Item: commandName, OK: &okFalse})
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				return &output.Error{
+					Code:     output.CodeGeneric,
+					Message:  fmt.Sprintf("running command: %v", err),
+					ExitCode: exitErr.ExitCode(),
+				}
+			}
 			return fmt.Errorf("running command: %w", err)
 		}
 		okTrue := true
