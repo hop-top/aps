@@ -38,6 +38,12 @@ This creates a profile at `~/.agents/profiles/myagent/` with:
 
 # Run git commands with the profile's git config
 ./aps myagent -- git status
+
+# Run external LLM CLIs with the profile's secrets and identity
+./aps run myagent -- claude "summarize this branch"
+./aps run myagent -- codex "write tests"
+./aps run myagent -- gemini "summarize docs/user"
+./aps run myagent -- opencode "inspect failures"
 ```
 
 ### 4. List Your Profiles
@@ -73,6 +79,10 @@ APS automatically injects profile-specific environment variables when running co
 - `APS_PROFILE_DOCS_DIR` - Path to docs directory
 
 Plus any secrets you define in `secrets.env`.
+
+External LLM CLIs launched through `aps run` or shorthand execution inherit
+the same environment. Use this for Claude Code, Codex, Gemini CLI, OpenCode,
+or similar tools until native `aps chat <profile>` is available.
 
 ## Next Steps
 

@@ -110,6 +110,15 @@ capabilities applied:
 aps run hello -- env | grep APS
 ```
 
+External LLM CLIs use the same profile-scoped execution path:
+
+```bash
+aps run hello -- claude "summarize this workspace"
+aps run hello -- codex "write tests"
+aps run hello -- gemini "summarize docs"
+aps run hello -- opencode "inspect failures"
+```
+
 Everything after `--` is the command to run under the profile.
 The profile's capability-injected env vars will be present.
 

@@ -32,6 +32,15 @@ aps <profile> -- <command> [args...]
 aps <profile>              # interactive shell
 ```
 
+Profile-scoped external LLM CLIs use the same execution path:
+
+```bash
+aps run <profile> -- claude "review this branch"
+aps run <profile> -- codex "write tests"
+aps run <profile> -- gemini "summarize docs"
+aps run <profile> -- opencode "inspect failures"
+```
+
 ## aps wallet
 
 Manage non-custodial wallets attached to profiles (requires `cap:payment`).

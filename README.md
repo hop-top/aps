@@ -76,17 +76,24 @@ make build
 ```
 
 Profile secrets (`secrets.env`) are injected as environment variables, so
-any LLM CLI inherits the profile's API keys:
+external LLM CLIs inherit the selected profile's API keys:
 
 ```bash
-# Profile-scoped LLM session (foo reads ANTHROPIC/OPENAI_API_KEY from
-# myagent's secrets.env)
-./aps run myagent -- foo "summarize this branch's changes"
+# Profile-scoped LLM sessions. Each CLI reads API keys from
+# myagent's secrets.env, without APS logging the secret values.
+./aps run myagent -- claude "summarize this branch's changes"
+./aps run myagent -- codex "write tests for this package"
+./aps run myagent -- gemini "summarize docs/user"
+./aps run myagent -- opencode "inspect the failing test"
+
+# Shorthand form is equivalent:
+./aps myagent claude "review this branch"
 ```
 
 Native `aps chat <profile>` — REPL with the profile as the assistant
 identity, persona-as-system-prompt, sessions persisted in the registry —
-is on the roadmap (story 055).
+is on the roadmap (story 055). The commands above are the supported
+external-CLI bridge.
 
 ### Generate Documentation
 

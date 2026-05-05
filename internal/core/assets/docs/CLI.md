@@ -149,6 +149,12 @@ aps run myagent -- node script.js
 
 # Run Python with profile's environment
 aps run myagent -- python main.py
+
+# Run external LLM CLIs with profile-scoped credentials
+aps run myagent -- claude "summarize this branch"
+aps run myagent -- codex "write tests"
+aps run myagent -- gemini "summarize docs/user"
+aps run myagent -- opencode "inspect failures"
 ```
 
 ### Shorthand Execution
@@ -159,6 +165,13 @@ You can skip the `run` subcommand:
 # These are equivalent
 aps run myagent -- echo "Hello"
 aps myagent -- echo "Hello"
+```
+
+The shorthand form works for external LLM CLIs too:
+
+```bash
+aps myagent -- claude "review this branch"
+aps myagent codex "write tests"
 ```
 
 **Important:** If you don't provide a command after `--`, APS starts an interactive shell session:
