@@ -31,6 +31,13 @@ var noRedactFlag bool
 // before the subcommand's RunE. Idempotent and safe to call many
 // times.
 //
+// In addition to inverting --no-redact into the redact.enabled viper
+// key (T-0460), it bootstraps the kit/runtime/policy engine on the
+// process bus (T-1292). Misconfig (bad YAML, unknown topic, broken
+// CEL) fails loud here so the user's command never runs against an
+// unenforced ruleset. KIT_POLICY_DISABLE=1 short-circuits the bootstrap
+// for tests / dev mode.
+//
 // Defined as a top-level function (not a closure inside Config) to
 // avoid the initialization cycle: `root` is the value being declared
 // and a closure that captured `root.Viper` would force the compiler
@@ -39,6 +46,9 @@ var noRedactFlag bool
 // flags directly, neither of which is on the cycle.
 func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	logging.SetRedactEnabled(!noRedactFlag)
+	if _, err := initPolicyEngine(eventBus); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -205,7 +215,12 @@ func Execute() error {
 	// their writes to the hub. drainBus is a no-op when the bus is
 	// disabled or no publishes occurred. See internal/cli/bus.go and
 	// T-0176. Deferred so it runs on RunE error paths too.
+	//
+	// closePolicy unsubscribes the kit/runtime/policy engine from the
+	// bus before drainBus closes it, so the unsubscribe is a no-op on
+	// a still-open bus (matches tlc T-1192 ordering).
 	defer drainBus()
+	defer closePolicy()
 	err := root.Execute(context.Background())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))

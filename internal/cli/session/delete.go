@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/policygate"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/session"
 
@@ -45,6 +46,20 @@ func NewDeleteCmd() *cobra.Command {
 			// mutation so the SessionStopped event payload carries the
 			// audit note and policy engines can read it from CEL.
 			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+
+			// T-1292 — synchronous policy gate. Publishes the kit
+			// pre_persisted topic with Op=delete and kind=session;
+			// any sync subscriber (the kit/runtime/policy engine
+			// wired in PersistentPreRunE) vetoes by returning a
+			// *policy.PolicyDeniedError, which exit.Code maps to 4
+			// via the domain.ErrConflict unwrap. SessionRegistry's
+			// Unregister bypasses domain.Service[Session], so the
+			// gate has to live in the CLI layer until the registry
+			// is restructured.
+			ctx, err = policygate.PublishDeletePrePersisted(ctx, "session", sessionID)
+			if err != nil {
+				return err
+			}
 			return deleteSession(ctx, sess)
 		},
 	}
