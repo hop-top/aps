@@ -71,8 +71,15 @@ func SetLogger(logger *Logger) {
 
 // SetViper re-creates the global logger using kit/log with viper integration.
 // Call this after viper is initialized (e.g. in root command init).
+//
+// The kit logger's output is wrapped with NewWriter so every emitted
+// line passes through redact.Apply before reaching os.Stderr. This is
+// the canonical choke point for the L1-L16 surfaces in
+// docs/cli/redact-inventory.md. The viper instance is also recorded
+// for the runtime --no-redact toggle (SetViperForRedact).
 func SetViper(v *viper.Viper) {
-	globalLogger = &Logger{
-		logger: kitlog.New(v),
-	}
+	SetViperForRedact(v)
+	l := kitlog.New(v)
+	l.SetOutput(NewWriter(os.Stderr))
+	globalLogger = &Logger{logger: l}
 }

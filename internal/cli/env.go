@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"hop.top/aps/internal/core/capability"
+	"hop.top/aps/internal/logging"
 
 	"github.com/spf13/cobra"
 )
@@ -21,8 +22,15 @@ Usage: eval $(aps env)`,
 			return
 		}
 
+		// T-0460 — exports may include capability env that resolves to
+		// secrets (O1 in docs/cli/redact-inventory.md). Run through the
+		// redacting writer so the values are tagged unless --no-redact
+		// is set. With redaction on, `eval $(aps env)` exports
+		// placeholder values; use --no-redact when shell-eval-friendly
+		// output is required and the operator has confirmed the sink
+		// is private.
 		for _, export := range exports {
-			fmt.Println(export)
+			_, _ = logging.Println(export)
 		}
 	},
 }

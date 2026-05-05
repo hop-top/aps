@@ -177,8 +177,20 @@ func CheckSignature(secret string, body []byte, signatureHex string) bool {
 	return hmac.Equal(expectedMAC, sigBytes)
 }
 
+// respondJSON marshals data and writes it as the response body with
+// the given status. The body is filtered through logging.ApplyBytes
+// before w.Write so secrets that landed in error strings (W1 chain in
+// docs/cli/redact-inventory.md: action stderr → RunAction error →
+// here) are tagged before egress to the webhook caller.
 func respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	body, err := json.Marshal(data)
+	if err != nil {
+		// Fall back to the original encoder path so a marshal failure
+		// doesn't drop the response entirely.
+		json.NewEncoder(w).Encode(data)
+		return
+	}
+	w.Write(logging.ApplyBytes(body))
 }
