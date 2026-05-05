@@ -2,9 +2,9 @@
 status: shipped
 ---
 
-# 055 - Config Path Discoverability
+# 057 - Config Path Discoverability
 
-**ID**: 055
+**ID**: 057
 **Feature**: CLI Conventions §7.4
 **Persona**: [User](../personas/user.md)
 **Priority**: P1
