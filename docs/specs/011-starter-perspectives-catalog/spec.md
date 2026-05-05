@@ -177,6 +177,8 @@ Each entry below is a one-paragraph sketch in the same shape: **Worldview / Trai
 
 **Load-bearing distinctions**: distinct from `business-operations.administrator` — receptionist is a specialized role that may exist within a larger business-operations Perspective (so a profile can carry both, with receptionist's facets active during front-desk hours). Standalone, it covers small-business or single-person-with-receptionist-agent deployments. The "personal-assistant" agent the user named in earlier brainstorming is closely related but distinct: personal-assistant is one-to-one (one principal), receptionist is one-to-many (one front-desk, many incoming).
 
+**Catalog status (under review)**: receptionist's standalone Perspective status is open. Editorial review flagged that its declared Traits (intake-flows, routing-table, screening-rules) read more like configuration of an *agent-shaped* profile than a worldview a human would carry, and its load-bearing distinctions argue it could ride as facets on `business-operations` and `agency` rather than as a peer Perspective. The catalog keeps the entry pending the full receptionist follow-up spec, which is the right place to make the keep-or-merge call (with concrete schema in hand). If the full spec confirms the merge case, this entry is removed and the facet patterns migrate to `business-operations` and `agency` entries.
+
 **`~/.fam` relevance**: ✗ — but the household equivalent "head of household coordination" function maps to `family-member` facet within the `family` Perspective, not to `receptionist`.
 
 ### `broker`
@@ -212,6 +214,7 @@ Each entry below is a one-paragraph sketch in the same shape: **Worldview / Trai
 - **FR-003**: Each catalog entry MUST point to its eventual full per-Perspective spec when authored. Until the full spec exists, the catalog entry is the authoritative sketch.
 - **FR-004**: Boundaries between sibling Perspectives MUST be drawn at catalog level, before per-Perspective full specs are authored. Mergers and splits are catalog-level decisions, not full-spec-level.
 - **FR-005**: A downstream consumer registering a Perspective from this catalog MUST do so by pointing aps's Perspective registration (per spec 010 FR-050) at the eventual full spec's `perspective.yaml`. Until the full spec exists, registration of a catalog Perspective fails with "spec not yet finalized."
+- **FR-006**: When a catalog entry's full per-Perspective spec is authored, it MUST adopt kit primitives where applicable rather than redescribing substrate. In particular: Perspective-declared policy modulators land as CEL rules consumed by `kit/runtime/policy` (kit ADR-0008); derivation functions, facet preconditions, and gate predicates use kit's pluggable Evaluator interface (CEL default per spec 010 Open Questions resolution); cross-instance/cross-device replication of Perspective state piggybacks on `kit/runtime/sync`; bus topic names follow kit's 4-segment past-tense convention. See `~/.ops/docs/architecture/kit-primitive-map.md` for the canonical mapping.
 
 ### Key Entities
 
