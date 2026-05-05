@@ -9,21 +9,28 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mattn/go-isatty"
 	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/logging"
 )
 
 // stdioWriter returns the writer to attach to a child process's
-// stdout/stderr. When redaction is on (the default), child output
-// passes through logging.NewWriter so secrets the child echoes
-// (e.g. an OPENAI_API_KEY printed by `env`) are tagged before
-// reaching the parent's stream. This is the O2 surface in
+// stdout/stderr. When the underlying *os.File is a TTY, returns it
+// unwrapped so Go's exec package uses fd-passing (dup2) and the
+// child inherits a real terminal — interactive subcommands like
+// `ollama launch claude` need this to avoid falling into --print
+// mode. For non-TTY destinations (pipes, files, redirected streams),
+// wraps in logging.NewWriter so secrets the child echoes are
+// redacted before reaching the parent. O2 surface in
 // docs/cli/redact-inventory.md.
 //
 // The wrapper is a transparent pass-through when redaction is
 // disabled at write-time, so the --no-redact bypass costs nothing
 // extra on the child path.
-func stdioWriter(w io.Writer) io.Writer {
+func stdioWriter(w *os.File) io.Writer {
+	if isatty.IsTerminal(w.Fd()) {
+		return w
+	}
 	return logging.NewWriter(w)
 }
 
