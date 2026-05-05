@@ -1,9 +1,31 @@
 # ADR — kit/console/alias adoption
 
-- Status: accepted
+- Status: superseded — adopted 2026-05-02 in commit `6384c04` (T-0388)
 - Date: 2026-04-29
 - Task: T-0379
 - Author: $USER
+
+## Supersession note (2026-05-04, T-0458)
+
+The "Defer" decision below is **no longer in force**. kit/console/alias
+was adopted in aps three days after this ADR landed:
+
+- Adoption commit: `6384c04` — `fix(cli): parity re-check round, kit
+  adoption (T-0388, T-0392, T-0398)`
+- Wiring lives in `internal/cli/alias.go` (`alias.NewStore(...)`,
+  `root.AliasCmd(store)`); legacy shell-alias generator moved to
+  `aps alias shell` exactly as the "Notes for future adoption"
+  section anticipated.
+
+The gap was surfaced by the kit-integration audit on 2026-05-04, which
+found the original ADR still claimed "Defer" while the code already
+imported `hop.top/kit/go/console/alias`. This block records the
+correction; the body below is preserved verbatim as a historical
+artifact only.
+
+**Process lesson:** decision-now-adopt-later ADRs must be updated on
+adoption (status flip + commit link). The same loop that lands the
+adopting code should touch the ADR.
 
 ## Context
 
