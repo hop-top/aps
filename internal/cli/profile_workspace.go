@@ -35,6 +35,11 @@ var profileSetWorkspaceCmd = &cobra.Command{
 			Name: workspaceName,
 		}
 
+		// T-1291 — attach --note before save so the audit event
+		// payload carries the operator-supplied reason.
+		_ = WithNote(cmd.Context(), NoteFromCmd(cmd))
+		note := NoteFromCmd(cmd)
+
 		if err := core.SaveProfile(profile); err != nil {
 			return fmt.Errorf("failed to save profile %s: %w", profileID, err)
 		}
@@ -42,6 +47,7 @@ var profileSetWorkspaceCmd = &cobra.Command{
 		publishEvent(string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
 			ProfileID: profileID,
 			Fields:    []string{"workspace"},
+			Note:      note,
 		})
 
 		fmt.Fprintf(os.Stdout, "%s workspace set to %s for profile %s\n",
@@ -55,4 +61,10 @@ var profileSetWorkspaceCmd = &cobra.Command{
 func init() {
 	profileCmd.AddCommand(profileWorkspaceCmd)
 	profileWorkspaceCmd.AddCommand(profileSetWorkspaceCmd)
+
+	// T-1291 — `profile workspace set` is the only ctx-mutating
+	// subcommand under profile workspace today. (The task body listed
+	// link/unlink, which do not exist as subcommands; set is the
+	// canonical way to bind a profile to a workspace.)
+	AddNoteFlag(profileSetWorkspaceCmd)
 }

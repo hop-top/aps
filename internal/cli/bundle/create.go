@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"hop.top/aps/internal/cli/clinote"
+
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +30,7 @@ func newCreateCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&force, "force", false,
 		"Overwrite existing bundle file")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

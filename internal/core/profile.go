@@ -412,7 +412,18 @@ func SaveProfile(profile *Profile) error {
 }
 
 // CreateProfile creates a new profile directory and default files
+//
+// Deprecated callers can keep using this; new state-changing call sites
+// should use CreateProfileWithContext to forward an audit note attached
+// via policy.ContextAttrsKey (T-1291).
 func CreateProfile(id string, config Profile) error {
+	return CreateProfileWithContext(context.Background(), id, config)
+}
+
+// CreateProfileWithContext is the ctx-aware variant of CreateProfile.
+// It reads NoteFromContext(ctx) to populate the Note field on the
+// emitted ProfileCreatedPayload.
+func CreateProfileWithContext(ctx context.Context, id string, config Profile) error {
 	dir, err := GetProfileDir(id)
 	if err != nil {
 		return err
@@ -468,11 +479,12 @@ func CreateProfile(id string, config Profile) error {
 		}
 	}
 
-	publish(context.Background(), string(events.TopicProfileCreated), "", events.ProfileCreatedPayload{
+	publish(ctx, string(events.TopicProfileCreated), "", events.ProfileCreatedPayload{
 		ProfileID:    id,
 		DisplayName:  config.DisplayName,
 		Email:        config.Email,
 		Capabilities: config.Capabilities,
+		Note:         NoteFromContext(ctx),
 	})
 
 	return nil
@@ -499,6 +511,13 @@ func CreateProfile(id string, config Profile) error {
 // referencing a missing profile. Terminating sessions is the CLI's
 // concern, not core's.
 func DeleteProfile(id string, force bool) error {
+	return DeleteProfileWithContext(context.Background(), id, force)
+}
+
+// DeleteProfileWithContext is the ctx-aware variant of DeleteProfile.
+// Reads NoteFromContext(ctx) to populate Note on ProfileDeletedPayload
+// (T-1291).
+func DeleteProfileWithContext(ctx context.Context, id string, force bool) error {
 	if id == "" {
 		return fmt.Errorf("delete profile: id cannot be empty")
 	}
@@ -530,8 +549,9 @@ func DeleteProfile(id string, force bool) error {
 		return fmt.Errorf("delete profile %q: remove directory: %w", id, err)
 	}
 
-	publish(context.Background(), string(events.TopicProfileDeleted), "", events.ProfileDeletedPayload{
+	publish(ctx, string(events.TopicProfileDeleted), "", events.ProfileDeletedPayload{
 		ProfileID: id,
+		Note:      NoteFromContext(ctx),
 	})
 	return nil
 }
@@ -592,6 +612,12 @@ func ListProfilesFull() ([]Profile, error) {
 
 // AddCapabilityToProfile adds a capability to a profile (deduplicates)
 func AddCapabilityToProfile(profileID, capName string) error {
+	return AddCapabilityToProfileWithContext(context.Background(), profileID, capName)
+}
+
+// AddCapabilityToProfileWithContext is the ctx-aware variant; reads
+// NoteFromContext(ctx) for the ProfileUpdatedPayload (T-1291).
+func AddCapabilityToProfileWithContext(ctx context.Context, profileID, capName string) error {
 	profile, err := LoadProfile(profileID)
 	if err != nil {
 		return err
@@ -606,15 +632,22 @@ func AddCapabilityToProfile(profileID, capName string) error {
 		return err
 	}
 
-	publish(context.Background(), string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+	publish(ctx, string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
 		ProfileID: profileID,
 		Fields:    []string{"capabilities"},
+		Note:      NoteFromContext(ctx),
 	})
 	return nil
 }
 
 // RemoveCapabilityFromProfile removes a capability from a profile
 func RemoveCapabilityFromProfile(profileID, capName string) error {
+	return RemoveCapabilityFromProfileWithContext(context.Background(), profileID, capName)
+}
+
+// RemoveCapabilityFromProfileWithContext is the ctx-aware variant; reads
+// NoteFromContext(ctx) for the ProfileUpdatedPayload (T-1291).
+func RemoveCapabilityFromProfileWithContext(ctx context.Context, profileID, capName string) error {
 	profile, err := LoadProfile(profileID)
 	if err != nil {
 		return err
@@ -639,9 +672,10 @@ func RemoveCapabilityFromProfile(profileID, capName string) error {
 		return err
 	}
 
-	publish(context.Background(), string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
+	publish(ctx, string(events.TopicProfileUpdated), "", events.ProfileUpdatedPayload{
 		ProfileID: profileID,
 		Fields:    []string{"capabilities"},
+		Note:      NoteFromContext(ctx),
 	})
 	return nil
 }

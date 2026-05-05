@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
+
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,7 @@ func newRejectCmd() *cobra.Command {
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

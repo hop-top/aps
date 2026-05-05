@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 )
 
@@ -48,7 +49,9 @@ can perform this action. Use --force to skip confirmation.`,
 				return err
 			}
 
-			if err := mgr.Remove(cmd.Context(), wsID, targetAgent, actor); err != nil {
+			// T-1291 — attach --note to ctx BEFORE the manager call.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			if err := mgr.Remove(ctx, wsID, targetAgent, actor); err != nil {
 				return err
 			}
 
@@ -71,6 +74,7 @@ can perform this action. Use --force to skip confirmation.`,
 	addProfileFlag(cmd)
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

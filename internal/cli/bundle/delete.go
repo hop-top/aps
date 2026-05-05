@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 	corebundle "hop.top/aps/internal/core/bundle"
 )
@@ -24,6 +25,7 @@ func newDeleteCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&force, "force", false,
 		"Skip confirmation prompt")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

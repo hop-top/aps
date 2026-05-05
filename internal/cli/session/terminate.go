@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
@@ -42,17 +43,22 @@ func NewTerminateCmd() *cobra.Command {
 			force, _ := cmd.Flags().GetBool("force")
 			timeout, _ := cmd.Flags().GetInt("timeout")
 
-			return terminateSession(sess, force, timeout)
+			// T-1291 — attach --note to ctx BEFORE the registry status
+			// update so the SessionStopped event payload carries the
+			// audit reason and policy engines can read it from CEL.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			return terminateSession(ctx, sess, force, timeout)
 		},
 	}
 
 	cmd.Flags().Bool("force", false, "Force terminate without graceful shutdown")
 	cmd.Flags().Int("timeout", 10, "Graceful shutdown timeout in seconds")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }
 
-func terminateSession(sess *session.SessionInfo, force bool, timeout int) error {
+func terminateSession(ctx context.Context, sess *session.SessionInfo, force bool, timeout int) error {
 	fmt.Printf("Terminating session %s...\n", sess.ID)
 
 	var errs []error
@@ -64,7 +70,7 @@ func terminateSession(sess *session.SessionInfo, force bool, timeout int) error 
 
 	// Always update status, even on partial failure above.
 	registry := session.GetRegistry()
-	if err := registry.UpdateStatus(sess.ID, session.SessionInactive); err != nil {
+	if err := registry.UpdateStatusWithContext(ctx, sess.ID, session.SessionInactive); err != nil {
 		errs = append(errs, fmt.Errorf("update session status: %w", err))
 	}
 

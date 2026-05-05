@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"hop.top/aps/internal/cli/clinote"
 	coresquad "hop.top/aps/internal/core/squad"
 
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&members, "members", nil, "Comma-separated profile IDs")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("domain")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

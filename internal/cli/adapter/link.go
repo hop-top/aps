@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"hop.top/aps/internal/cli/clinote"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/aps/internal/events"
@@ -40,6 +41,7 @@ func newLinkAddCmd() *cobra.Command {
 				addMapping:    addMapping,
 				removeMapping: removeMapping,
 				defaultAction: defaultAction,
+				note:          clinote.FromCmd(cmd), // T-1291
 			}
 			return runLink(opts)
 		},
@@ -59,6 +61,7 @@ func newLinkAddCmd() *cobra.Command {
 		"Remove a mapping by channel ID from an existing link")
 	cmd.Flags().StringVar(&defaultAction, "default-action", "",
 		"Set default action for unmapped channels")
+	clinote.AddFlag(cmd) // T-1291 (long-form only here; -n taken by --dry-run)
 
 	return cmd
 }
@@ -72,6 +75,7 @@ type linkOpts struct {
 	addMapping    string
 	removeMapping string
 	defaultAction string
+	note          string // T-1291 — operator-supplied audit reason
 }
 
 func runLink(opts linkOpts) error {
@@ -108,6 +112,7 @@ func runLink(opts linkOpts) error {
 			ProfileID:   opts.profileID,
 			AdapterType: string(dev.Type),
 			AdapterID:   opts.deviceName,
+			Note:        opts.note,
 		})
 	}
 

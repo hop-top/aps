@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	idpkg "hop.top/aps/internal/agntcy/identity"
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core"
 )
 
@@ -43,8 +44,13 @@ Examples:
 				return fmt.Errorf("failed to generate DID: %w", err)
 			}
 
+			// T-1291 — attach --note to ctx BEFORE the cap-add mutation
+			// so the resulting ProfileUpdated event payload carries the
+			// audit note and policy engines can read it from CEL.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+
 			// Add capability
-			if err := core.AddCapabilityToProfile(profileID, "agntcy-identity"); err != nil {
+			if err := core.AddCapabilityToProfileWithContext(ctx, profileID, "agntcy-identity"); err != nil {
 				return fmt.Errorf("failed to add identity capability: %w", err)
 			}
 
@@ -74,6 +80,7 @@ Examples:
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&method, "method", "did:key", "DID method (did:key, did:web)")
+	clinote.AddFlag(cmd)
 
 	return cmd
 }

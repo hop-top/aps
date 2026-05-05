@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/adapter/mobile"
 	"hop.top/aps/internal/styles"
@@ -58,6 +59,7 @@ establish a secure WebSocket connection to this profile.`,
 	cmd.Flags().StringVar(&qrOutput, "qr-output", "", "Save QR code as PNG to file")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "Minimal output (pairing code only)")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

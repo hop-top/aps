@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
@@ -75,7 +76,8 @@ Input can be provided as:
 				Timeout:     timeout,
 			}
 
-			result, err := router.Send(cmd.Context(), wsID, task)
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			result, err := router.Send(ctx, wsID, task)
 			if err != nil {
 				return err
 			}
@@ -98,6 +100,7 @@ Input can be provided as:
 	cmd.Flags().StringSlice("set", nil, "Set key=value input pairs")
 	cmd.Flags().String("timeout", "", "Task timeout (e.g. 5m, 1h)")
 	addJSONFlag(cmd)
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

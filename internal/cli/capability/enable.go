@@ -3,6 +3,7 @@ package capability
 import (
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/capability"
 	"hop.top/aps/internal/styles"
@@ -12,7 +13,7 @@ import (
 )
 
 func newEnableCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "enable <profile> <capability>",
 		Short: "Enable a capability on a profile",
 		Args:  cobra.ExactArgs(2),
@@ -34,7 +35,9 @@ func newEnableCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := core.AddCapabilityToProfile(profileID, capName); err != nil {
+			// T-1291 — attach --note before the cap-add mutation.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			if err := core.AddCapabilityToProfileWithContext(ctx, profileID, capName); err != nil {
 				return err
 			}
 
@@ -44,10 +47,12 @@ func newEnableCmd() *cobra.Command {
 			return nil
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }
 
 func newDisableCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "disable <profile> <capability>",
 		Short: "Disable a capability on a profile",
 		Args:  cobra.ExactArgs(2),
@@ -65,8 +70,10 @@ func newDisableCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := core.RemoveCapabilityFromProfile(
-				profileID, capName); err != nil {
+			// T-1291 — attach --note before the cap-remove mutation.
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd))
+			if err := core.RemoveCapabilityFromProfileWithContext(
+				ctx, profileID, capName); err != nil {
 				return err
 			}
 
@@ -76,4 +83,6 @@ func newDisableCmd() *cobra.Command {
 			return nil
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }

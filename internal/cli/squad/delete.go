@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"hop.top/aps/internal/cli/clinote"
+
 	"github.com/spf13/cobra"
 )
 
 func newDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete a squad",
 		Args:  cobra.ExactArgs(1),
@@ -16,6 +18,8 @@ func newDeleteCmd() *cobra.Command {
 			return runDelete(args[0])
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }
 
 func runDelete(id string) error {

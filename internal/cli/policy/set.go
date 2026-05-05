@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/multidevice"
 
 	"github.com/spf13/cobra"
@@ -56,6 +57,7 @@ Use --add-deny / --remove-deny to manage the deny list.`,
 	cmd.Flags().StringSliceVar(&removeDeny, "remove-deny", nil,
 		"Remove devices from deny list")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

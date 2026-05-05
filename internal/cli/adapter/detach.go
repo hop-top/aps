@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/multidevice"
 )
@@ -37,6 +38,7 @@ Use --force to skip confirmation.`,
 	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

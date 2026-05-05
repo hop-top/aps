@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/aps/internal/cli/clinote"
 	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
 )
 
 func newEditCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "edit <name>",
 		Short: "Open a bundle in $EDITOR; copies built-in to user dir first",
 		Args:  cobra.ExactArgs(1),
@@ -21,6 +22,8 @@ func newEditCmd() *cobra.Command {
 			return runEdit(args[0])
 		},
 	}
+	clinote.AddFlag(cmd) // T-1291
+	return cmd
 }
 
 func runEdit(name string) error {

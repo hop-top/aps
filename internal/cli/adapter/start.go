@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/clinote"
 	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ func newStartCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }

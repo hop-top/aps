@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"hop.top/aps/internal/cli/clinote"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +39,7 @@ func newApproveCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&approveAll, "all", false, "Approve all pending devices")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
+	clinote.AddFlag(cmd) // T-1291
 
 	return cmd
 }
