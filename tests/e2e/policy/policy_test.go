@@ -1,10 +1,11 @@
 // Package policy_e2e exercises the kit/runtime/policy wiring in the
 // aps CLI (T-1292). Each test compiles the aps binary, sets
 // APS_POLICY_FILE to the bundled default rules, and asserts deny / allow
-// behaviour for the two trivial defaults shipped today:
+// behaviour for the trivial defaults shipped today:
 //
 //   - delete-session-requires-note
 //   - delete-workspace-context-requires-note
+//   - cross-agent-context-delete-requires-owner (T-1302)
 //
 // Tests intentionally bypass the bus token (no APS_BUS_TOKEN set) so
 // the network adapter never runs; the policy engine still subscribes
@@ -130,6 +131,13 @@ func writeBundledPolicies(t *testing.T, path string) {
     effect: allow
     otherwise: deny
     message: "deleting a workspace context variable requires --note explaining why"
+
+  - name: cross-agent-context-delete-requires-owner
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || !has(context.request_attrs.visibility) || context.request_attrs.visibility != "shared" || principal.role == "owner"'
+    effect: allow
+    otherwise: deny
+    message: "deleting a shared workspace context variable requires workspace owner role"
 `
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		t.Fatalf("mkdir policy dir: %v", err)
@@ -264,6 +272,13 @@ func TestWorkspaceCtxDelete_AllowWithNote(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	seedContext(t, home, wsID, []collab.ContextVariable{
 		{Key: "feature.alpha", Value: "true", Version: 1, UpdatedBy: "noor", UpdatedAt: now},
+	})
+	// T-1302 — the bundled cross-agent-context-delete-requires-owner
+	// rule denies shared deletes unless principal.role == "owner". Seed
+	// noor as workspace owner so the role gate passes; the test asserts
+	// the --note rule, not the role rule.
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
 	})
 	policyFile := filepath.Join(home, "policies.yaml")
 	writeBundledPolicies(t, policyFile)
@@ -541,5 +556,170 @@ func TestPolicyEngine_BadYAMLFailsLoud(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "policy") {
 		t.Errorf("stderr should mention policy on misconfig; got: %s", stderr)
+	}
+}
+
+// ----------------------------------------------------------------------
+// T-1302 — cross-agent-context-delete-requires-owner
+//
+// The bundled rule denies deletes of SHARED workspace_context variables
+// unless principal.role == "owner". Private variables are exempt: the
+// storage-layer visibility filter already keeps them invisible to
+// non-writers, so reaching the delete path means the caller wrote them.
+// Tests cover the four canonical cases the rule decides.
+// ----------------------------------------------------------------------
+
+// TestWorkspaceCtxDelete_T1302_OwnerSharedAllowed — owner deleting a
+// shared var passes both the note rule (--note supplied) and the new
+// T-1302 owner gate.
+func TestWorkspaceCtxDelete_T1302_OwnerSharedAllowed(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{
+			Key: "feature.alpha", Value: "true", Version: 1,
+			UpdatedBy: "noor", UpdatedAt: now,
+			Visibility: collab.VisibilityShared,
+		},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeBundledPolicies(t, policyFile)
+
+	stdout, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "noor",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "obsoleted",
+	)
+	if err != nil {
+		t.Fatalf("owner shared delete denied: %v\nstderr: %s", err, stderr)
+	}
+	if !strings.Contains(stdout, "Deleted 'feature.alpha'") {
+		t.Errorf("expected delete confirmation; got: %s", stdout)
+	}
+}
+
+// TestWorkspaceCtxDelete_T1302_ContributorSharedDenied — contributor
+// deleting a shared var trips the T-1302 owner gate. --note is supplied
+// so the note rule allows; only the role gate denies.
+func TestWorkspaceCtxDelete_T1302_ContributorSharedDenied(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{
+			Key: "feature.alpha", Value: "true", Version: 1,
+			UpdatedBy: "noor", UpdatedAt: now,
+			Visibility: collab.VisibilityShared,
+		},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+		{ProfileID: "sami", Role: collab.RoleContributor, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeBundledPolicies(t, policyFile)
+
+	_, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "sami",
+		"workspace", "ctx", "delete", "feature.alpha",
+		"--workspace", wsID,
+		"--force",
+		"--note", "trying to clean up",
+	)
+	if err == nil {
+		t.Fatalf("contributor shared delete should have been denied; stderr=%q", stderr)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("expected *exec.ExitError; got %T (%v)", err, err)
+	}
+	if got := exitErr.ExitCode(); got != 4 {
+		t.Errorf("exit code = %d; want 4. stderr=%q", got, stderr)
+	}
+	if !strings.Contains(stderr, "cross-agent-context-delete-requires-owner") {
+		t.Errorf("stderr missing T-1302 rule name; got: %s", stderr)
+	}
+}
+
+// TestWorkspaceCtxDelete_T1302_OwnerPrivateAllowed — owner deleting
+// their own private var is allowed: visibility=private exempts the
+// rule, and the note rule passes via --note.
+func TestWorkspaceCtxDelete_T1302_OwnerPrivateAllowed(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{
+			Key: "secret.token", Value: "hunter2", Version: 1,
+			UpdatedBy: "noor", UpdatedAt: now,
+			Visibility: collab.VisibilityPrivate,
+		},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeBundledPolicies(t, policyFile)
+
+	stdout, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "noor",
+		"workspace", "ctx", "delete", "secret.token",
+		"--workspace", wsID,
+		"--force",
+		"--note", "rotated",
+	)
+	if err != nil {
+		t.Fatalf("owner private delete denied: %v\nstderr: %s", err, stderr)
+	}
+	if !strings.Contains(stdout, "Deleted 'secret.token'") {
+		t.Errorf("expected delete confirmation; got: %s", stdout)
+	}
+}
+
+// TestWorkspaceCtxDelete_T1302_ContributorPrivateAllowed — contributor
+// deleting their own private var is allowed: the storage-layer
+// visibility filter already gates cross-profile reads, so reaching the
+// delete path means the variable belongs to the caller. T-1302 exempts
+// visibility=private from the owner-only rule.
+func TestWorkspaceCtxDelete_T1302_ContributorPrivateAllowed(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	const wsID = "ws-team"
+	now := time.Now().UTC().Truncate(time.Second)
+	seedContext(t, home, wsID, []collab.ContextVariable{
+		{
+			Key: "scratch.note", Value: "wip", Version: 1,
+			UpdatedBy: "sami", UpdatedAt: now,
+			Visibility: collab.VisibilityPrivate,
+		},
+	})
+	seedWorkspace(t, home, wsID, []collab.AgentInfo{
+		{ProfileID: "noor", Role: collab.RoleOwner, JoinedAt: now, LastSeen: now, Status: "online"},
+		{ProfileID: "sami", Role: collab.RoleContributor, JoinedAt: now, LastSeen: now, Status: "online"},
+	})
+	policyFile := filepath.Join(home, "policies.yaml")
+	writeBundledPolicies(t, policyFile)
+
+	stdout, stderr, err := runAPS(t, home, policyFile,
+		"--profile", "sami",
+		"workspace", "ctx", "delete", "scratch.note",
+		"--workspace", wsID,
+		"--force",
+		"--note", "discarded",
+	)
+	if err != nil {
+		t.Fatalf("contributor private delete denied: %v\nstderr: %s", err, stderr)
+	}
+	if !strings.Contains(stdout, "Deleted 'scratch.note'") {
+		t.Errorf("expected delete confirmation; got: %s", stdout)
 	}
 }

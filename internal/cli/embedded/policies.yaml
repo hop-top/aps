@@ -7,8 +7,13 @@
 # trail records why state went away. Non-destructive transitions stay
 # open by default — additional rules belong in the user file.
 #
-# The cross-agent-context-access rule is intentionally NOT bundled here
-# (T-1302 owns that decision; needs role taxonomy + sharing semantics).
+# Cross-agent context access (T-1302): deletes targeting a SHARED
+# workspace_context variable additionally require the calling profile
+# to be a workspace owner (`principal.role == "owner"`). Private vars
+# stay self-serve — the storage-layer visibility filter already keeps
+# them invisible to other profiles, so reaching the delete path means
+# the variable belongs to the caller. Composes via deny-overrides with
+# `delete-workspace-context-requires-note`: both must allow.
 #
 # The CLI delete handlers stuff `request_attrs.kind` into the policy
 # context (via clinote.WithContextAttrs) so a single pre_persisted topic
@@ -27,3 +32,10 @@ policies:
     effect: allow
     otherwise: deny
     message: "deleting a workspace context variable requires --note explaining why"
+
+  - name: cross-agent-context-delete-requires-owner
+    on: kit.runtime.entity.pre_persisted
+    when: 'payload.Op != "delete" || !has(context.request_attrs.kind) || context.request_attrs.kind != "workspace_context" || !has(context.request_attrs.visibility) || context.request_attrs.visibility != "shared" || principal.role == "owner"'
+    effect: allow
+    otherwise: deny
+    message: "deleting a shared workspace context variable requires workspace owner role"
