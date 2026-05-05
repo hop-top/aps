@@ -2,9 +2,9 @@
 status: paper
 ---
 
-# 055 - Structured Progress on Long-Running Ops
+# 056 - Structured Progress on Long-Running Ops
 
-**ID**: 055
+**ID**: 056
 **Feature**: CLI Core
 **Persona**: [User](../personas/user.md)
 **Priority**: P2
