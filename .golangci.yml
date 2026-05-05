@@ -24,6 +24,30 @@ linters:
     - unparam
     - whitespace
     - wrapcheck
+  settings:
+    goconst:
+      # Default 3 fires when a test fixture references the same string
+      # twice plus production code uses it once; raise to 4 to keep
+      # focus on real duplication while accepting test-fixture echoes.
+      min-occurrences: 4
+    wrapcheck:
+      # listing.RenderList is the aps-internal wrapper around kit/output
+      # whose whole purpose is to be a transparent pass-through; callers
+      # should return its error verbatim so kit's typed errors surface
+      # without aps-side prefix noise. Same applies to globals.Format()
+      # callsites that thread the global --format flag through.
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
+        - hop.top/aps/internal/cli/listing.RenderList
+        - hop.top/kit/go/console/output.Render
   exclusions:
     rules:
       - path: _test\.go

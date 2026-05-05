@@ -71,6 +71,11 @@ func RenderList[T any](w io.Writer, format string, rows []T) error {
 		rows = []T{}
 	}
 	if style, ok := activeTableStyle(); ok {
+		// RenderList is a thin pass-through to kit/output so callers
+		// see kit's typed errors directly; wrapping here would mask
+		// the descriptive "unknown format" error that kit/output.Render
+		// produces. wrapcheck.ignore-sigs in .golangci.yml exempts the
+		// kit/output return; we don't need a //nolint here.
 		return output.Render(w, format, rows, output.WithTableStyle(style))
 	}
 	return output.Render(w, format, rows)
