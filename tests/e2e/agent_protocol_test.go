@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -25,8 +26,27 @@ type testServer struct {
 	cancel context.CancelFunc
 }
 
-func startTestServer(t *testing.T, home string, port string) *testServer {
+// startTestServer spawns an `aps serve` subprocess on a kernel-assigned
+// loopback port and waits for /health to come up.
+//
+// Port allocation: we Listen on 127.0.0.1:0, capture the assigned port,
+// then close the listener and pass the port to `aps serve --addr`. This
+// is a small TOCTOU window (microseconds between Close and the
+// subprocess re-binding) where another process could grab the port.
+// For test reliability that's tolerable, and avoids the larger change
+// of teaching `aps serve` to accept a pre-bound listener fd. Each call
+// gets a unique port, so parallel tests don't collide.
+//
+// Process cleanup: t.Cleanup cancels the context, which (via
+// exec.CommandContext) sends SIGKILL to the subprocess on macOS/linux,
+// and cmd.Wait reaps it. No leaked `aps serve` processes between runs.
+func startTestServer(t *testing.T, home string) *testServer {
 	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err, "Failed to allocate test port")
+	port := fmt.Sprintf("%d", ln.Addr().(*net.TCPAddr).Port)
+	require.NoError(t, ln.Close(), "Failed to close port allocator listener")
 
 	tmpDir := t.TempDir()
 	stdoutPath := tmpDir + "/server-stdout.log"
@@ -123,7 +143,7 @@ func addTestAction(t *testing.T, home, profileID, actionID, actionScript string)
 func TestAgentProtocol_UserStory1_StatelessRun(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18080")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	createTestProfileAndAction(t, home, "myagent", "hello", `#!/bin/sh
@@ -203,7 +223,7 @@ exit 1`)
 func TestAgentProtocol_UserStory2_StreamingRun(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18081")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	createTestProfileAndAction(t, home, "stream-agent", "longrun", `#!/bin/sh
@@ -256,7 +276,7 @@ done`)
 func TestAgentProtocol_UserStory4_AgentDiscovery(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18082")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	stdout, _, err := runAPS(t, home, "profile", "create", "agent-a", "--display-name", "Agent A")
@@ -318,7 +338,7 @@ echo "test"`)
 func TestAgentProtocol_UserStory5_ThreadSessionManagement(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18083")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	createTestProfileAndAction(t, home, "thread-agent", "hello", `#!/bin/sh
@@ -353,7 +373,7 @@ echo "Hello from thread!"`)
 func TestAgentProtocol_StoreOperations(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18084")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	t.Run("Store put and get", func(t *testing.T) {
@@ -391,7 +411,7 @@ func TestAgentProtocol_StoreOperations(t *testing.T) {
 func TestAgentProtocol_BackgroundRun(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18085")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	createTestProfileAndAction(t, home, "bg-agent", "quick", `#!/bin/sh
@@ -418,7 +438,7 @@ echo "Quick task done"`)
 func TestAgentProtocol_ErrorHandling(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	server := startTestServer(t, home, "18086")
+	server := startTestServer(t, home)
 	baseURL := server.url
 
 	t.Run("Invalid JSON returns 400", func(t *testing.T) {
