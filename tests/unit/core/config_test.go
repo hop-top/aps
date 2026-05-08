@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"hop.top/aps/internal/core"
+	kitconfig "hop.top/kit/go/core/config"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,6 +79,51 @@ func TestLoadConfigLayered(t *testing.T) {
 		cfg, err := core.LoadConfig()
 		assert.NoError(t, err)
 		assert.Equal(t, core.DefaultPrefix, cfg.Prefix)
+	})
+}
+
+// TestLoadConfig_CLIOverrides verifies that core.SetConfigArgs threads
+// kit cli's parsed -c/--config tokens into kitconfig.Load (T-0583).
+func TestLoadConfig_CLIOverrides(t *testing.T) {
+	t.Run("override wins over file", func(t *testing.T) {
+		tempHome := t.TempDir()
+		os.Setenv("XDG_CONFIG_HOME", tempHome)
+		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+
+		userDir := filepath.Join(tempHome, "aps")
+		assert.NoError(t, os.MkdirAll(userDir, 0o755))
+		userYAML := []byte("prefix: USER\nisolation:\n  default_level: process\n")
+		assert.NoError(t, os.WriteFile(filepath.Join(userDir, "config.yaml"), userYAML, 0o644))
+
+		// Round-trip the raw token through ParseConfigArgs so the test
+		// matches the wiring in internal/cli/root.go (which never hands
+		// LoadConfig a flat dotted-key map).
+		_, overrides, perr := kitconfig.ParseConfigArgs(
+			[]string{"isolation.default_level=container"})
+		assert.NoError(t, perr)
+		core.SetConfigArgs(nil, overrides)
+		t.Cleanup(func() { core.SetConfigArgs(nil, nil) })
+
+		cfg, err := core.LoadConfig()
+		assert.NoError(t, err)
+		assert.Equal(t, "USER", cfg.Prefix)
+		assert.Equal(t, core.IsolationContainer, cfg.Isolation.DefaultLevel)
+	})
+
+	t.Run("extra config path layers in", func(t *testing.T) {
+		tempHome := t.TempDir()
+		os.Setenv("XDG_CONFIG_HOME", tempHome)
+		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+
+		extra := filepath.Join(tempHome, "extra.yaml")
+		assert.NoError(t, os.WriteFile(extra, []byte("prefix: FROM_EXTRA\n"), 0o644))
+
+		core.SetConfigArgs([]string{extra}, nil)
+		t.Cleanup(func() { core.SetConfigArgs(nil, nil) })
+
+		cfg, err := core.LoadConfig()
+		assert.NoError(t, err)
+		assert.Equal(t, "FROM_EXTRA", cfg.Prefix)
 	})
 }
 

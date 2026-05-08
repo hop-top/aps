@@ -3,11 +3,45 @@ package core
 import (
 	"os"
 	"path/filepath"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 	kitconfig "hop.top/kit/go/core/config"
 	"hop.top/kit/go/core/xdg"
 )
+
+// configArgsState holds the parsed -c/--config CLI tokens. Populated once
+// from cli root init via SetConfigArgs (T-0583); LoadConfig consumes these
+// values when calling kitconfig.Load. Package-level state was chosen over
+// threading the kit cli.Root through LoadConfig's signature because
+// LoadConfig is called from ~49 sites (CLI subcommands, isolation
+// providers, secrets resolution, capability manager, tests). Threading
+// would ripple through every layer; a single setter from the CLI root is
+// the smaller blast radius.
+var configArgsState struct {
+	sync.RWMutex
+	paths     []string
+	overrides map[string]any
+}
+
+// SetConfigArgs installs the parsed -c/--config tokens for subsequent
+// LoadConfig calls. Intended to be called once from the CLI root's
+// PrePersistentRunE hook after kit/cli has parsed flags. Safe to call
+// from tests to inject overrides; safe to call multiple times (latest
+// wins). Pass nil/empty to reset.
+func SetConfigArgs(paths []string, overrides map[string]any) {
+	configArgsState.Lock()
+	defer configArgsState.Unlock()
+	configArgsState.paths = paths
+	configArgsState.overrides = overrides
+}
+
+// configArgs returns the currently installed -c/--config tokens.
+func configArgs() ([]string, map[string]any) {
+	configArgsState.RLock()
+	defer configArgsState.RUnlock()
+	return configArgsState.paths, configArgsState.overrides
+}
 
 // Config represents the global configuration for APS
 type Config struct {
@@ -135,9 +169,12 @@ func LoadConfig() (*Config, error) {
 		projectPath = filepath.Join(cwd, ".aps.yaml")
 	}
 
+	extraPaths, overrides := configArgs()
 	if err := kitconfig.Load(config, kitconfig.Options{
 		UserConfigPath:    userPath,
 		ProjectConfigPath: projectPath,
+		ExtraConfigPaths:  extraPaths, // T-0583 — bare -c <path> tokens.
+		Overrides:         overrides,  // T-0583 — -c key=value tokens.
 	}); err != nil {
 		// Malformed YAML → fall back to defaults rather than surface an error.
 		return &Config{

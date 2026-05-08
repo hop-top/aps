@@ -15,7 +15,9 @@ import (
 	"hop.top/aps/internal/version"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	kitcli "hop.top/kit/go/console/cli"
+	kitconfigoverrides "hop.top/kit/go/core/config"
 	"hop.top/kit/go/core/upgrade"
 )
 
@@ -46,6 +48,19 @@ var noRedactFlag bool
 // flags directly, neither of which is on the cycle.
 func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	logging.SetRedactEnabled(!noRedactFlag)
+	// T-0583 — install parsed -c/--config tokens before any subcommand
+	// (or kit-installed hook downstream) calls core.LoadConfig. kit/cli
+	// has already parsed the flag by the time PrePersistentRunE fires.
+	// Read directly from the cobra flag rather than `root.ConfigArgs()`
+	// to avoid an init cycle: `var root = kitcli.New(...)` declares the
+	// hook by reference, so the function body cannot transitively read
+	// `root` without forcing Go's initializer cycle detector to fire.
+	if f := cmd.Root().PersistentFlags().Lookup("config"); f != nil {
+		if sa, ok := f.Value.(pflag.SliceValue); ok {
+			paths, overrides, _ := kitconfigoverrides.ParseConfigArgs(sa.GetSlice())
+			core.SetConfigArgs(paths, overrides)
+		}
+	}
 	if _, err := initPolicyEngine(eventBus); err != nil {
 		return err
 	}
@@ -60,7 +75,12 @@ var root = kitcli.New(kitcli.Config{
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.
 	Globals: []kitcli.Flag{
-		{Name: "config", Usage: "path to YAML config file"},
+		// NOTE: -c/--config is auto-registered by kit/cli (StringArrayP,
+		// repeatable, supports both bare paths and key=value overrides;
+		// see kit cli.go §Disable.Config). aps consumes the parsed tokens
+		// in applyNoRedactToggle via root.ConfigArgs() and threads them
+		// into core.LoadConfig (T-0583). Do not redeclare here — pflag
+		// panics on duplicate flag names.
 		{Name: "profile", Usage: "profile id (defaults to active profile)"},
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
 		{Name: "offline", Usage: "disable all network calls"},
