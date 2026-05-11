@@ -122,10 +122,12 @@ type HTTPBridge interface {
 ```
 
 **Used by:**
-- `DefaultHTTPBridge` - generic HTTP bridge for any protocol
-- `JSONRPCHTTPBridge` - specialized JSON-RPC over HTTP bridge
+- `DefaultHTTPBridge` - generic HTTP bridge component for any protocol
+- `JSONRPCHTTPBridge` - specialized JSON-RPC over HTTP bridge component
 
 **Pattern:** Allows stdio-based protocols (like ACP) to be exposed via HTTP for remote access.
+
+**Current maturity:** component-only. Bridge constructors and handlers exist, but `aps serve` does not mount them and no user-facing service path exposes them as a supported listener.
 
 ## Implementation Details
 
@@ -229,6 +231,28 @@ adapter.RegisterRoutes(mux, core)  // Can register routes if needed
 
 ## Protocol Registration
 
+### Active `aps serve` Path
+
+`aps serve` currently uses `adapters.DefaultManager()`, a thin APS facade over kit's `ext.Manager`, not the package-global `ProtocolRegistry`.
+
+The active startup flow is:
+
+```go
+func runServe() {
+    mgr := adapters.DefaultManager()
+    mgr.InitAll(ctx)
+
+    core := protocol.NewAPSAdapter()
+    handler := buildServerHandler(mgr, core, authToken)
+
+    http.ListenAndServe(":8080", handler)
+}
+```
+
+`DefaultManager()` registers the Agent Protocol extension. `buildServerHandler` then asks the manager to mount every extension that implements `protocol.HTTPProtocolAdapter`. Today that means Agent Protocol routes under `/v1/*`.
+
+The package-global `ProtocolRegistry` still exists for protocol experiments and standalone-server lifecycle tests, but it is not the runtime registration path for `aps serve`.
+
 ### Registry Separation
 
 ```go
@@ -244,25 +268,9 @@ func (r *ProtocolRegistry) RegisterHTTPAdapter(name string, adapter HTTPProtocol
 func (r *ProtocolRegistry) RegisterStandaloneServer(name string, server StandaloneProtocolServer)
 ```
 
-### Startup Flow (`internal/cli/serve.go`)
+### Legacy Registry Flow
 
-```go
-func runServe() {
-    // 1. Create HTTP mux
-    mux := http.NewServeMux()
-
-    // 2. Register all HTTP adapters' routes
-    registry.RegisterHTTPRoutes(mux, core)
-    // → Agent Protocol routes now in mux
-
-    // 3. Start main HTTP server
-    http.ListenAndServe(":8080", mux)
-
-    // 4. (Optional) Start standalone servers
-    registry.StartStandaloneServer("a2a", config)
-    registry.StartStandaloneServer("acp", config)
-}
-```
+`ProtocolRegistry.RegisterHTTPRoutes` can still mount registered HTTP adapters onto a mux in tests or internal experiments. Do not describe it as the `aps serve` startup path unless the CLI is changed to use it.
 
 ## Benefits of Unified Interface
 

@@ -60,7 +60,7 @@ var _ protocol.StandaloneProtocolServer = (*Server)(nil)
 **Three bridge types:**
 
 #### DefaultHTTPBridge
-Generic bridge for any ProtocolServer:
+Generic bridge component for any ProtocolServer:
 ```go
 type DefaultHTTPBridge struct {
     server ProtocolServer
@@ -71,7 +71,7 @@ func (b *DefaultHTTPBridge) GetHTTPHandler() http.Handler
 ```
 
 #### JSONRPCHTTPBridge
-Specialized for JSON-RPC 2.0 protocols (like ACP):
+Specialized JSON-RPC 2.0 bridge component for protocols like ACP:
 ```go
 type JSONRPCHTTPBridge struct {
     server ProtocolServer
@@ -91,6 +91,8 @@ type ProtocolServerAdapter struct {
 // No-op RegisterRoutes (server manages its own HTTP)
 func (a *ProtocolServerAdapter) RegisterRoutes(mux *http.ServeMux, core APSCore) error
 ```
+
+**Current maturity:** these bridge components are not mounted by `aps serve` and should not be documented as a supported service listener until a user-facing command wires them.
 
 ### 4. Updated Tests
 
@@ -114,7 +116,7 @@ func ManageProtocol(p protocol.ProtocolServer) {
 Protocols choose how to expose themselves:
 - **Native HTTP routes** → `HTTPProtocolAdapter` (Agent Protocol)
 - **Standalone server** → `StandaloneProtocolServer` (A2A, ACP)
-- **HTTP bridge** → `HTTPBridge` (expose stdio via HTTP)
+- **HTTP bridge** → `HTTPBridge` (component-level option; not currently a supported service path)
 
 ### ✅ Transport Agnostic
 Same interface works for:
@@ -236,6 +238,10 @@ Could load protocols from plugins:
 p := plugin.Load("./protocols/custom.so")
 registry.Register("custom", p.(protocol.ProtocolServer))
 ```
+
+### Active `aps serve` registration path
+
+`aps serve` currently mounts HTTP adapters through `adapters.DefaultManager()` and kit `ext.Manager`, not the global `ProtocolRegistry`. The global registry remains useful for tests and experiments, but docs for the runnable service API should describe the manager path unless the CLI is changed.
 
 ## Files Modified
 

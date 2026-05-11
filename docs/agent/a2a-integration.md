@@ -8,6 +8,11 @@
 
 A2A (Agent-to-Agent) is a standard protocol for communication between AI agents. In APS, each profile can act as an A2A agent, allowing profiles to send tasks and messages to each other.
 
+Current APS maturity: the A2A listener, agent card, task storage, and task
+status lifecycle are implemented. The built-in executor is placeholder-level
+and replies with `Processed: <message>`; it does not run profile actions,
+chat, or LLM-backed work yet.
+
 ---
 
 ## Key Concepts
@@ -59,7 +64,6 @@ When you want to **receive** tasks from other agents:
 1. **Enable A2A** in your profile configuration:
 ```yaml
 a2a:
-  enabled: true
   protocol_binding: jsonrpc
   listen_addr: "127.0.0.1:8081"
   public_endpoint: "http://localhost:8081"
@@ -282,7 +286,9 @@ For agents on other machines:
 a2a:
   public_endpoint: "https://my-agent.example.com:8081"
 ```
-3. **Configure authentication** (API key or mTLS)
+3. **Configure external protection** such as an authenticated tunnel or reverse
+   proxy. The current `aps a2a server` path does not enforce API key, mTLS, or
+   OAuth/OIDC authentication itself.
 4. **Use HTTPS** for production
 
 ---
@@ -291,22 +297,9 @@ a2a:
 
 ### Authentication
 
-**API Key** (simple):
-```yaml
-a2a:
-  auth:
-    type: apikey
-    key: "${A2A_API_KEY}"
-```
-
-**mTLS** (secure):
-```yaml
-a2a:
-  auth:
-    type: mtls
-    cert: "/path/to/cert.pem"
-    key: "/path/to/key.pem"
-```
+API key and mTLS helpers exist as component-level transport code, but they are
+not enforced by the current `aps a2a server` listener. Treat those modes as
+planned until server/client enforcement is wired and covered end to end.
 
 ### Authorization
 

@@ -7,6 +7,13 @@ This directory contains examples demonstrating the A2A (Agent-to-Agent) protocol
 1. APS installed and configured
 2. At least two profiles created with A2A enabled
 
+## Current Behavior
+
+These examples exercise the current A2A protocol listener, task storage, agent
+card discovery, and task lifecycle commands. The built-in executor is still
+placeholder-level: it replies with `Processed: <message>` and does not invoke a
+profile action, chat model, or deployment workflow.
+
 ## Examples
 
 ### 1. Basic Server-Client Communication
@@ -22,7 +29,6 @@ aps profile create worker --display-name "Worker Agent"
 # Enable A2A for worker profile
 # Edit ~/.local/share/aps/profiles/worker/profile.yaml and add:
 # a2a:
-#   enabled: true
 #   protocol_binding: "jsonrpc"
 #   listen_addr: "127.0.0.1:8081"
 #   public_endpoint: "http://localhost:8081"
@@ -91,7 +97,7 @@ aps a2a tasks show task-abc123 --profile worker
 #   Part 1 [text]: Process deployment for app1
 #
 # Message 2 (ID: msg-ghi789, Role: agent):
-#   Part 1 [text]: Deployment completed successfully
+#   Part 1 [text]: Processed: Process deployment for app1
 ```
 
 ### 2. Task Cancellation
@@ -110,6 +116,10 @@ aps a2a tasks show <task-id> --profile worker
 
 ### 3. Push Notifications
 
+Current push support stores push configuration on the running A2A server. It
+does not deliver task-update webhooks yet, so the subscription command should
+be treated as protocol configuration coverage, not end-to-end delivery.
+
 ```bash
 # Start a webhook server (example using netcat)
 # Terminal 1:
@@ -121,7 +131,7 @@ aps a2a tasks subscribe <task-id> --target worker --webhook http://localhost:900
 # Terminal 3: Send a message to trigger updates
 aps a2a tasks send --target worker --task-id <task-id> --message "Update task"
 
-# Terminal 1 will receive webhook notifications as the task progresses
+# Webhook delivery for task progress is not implemented yet.
 ```
 
 ### 4. Agent Card Management
@@ -309,7 +319,10 @@ a2a:
 
 ### Security Configuration
 
-For production deployments, configure mTLS or API key authentication in the profile's A2A settings.
+The current `aps a2a server` path does not enforce mTLS, OAuth/OIDC, or API key
+authentication. Transport auth helpers exist in the codebase, but production
+deployments should use an external authenticated tunnel or reverse proxy until
+server-side enforcement is wired end to end.
 
 ### Task Storage
 

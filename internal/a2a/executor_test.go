@@ -2,6 +2,7 @@ package a2a
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
@@ -13,6 +14,27 @@ import (
 	"hop.top/aps/internal/core"
 )
 
+type captureQueue struct {
+	events []a2a.Event
+}
+
+func (q *captureQueue) Read(context.Context) (a2a.Event, a2a.TaskVersion, error) {
+	return nil, 0, fmt.Errorf("read not implemented")
+}
+
+func (q *captureQueue) Write(_ context.Context, event a2a.Event) error {
+	q.events = append(q.events, event)
+	return nil
+}
+
+func (q *captureQueue) WriteVersioned(_ context.Context, event a2a.Event, _ a2a.TaskVersion) error {
+	return q.Write(context.Background(), event)
+}
+
+func (q *captureQueue) Close() error {
+	return nil
+}
+
 func TestNewExecutor(t *testing.T) {
 	tmpDir := t.TempDir()
 	config := &StorageConfig{
@@ -23,7 +45,7 @@ func TestNewExecutor(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -41,7 +63,7 @@ func TestExecutor_GetProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -61,7 +83,7 @@ func TestExecutor_Execute_NoMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -93,7 +115,7 @@ func TestExecutor_Execute_WithMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -118,6 +140,50 @@ func TestExecutor_Execute_WithMessage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestExecutor_Execute_DocumentsPlaceholderResponse(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := &StorageConfig{
+		BasePath: tmpDir,
+	}
+
+	storage, err := NewStorage(config)
+	require.NoError(t, err)
+
+	profile := &core.Profile{
+		ID:  "test-profile",
+		A2A: &core.A2AConfig{},
+	}
+
+	executor := NewExecutor(profile, storage)
+	ctx := context.Background()
+
+	taskID := a2a.NewTaskID()
+	q := &captureQueue{}
+
+	message := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: "deploy application"})
+	reqCtx := &a2asrv.RequestContext{
+		TaskID:     taskID,
+		Message:    message,
+		StoredTask: nil,
+	}
+
+	require.NoError(t, executor.Execute(ctx, reqCtx, q))
+
+	var agentText string
+	for _, event := range q.events {
+		msg, ok := event.(*a2a.Message)
+		if !ok {
+			continue
+		}
+		require.Len(t, msg.Parts, 1)
+		text, ok := msg.Parts[0].(a2a.TextPart)
+		require.True(t, ok)
+		agentText = text.Text
+	}
+
+	assert.Equal(t, "Processed: deploy application", agentText)
+}
+
 func TestExecutor_Execute_WithStoredTask(t *testing.T) {
 	tmpDir := t.TempDir()
 	config := &StorageConfig{
@@ -128,7 +194,7 @@ func TestExecutor_Execute_WithStoredTask(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -167,7 +233,7 @@ func TestExecutor_Execute_EmitsEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -203,7 +269,7 @@ func TestExecutor_Cancel_NoMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -236,7 +302,7 @@ func TestExecutor_Cancel_WithTask(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -274,7 +340,7 @@ func TestExecutor_Cancel_EmitsEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -313,7 +379,7 @@ func TestExecutor_Execute_MultipleTextParts(t *testing.T) {
 	require.NoError(t, err)
 
 	profile := &core.Profile{
-		ID: "test-profile",
+		ID:  "test-profile",
 		A2A: &core.A2AConfig{},
 	}
 
@@ -355,7 +421,7 @@ func TestExecutor_Execute_ComplexMessage(t *testing.T) {
 		ID:           "test-profile",
 		DisplayName:  "Test Agent",
 		Capabilities: []string{"execute", "search"},
-		A2A: &core.A2AConfig{},
+		A2A:          &core.A2AConfig{},
 	}
 
 	executor := NewExecutor(profile, storage)

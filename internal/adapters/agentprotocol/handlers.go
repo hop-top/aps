@@ -17,6 +17,17 @@ type streamingWriter struct {
 	done    chan bool
 }
 
+func runResponseFromState(state *protocol.RunState) RunResponse {
+	return RunResponse{
+		RunID:    state.RunID,
+		Status:   string(state.Status),
+		Output:   state.Output,
+		ExitCode: state.ExitCode,
+		Error:    state.Error,
+		Metadata: map[string]string{},
+	}
+}
+
 func (sw *streamingWriter) Write(event string, data []byte) error {
 	select {
 	case <-sw.done:
@@ -64,13 +75,7 @@ func (a *AgentProtocolAdapter) handleCreateRun(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	a.sendJSON(w, http.StatusCreated, RunResponse{
-		RunID:    state.RunID,
-		Status:   string(state.Status),
-		Output:   "",
-		ExitCode: state.ExitCode,
-		Metadata: map[string]string{},
-	})
+	a.sendJSON(w, http.StatusCreated, runResponseFromState(state))
 }
 
 func (a *AgentProtocolAdapter) handleRunWait(w http.ResponseWriter, r *http.Request) {
@@ -122,14 +127,7 @@ func (a *AgentProtocolAdapter) handleRunWait(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	a.sendJSON(w, http.StatusOK, RunResponse{
-		RunID:    state.RunID,
-		Status:   string(state.Status),
-		Output:   "",
-		ExitCode: state.ExitCode,
-		Error:    state.Error,
-		Metadata: map[string]string{},
-	})
+	a.sendJSON(w, http.StatusOK, runResponseFromState(state))
 }
 
 func (a *AgentProtocolAdapter) handleGetRun(w http.ResponseWriter, r *http.Request) {
@@ -150,13 +148,7 @@ func (a *AgentProtocolAdapter) handleGetRun(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	a.sendJSON(w, http.StatusOK, RunResponse{
-		RunID:    state.RunID,
-		Status:   string(state.Status),
-		Output:   "",
-		ExitCode: state.ExitCode,
-		Metadata: map[string]string{},
-	})
+	a.sendJSON(w, http.StatusOK, runResponseFromState(state))
 }
 
 func (a *AgentProtocolAdapter) handleRunAction(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,14 @@ Get started with A2A (Agent-to-Agent) protocol in 5 minutes.
 - APS installed
 - Go 1.23+ (if building from source)
 
+## Current Behavior
+
+The A2A server currently accepts task messages, stores task history, emits A2A
+status updates, and replies with placeholder text. It does not run profile
+actions or chat/LLM work yet. A completed task response should be treated as
+protocol plumbing, not proof that the worker profile performed the requested
+work.
+
 ## Quick Setup
 
 ### 1. Create Two Profiles
@@ -27,7 +35,6 @@ Edit `<data>/profiles/worker/profile.yaml`:
 id: worker
 display_name: Worker Agent
 a2a:
-  enabled: true
   protocol_binding: jsonrpc
   listen_addr: "127.0.0.1:8081"
   public_endpoint: "http://localhost:8081"
@@ -82,7 +89,7 @@ aps a2a tasks show task-01HN123ABC456 --profile worker
 1. You created an A2A server for the `worker` profile
 2. The server exposed an Agent Card at `/.well-known/agent-card`
 3. You sent a task message from the CLI
-4. The server processed the task and stored it
+4. The server emitted placeholder processing and stored the task
 5. You queried the task status
 
 ## Next Steps
@@ -179,7 +186,6 @@ Tasks are stored in:
 
 ```yaml
 a2a:
-  enabled: true                      # Enable A2A for this profile
   protocol_binding: "jsonrpc"        # Transport: jsonrpc, grpc, http
   listen_addr: "127.0.0.1:8081"     # Server listen address
   public_endpoint: "http://localhost:8081"  # Public endpoint URL
@@ -187,9 +193,12 @@ a2a:
 
 ### Supported Transports
 
-- **jsonrpc** (default): JSON-RPC 2.0 over HTTP
-- **grpc**: gRPC with Protocol Buffers
-- **http**: RESTful HTTP+JSON
+- **jsonrpc** (default): JSON-RPC 2.0 over HTTP. This is the normal
+  `aps a2a server` path.
+- **grpc**: Component-level transport code exists, but the current CLI server
+  does not expose a gRPC listener.
+- **http**: Component-level helper code exists; user-facing A2A serving is the
+  JSON-RPC HTTP endpoint above.
 
 ## Common Issues
 

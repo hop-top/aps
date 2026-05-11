@@ -9,8 +9,8 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,6 +172,7 @@ echo "Hello, World!"`)
 
 		assert.NotEmpty(t, result.RunID)
 		assert.Equal(t, "completed", result.Status)
+		assert.Equal(t, "Hello, World!\n", result.Output)
 	})
 
 	t.Run("Non-existent profile returns HTTP 404", func(t *testing.T) {

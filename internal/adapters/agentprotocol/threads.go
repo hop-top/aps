@@ -113,13 +113,7 @@ func (a *AgentProtocolAdapter) handleThreadRunCreate(w http.ResponseWriter, r *h
 		return
 	}
 
-	a.sendJSON(w, http.StatusCreated, RunResponse{
-		RunID:    state.RunID,
-		Status:   string(state.Status),
-		Output:   "",
-		ExitCode: state.ExitCode,
-		Metadata: map[string]string{},
-	})
+	a.sendJSON(w, http.StatusCreated, runResponseFromState(state))
 }
 
 func (a *AgentProtocolAdapter) handleThreadRunsList(w http.ResponseWriter, r *http.Request) {

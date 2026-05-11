@@ -69,12 +69,7 @@ func (a *AgentProtocolAdapter) handleRunsWaitExisting(w http.ResponseWriter, r *
 		return
 	}
 
-	a.sendJSON(w, http.StatusOK, map[string]interface{}{
-		"run_id":    state.RunID,
-		"status":    string(state.Status),
-		"output":    state,
-		"exit_code": state.ExitCode,
-	})
+	a.sendJSON(w, http.StatusOK, runResponseFromState(state))
 }
 
 func (a *AgentProtocolAdapter) handleRunsDelete(w http.ResponseWriter, r *http.Request) {

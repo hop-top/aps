@@ -8,6 +8,28 @@
 
 This document provides technical details for developers working on or extending the A2A protocol implementation in APS.
 
+## Current Maturity
+
+The current user-facing A2A server is a reachable HTTP JSON-RPC listener with
+filesystem-backed task storage and agent-card discovery. Task execution is
+placeholder-level: `internal/a2a/executor.go` emits status transitions and an
+agent text message shaped as `Processed: <input>`. It does not invoke profile
+actions, chat, or LLM-backed work yet.
+
+Supported through the normal CLI path:
+
+| Capability | Current status |
+| --- | --- |
+| Server listener | Ready for HTTP JSON-RPC via `aps a2a server --profile <id>` |
+| Agent card | Ready at `/.well-known/agent-card` |
+| Task get/list/cancel | Implemented with filesystem storage |
+| Streaming status events | Implemented by the A2A server/executor path |
+| Push configuration methods | Stored in memory on the running server; webhook delivery is not implemented |
+| Profile-backed execution | Placeholder; no profile action/chat dispatch |
+| IPC/gRPC transport adapters | Component-level transport package code and tests; not the normal server path |
+| API key auth helper | Component-level outbound request helper; not enforced by `aps a2a server` |
+| mTLS/OpenID/OAuth | Planned/component-level only; not enforced by `aps a2a server` |
+
 ## Architecture
 
 ### Component Structure
@@ -58,7 +80,7 @@ Client.SendMessage()
     ↓
 a2aclient.Client
     ↓
-HTTP/gRPC Transport
+Agent Card preferred transport
     ↓
 Target Server
     ↓
@@ -180,9 +202,18 @@ func (e *Executor) Cancel(ctx context.Context, reqCtx *a2asrv.RequestContext, qu
 **Execution Flow**:
 1. Receive task via `RequestContext`
 2. Emit `TaskStatusUpdateEvent` (submitted → working)
-3. Process message (placeholder - extend for actual work)
+3. Process the first text part with placeholder text handling
 4. Emit `TaskStatusUpdateEvent` (working → completed)
 5. Save to storage
+
+Current response behavior:
+
+```text
+Processed: <first text part>
+```
+
+Do not document this executor as profile-backed task execution until a routing
+contract exists and the executor calls the profile action/chat path.
 
 **Extension Points**:
 - Override `Execute` to implement custom task processing
@@ -223,7 +254,9 @@ type IPCTransport struct {
 - Polling interval: 100ms
 - File permissions: 0700
 
-**Use Case**: Communication between profiles in same isolation tier (Process Tier 1).
+**Current status**: Component-level. The package has transport code and unit
+coverage, but `aps a2a server` starts the HTTP JSON-RPC server path rather than
+an IPC listener.
 
 ### HTTP Transport
 
@@ -243,7 +276,9 @@ type HTTPTransport struct {
 - Default endpoint: `http://127.0.0.1:8081/`
 - Content-Type: `application/json`
 
-**Use Case**: Communication across machines or isolation tiers.
+**Current status**: Component-level helper for direct transport use. The
+normal CLI server path is the A2A SDK JSON-RPC handler mounted by
+`internal/a2a/server.go`.
 
 ### gRPC Transport
 
@@ -262,13 +297,14 @@ type GRPCTransport struct {
 - Connection pooling via `grpc.Dial`
 - Default address: `127.0.0.1:8081`
 
-**Use Case**: High-performance streaming between services.
+**Current status**: Component-level. Do not describe gRPC as a ready
+user-facing A2A server transport until a CLI/server path mounts it.
 
 ### Transport Selection
 
 **File**: `internal/a2a/transport/selector.go`
 
-Automatic transport selection based on:
+Transport selection helpers exist for:
 1. Profile's `protocol_binding` setting
 2. Isolation tier mapping
 3. Agent Card `PreferredTransport`
@@ -277,10 +313,12 @@ Automatic transport selection based on:
 func SelectTransport(profile *core.Profile, card *a2a.AgentCard) (Transport, error)
 ```
 
-**Logic**:
+**Component logic**:
 - Process (Tier 1) → IPC
 - Platform (Tier 2) → HTTP or gRPC (based on config)
 - Container (Tier 3) → HTTP or gRPC with mTLS
+
+This selector is not the same as the current `aps a2a server` startup path.
 
 ---
 
@@ -306,7 +344,9 @@ func GenerateAgentCardFromProfile(profile *core.Profile) (*a2a.AgentCard, error)
 
 **Capabilities**:
 - Streaming: `true` (via Go iterators)
-- Push Notifications: `true` (webhook support)
+- Push Notifications: `true` in the generated card, but current support is
+  limited to storing push configuration on the running server. Webhook delivery
+  for task updates is not implemented.
 - State Transition History: `false` (not implemented)
 
 **Validation**:
@@ -325,17 +365,17 @@ func GenerateAgentCardFromProfile(profile *core.Profile) (*a2a.AgentCard, error)
 
 ```go
 type A2AConfig struct {
-    Enabled         bool   `yaml:"enabled,omitempty"`
     ProtocolBinding string `yaml:"protocol_binding,omitempty"`
     ListenAddr      string `yaml:"listen_addr,omitempty"`
     PublicEndpoint  string `yaml:"public_endpoint,omitempty"`
+    SecurityScheme  string `yaml:"security_scheme,omitempty"`
+    IsolationTier   string `yaml:"isolation_tier,omitempty"`
 }
 ```
 
 **Example**:
 ```yaml
 a2a:
-  enabled: true
   protocol_binding: "jsonrpc"  # or "grpc", "http"
   listen_addr: "127.0.0.1:8081"
   public_endpoint: "http://localhost:8081"
@@ -389,7 +429,7 @@ func ErrInvalidMessage(msg string) error
 
 **Usage**:
 ```go
-if profile.A2A == nil || !profile.A2A.Enabled {
+if profile.A2A == nil {
     return nil, a2a.ErrA2ANotEnabled
 }
 ```
@@ -527,23 +567,24 @@ os.WriteFile(file, data, 0600)  // Files: owner read/write only
 
 ### Authentication
 
-**Supported Schemes** (via `transport/auth.go`):
-- API Key (header-based)
-- mTLS (mutual TLS)
-- OAuth2/OIDC (token-based)
+**Component support** (via `transport/auth.go`):
+- API Key can be applied to outbound HTTP requests with `X-API-Key`.
+- mTLS configuration can be validated from profile secrets, but it is not wired
+  into the current A2A server listener.
+- OpenID is represented as a config enum, but `ApplyAuth` does not implement
+  it.
 
 **Configuration**:
 ```yaml
 a2a:
-  auth:
-    type: "apikey"  # or "mtls", "oauth2"
-    key: "${A2A_API_KEY}"  # From environment
+  security_scheme: "apikey"
 ```
 
 ### Network Security
 
 - Use HTTPS for production deployments
-- Enable mTLS for container isolation (Tier 3)
+- Treat mTLS/OpenID/OAuth as planned until the server and client paths enforce
+  them end to end
 - Validate Agent Cards before connecting
 - Sanitize task inputs
 

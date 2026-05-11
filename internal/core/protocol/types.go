@@ -37,6 +37,7 @@ type RunState struct {
 	StartTime  time.Time   `json:"start_time"`
 	EndTime    *time.Time  `json:"end_time,omitempty"`
 	ExitCode   *int        `json:"exit_code,omitempty"`
+	Output     string      `json:"output,omitempty"`
 	OutputSize int64       `json:"output_size"`
 	Error      string      `json:"error,omitempty"`
 	Metadata   interface{} `json:"metadata,omitempty"`

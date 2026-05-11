@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -75,6 +76,7 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 	a.runMutex.Unlock()
 
 	var cmd *exec.Cmd
+	var stdoutBuffer bytes.Buffer
 	var stdoutPipe *os.File
 	var stdoutReader *os.File
 	var err error
@@ -98,6 +100,7 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 		if err != nil {
 			return nil, err
 		}
+		cmd.Stdout = &stdoutBuffer
 	}
 
 	state.Status = RunStatusRunning
@@ -138,6 +141,10 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 
 	now = time.Now()
 	state.EndTime = &now
+	if stream == nil {
+		state.Output = stdoutBuffer.String()
+		state.OutputSize = int64(stdoutBuffer.Len())
+	}
 
 	return state, nil
 }
@@ -196,6 +203,7 @@ func (a *APSAdapter) streamOutput(ctx context.Context, cmd *exec.Cmd, stdoutRead
 			data := make([]byte, n)
 			copy(data, buf[:n])
 			state.OutputSize += int64(n)
+			state.Output += string(data)
 
 			if err := stream.Write("output", data); err != nil {
 				return
