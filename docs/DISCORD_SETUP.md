@@ -7,9 +7,11 @@ service.
 
 1. A Discord bot token from the [Discord Developer Portal](https://discord.com/developers/applications).
 2. An APS profile with the action you want to run.
-3. Discord channel IDs.
+3. Discord guild and channel IDs.
 4. A Discord Gateway client, bot process, or relay that can POST message-create
    JSON to `aps serve`.
+5. For Discord Interactions, the application public key from the Developer
+   Portal.
 
 `aps service add` records APS routing configuration. It does not create or run a
 Discord Gateway client.
@@ -22,10 +24,11 @@ aps profile create my-agent
 aps service add discord-support \
   --type discord \
   --profile my-agent \
+  --allowed-guild 9876543210 \
   --allowed-channel 1234567890123456789 \
   --default-action handle-discord \
   --reply text \
-  --env DISCORD_TOKEN=secret:DISCORD_TOKEN
+  --env DISCORD_BOT_TOKEN=secret:DISCORD_BOT_TOKEN
 
 aps service show discord-support
 aps service routes discord-support
@@ -64,8 +67,14 @@ Discord channel IDs are numeric strings, for example
 
 ## Smoke Test
 
-There is no `aps service test` command yet. Use `aps serve` and POST a
-Discord-shaped JSON payload:
+Use `aps service test` for static validation:
+
+```bash
+aps service test discord-support
+```
+
+To exercise the route manually, run `aps serve` and POST a Discord-shaped JSON
+payload:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/services/discord-support/webhook \
@@ -76,6 +85,29 @@ curl -X POST http://127.0.0.1:8080/services/discord-support/webhook \
 
 The service normalizes the message, routes it to `my-agent=handle-discord`, and
 returns Discord response JSON when the action succeeds.
+
+Gateway relays can also post Discord gateway envelopes. APS unwraps
+`t: "MESSAGE_CREATE"` and normalizes the nested `d` payload.
+
+## Interaction Signatures
+
+Discord Interactions use Ed25519 signatures. Configure the service for signed
+interaction requests with a public key:
+
+```bash
+aps service add discord-interactions \
+  --type discord \
+  --profile my-agent \
+  --receive interaction \
+  --default-action handle-discord \
+  --env DISCORD_BOT_TOKEN=secret:DISCORD_BOT_TOKEN \
+  --env DISCORD_PUBLIC_KEY=env:DISCORD_PUBLIC_KEY
+```
+
+The validator expects `X-Signature-Ed25519` and `X-Signature-Timestamp` headers.
+If you set `discord_public_key` or `discord_public_key_env` in service options,
+or bind `DISCORD_PUBLIC_KEY=env:<name>`, APS verifies `timestamp + body` using
+that public key before normalizing.
 
 ## Normalized Message
 
@@ -108,6 +140,12 @@ Your action receives a JSON payload like:
 The normalizer preserves Discord `thread_id`, `message_reference.message_id`,
 or `referenced_message.id` as normalized thread context. Your profile action can
 use that context when deciding how to reply.
+
+Outbound delivery uses the Discord channel messages API. Reply threads are sent
+with `message_reference`; topic-style threads are sent to the thread channel.
+Attachment URLs are carried as embeds, with image attachments rendered as image
+embeds. Direct file upload is not attempted from normalized URL-only
+attachments.
 
 ## Multiple Servers Or Channels
 
@@ -156,6 +194,7 @@ aps adapter messenger start discord-bot
 | --- | --- |
 | Route missing | `aps service routes discord-support` and `aps serve` |
 | Bot cannot read channel | Discord bot permissions and channel ID |
+| Guild rejected | Confirm the incoming `guild_id` matches `--allowed-guild` |
 | Message not routed | Confirm `--default-action` exists on the service profile |
 | Gateway events not arriving | Check your bot/relay process; APS does not run one for service config |
 | Need route simulation | Use `aps adapter messenger test <device>` for legacy device links only |
@@ -165,4 +204,5 @@ aps adapter messenger start discord-bot
 - Grant the bot minimum channel permissions.
 - Use `aps serve --auth-token` for exposed routes.
 - Keep the bot token in a secret-backed environment variable.
+- Verify Discord Interaction signatures before exposing interaction routes.
 - Validate all message content in profile actions.

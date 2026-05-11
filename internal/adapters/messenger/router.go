@@ -52,6 +52,8 @@ type MessageRouter struct {
 	executor   ActionExecutor
 }
 
+var _ msgtypes.MessageRouter = (*MessageRouter)(nil)
+
 // NewMessageRouter creates a MessageRouter with the given RouteResolver and Normalizer.
 func NewMessageRouter(resolver RouteResolver, normalizer *Normalizer) *MessageRouter {
 	core, err := protocol.NewAPSAdapter()
@@ -130,6 +132,27 @@ func (r *MessageRouter) Route(ctx context.Context, msg *msgtypes.NormalizedMessa
 	msg.ProfileID = target.ProfileID
 
 	return result, nil
+}
+
+func (r *MessageRouter) ResolveMessageRoute(ctx context.Context, msg *msgtypes.NormalizedMessage) (msgtypes.ExecutionRoute, error) {
+	result, err := r.Route(ctx, msg)
+	if err != nil {
+		return msgtypes.ExecutionRoute{}, err
+	}
+	if result == nil {
+		return msgtypes.ExecutionRoute{}, fmt.Errorf("message route result is nil")
+	}
+	if result.Status != "routed" {
+		if result.Error != nil {
+			return msgtypes.ExecutionRoute{}, result.Error
+		}
+		return msgtypes.ExecutionRoute{}, fmt.Errorf("message not routed: %s", result.Status)
+	}
+	return msgtypes.ExecutionRoute{
+		ProfileID:  result.ProfileID,
+		ActionName: result.ActionName,
+		Mapping:    result.Route,
+	}, nil
 }
 
 // ExecuteAction invokes the routed profile action with the normalized message

@@ -1,0 +1,20 @@
+{
+  "update_id": 555,
+  "message": {
+    "message_id": 77,
+    "message_thread_id": 12,
+    "date": 1773230400,
+    "from": {
+      "id": 42,
+      "first_name": "Ada",
+      "last_name": "Lovelace",
+      "username": "ada"
+    },
+    "chat": {
+      "id": -1001234567890,
+      "title": "Ops",
+      "type": "supergroup"
+    },
+    "text": "triage this"
+  }
+}

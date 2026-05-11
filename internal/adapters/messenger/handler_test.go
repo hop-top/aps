@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"hop.top/aps/internal/core"
 	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
@@ -163,6 +165,47 @@ func TestHandler_ServeHTTP_MethodNotAllowed(t *testing.T) {
 				t.Errorf("error = %v, want %q", resp["error"], "Method Not Allowed")
 			}
 		})
+	}
+}
+
+func TestHandler_ServeServiceWebhook_WhatsAppVerificationChallenge(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
+	if err := core.SaveService(&core.ServiceConfig{
+		ID:      "wa-support",
+		Type:    "message",
+		Adapter: "whatsapp",
+		Profile: "assistant",
+		Env: map[string]string{
+			"WHATSAPP_ACCESS_TOKEN": "token",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "whatsapp-cloud",
+			"phone_number_id": "123456789012345",
+			"verify_token":    "verify-me",
+		},
+	}); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+	handler := newTestHandler(map[string]*msgtypes.ProfileMessengerLink{}, map[string]string{}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/services/wa-support/webhook?hub.mode=subscribe&hub.verify_token=verify-me&hub.challenge=challenge-value", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeServiceWebhook(rec, req, "wa-support", "whatsapp")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status code = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if strings.TrimSpace(rec.Body.String()) != "challenge-value" {
+		t.Fatalf("challenge body = %q", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/services/wa-support/webhook?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=challenge-value", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeServiceWebhook(rec, req, "wa-support", "whatsapp")
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("bad token status code = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
 

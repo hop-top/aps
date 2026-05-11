@@ -1,6 +1,7 @@
 package messenger
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -135,6 +136,137 @@ func TestNormalizedMessage_TextPreview(t *testing.T) {
 				t.Errorf("TextPreview(%d) = %q, want %q", tt.maxLen, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNormalizedMessage_ConversationState(t *testing.T) {
+	tests := []struct {
+		name          string
+		msg           NormalizedMessage
+		wantServiceID string
+		wantScope     string
+		wantThreadID  string
+		assert        func(t *testing.T, state ConversationState)
+	}{
+		{
+			name: "group channel without platform thread uses channel session",
+			msg: NormalizedMessage{
+				Platform:    string(PlatformSlack),
+				WorkspaceID: "T123",
+				Sender:      Sender{ID: "U123"},
+				Channel:     Channel{ID: "C01ABC2DEF", Type: ChannelTypeGroup},
+				PlatformMetadata: map[string]any{
+					"messenger_name": "support-bot",
+				},
+			},
+			wantServiceID: "support-bot",
+			wantScope:     ConversationScopeChannel,
+			assert: func(t *testing.T, state ConversationState) {
+				t.Helper()
+				if strings.Contains(state.SessionID, "thread") {
+					t.Fatalf("threadless channel session should not include thread marker: %s", state.SessionID)
+				}
+				if !strings.Contains(state.ConversationID, "workspace:T123") {
+					t.Fatalf("conversation should include workspace: %s", state.ConversationID)
+				}
+			},
+		},
+		{
+			name: "platform thread narrows session identity",
+			msg: NormalizedMessage{
+				Platform:    string(PlatformSlack),
+				WorkspaceID: "T123",
+				Sender:      Sender{ID: "U123"},
+				Channel:     Channel{ID: "C01ABC2DEF", Type: ChannelTypeGroup},
+				Thread:      &Thread{ID: "1715430000.000100", Type: ThreadTypeReply},
+				PlatformMetadata: map[string]any{
+					"service_id": "support-bot",
+				},
+			},
+			wantServiceID: "support-bot",
+			wantScope:     ConversationScopeThread,
+			wantThreadID:  "1715430000.000100",
+			assert: func(t *testing.T, state ConversationState) {
+				t.Helper()
+				if state.ConversationID == state.SessionID {
+					t.Fatal("threaded session should be narrower than conversation")
+				}
+				if !strings.Contains(state.SessionID, "thread:1715430000.000100") {
+					t.Fatalf("session should include platform thread id: %s", state.SessionID)
+				}
+			},
+		},
+		{
+			name: "direct messages include sender in identity",
+			msg: NormalizedMessage{
+				Platform: string(PlatformTelegram),
+				Sender:   Sender{ID: "456"},
+				Channel:  Channel{ID: "456", Type: ChannelTypeDirect},
+			},
+			wantScope: ConversationScopeDirect,
+			assert: func(t *testing.T, state ConversationState) {
+				t.Helper()
+				if !strings.Contains(state.ConversationID, "sender:456") {
+					t.Fatalf("direct conversation should include sender: %s", state.ConversationID)
+				}
+			},
+		},
+		{
+			name: "phone messages isolate callers sharing a receiving number",
+			msg: NormalizedMessage{
+				Platform: string(PlatformSMS),
+				Sender:   Sender{ID: "+15551230001"},
+				Channel:  Channel{ID: "+15559870002"},
+			},
+			wantScope: ConversationScopeDirect,
+			assert: func(t *testing.T, state ConversationState) {
+				t.Helper()
+				if !strings.Contains(state.SessionID, "channel:%2B15559870002") {
+					t.Fatalf("phone session should include receiving number: %s", state.SessionID)
+				}
+				if !strings.Contains(state.SessionID, "sender:%2B15551230001") {
+					t.Fatalf("phone session should include sender number: %s", state.SessionID)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := tt.msg.ConversationState()
+			if state.ServiceID != tt.wantServiceID {
+				t.Errorf("ServiceID = %q, want %q", state.ServiceID, tt.wantServiceID)
+			}
+			if state.Scope != tt.wantScope {
+				t.Errorf("Scope = %q, want %q", state.Scope, tt.wantScope)
+			}
+			if state.ThreadID != tt.wantThreadID {
+				t.Errorf("ThreadID = %q, want %q", state.ThreadID, tt.wantThreadID)
+			}
+			if state.SessionID == "" {
+				t.Fatal("SessionID should not be empty")
+			}
+			if got := tt.msg.SessionThreadID(); got != state.SessionID {
+				t.Errorf("SessionThreadID() = %q, want %q", got, state.SessionID)
+			}
+			tt.assert(t, state)
+		})
+	}
+}
+
+func TestNormalizedMessage_ConversationState_DirectSendersDoNotShareSession(t *testing.T) {
+	base := NormalizedMessage{
+		Platform: string(PlatformSMS),
+		Channel:  Channel{ID: "+15559870002"},
+	}
+
+	first := base
+	first.Sender = Sender{ID: "+15551230001"}
+	second := base
+	second.Sender = Sender{ID: "+15551230009"}
+
+	if first.SessionThreadID() == second.SessionThreadID() {
+		t.Fatalf("different phone senders should not share session ID: %s", first.SessionThreadID())
 	}
 }
 

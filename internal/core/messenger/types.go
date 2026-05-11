@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -53,6 +54,37 @@ type Attachment struct {
 	SizeBytes int64  `json:"size_bytes,omitempty" yaml:"size_bytes,omitempty"`
 }
 
+const (
+	ChannelTypeDirect    = "direct"
+	ChannelTypeGroup     = "group"
+	ChannelTypeBroadcast = "broadcast"
+	ChannelTypeTopic     = "topic"
+
+	ThreadTypeReply = "reply"
+	ThreadTypeTopic = "topic"
+	ThreadTypeIssue = "issue"
+
+	ConversationScopeChannel = "channel"
+	ConversationScopeDirect  = "direct"
+	ConversationScopeThread  = "thread"
+)
+
+// ConversationState describes the stable APS conversation and session identity
+// for a normalized platform message.
+type ConversationState struct {
+	ServiceID      string `json:"service_id,omitempty" yaml:"service_id,omitempty"`
+	Platform       string `json:"platform" yaml:"platform"`
+	WorkspaceID    string `json:"workspace_id,omitempty" yaml:"workspace_id,omitempty"`
+	ChannelID      string `json:"channel_id" yaml:"channel_id"`
+	ChannelType    string `json:"channel_type,omitempty" yaml:"channel_type,omitempty"`
+	SenderID       string `json:"sender_id,omitempty" yaml:"sender_id,omitempty"`
+	ThreadID       string `json:"thread_id,omitempty" yaml:"thread_id,omitempty"`
+	ThreadType     string `json:"thread_type,omitempty" yaml:"thread_type,omitempty"`
+	Scope          string `json:"scope" yaml:"scope"`
+	ConversationID string `json:"conversation_id" yaml:"conversation_id"`
+	SessionID      string `json:"session_id" yaml:"session_id"`
+}
+
 // Validate checks that the message has required fields.
 func (m *NormalizedMessage) Validate() error {
 	if m.ID == "" {
@@ -76,6 +108,110 @@ func (m *NormalizedMessage) TextPreview(maxLen int) string {
 		return m.Text
 	}
 	return m.Text[:maxLen] + "..."
+}
+
+// ConversationState returns the message service policy identity for this
+// message. ConversationID identifies the outer channel or direct-message pair;
+// SessionID narrows to a platform thread when one exists.
+func (m *NormalizedMessage) ConversationState() ConversationState {
+	if m == nil {
+		return ConversationState{}
+	}
+
+	serviceID := m.serviceIdentity()
+	scope := ConversationScopeChannel
+	includeSender := m.isDirectConversation()
+	if includeSender {
+		scope = ConversationScopeDirect
+	}
+
+	conversationParts := []string{
+		"service", firstNonEmptyString(serviceID, m.Platform),
+		"platform", m.Platform,
+	}
+	if m.WorkspaceID != "" {
+		conversationParts = append(conversationParts, "workspace", m.WorkspaceID)
+	}
+	conversationParts = append(conversationParts, "channel", m.Channel.ID)
+	if includeSender && m.Sender.ID != "" {
+		conversationParts = append(conversationParts, "sender", m.Sender.ID)
+	}
+
+	sessionParts := append([]string{}, conversationParts...)
+	threadID := ""
+	threadType := ""
+	if m.Thread != nil && m.Thread.ID != "" {
+		threadID = m.Thread.ID
+		threadType = m.Thread.Type
+		scope = ConversationScopeThread
+		sessionParts = append(sessionParts, "thread", threadID)
+	}
+
+	return ConversationState{
+		ServiceID:      serviceID,
+		Platform:       m.Platform,
+		WorkspaceID:    m.WorkspaceID,
+		ChannelID:      m.Channel.ID,
+		ChannelType:    m.Channel.Type,
+		SenderID:       m.Sender.ID,
+		ThreadID:       threadID,
+		ThreadType:     threadType,
+		Scope:          scope,
+		ConversationID: stableMessageKey("msgconv:v1", conversationParts...),
+		SessionID:      stableMessageKey("msgsess:v1", sessionParts...),
+	}
+}
+
+// SessionThreadID returns the deterministic APS thread/session key for this
+// normalized message.
+func (m *NormalizedMessage) SessionThreadID() string {
+	return m.ConversationState().SessionID
+}
+
+func (m *NormalizedMessage) serviceIdentity() string {
+	if m.PlatformMetadata == nil {
+		return ""
+	}
+	for _, key := range []string{"service_id", "messenger_name"} {
+		if value, ok := m.PlatformMetadata[key].(string); ok && value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func (m *NormalizedMessage) isDirectConversation() bool {
+	if m.Channel.Type == ChannelTypeDirect {
+		return true
+	}
+	switch MessengerPlatform(m.Platform) {
+	case PlatformSMS, PlatformWhatsApp:
+		return true
+	default:
+		return false
+	}
+}
+
+func stableMessageKey(prefix string, parts ...string) string {
+	encoded := make([]string, 0, len(parts)+1)
+	encoded = append(encoded, prefix)
+	for _, part := range parts {
+		if part == "" {
+			encoded = append(encoded, "_")
+			continue
+		}
+		encoded = append(encoded, url.QueryEscape(part))
+	}
+	return strings.Join(encoded, ":")
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // TargetAction represents a parsed "profile-id:action-name" mapping target.

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -115,11 +117,16 @@ func TestBuildServerHandler_HealthBypassesAuth(t *testing.T) {
 
 func TestBuildServerHandler_MessageServiceWebhookMounted(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	requireTestProfileAction(t, "assistant", "reply")
 	if err := core.SaveService(&core.ServiceConfig{
 		ID:      "support-bot",
 		Type:    "message",
 		Adapter: "telegram",
 		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "reply",
+			"reply":          "none",
+		},
 	}); err != nil {
 		t.Fatalf("SaveService: %v", err)
 	}
@@ -146,5 +153,26 @@ func TestBuildServerHandler_MessageServiceWebhookMounted(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "message_id") {
 		t.Fatalf("response should be messenger pipeline JSON; body=%s", rec.Body.String())
+	}
+}
+
+func requireTestProfileAction(t *testing.T, profileID, actionID string) {
+	t.Helper()
+	if err := core.SaveProfile(&core.Profile{
+		ID:          profileID,
+		DisplayName: profileID,
+	}); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+	profileDir, err := core.GetProfileDir(profileID)
+	if err != nil {
+		t.Fatalf("GetProfileDir: %v", err)
+	}
+	actionsDir := filepath.Join(profileDir, "actions")
+	if err := os.MkdirAll(actionsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll actions: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(actionsDir, actionID+".sh"), []byte("printf routed"), 0o755); err != nil {
+		t.Fatalf("WriteFile action: %v", err)
 	}
 }

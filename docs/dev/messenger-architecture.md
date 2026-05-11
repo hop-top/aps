@@ -115,6 +115,22 @@ All message adapters normalize to:
 message-adapter code, but user-facing service aliases route them to `ticket`
 services.
 
+## Conversation And Thread Policy
+
+Message services derive APS conversation/session state from the normalized
+service/platform/channel/user/thread fields. The stable `ConversationID` is the
+outer channel or direct-message pair; the stable `SessionID` narrows that
+conversation to a platform thread when one exists.
+
+Direct-message and phone sessions include both the receiving channel/number and
+the sender ID, so two SMS or WhatsApp senders using the same receiving number
+do not share multi-turn state. Group/channel messages without a platform thread
+continue in the channel-root session; replies with `thread.id` continue in the
+platform thread session.
+
+Attachments, mentions, commands, and unsupported event behavior are defined in
+[Message conversation and thread policy](message-conversation-policy.md).
+
 ## Adapter Support
 
 | Adapter | Normalize support | Denormalize support | Service maturity |
@@ -122,8 +138,8 @@ services.
 | Telegram | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Ready when mounted with `aps serve` |
 | Slack | Events API event envelope JSON | text response JSON | Ready when mounted with `aps serve`; app verification is external |
 | Discord | message-create style JSON | content response JSON | Ready when mounted with `aps serve`; Gateway client is external |
-| SMS | Twilio-style or generic phone fields in JSON | text response metadata | Ready for JSON relays; native form webhook handling is external |
-| WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON | text response metadata | Ready for JSON relays |
+| SMS | Twilio-style or generic phone fields in JSON/form | text response metadata | Ready for Twilio or JSON relays |
+| WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON/form | text/template response metadata | Ready for Cloud API and Twilio-compatible relays |
 
 ## Runtime And Testing
 
