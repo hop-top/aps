@@ -58,10 +58,10 @@ type AdapterTypeMeta struct {
 var AdapterTypes = map[AdapterType]AdapterTypeMeta{
 	AdapterTypeMessenger: {Type: AdapterTypeMessenger, Description: "Telegram, Slack, etc.", Implemented: true},
 	AdapterTypeProtocol:  {Type: AdapterTypeProtocol, Description: "A2A, ACP, WebSocket", Implemented: true},
-	AdapterTypeDesktop:   {Type: AdapterTypeDesktop, Description: "Desktop applications", Implemented: false},
+	AdapterTypeDesktop:   {Type: AdapterTypeDesktop, Description: "Desktop applications", Implemented: true},
 	AdapterTypeMobile:    {Type: AdapterTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: true},
-	AdapterTypeSense:     {Type: AdapterTypeSense, Description: "Camera, microphone", Implemented: false},
-	AdapterTypeActuator:  {Type: AdapterTypeActuator, Description: "Robotics, hardware", Implemented: false},
+	AdapterTypeSense:     {Type: AdapterTypeSense, Description: "Camera, microphone", Implemented: true},
+	AdapterTypeActuator:  {Type: AdapterTypeActuator, Description: "Robotics, hardware", Implemented: true},
 }
 
 func ImplementedAdapterTypes() []AdapterType {
@@ -84,10 +84,19 @@ func IsAdapterTypeValid(t AdapterType) bool {
 	return ok
 }
 
+func IsLoadingStrategyValid(s LoadingStrategy) bool {
+	switch s {
+	case StrategySubprocess, StrategyScript, StrategyBuiltin:
+		return true
+	default:
+		return false
+	}
+}
+
 type Adapter struct {
 	Name         string          `json:"name" yaml:"name"`
-	Type         AdapterType      `json:"type" yaml:"type"`
-	Scope        AdapterScope     `json:"scope" yaml:"scope"`
+	Type         AdapterType     `json:"type" yaml:"type"`
+	Scope        AdapterScope    `json:"scope" yaml:"scope"`
 	ProfileID    string          `json:"profile_id,omitempty" yaml:"profile_id,omitempty"`
 	Strategy     LoadingStrategy `json:"strategy" yaml:"strategy"`
 	Description  string          `json:"description,omitempty" yaml:"description,omitempty"`
@@ -101,7 +110,7 @@ type Adapter struct {
 
 type AdapterRuntime struct {
 	Name      string        `json:"name"`
-	State     AdapterState   `json:"state"`
+	State     AdapterState  `json:"state"`
 	Health    HealthStatus  `json:"health"`
 	PID       int           `json:"pid,omitempty"`
 	StartedAt *time.Time    `json:"started_at,omitempty"`
@@ -115,7 +124,7 @@ type AdapterManifest struct {
 	APIVersion  string          `json:"api_version" yaml:"api_version"`
 	Kind        string          `json:"kind" yaml:"kind"`
 	Name        string          `json:"name" yaml:"name"`
-	Type        AdapterType      `json:"type" yaml:"type"`
+	Type        AdapterType     `json:"type" yaml:"type"`
 	Strategy    LoadingStrategy `json:"strategy" yaml:"strategy"`
 	Description string          `json:"description,omitempty" yaml:"description,omitempty"`
 	Config      map[string]any  `json:"config,omitempty" yaml:"config,omitempty"`
@@ -148,6 +157,12 @@ func DefaultStrategyForType(t AdapterType) LoadingStrategy {
 		return StrategySubprocess
 	case AdapterTypeProtocol:
 		return StrategyBuiltin
+	case AdapterTypeMobile:
+		return StrategyBuiltin
+	case AdapterTypeDesktop:
+		return StrategySubprocess
+	case AdapterTypeSense, AdapterTypeActuator:
+		return StrategyScript
 	default:
 		return StrategySubprocess
 	}
