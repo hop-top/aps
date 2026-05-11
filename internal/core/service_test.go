@@ -169,6 +169,44 @@ func TestValidateServiceConfig_MessageProviderConfig(t *testing.T) {
 	assert.Contains(t, invalid.Issues, "missing env binding TELEGRAM_BOT_TOKEN")
 }
 
+func TestValidateServiceConfig_SMSProviderConfig(t *testing.T) {
+	valid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TWILIO_ACCOUNT_SID": "AC123",
+			"TWILIO_AUTH_TOKEN":  "twilio-token",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "twilio",
+			"from":            "+15550100002",
+			"allowed_numbers": "+15550100001",
+			"receive":         "webhook",
+			"reply":           "text",
+		},
+	})
+	assert.True(t, valid.Valid)
+	assert.Empty(t, valid.Issues)
+
+	invalid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "reply",
+			"provider":       "carrier-x",
+		},
+	})
+	assert.False(t, invalid.Valid)
+	assert.Contains(t, invalid.Issues, `unsupported sms provider "carrier-x"`)
+	assert.Contains(t, invalid.Issues, "sms message service requires option from")
+	assert.Contains(t, invalid.Warnings, "sms service has no allowed numbers; any sender can route inbound messages")
+}
+
 func TestServiceWebhookURL_MessageService(t *testing.T) {
 	got, err := ServiceWebhookURL(&ServiceConfig{
 		ID:      "support-bot",

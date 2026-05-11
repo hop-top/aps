@@ -473,6 +473,14 @@ func completeDeliveryRequest(reply *DeliveryRequest, ingress NativeIngress, msg 
 	if reply.ThreadID == "" && msg.Thread != nil {
 		reply.ThreadID = msg.Thread.ID
 	}
+	if msg.Thread != nil && msg.Thread.Type != "" {
+		if reply.Metadata == nil {
+			reply.Metadata = map[string]any{}
+		}
+		if _, ok := reply.Metadata["thread_type"]; !ok {
+			reply.Metadata["thread_type"] = msg.Thread.Type
+		}
+	}
 }
 
 func runtimeStageAllowed(stages []RuntimeStage, stage RuntimeStage) bool {

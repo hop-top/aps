@@ -132,6 +132,7 @@ func (n *Normalizer) normalizeSlack(raw map[string]any) (*msgtypes.NormalizedMes
 		return nil, fmt.Errorf("no event field in slack payload")
 	}
 
+	eventType := getString(event, "type")
 	userID := getString(event, "user")
 	channelID := getString(event, "channel")
 	if userID == "" || channelID == "" {
@@ -150,10 +151,17 @@ func (n *Normalizer) normalizeSlack(raw map[string]any) (*msgtypes.NormalizedMes
 		normalizedType = "group"
 	}
 
+	text := getString(event, "text")
+	botMentioned := eventType == "app_mention" || slackTextMentionsUser(text, getString(event, "bot_id"))
+	if eventType == "app_mention" {
+		text = stripLeadingSlackMention(text)
+	}
+
 	msg := &msgtypes.NormalizedMessage{
-		ID:        fmt.Sprintf("msg_%d", time.Now().UnixNano()),
-		Timestamp: time.Now().UTC(),
-		Platform:  string(msgtypes.PlatformSlack),
+		ID:          firstNonEmpty(getString(event, "client_msg_id"), getString(raw, "event_id"), getString(event, "ts"), fmt.Sprintf("msg_%d", time.Now().UnixNano())),
+		Timestamp:   firstNonZeroTime(parseSlackTimestamp(getString(event, "ts")), time.Now().UTC()),
+		Platform:    string(msgtypes.PlatformSlack),
+		WorkspaceID: getString(raw, "team_id"),
 		Sender: msgtypes.Sender{
 			ID:         userID,
 			PlatformID: userID,
@@ -164,9 +172,11 @@ func (n *Normalizer) normalizeSlack(raw map[string]any) (*msgtypes.NormalizedMes
 			Type:       normalizedType,
 			PlatformID: channelID,
 		},
-		Text:             getString(event, "text"),
+		Text:             text,
 		PlatformMetadata: raw,
 	}
+	msg.PlatformMetadata["slack_event_type"] = eventType
+	msg.PlatformMetadata["slack_bot_mentioned"] = botMentioned
 
 	// Thread support via thread_ts.
 	threadTS := getString(event, "thread_ts")
@@ -196,9 +206,54 @@ func (n *Normalizer) normalizeSlack(raw map[string]any) (*msgtypes.NormalizedMes
 	return msg, nil
 }
 
+func parseSlackTimestamp(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	secRaw, fracRaw, _ := strings.Cut(value, ".")
+	sec, err := strconv.ParseInt(secRaw, 10, 64)
+	if err != nil {
+		return time.Time{}
+	}
+	var nsec int64
+	if fracRaw != "" {
+		if len(fracRaw) > 9 {
+			fracRaw = fracRaw[:9]
+		}
+		for len(fracRaw) < 9 {
+			fracRaw += "0"
+		}
+		nsec, _ = strconv.ParseInt(fracRaw, 10, 64)
+	}
+	return time.Unix(sec, nsec).UTC()
+}
+
+func firstNonZeroTime(values ...time.Time) time.Time {
+	for _, value := range values {
+		if !value.IsZero() {
+			return value
+		}
+	}
+	return time.Time{}
+}
+
+func stripLeadingSlackMention(text string) string {
+	fields := strings.Fields(strings.TrimSpace(text))
+	if len(fields) == 0 || !strings.HasPrefix(fields[0], "<@") || !strings.HasSuffix(fields[0], ">") {
+		return strings.TrimSpace(text)
+	}
+	return strings.TrimSpace(strings.Join(fields[1:], " "))
+}
+
+func slackTextMentionsUser(text, userID string) bool {
+	userID = strings.TrimSpace(userID)
+	return userID != "" && strings.Contains(text, "<@"+userID+">")
+}
+
 // normalizeDiscord extracts fields from a Discord message payload.
 // Expected structure: {"id": "...", "author": {"id": "..."}, "channel_id": "...", "content": "..."}.
 func (n *Normalizer) normalizeDiscord(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	raw = discordMessageCreatePayload(raw)
 	author := getMap(raw, "author")
 	if author == nil {
 		return nil, fmt.Errorf("missing author in discord message")
@@ -217,7 +272,7 @@ func (n *Normalizer) normalizeDiscord(raw map[string]any) (*msgtypes.NormalizedM
 
 	msg := &msgtypes.NormalizedMessage{
 		ID:          firstNonEmpty(getString(raw, "id"), fmt.Sprintf("msg_%d", time.Now().UnixNano())),
-		Timestamp:   time.Now().UTC(),
+		Timestamp:   parseDiscordTimestamp(getString(raw, "timestamp")),
 		Platform:    string(msgtypes.PlatformDiscord),
 		WorkspaceID: getString(raw, "guild_id"),
 		Sender: msgtypes.Sender{
@@ -267,6 +322,23 @@ func (n *Normalizer) normalizeDiscord(raw map[string]any) (*msgtypes.NormalizedM
 	}
 
 	return msg, nil
+}
+
+func discordMessageCreatePayload(raw map[string]any) map[string]any {
+	if strings.EqualFold(getString(raw, "t"), "MESSAGE_CREATE") {
+		if data := getMap(raw, "d"); data != nil {
+			return data
+		}
+	}
+	if strings.EqualFold(getString(raw, "type"), "MESSAGE_CREATE") {
+		if data := getMap(raw, "data"); data != nil {
+			return data
+		}
+		if event := getMap(raw, "event"); event != nil {
+			return event
+		}
+	}
+	return raw
 }
 
 // normalizeGitHub extracts fields from a GitHub webhook event.
@@ -457,6 +529,10 @@ func (n *Normalizer) normalizePhoneMessage(platform string, raw map[string]any) 
 	}
 
 	text := firstNonEmpty(getString(raw, "Body"), getString(raw, "body"), getString(raw, "text"))
+	mediaCount := getInt64(raw, "NumMedia")
+	if strings.TrimSpace(text) == "" && mediaCount == 0 {
+		return nil, fmt.Errorf("%s event requires Body, body, text, or media", platform)
+	}
 	messageID := firstNonEmpty(
 		getString(raw, "MessageSid"),
 		getString(raw, "SmsSid"),
@@ -485,7 +561,6 @@ func (n *Normalizer) normalizePhoneMessage(platform string, raw map[string]any) 
 		PlatformMetadata: raw,
 	}
 
-	mediaCount := getInt64(raw, "NumMedia")
 	for i := int64(0); i < mediaCount; i++ {
 		idx := strconv.FormatInt(i, 10)
 		url := getString(raw, "MediaUrl"+idx)
@@ -782,6 +857,19 @@ func parseUnixTimestamp(value string) time.Time {
 		return time.Now().UTC()
 	}
 	return time.Unix(seconds, 0).UTC()
+}
+
+func parseDiscordTimestamp(value string) time.Time {
+	if value == "" {
+		return time.Now().UTC()
+	}
+	if ts, err := time.Parse(time.RFC3339Nano, value); err == nil {
+		return ts.UTC()
+	}
+	if ts, err := time.Parse(time.RFC3339, value); err == nil {
+		return ts.UTC()
+	}
+	return time.Now().UTC()
 }
 
 func mediaAttachmentType(mimeType string) string {

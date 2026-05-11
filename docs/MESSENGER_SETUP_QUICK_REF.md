@@ -67,6 +67,7 @@ aps service add telegram-support \
   --allowed-chat "-1001234567890" \
   --default-action handle-telegram \
   --reply text \
+  --webhook-secret-token-env TELEGRAM_WEBHOOK_SECRET \
   --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 ```
 
@@ -132,7 +133,8 @@ aps service routes support-bot
 aps serve --addr 127.0.0.1:8080
 curl -X POST http://127.0.0.1:8080/services/support-bot/webhook \
   -H 'content-type: application/json' \
-  -d '{"message":{"message_id":1,"from":{"id":456},"chat":{"id":-1001234567890},"text":"hello"}}'
+  -H "x-telegram-bot-api-secret-token: $TELEGRAM_WEBHOOK_SECRET" \
+  -d '{"update_id":1000001,"message":{"message_id":1,"from":{"id":456},"chat":{"id":-1001234567890},"text":"hello"}}'
 ```
 
 For legacy adapter devices:

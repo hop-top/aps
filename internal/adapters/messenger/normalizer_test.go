@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"testing"
+	"time"
 
 	msgtypes "hop.top/aps/internal/core/messenger"
 )
@@ -387,6 +388,36 @@ func TestNormalizer_NormalizeSlack(t *testing.T) {
 				t.Helper()
 				if msg.Channel.Type != "group" {
 					t.Errorf("channel.Type = %q, want %q", msg.Channel.Type, "group")
+				}
+			},
+		},
+		{
+			name: "app mention strips leading bot mention",
+			raw: map[string]any{
+				"team_id":  "T123",
+				"event_id": "Ev123",
+				"event": map[string]any{
+					"type":         "app_mention",
+					"user":         "U12345",
+					"channel":      "C01ABC2DEF",
+					"channel_type": "channel",
+					"text":         "<@U999BOT> help me",
+					"ts":           "1710000000.000001",
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.ID != "Ev123" {
+					t.Errorf("id = %q, want event id", msg.ID)
+				}
+				if msg.WorkspaceID != "T123" {
+					t.Errorf("workspace = %q, want T123", msg.WorkspaceID)
+				}
+				if msg.Text != "help me" {
+					t.Errorf("text = %q, want stripped mention", msg.Text)
+				}
+				if mentioned, _ := msg.PlatformMetadata["slack_bot_mentioned"].(bool); !mentioned {
+					t.Errorf("slack_bot_mentioned metadata = false, want true")
 				}
 			},
 		},
@@ -805,6 +836,36 @@ func TestNormalizer_NormalizeDiscord(t *testing.T) {
 				}
 				if msg.Text != "Hello from Discord" {
 					t.Errorf("text = %q, want message content", msg.Text)
+				}
+			},
+		},
+		{
+			name: "gateway message create envelope",
+			raw: map[string]any{
+				"op": float64(0),
+				"t":  "MESSAGE_CREATE",
+				"d": map[string]any{
+					"id":         "1100000000000000001",
+					"channel_id": "1200000000000000002",
+					"guild_id":   "1300000000000000003",
+					"content":    "Gateway hello",
+					"timestamp":  "2026-05-11T12:00:00.000000+00:00",
+					"author": map[string]any{
+						"id":       "1400000000000000004",
+						"username": "alice",
+					},
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.ID != "1100000000000000001" {
+					t.Errorf("id = %q, want gateway message id", msg.ID)
+				}
+				if msg.Text != "Gateway hello" {
+					t.Errorf("text = %q, want Gateway hello", msg.Text)
+				}
+				if msg.Timestamp.Format(time.RFC3339) != "2026-05-11T12:00:00Z" {
+					t.Errorf("timestamp = %s, want gateway timestamp", msg.Timestamp.Format(time.RFC3339))
 				}
 			},
 		},

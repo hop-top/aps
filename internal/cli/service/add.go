@@ -41,10 +41,18 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.receive, "receive", "", "Message receive mode: polling or webhook")
 	cmd.Flags().StringVar(&opts.provider, "provider", "", "Message provider, such as twilio or whatsapp-cloud")
 	cmd.Flags().StringVar(&opts.from, "from", "", "Sender phone number or provider identity")
+	cmd.Flags().StringVar(&opts.webhookURL, "webhook-url", "", "Public provider webhook URL used for signature validation")
 	cmd.Flags().StringVar(&opts.phoneNumberID, "phone-number-id", "", "WhatsApp phone number ID")
+	cmd.Flags().StringVar(&opts.webhookSecretToken, "webhook-secret-token", "", "Telegram webhook secret token")
+	cmd.Flags().StringVar(&opts.webhookSecretTokenEnv, "webhook-secret-token-env", "", "Environment variable holding Telegram webhook secret token")
 	cmd.Flags().StringArrayVar(&opts.allowedChannels, "allowed-channel", nil, "Allowed message channel ID, repeatable")
+	cmd.Flags().StringArrayVar(&opts.allowedGuilds, "allowed-guild", nil, "Allowed Discord guild ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
+	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Message provider signing secret environment variable")
+	cmd.Flags().StringVar(&opts.botUserID, "bot-user-id", "", "Slack bot user ID used for mention-only routing")
+	cmd.Flags().BoolVar(&opts.requireBotMention, "require-bot-mention", false, "Require Slack channel messages to mention the bot")
+	cmd.Flags().StringVar(&opts.dedupTTL, "dedup-ttl", "", "Slack Events API duplicate event retention duration")
 	cmd.Flags().StringVar(&opts.defaultAction, "default-action", "", "Default profile action for routed messages or tickets")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
 	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate without writing")
@@ -70,29 +78,37 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 }
 
 type addOptions struct {
-	typeInput       string
-	adapter         string
-	profile         string
-	env             []string
-	labels          []string
-	description     string
-	site            string
-	project         string
-	jql             string
-	workspace       string
-	team            string
-	group           string
-	events          string
-	receive         string
-	provider        string
-	from            string
-	phoneNumberID   string
-	allowedChannels []string
-	allowedChats    []string
-	allowedNumbers  []string
-	defaultAction   string
-	reply           string
-	dryRun          bool
+	typeInput             string
+	adapter               string
+	profile               string
+	env                   []string
+	labels                []string
+	description           string
+	site                  string
+	project               string
+	jql                   string
+	workspace             string
+	team                  string
+	group                 string
+	events                string
+	receive               string
+	provider              string
+	from                  string
+	webhookURL            string
+	phoneNumberID         string
+	webhookSecretToken    string
+	webhookSecretTokenEnv string
+	allowedChannels       []string
+	allowedGuilds         []string
+	allowedChats          []string
+	allowedNumbers        []string
+	signingSecretEnv      string
+	botUserID             string
+	requireBotMention     bool
+	dedupTTL              string
+	defaultAction         string
+	reply                 string
+	dryRun                bool
 }
 
 func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
@@ -161,10 +177,20 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "receive", opts.receive)
 	addOption(options, "provider", opts.provider)
 	addOption(options, "from", opts.from)
+	addOption(options, "webhook_url", opts.webhookURL)
 	addOption(options, "phone_number_id", opts.phoneNumberID)
+	addOption(options, "webhook_secret_token", opts.webhookSecretToken)
+	addOption(options, "webhook_secret_token_env", opts.webhookSecretTokenEnv)
 	addOption(options, "allowed_channels", joinValues(opts.allowedChannels))
+	addOption(options, "allowed_guilds", joinValues(opts.allowedGuilds))
 	addOption(options, "allowed_chats", joinValues(opts.allowedChats))
 	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
+	addOption(options, "signing_secret_env", opts.signingSecretEnv)
+	addOption(options, "bot_user_id", opts.botUserID)
+	if opts.requireBotMention {
+		addOption(options, "require_bot_mention", "true")
+	}
+	addOption(options, "dedup_ttl", opts.dedupTTL)
 	addOption(options, "default_action", opts.defaultAction)
 	addOption(options, "reply", opts.reply)
 	if len(options) == 0 {

@@ -22,6 +22,7 @@ aps service add telegram-support \
   --allowed-chat "-1001234567890" \
   --default-action handle-telegram \
   --reply text \
+  --webhook-secret-token-env TELEGRAM_WEBHOOK_SECRET \
   --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 
 aps service show telegram-support
@@ -48,8 +49,9 @@ POST /services/telegram-support/webhook
 ```
 
 Configure Telegram, your ingress, or your relay to POST Bot API update JSON to
-that route. `aps service add` does not set the Telegram webhook or run a
-polling bot.
+that route. If `--webhook-secret-token` or `--webhook-secret-token-env` is set,
+APS requires Telegram's `X-Telegram-Bot-Api-Secret-Token` header to match.
+`aps service add` does not set the Telegram webhook or run a polling bot.
 
 ## Find A Chat ID
 
@@ -67,18 +69,25 @@ Common formats:
 
 ## Smoke Test
 
-There is no `aps service test` command yet. Use `aps serve` and POST a
-Telegram-shaped JSON payload:
+Use `aps service test` for static validation:
+
+```bash
+aps service test telegram-support
+```
+
+For an end-to-end webhook probe, run `aps serve` and POST a Telegram-shaped JSON
+payload:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/services/telegram-support/webhook \
   -H 'content-type: application/json' \
   -H "authorization: Bearer $APS_SERVICE_TOKEN" \
-  -d '{"message":{"message_id":1,"from":{"id":456,"first_name":"Alice"},"chat":{"id":-1001234567890,"type":"supergroup"},"text":"hello"}}'
+  -H "x-telegram-bot-api-secret-token: $TELEGRAM_WEBHOOK_SECRET" \
+  -d '{"update_id":1000001,"message":{"message_id":1,"date":1773230400,"from":{"id":456,"first_name":"Alice"},"chat":{"id":-1001234567890,"type":"supergroup"},"text":"hello"}}'
 ```
 
 The service normalizes the update, routes it to `my-agent=handle-telegram`, and
-returns Telegram `sendMessage` response JSON when the action succeeds.
+delivers successful action output through Telegram `sendMessage`.
 
 ## Normalized Message
 
@@ -86,7 +95,7 @@ Your action receives a JSON payload like:
 
 ```json
 {
-  "id": "msg_...",
+  "id": "telegram:update:1000001",
   "platform": "telegram",
   "profile_id": "my-agent",
   "sender": {
@@ -100,7 +109,13 @@ Your action receives a JSON payload like:
     "platform_id": "-1001234567890"
   },
   "text": "hello",
-  "platform_metadata": {}
+  "platform_metadata": {
+    "service_id": "telegram-support",
+    "messenger_name": "telegram-support",
+    "telegram_update_id": "1000001",
+    "telegram_message_id": "1",
+    "telegram_chat_id": "-1001234567890"
+  }
 }
 ```
 
@@ -142,6 +157,7 @@ aps adapter messenger start main-telegram
 | --- | --- |
 | Route missing | `aps service routes telegram-support` and `aps serve` |
 | Bot token rejected | Verify the token with BotFather and your relay/platform config |
+| Secret token rejected | Confirm Telegram sends `X-Telegram-Bot-Api-Secret-Token` and it matches the service option/env |
 | Message not routed | Confirm `--default-action` exists on the service profile |
 | Telegram cannot reach APS | Check public HTTPS ingress, tunnel, auth token, and bind address |
 | Need polling | Use a legacy adapter subprocess or external relay; `aps service add` is webhook-route configuration |
@@ -150,5 +166,6 @@ aps adapter messenger start main-telegram
 
 - Use private groups/channels for sensitive commands.
 - Use `aps serve --auth-token` if exposed beyond localhost.
+- Set a Telegram webhook secret token and keep it outside the service file with `--webhook-secret-token-env`.
 - Keep the bot token in a secret-backed environment variable.
 - Validate message text and attachments in profile actions.

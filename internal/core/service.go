@@ -491,17 +491,29 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 	switch adapter {
 	case "telegram":
 		requireEnv(env, result, "TELEGRAM_BOT_TOKEN")
+		validateTelegramWebhookSecret(options, result)
 	case "slack":
 		requireEnv(env, result, "SLACK_BOT_TOKEN", "SLACK_SIGNING_SECRET")
+		if truthyServiceOption(options["require_bot_mention"]) && strings.TrimSpace(options["bot_user_id"]) == "" {
+			result.Warnings = append(result.Warnings, "Slack require_bot_mention without bot_user_id only accepts app_mention events")
+		}
 	case "discord":
 		requireEnv(env, result, "DISCORD_BOT_TOKEN")
+		if strings.EqualFold(strings.TrimSpace(options["receive"]), "interaction") {
+			requireEnv(env, result, "DISCORD_PUBLIC_KEY")
+		}
 	case "sms":
 		provider := strings.TrimSpace(strings.ToLower(options["provider"]))
 		if provider == "" {
 			result.Issues = append(result.Issues, "sms message service requires option provider")
+		} else if provider != "twilio" && provider != "generic" {
+			result.Issues = append(result.Issues, fmt.Sprintf("unsupported sms provider %q", options["provider"]))
 		}
 		if strings.TrimSpace(options["from"]) == "" {
 			result.Issues = append(result.Issues, "sms message service requires option from")
+		}
+		if strings.TrimSpace(options["allowed_numbers"]) == "" {
+			result.Warnings = append(result.Warnings, "sms service has no allowed numbers; any sender can route inbound messages")
 		}
 		if provider == "twilio" || provider == "" {
 			requireEnv(env, result, "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN")
@@ -517,6 +529,21 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 		if provider == "whatsapp-cloud" || provider == "" {
 			requireEnv(env, result, "WHATSAPP_ACCESS_TOKEN")
 		}
+	}
+}
+
+func validateTelegramWebhookSecret(options map[string]string, result *ServiceValidationResult) {
+	token := strings.TrimSpace(options["webhook_secret_token"])
+	tokenEnv := strings.TrimSpace(options["webhook_secret_token_env"])
+	if token == "" && tokenEnv == "" {
+		result.Warnings = append(result.Warnings, "telegram webhook secret token not set; Telegram requests will not be secret-token validated")
+		return
+	}
+	if len(token) > 256 {
+		result.Issues = append(result.Issues, "telegram webhook secret token must be 256 characters or fewer")
+	}
+	if strings.ContainsAny(token, "\r\n") {
+		result.Issues = append(result.Issues, "telegram webhook secret token must not contain newlines")
 	}
 }
 
@@ -565,6 +592,15 @@ func requireEnv(env map[string]string, result *ServiceValidationResult, keys ...
 	}
 }
 
+func truthyServiceOption(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
+}
+
 func serviceDelivery(service *ServiceConfig) *ServiceDelivery {
 	if service.Delivery == nil {
 		service.Delivery = &ServiceDelivery{}
@@ -602,10 +638,12 @@ func SyntheticMessageWebhookPayload(adapter string) ([]byte, error) {
 	switch strings.TrimSpace(strings.ToLower(adapter)) {
 	case "telegram":
 		return json.Marshal(map[string]any{
+			"update_id": 1000001,
 			"message": map[string]any{
 				"message_id": 1,
 				"from":       map[string]any{"id": 1001, "first_name": "APS"},
 				"chat":       map[string]any{"id": -1001234567890, "type": "group"},
+				"date":       time.Now().Unix(),
 				"text":       "aps service test",
 			},
 		})

@@ -3,6 +3,7 @@ package messenger
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -111,6 +112,91 @@ func TestHandler_ServiceWebhookAcceptsProviderHookAuth(t *testing.T) {
 	}
 	if executor.input.ProfileID != "assistant" || executor.input.ActionID != "reply" {
 		t.Fatalf("executor input = %#v, want assistant/reply", executor.input)
+	}
+}
+
+func TestHandler_ServiceWebhookAcceptsSignedTwilioSMSForm(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	if err := core.SaveService(&core.ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TWILIO_AUTH_TOKEN": "twilio-token",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "twilio",
+			"from":            "+15550100002",
+			"allowed_numbers": "+15550100001",
+		},
+	}); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+
+	executor := &fakeActionExecutor{}
+	handler := newServiceTestHandler(executor)
+	form := url.Values{}
+	form.Set("MessageSid", "SM123")
+	form.Set("AccountSid", "AC123")
+	form.Set("From", "+15550100001")
+	form.Set("To", "+15550100002")
+	form.Set("Body", "hello over sms")
+	req := httptest.NewRequest(http.MethodPost, "https://hooks.example.test/services/sms-alerts/webhook", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(coremessenger.TwilioSignatureHeader, coremessenger.TwilioSignature("twilio-token", "https://hooks.example.test/services/sms-alerts/webhook", form))
+	rec := httptest.NewRecorder()
+
+	handler.ServeServiceWebhook(rec, req, "sms-alerts", "sms")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if executor.input.ProfileID != "assistant" || executor.input.ActionID != "reply" {
+		t.Fatalf("executor input = %#v, want assistant/reply", executor.input)
+	}
+}
+
+func TestHandler_ServiceWebhookRejectsDisallowedSMSNumber(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	if err := core.SaveService(&core.ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TWILIO_AUTH_TOKEN": "twilio-token",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "twilio",
+			"from":            "+15550100002",
+			"allowed_numbers": "+15550109999",
+		},
+	}); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+
+	executor := &fakeActionExecutor{}
+	handler := newServiceTestHandler(executor)
+	form := url.Values{}
+	form.Set("MessageSid", "SM123")
+	form.Set("From", "+15550100001")
+	form.Set("To", "+15550100002")
+	form.Set("Body", "hello over sms")
+	req := httptest.NewRequest(http.MethodPost, "https://hooks.example.test/services/sms-alerts/webhook", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(coremessenger.TwilioSignatureHeader, coremessenger.TwilioSignature("twilio-token", "https://hooks.example.test/services/sms-alerts/webhook", form))
+	rec := httptest.NewRecorder()
+
+	handler.ServeServiceWebhook(rec, req, "sms-alerts", "sms")
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d; body: %s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+	if executor.input.ProfileID != "" {
+		t.Fatalf("executor profile = %q, want no execution", executor.input.ProfileID)
 	}
 }
 

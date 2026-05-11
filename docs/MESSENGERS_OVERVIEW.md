@@ -8,7 +8,7 @@ Slack, Discord, SMS, and WhatsApp.
 | Platform | Alias | Channel format | Current mode |
 | --- | --- | --- | --- |
 | Telegram | `telegram` | numeric chat ID, for example `-1001234567890` | JSON webhook route through `aps serve` |
-| Slack | `slack` | channel ID, for example `C01ABC2DEF` | JSON webhook route through `aps serve` |
+| Slack | `slack` | channel ID, for example `C01ABC2DEF` | Events API webhook route through `aps serve` |
 | Discord | `discord` | numeric channel ID | JSON webhook route through `aps serve` |
 | SMS | `sms` | receiving phone number | JSON relay route through `aps serve` |
 | WhatsApp | `whatsapp` | phone number ID or receiving number | JSON webhook/relay route through `aps serve` |
@@ -38,11 +38,27 @@ aps service add support-bot \
   --allowed-chat "-1001234567890" \
   --default-action handle-telegram \
   --reply text \
+  --webhook-secret-token-env TELEGRAM_WEBHOOK_SECRET \
   --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 
 aps service show support-bot
 aps service routes support-bot
 aps serve --addr 127.0.0.1:8080
+```
+
+Slack Events API example:
+
+```bash
+aps service add slack-support \
+  --type slack \
+  --profile assistant \
+  --allowed-channel C01ABC2DEF \
+  --default-action handle-slack \
+  --reply text \
+  --require-bot-mention \
+  --bot-user-id U012BOT \
+  --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
+  --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
 
 The platform or a relay POSTs JSON to:
@@ -107,9 +123,14 @@ registrations.
 | --- | --- | --- | --- | --- | --- |
 | Service alias | `telegram` | `discord` | `slack` | `sms` | `whatsapp` |
 | Normalization | Bot API message JSON | Message-create JSON | Events API JSON | Phone webhook JSON | Cloud API or Twilio-style JSON |
-| Reply | `sendMessage` JSON | content JSON | text JSON | text metadata | text metadata |
+| Reply | Bot API `sendMessage` | content JSON | `chat.postMessage` | text metadata | text metadata |
 | Thread context | replies | replies/threads | `thread_ts` | no | message context |
-| External setup | Bot/webhook | Bot/Gateway or relay | App events | Provider relay if form encoded | Cloud webhook or relay |
+| External setup | Bot/webhook | Bot/Gateway or relay | Slack app Events API with signing secret and bot token | Provider relay if form encoded | Cloud webhook or relay |
+
+Slack service routes acknowledge URL verification challenges, validate
+`X-Slack-Signature` and `X-Slack-Request-Timestamp`, deduplicate repeated
+`event_id` deliveries, ignore bot messages, and can require channel messages to
+arrive as `app_mention` events or include the configured `--bot-user-id`.
 
 ## Conversation State
 

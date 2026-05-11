@@ -3,9 +3,12 @@ package messenger
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -32,18 +35,23 @@ type MessageLogger interface {
 // platform-specific payloads, routes them to the appropriate profile action,
 // and returns a platform-appropriate response.
 type Handler struct {
-	router       *MessageRouter
-	normalizer   *Normalizer
-	logger       MessageLogger
-	voiceHandler VoiceHandler
-	validator    *msgtypes.ServiceValidator
+	router            *MessageRouter
+	normalizer        *Normalizer
+	logger            MessageLogger
+	voiceHandler      VoiceHandler
+	validator         *msgtypes.ServiceValidator
+	telegramTransport TelegramTransport
+	slackTransport    SlackTransport
 }
 
 // NewHandler creates a Handler with the given router, normalizer, and optional
 // logger. The logger may be nil, in which case message logging is skipped.
 // Additional functional options may be provided (e.g. WithVoiceHandler).
 func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLogger, opts ...func(*Handler)) *Handler {
-	h := &Handler{router: router, normalizer: normalizer, logger: logger, validator: msgtypes.NewServiceValidator()}
+	validator := msgtypes.NewServiceValidator()
+	validator.Hooks[string(msgtypes.PlatformTelegram)] = msgtypes.TelegramAuthHook{}
+	validator.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
+	h := &Handler{router: router, normalizer: normalizer, logger: logger, validator: validator}
 	for _, opt := range opts {
 		opt(h)
 	}
@@ -56,7 +64,28 @@ func WithVoiceHandler(vh VoiceHandler) func(*Handler) {
 }
 
 func WithServiceValidator(v *msgtypes.ServiceValidator) func(*Handler) {
-	return func(h *Handler) { h.validator = v }
+	return func(h *Handler) {
+		if v != nil {
+			if v.Hooks == nil {
+				v.Hooks = msgtypes.ProviderAuthHooks{}
+			}
+			if _, ok := v.Hooks[string(msgtypes.PlatformTelegram)]; !ok {
+				v.Hooks[string(msgtypes.PlatformTelegram)] = msgtypes.TelegramAuthHook{}
+			}
+			if _, ok := v.Hooks[string(msgtypes.PlatformSlack)]; !ok {
+				v.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
+			}
+		}
+		h.validator = v
+	}
+}
+
+func WithTelegramTransport(t TelegramTransport) func(*Handler) {
+	return func(h *Handler) { h.telegramTransport = t }
+}
+
+func WithSlackTransport(t SlackTransport) func(*Handler) {
+	return func(h *Handler) { h.slackTransport = t }
 }
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
@@ -119,20 +148,38 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	}
 	if service != nil {
 		validationConfig := serviceValidationConfig(service)
+		form := formValuesForValidation(r.Header, rawBody)
 		if err := h.serviceValidator().ValidateRequest(r.Context(), msgtypes.RequestValidationInput{
-			Service: validationConfig,
-			Headers: r.Header,
-			Body:    rawBody,
+			Service:    validationConfig,
+			Method:     r.Method,
+			URL:        publicRequestURL(r, service),
+			Headers:    r.Header,
+			Body:       rawBody,
+			Form:       form,
+			RemoteAddr: r.RemoteAddr,
 		}); err != nil {
 			writeValidationError(w, err)
 			return
 		}
 	}
-
-	var body map[string]any
-	if err := json.Unmarshal(rawBody, &body); err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid JSON body: %v", err))
+	if service != nil && platform == string(msgtypes.PlatformTelegram) {
+		h.handleTelegramServiceWebhook(w, r, rawBody, messengerName, service)
 		return
+	}
+	if service != nil && platform == string(msgtypes.PlatformSlack) && serviceProvider(service, string(msgtypes.PlatformSlack)) == string(msgtypes.PlatformSlack) {
+		h.handleSlackServiceWebhook(w, r, rawBody, messengerName, service)
+		return
+	}
+
+	body, err := decodeWebhookBody(platform, r.Header, rawBody)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if msgtypes.MessengerPlatform(platform) == msgtypes.PlatformSlack {
+		if handleSlackAcknowledgement(w, body, h.serviceValidator(), messengerName, service) {
+			return
+		}
 	}
 
 	// Normalize the platform-specific event into a NormalizedMessage.
@@ -249,6 +296,302 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, response)
 }
 
+func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Request, rawBody []byte, serviceID string, service *core.ServiceConfig) {
+	provider := NewTelegramProvider(TelegramProviderConfig{
+		BotToken:  resolveServiceEnv(service, "TELEGRAM_BOT_TOKEN"),
+		Transport: h.telegramTransport,
+	})
+	validatingProvider := &serviceValidatingProvider{
+		base:      provider,
+		validator: h.serviceValidator(),
+		service:   serviceValidationConfig(service),
+	}
+	runtime, err := msgtypes.NewRuntime(
+		validatingProvider,
+		h.router,
+		&serviceRuntimeExecutor{router: h.router, service: service},
+		msgtypes.RuntimeOptions{ServiceID: serviceID},
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("telegram runtime failed: %v", err))
+		return
+	}
+
+	result, err := runtime.HandleIngress(r.Context(), msgtypes.NativeIngress{
+		ServiceID:  serviceID,
+		Provider:   string(msgtypes.PlatformTelegram),
+		Mode:       msgtypes.IngressModeWebhook,
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		Headers:    r.Header,
+		Query:      r.URL.Query(),
+		Body:       rawBody,
+		RemoteAddr: r.RemoteAddr,
+	})
+	if err != nil {
+		writeRuntimeError(w, err)
+		return
+	}
+	if result != nil && result.Message != nil {
+		_ = core.RecordServiceInboundEvent(serviceID, core.ServiceEventMeta{
+			MessageID: result.Message.ID,
+			Platform:  string(msgtypes.PlatformTelegram),
+			ChannelID: result.Message.Channel.ID,
+			SenderID:  result.Message.Sender.ID,
+			Status:    "received",
+		})
+		if result.Delivery != nil {
+			_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+				MessageID: result.Message.ID,
+				Platform:  string(msgtypes.PlatformTelegram),
+				ChannelID: result.Message.Channel.ID,
+				SenderID:  result.Message.Sender.ID,
+				Status:    result.Delivery.Status,
+			})
+		}
+	}
+
+	response := map[string]any{
+		"status":    "accepted",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	if result != nil {
+		if result.Message != nil {
+			response["message_id"] = result.Message.ID
+		}
+		response["route"] = result.Route.TargetAction()
+		if result.Result != nil {
+			response["status"] = result.Result.Status
+		}
+		if result.Delivery != nil {
+			response["delivery"] = result.Delivery
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Request, rawBody []byte, serviceID string, service *core.ServiceConfig) {
+	body, err := decodeWebhookBody(string(msgtypes.PlatformSlack), r.Header, rawBody)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if handleSlackAcknowledgement(w, body, h.serviceValidator(), serviceID, service) {
+		return
+	}
+
+	provider := NewSlackProvider(SlackProviderConfig{
+		BotToken:   resolveServiceEnv(service, "SLACK_BOT_TOKEN"),
+		BaseURL:    serviceOption(service, "slack_api_base_url"),
+		Transport:  h.slackTransport,
+		Normalizer: h.normalizer,
+	})
+	validatingProvider := &serviceValidatingProvider{
+		base:      provider,
+		validator: h.serviceValidator(),
+		service:   serviceValidationConfig(service),
+	}
+	runtime, err := msgtypes.NewRuntime(
+		validatingProvider,
+		h.router,
+		&serviceRuntimeExecutor{router: h.router, service: service},
+		msgtypes.RuntimeOptions{ServiceID: serviceID},
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("slack runtime failed: %v", err))
+		return
+	}
+
+	result, err := runtime.HandleIngress(r.Context(), msgtypes.NativeIngress{
+		ServiceID:  serviceID,
+		Provider:   string(msgtypes.PlatformSlack),
+		Mode:       msgtypes.IngressModeWebhook,
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		Headers:    r.Header,
+		Query:      r.URL.Query(),
+		Body:       rawBody,
+		RemoteAddr: r.RemoteAddr,
+	})
+	if err != nil {
+		writeProviderRuntimeError(w, string(msgtypes.PlatformSlack), err)
+		return
+	}
+	if result != nil && result.Message != nil {
+		_ = core.RecordServiceInboundEvent(serviceID, core.ServiceEventMeta{
+			MessageID: result.Message.ID,
+			Platform:  string(msgtypes.PlatformSlack),
+			ChannelID: result.Message.Channel.ID,
+			SenderID:  result.Message.Sender.ID,
+			Status:    "received",
+		})
+		if result.Delivery != nil {
+			_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+				MessageID: result.Message.ID,
+				Platform:  string(msgtypes.PlatformSlack),
+				ChannelID: result.Message.Channel.ID,
+				SenderID:  result.Message.Sender.ID,
+				Status:    result.Delivery.Status,
+			})
+		}
+	}
+
+	response := map[string]any{
+		"status":    "accepted",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	if result != nil {
+		if result.Message != nil {
+			response["message_id"] = result.Message.ID
+		}
+		response["route"] = result.Route.TargetAction()
+		if result.Result != nil {
+			response["status"] = result.Result.Status
+		}
+		if result.Delivery != nil {
+			response["delivery"] = result.Delivery
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+type serviceValidatingProvider struct {
+	base      msgtypes.MessageProvider
+	validator *msgtypes.ServiceValidator
+	service   msgtypes.ServiceValidationConfig
+}
+
+func (p *serviceValidatingProvider) Metadata() msgtypes.ProviderRuntimeMetadata {
+	return p.base.Metadata()
+}
+
+func (p *serviceValidatingProvider) NormalizeIngress(ctx context.Context, ingress msgtypes.NativeIngress) (*msgtypes.NormalizedMessage, error) {
+	msg, err := p.base.NormalizeIngress(ctx, ingress)
+	if err != nil {
+		return nil, err
+	}
+	if p.validator != nil {
+		if err := p.validator.ValidateMessage(p.service, msg); err != nil {
+			return nil, err
+		}
+	}
+	return msg, nil
+}
+
+func (p *serviceValidatingProvider) DeliverMessage(ctx context.Context, delivery msgtypes.DeliveryRequest) (*msgtypes.DeliveryReceipt, error) {
+	deliverer, ok := p.base.(msgtypes.ProviderDelivery)
+	if !ok {
+		return nil, fmt.Errorf("provider %q does not implement delivery", p.base.Metadata().Provider)
+	}
+	return deliverer.DeliverMessage(ctx, delivery)
+}
+
+type serviceRuntimeExecutor struct {
+	router  *MessageRouter
+	service *core.ServiceConfig
+}
+
+func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error) {
+	actionResult, err := e.router.ExecuteAction(ctx, handoff.ProfileID, handoff.ActionName, handoff.Message)
+	if err != nil {
+		return nil, err
+	}
+	result := &msgtypes.ExecutionResult{
+		Status: actionResult.Status,
+		Output: actionResult.Output,
+	}
+	if actionResult.Status != "success" || replyMode(e.service) == "none" || strings.TrimSpace(actionResult.Output) == "" {
+		return result, nil
+	}
+	result.Reply = &msgtypes.DeliveryRequest{
+		Text:     actionResult.Output,
+		Metadata: telegramReplyMetadata(handoff.Message),
+	}
+	return result, nil
+}
+
+func telegramReplyMetadata(msg *msgtypes.NormalizedMessage) map[string]any {
+	metadata := map[string]any{}
+	if msg == nil || msg.PlatformMetadata == nil {
+		return metadata
+	}
+	if id, ok := msg.PlatformMetadata["telegram_message_id"]; ok {
+		metadata["reply_to_message_id"] = id
+	}
+	if id, ok := msg.PlatformMetadata["telegram_message_thread_id"]; ok {
+		metadata["message_thread_id"] = id
+	}
+	return metadata
+}
+
+func replyMode(service *core.ServiceConfig) string {
+	if service == nil || service.Options == nil {
+		return "text"
+	}
+	value := strings.TrimSpace(strings.ToLower(service.Options["reply"]))
+	if value == "" || value == "auto" {
+		return "text"
+	}
+	return value
+}
+
+func serviceOption(service *core.ServiceConfig, key string) string {
+	if service == nil || service.Options == nil {
+		return ""
+	}
+	return strings.TrimSpace(service.Options[key])
+}
+
+func serviceProvider(service *core.ServiceConfig, fallback string) string {
+	if provider := serviceOption(service, "provider"); provider != "" {
+		return provider
+	}
+	return fallback
+}
+
+func resolveServiceEnv(service *core.ServiceConfig, key string) string {
+	if service != nil && service.Env != nil {
+		value := strings.TrimSpace(service.Env[key])
+		if strings.HasPrefix(value, "secret:") {
+			if envValue := os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:"))); envValue != "" {
+				return envValue
+			}
+		}
+		if value != "" && !strings.HasPrefix(value, "secret:") {
+			return value
+		}
+	}
+	return os.Getenv(key)
+}
+
+func writeRuntimeError(w http.ResponseWriter, err error) {
+	writeProviderRuntimeError(w, string(msgtypes.PlatformTelegram), err)
+}
+
+func writeProviderRuntimeError(w http.ResponseWriter, provider string, err error) {
+	var runtimeErr *msgtypes.RuntimeError
+	if !errors.As(err, &runtimeErr) {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("%s runtime failed: %v", provider, err))
+		return
+	}
+	switch runtimeErr.Stage {
+	case msgtypes.RuntimeStageNormalize:
+		if msgtypes.IsSenderNotAllowed(runtimeErr.Err) {
+			writeValidationError(w, runtimeErr.Err)
+			return
+		}
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("%s normalization failed: %v", provider, runtimeErr.Err))
+	case msgtypes.RuntimeStageRoute:
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("%s route failed: %v", provider, runtimeErr.Err))
+	case msgtypes.RuntimeStageExecute:
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("%s execution failed: %v", provider, runtimeErr.Err))
+	case msgtypes.RuntimeStageDeliver:
+		writeError(w, http.StatusBadGateway, fmt.Sprintf("%s delivery failed: %v", provider, runtimeErr.Err))
+	default:
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("%s runtime failed: %v", provider, runtimeErr.Err))
+	}
+}
+
 // extractPlatform parses the platform name from a URL path. It expects the
 // path to contain /messengers/{platform}/webhook and returns the platform
 // segment. Returns empty string if the pattern is not found.
@@ -336,6 +679,12 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	_, _ = w.Write(logging.ApplyBytes(body))
 }
 
+func writeText(w http.ResponseWriter, status int, body string) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(body))
+}
+
 func (h *Handler) serviceValidator() *msgtypes.ServiceValidator {
 	if h.validator != nil {
 		return h.validator
@@ -361,6 +710,132 @@ func serviceValidationConfig(service *core.ServiceConfig) msgtypes.ServiceValida
 	return msgtypes.ServiceValidationConfig{
 		ID:      service.ID,
 		Adapter: service.Adapter,
+		Env:     service.Env,
 		Options: service.Options,
 	}
+}
+
+func handleSlackAcknowledgement(w http.ResponseWriter, body map[string]any, validator *msgtypes.ServiceValidator, serviceID string, service *core.ServiceConfig) bool {
+	if getString(body, "type") == "url_verification" {
+		challenge := getString(body, "challenge")
+		if challenge == "" {
+			writeError(w, http.StatusBadRequest, "Slack URL verification payload is missing challenge")
+			return true
+		}
+		writeText(w, http.StatusOK, challenge)
+		return true
+	}
+
+	eventID := getString(body, "event_id")
+	if serviceID != "" && eventID != "" && validator.MarkReplay(serviceID, "slack:event:"+eventID, slackDedupTTL(service)) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":     "duplicate",
+			"event_id":   eventID,
+			"message_id": eventID,
+			"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		})
+		return true
+	}
+
+	event := getMap(body, "event")
+	if event == nil {
+		return false
+	}
+	eventType := getString(event, "type")
+	if eventType != "" && eventType != "message" && eventType != "app_mention" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":    "ignored",
+			"reason":    "unsupported_slack_event",
+			"event_id":  eventID,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+		return true
+	}
+	if getString(event, "bot_id") != "" || getString(event, "subtype") == "bot_message" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":    "ignored",
+			"reason":    "slack_bot_message",
+			"event_id":  eventID,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+		return true
+	}
+	return false
+}
+
+func slackDedupTTL(service *core.ServiceConfig) time.Duration {
+	if service == nil || service.Options == nil {
+		return 24 * time.Hour
+	}
+	value := strings.TrimSpace(service.Options["dedup_ttl"])
+	if value == "" {
+		return 24 * time.Hour
+	}
+	ttl, err := time.ParseDuration(value)
+	if err != nil || ttl <= 0 {
+		return 24 * time.Hour
+	}
+	return ttl
+}
+
+func decodeWebhookBody(platform string, headers http.Header, rawBody []byte) (map[string]any, error) {
+	contentType := strings.ToLower(headers.Get("Content-Type"))
+	if msgtypes.MessengerPlatform(platform) == msgtypes.PlatformSMS && strings.Contains(contentType, "application/x-www-form-urlencoded") {
+		values, err := url.ParseQuery(string(rawBody))
+		if err != nil {
+			return nil, fmt.Errorf("invalid SMS form body: %v", err)
+		}
+		return formToMap(values), nil
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rawBody, &body); err != nil {
+		return nil, fmt.Errorf("invalid JSON body: %v", err)
+	}
+	return body, nil
+}
+
+func formValuesForValidation(headers http.Header, rawBody []byte) url.Values {
+	if !strings.Contains(strings.ToLower(headers.Get("Content-Type")), "application/x-www-form-urlencoded") {
+		return nil
+	}
+	values, err := url.ParseQuery(string(rawBody))
+	if err != nil {
+		return nil
+	}
+	return values
+}
+
+func formToMap(values url.Values) map[string]any {
+	out := make(map[string]any, len(values))
+	for key, vals := range values {
+		if len(vals) == 1 {
+			out[key] = vals[0]
+			continue
+		}
+		out[key] = append([]string(nil), vals...)
+	}
+	return out
+}
+
+func publicRequestURL(r *http.Request, service *core.ServiceConfig) string {
+	if service != nil && service.Options != nil {
+		if configured := strings.TrimSpace(service.Options["webhook_url"]); configured != "" {
+			return configured
+		}
+	}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); forwarded != "" {
+		scheme = strings.Split(forwarded, ",")[0]
+	}
+	host := strings.TrimSpace(r.Header.Get("X-Forwarded-Host"))
+	if host == "" {
+		host = r.Host
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	return scheme + "://" + host + r.URL.RequestURI()
 }

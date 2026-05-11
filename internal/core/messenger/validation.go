@@ -2,11 +2,13 @@ package messenger
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -21,11 +23,14 @@ const (
 	AuthSchemeBearer     AuthScheme = "bearer"
 	AuthSchemeToken      AuthScheme = "token"
 	AuthSchemeHMACSHA256 AuthScheme = "hmac-sha256"
+	AuthSchemeSlack      AuthScheme = "slack-signing-secret"
+	AuthSchemeEd25519    AuthScheme = "ed25519"
 )
 
 type ServiceValidationConfig struct {
 	ID      string
 	Adapter string
+	Env     map[string]string
 	Options map[string]string
 }
 
@@ -45,13 +50,21 @@ type ProviderAuthHook interface {
 	AuthRequirements(ServiceValidationConfig) AuthRequirements
 }
 
+type ProviderRequestValidator interface {
+	ValidateProviderRequest(context.Context, RequestValidationInput) error
+}
+
 type ProviderAuthHooks map[string]ProviderAuthHook
 
 type RequestValidationInput struct {
-	Service ServiceValidationConfig
-	Headers http.Header
-	Body    []byte
-	Now     time.Time
+	Service    ServiceValidationConfig
+	Method     string
+	URL        string
+	Headers    http.Header
+	Body       []byte
+	Form       url.Values
+	RemoteAddr string
+	Now        time.Time
 }
 
 type ReplayStore interface {
@@ -103,7 +116,12 @@ type ServiceValidator struct {
 
 func NewServiceValidator() *ServiceValidator {
 	return &ServiceValidator{
-		Hooks:  ProviderAuthHooks{},
+		Hooks: ProviderAuthHooks{
+			string(PlatformTelegram): TelegramAuthHook{},
+			string(PlatformSlack):    SlackAuthHook{},
+			string(PlatformDiscord):  DiscordAuthHook{},
+			"twilio":                 TwilioWebhookValidator{},
+		},
 		Replay: NewMemoryReplayStore(),
 		Now:    func() time.Time { return time.Now().UTC() },
 	}
@@ -124,10 +142,18 @@ func (v *ServiceValidator) ValidateRequest(ctx context.Context, input RequestVal
 			now = time.Now().UTC()
 		}
 	}
+	provider := firstConfigured(input.Service.Options["provider"], input.Service.Adapter)
+	if input.Service.Options["provider"] == "" && hasGenericAuthOptions(input.Service.Options) {
+		provider = ""
+	}
 	req := authRequirements(input.Service)
 	if v != nil && v.Hooks != nil {
-		provider := firstConfigured(input.Service.Options["provider"], input.Service.Adapter)
 		if hook := v.Hooks[provider]; hook != nil {
+			if requestValidator, ok := hook.(ProviderRequestValidator); ok {
+				if err := requestValidator.ValidateProviderRequest(ctx, input); err != nil {
+					return err
+				}
+			}
 			req = mergeAuthRequirements(req, hook.AuthRequirements(input.Service))
 		}
 	}
@@ -145,11 +171,19 @@ func (v *ServiceValidator) ValidateMessage(service ServiceValidationConfig, msg 
 	if allowed := splitCSV(opts["allowed_channels"]); len(allowed) > 0 && !containsAny(allowed, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, fmt.Sprintf("channel %q is not allowed", safeID(msg.Channel.ID)))
 	}
+	if allowed := splitCSV(opts["allowed_guilds"]); len(allowed) > 0 && !containsAny(allowed, msg.WorkspaceID) {
+		return ErrSenderNotAllowed(service.ID, fmt.Sprintf("guild %q is not allowed", safeID(msg.WorkspaceID)))
+	}
 	if allowed := splitCSV(opts["allowed_chats"]); len(allowed) > 0 && !containsAny(allowed, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, fmt.Sprintf("chat %q is not allowed", safeID(msg.Channel.ID)))
 	}
 	if allowed := splitCSV(opts["allowed_numbers"]); len(allowed) > 0 && !containsAny(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, "phone number is not allowed")
+	}
+	if service.Adapter == string(PlatformSlack) && truthyOption(opts["require_bot_mention"]) && msg.Channel.Type != ChannelTypeDirect {
+		if !slackBotMentioned(msg, opts["bot_user_id"]) {
+			return ErrSenderNotAllowed(service.ID, "Slack bot mention is required")
+		}
 	}
 	return nil
 }
@@ -181,6 +215,11 @@ func authRequirements(service ServiceValidationConfig) AuthRequirements {
 			req.Header = "X-APS-Token"
 		case AuthSchemeHMACSHA256:
 			req.Header = "X-APS-Signature"
+		case AuthSchemeEd25519:
+			req.Header = "X-Signature-Ed25519"
+			if req.TimestampHeader == "" {
+				req.TimestampHeader = "X-Signature-Timestamp"
+			}
 		}
 	}
 	if req.TimestampHeader == "" && truthyOption(opts["require_timestamp"]) {
@@ -230,6 +269,50 @@ func validateAuth(serviceID string, req AuthRequirements, headers http.Header, b
 		if !hmac.Equal(got, mac.Sum(nil)) {
 			return ErrAuthFailed(serviceID, "invalid provider signature")
 		}
+	case AuthSchemeSlack:
+		secret := firstConfigured(req.SignatureSecret, getenv(req.SignatureSecretEnv))
+		if secret == "" {
+			return ErrMissingSecret("Slack signing secret")
+		}
+		timestamp := strings.TrimSpace(headers.Get(req.TimestampHeader))
+		if timestamp == "" {
+			return ErrAuthFailed(serviceID, "missing Slack request timestamp")
+		}
+		signature := strings.TrimSpace(headers.Get(req.Header))
+		signature = strings.TrimPrefix(signature, "v0=")
+		got, err := hex.DecodeString(signature)
+		if err != nil || len(got) == 0 {
+			return ErrAuthFailed(serviceID, "invalid Slack signature")
+		}
+		base := []byte("v0:" + timestamp + ":")
+		base = append(base, body...)
+		mac := hmac.New(sha256.New, []byte(secret))
+		_, _ = mac.Write(base)
+		if !hmac.Equal(got, mac.Sum(nil)) {
+			return ErrAuthFailed(serviceID, "invalid Slack signature")
+		}
+	case AuthSchemeEd25519:
+		publicKeyHex := firstConfigured(req.SignatureSecret, getenv(req.SignatureSecretEnv))
+		if publicKeyHex == "" {
+			return ErrMissingSecret("message provider public key")
+		}
+		publicKey, err := hex.DecodeString(publicKeyHex)
+		if err != nil || len(publicKey) != ed25519.PublicKeySize {
+			return ErrAuthFailed(serviceID, "invalid provider public key")
+		}
+		signatureHex := strings.TrimSpace(headers.Get(req.Header))
+		signature, err := hex.DecodeString(signatureHex)
+		if err != nil || len(signature) != ed25519.SignatureSize {
+			return ErrAuthFailed(serviceID, "invalid provider signature")
+		}
+		timestamp := strings.TrimSpace(headers.Get(req.TimestampHeader))
+		if timestamp == "" {
+			return ErrAuthFailed(serviceID, "missing provider timestamp")
+		}
+		signedBody := append([]byte(timestamp), body...)
+		if !ed25519.Verify(ed25519.PublicKey(publicKey), signedBody, signature) {
+			return ErrAuthFailed(serviceID, "invalid provider signature")
+		}
 	default:
 		return ErrAuthFailed(serviceID, "unsupported provider auth scheme")
 	}
@@ -265,6 +348,16 @@ func validateTimestampAndReplay(serviceID string, req AuthRequirements, headers 
 		}
 	}
 	return nil
+}
+
+func (v *ServiceValidator) MarkReplay(serviceID, key string, ttl time.Duration) bool {
+	if v == nil || v.Replay == nil || strings.TrimSpace(serviceID) == "" || strings.TrimSpace(key) == "" {
+		return false
+	}
+	if ttl <= 0 {
+		ttl = 24 * time.Hour
+	}
+	return v.Replay.MarkSeen(serviceID+":"+key, ttl)
 }
 
 func parseTimestamp(raw string) (time.Time, error) {
@@ -313,6 +406,39 @@ func mergeAuthRequirements(base, override AuthRequirements) AuthRequirements {
 		base.ReplayIDHeader = override.ReplayIDHeader
 	}
 	return base
+}
+
+type SlackAuthHook struct{}
+
+func (SlackAuthHook) AuthRequirements(service ServiceValidationConfig) AuthRequirements {
+	scheme := AuthScheme(strings.TrimSpace(strings.ToLower(service.Options["auth_scheme"])))
+	if scheme != AuthSchemeNone && scheme != AuthSchemeSlack {
+		return AuthRequirements{}
+	}
+	return AuthRequirements{
+		Scheme:             AuthSchemeSlack,
+		Header:             "X-Slack-Signature",
+		SignatureSecret:    firstConfigured(service.Options["signing_secret"], serviceEnvLiteral(service.Env, "SLACK_SIGNING_SECRET")),
+		SignatureSecretEnv: firstConfigured(service.Options["signing_secret_env"], serviceEnvSecretName(service.Env, "SLACK_SIGNING_SECRET"), "SLACK_SIGNING_SECRET"),
+		TimestampHeader:    "X-Slack-Request-Timestamp",
+		TimestampTolerance: parseDurationOption(service.Options["timestamp_tolerance"], 5*time.Minute),
+	}
+}
+
+func serviceEnvLiteral(env map[string]string, key string) string {
+	value := strings.TrimSpace(env[key])
+	if value == "" || strings.HasPrefix(value, "secret:") {
+		return ""
+	}
+	return value
+}
+
+func serviceEnvSecretName(env map[string]string, key string) string {
+	value := strings.TrimSpace(env[key])
+	if strings.HasPrefix(value, "secret:") {
+		return strings.TrimSpace(strings.TrimPrefix(value, "secret:"))
+	}
+	return ""
 }
 
 func replayStore(v *ServiceValidator) ReplayStore {
@@ -386,10 +512,35 @@ func truthyOption(value string) bool {
 	}
 }
 
+func hasGenericAuthOptions(options map[string]string) bool {
+	for _, key := range []string{"auth_scheme", "auth_token", "auth_token_env", "signature_secret", "signature_secret_env"} {
+		if strings.TrimSpace(options[key]) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func safeID(value string) string {
 	value = strings.TrimSpace(value)
 	if len(value) <= 64 {
 		return value
 	}
 	return value[:61] + "..."
+}
+
+func slackBotMentioned(msg *NormalizedMessage, botUserID string) bool {
+	if msg == nil {
+		return false
+	}
+	if msg.PlatformMetadata != nil {
+		if mentioned, ok := msg.PlatformMetadata["slack_bot_mentioned"].(bool); ok && mentioned {
+			return true
+		}
+		if eventType, ok := msg.PlatformMetadata["slack_event_type"].(string); ok && eventType == "app_mention" {
+			return true
+		}
+	}
+	botUserID = strings.TrimSpace(botUserID)
+	return botUserID != "" && strings.Contains(msg.Text, "<@"+botUserID+">")
 }

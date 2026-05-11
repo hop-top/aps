@@ -119,6 +119,33 @@ func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
 	assert.Contains(t, out.String(), "start: aps service start support-bot")
 }
 
+func TestAddCmd_TelegramPersistsWebhookSecretTokenOption(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := NewServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "support-bot",
+		"--type", "telegram",
+		"--profile", "assistant",
+		"--default-action", "reply",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+		"--webhook-secret-token-env", "TELEGRAM_WEBHOOK_SECRET",
+	})
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, out.String(), "config_valid: true")
+
+	show := NewServiceCmd()
+	var showOut bytes.Buffer
+	show.SetOut(&showOut)
+	show.SetErr(&showOut)
+	show.SetArgs([]string{"show", "support-bot"})
+	require.NoError(t, show.Execute())
+	assert.Contains(t, showOut.String(), "webhook_secret_token_env: TELEGRAM_WEBHOOK_SECRET")
+}
+
 func TestServiceTest_InvalidMessageConfigFailsBeforeProbe(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 	require.NoError(t, core.SaveService(&core.ServiceConfig{
@@ -393,12 +420,39 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 		wantOutput []string
 	}{
 		{
+			name: "slack first class options",
+			args: []string{
+				"add", "slack-support",
+				"--type", "slack",
+				"--profile", "assistant",
+				"--allowed-channel", "C012CHAN",
+				"--signing-secret-env", "SLACK_SIGNING_SECRET",
+				"--bot-user-id", "U012BOT",
+				"--require-bot-mention",
+				"--dedup-ttl", "24h",
+				"--default-action", "assistant=handle_slack",
+				"--reply", "text",
+			},
+			wantOutput: []string{
+				"type: message",
+				"adapter: slack",
+				"allowed_channels: C012CHAN",
+				"signing_secret_env: SLACK_SIGNING_SECRET",
+				"bot_user_id: U012BOT",
+				"require_bot_mention: true",
+				"dedup_ttl: 24h",
+				"default_action: assistant=handle_slack",
+				"reply: text",
+			},
+		},
+		{
 			name: "discord channel options",
 			args: []string{
 				"add", "community-bot",
 				"--type", "discord",
 				"--profile", "assistant",
 				"--allowed-channel", "1200000000000000002",
+				"--allowed-guild", "1300000000000000003",
 				"--default-action", "assistant=handle_discord",
 				"--reply", "text",
 			},
@@ -406,6 +460,7 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"type: message",
 				"adapter: discord",
 				"allowed_channels: 1200000000000000002",
+				"allowed_guilds: 1300000000000000003",
 				"default_action: assistant=handle_discord",
 				"reply: text",
 			},

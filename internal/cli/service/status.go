@@ -3,12 +3,16 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -234,6 +238,14 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if service.Adapter == "telegram" {
+		if token := telegramWebhookSecret(service); token != "" {
+			req.Header.Set("X-Telegram-Bot-Api-Secret-Token", token)
+		}
+	}
+	if service.Adapter == "slack" {
+		signSlackProbe(req, service, payload)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("webhook probe failed: %w", err)
@@ -248,6 +260,45 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 		return fmt.Errorf("webhook probe returned HTTP %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func telegramWebhookSecret(service *core.ServiceConfig) string {
+	if service == nil || service.Options == nil {
+		return ""
+	}
+	if token := strings.TrimSpace(service.Options["webhook_secret_token"]); token != "" {
+		return token
+	}
+	if envName := strings.TrimSpace(service.Options["webhook_secret_token_env"]); envName != "" {
+		return os.Getenv(envName)
+	}
+	return ""
+}
+
+func signSlackProbe(req *http.Request, service *core.ServiceConfig, payload []byte) {
+	secret := serviceEnvSecret(service, "SLACK_SIGNING_SECRET")
+	if secret == "" {
+		return
+	}
+	ts := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte("v0:" + ts + ":"))
+	_, _ = mac.Write(payload)
+	req.Header.Set("X-Slack-Request-Timestamp", ts)
+	req.Header.Set("X-Slack-Signature", "v0="+hex.EncodeToString(mac.Sum(nil)))
+}
+
+func serviceEnvSecret(service *core.ServiceConfig, key string) string {
+	if service != nil && service.Env != nil {
+		value := strings.TrimSpace(service.Env[key])
+		if strings.HasPrefix(value, "secret:") {
+			return os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
+		}
+		if value != "" {
+			return value
+		}
+	}
+	return os.Getenv(key)
 }
 
 func serveServiceHTTP(ctx context.Context, addr string) error {
