@@ -487,3 +487,19 @@ func TestMessageRouter_ExecuteAction_ContextCancelled(t *testing.T) {
 		t.Fatal("expected error for cancelled context, got nil")
 	}
 }
+
+func TestMessageRouter_ExecuteAction_NoExecutor(t *testing.T) {
+	router := NewMessageRouterWithExecutor(&mockResolver{}, NewNormalizer(), nil)
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:       "msg_exec_no_executor",
+		Platform: "telegram",
+		Sender:   msgtypes.Sender{ID: "sender1"},
+		Channel:  msgtypes.Channel{ID: "chan1"},
+	}
+
+	_, err := router.ExecuteAction(context.Background(), "profile", "action", msg)
+	if err == nil {
+		t.Fatal("expected error for missing executor, got nil")
+	}
+}

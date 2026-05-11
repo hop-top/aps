@@ -35,9 +35,6 @@ var profileSetWorkspaceCmd = &cobra.Command{
 			Name: workspaceName,
 		}
 
-		// T-1291 — attach --note before save so the audit event
-		// payload carries the operator-supplied reason.
-		_ = WithNote(cmd.Context(), NoteFromCmd(cmd))
 		note := NoteFromCmd(cmd)
 
 		if err := core.SaveProfile(profile); err != nil {

@@ -87,14 +87,29 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 			return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 		}
 		defer stdoutReader.Close()
-		defer stdoutPipe.Close()
+		defer func() {
+			if stdoutPipe != nil {
+				_ = stdoutPipe.Close()
+			}
+		}()
 
 		cmd, err = a.createActionCommand(profile, input, stdoutPipe)
 		if err != nil {
 			return nil, err
 		}
 
-		go a.streamOutput(ctx, cmd, stdoutReader, stream, state)
+		streamDone := make(chan struct{})
+		defer func() {
+			if stdoutPipe != nil {
+				_ = stdoutPipe.Close()
+				stdoutPipe = nil
+			}
+			<-streamDone
+		}()
+		go func() {
+			defer close(streamDone)
+			a.streamOutput(stdoutReader, stream, runID)
+		}()
 	} else {
 		cmd, err = a.createActionCommand(profile, input, nil)
 		if err != nil {
@@ -103,12 +118,20 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 		cmd.Stdout = &stdoutBuffer
 	}
 
-	state.Status = RunStatusRunning
+	a.updateRunState(runID, func(state *RunState) {
+		state.Status = RunStatusRunning
+	})
 
 	if err := cmd.Start(); err != nil {
-		state.Status = RunStatusFailed
-		state.Error = err.Error()
+		a.updateRunState(runID, func(state *RunState) {
+			state.Status = RunStatusFailed
+			state.Error = err.Error()
+		})
 		return state, nil
+	}
+	if stdoutPipe != nil {
+		_ = stdoutPipe.Close()
+		stdoutPipe = nil
 	}
 
 	done := make(chan error, 1)
@@ -119,32 +142,40 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 	select {
 	case <-ctx.Done():
 		if err := cmd.Process.Kill(); err != nil {
-			state.Error = fmt.Sprintf("failed to kill process: %v", err)
+			a.updateRunState(runID, func(state *RunState) {
+				state.Error = fmt.Sprintf("failed to kill process: %v", err)
+			})
 		}
-		state.Status = RunStatusCancelled
-		state.Error = "cancelled by client"
+		a.updateRunState(runID, func(state *RunState) {
+			state.Status = RunStatusCancelled
+			state.Error = "cancelled by client"
+		})
 		return state, nil
 	case err := <-done:
-		if err != nil {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				exitCode := exitErr.ExitCode()
+		a.updateRunState(runID, func(state *RunState) {
+			if err != nil {
+				if exitErr, ok := err.(*exec.ExitError); ok {
+					exitCode := exitErr.ExitCode()
+					state.ExitCode = &exitCode
+				}
+				state.Status = RunStatusFailed
+				state.Error = err.Error()
+			} else {
+				state.Status = RunStatusCompleted
+				exitCode := 0
 				state.ExitCode = &exitCode
 			}
-			state.Status = RunStatusFailed
-			state.Error = err.Error()
-		} else {
-			state.Status = RunStatusCompleted
-			exitCode := 0
-			state.ExitCode = &exitCode
-		}
+		})
 	}
 
 	now = time.Now()
-	state.EndTime = &now
-	if stream == nil {
-		state.Output = stdoutBuffer.String()
-		state.OutputSize = int64(stdoutBuffer.Len())
-	}
+	a.updateRunState(runID, func(state *RunState) {
+		state.EndTime = &now
+		if stream == nil {
+			state.Output = stdoutBuffer.String()
+			state.OutputSize = int64(stdoutBuffer.Len())
+		}
+	})
 
 	return state, nil
 }
@@ -193,7 +224,7 @@ func (a *APSAdapter) createActionCommand(profile *core.Profile, input RunInput, 
 	return cmd, nil
 }
 
-func (a *APSAdapter) streamOutput(ctx context.Context, cmd *exec.Cmd, stdoutReader *os.File, stream StreamWriter, state *RunState) {
+func (a *APSAdapter) streamOutput(stdoutReader *os.File, stream StreamWriter, runID string) {
 	defer stream.Close()
 
 	buf := make([]byte, 1024)
@@ -202,8 +233,9 @@ func (a *APSAdapter) streamOutput(ctx context.Context, cmd *exec.Cmd, stdoutRead
 		if n > 0 {
 			data := make([]byte, n)
 			copy(data, buf[:n])
-			state.OutputSize += int64(n)
-			state.Output += string(data)
+			a.updateRunState(runID, func(state *RunState) {
+				state.OutputSize += int64(n)
+			})
 
 			if err := stream.Write("output", data); err != nil {
 				return
@@ -224,17 +256,17 @@ func (a *APSAdapter) GetRun(runID string) (*RunState, error) {
 		return nil, fmt.Errorf("run not found: %s", runID)
 	}
 
-	return state, nil
+	return cloneRunState(state), nil
 }
 
 func (a *APSAdapter) CancelRun(ctx context.Context, runID string) error {
 	a.runMutex.Lock()
+	defer a.runMutex.Unlock()
+
 	state, exists := a.runRegistry[runID]
 	if !exists {
-		a.runMutex.Unlock()
 		return fmt.Errorf("run not found: %s", runID)
 	}
-	a.runMutex.Unlock()
 
 	if state.Status != RunStatusRunning && state.Status != RunStatusPending {
 		return fmt.Errorf("run is not cancellable: %s", state.Status)
@@ -244,6 +276,31 @@ func (a *APSAdapter) CancelRun(ctx context.Context, runID string) error {
 	state.Error = "cancelled"
 
 	return nil
+}
+
+func (a *APSAdapter) updateRunState(runID string, update func(*RunState)) {
+	a.runMutex.Lock()
+	defer a.runMutex.Unlock()
+
+	if state, exists := a.runRegistry[runID]; exists {
+		update(state)
+	}
+}
+
+func cloneRunState(state *RunState) *RunState {
+	if state == nil {
+		return nil
+	}
+	clone := *state
+	if state.EndTime != nil {
+		endTime := *state.EndTime
+		clone.EndTime = &endTime
+	}
+	if state.ExitCode != nil {
+		exitCode := *state.ExitCode
+		clone.ExitCode = &exitCode
+	}
+	return &clone
 }
 
 func (a *APSAdapter) GetAgent(profileID string) (*AgentInfo, error) {

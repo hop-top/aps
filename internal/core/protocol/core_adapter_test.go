@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"hop.top/aps/internal/core/session"
 	"github.com/stretchr/testify/assert"
+	"hop.top/aps/internal/core/session"
 )
 
 // ==================== Test Setup Helpers ====================
@@ -28,7 +28,6 @@ func setupTestAdapter(t *testing.T) (*APSAdapter, string) {
 	}
 	return adapter, tmpDir
 }
-
 
 // ==================== ExecuteRun Tests ====================
 
@@ -279,6 +278,27 @@ func TestGetRun_StatePreservation(t *testing.T) {
 	assert.Equal(t, originalState.ExitCode, state.ExitCode)
 	assert.Equal(t, originalState.OutputSize, state.OutputSize)
 	assert.Equal(t, originalState.Error, state.Error)
+}
+
+func TestGetRun_ReturnsSnapshot(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	adapter.runRegistry["run-1"] = &RunState{
+		RunID:      "run-1",
+		Status:     RunStatusRunning,
+		StartTime:  time.Now(),
+		OutputSize: 42,
+	}
+
+	first, err := adapter.GetRun("run-1")
+	assert.NoError(t, err)
+	first.OutputSize = 0
+	first.Status = RunStatusFailed
+
+	second, err := adapter.GetRun("run-1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(42), second.OutputSize)
+	assert.Equal(t, RunStatusRunning, second.Status)
 }
 
 // ==================== CancelRun Tests ====================

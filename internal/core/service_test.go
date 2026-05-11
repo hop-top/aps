@@ -133,6 +133,60 @@ func TestSaveLoadService_RoundTrip(t *testing.T) {
 	assert.Equal(t, service, got)
 }
 
+func TestServicePathRejectsPathComponents(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
+
+	tests := []string{
+		"../escape",
+		"nested/service",
+		`nested\service`,
+		"/tmp/service",
+		".",
+		"..",
+		"service id",
+		"service:id",
+	}
+
+	for _, id := range tests {
+		t.Run(id, func(t *testing.T) {
+			_, err := GetServicePath(id)
+			require.Error(t, err)
+
+			err = SaveService(&ServiceConfig{
+				ID:      id,
+				Type:    "message",
+				Adapter: "slack",
+				Profile: "assistant",
+			})
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestSaveServiceUsesRestrictedPermissions(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
+
+	require.NoError(t, SaveService(&ServiceConfig{
+		ID:      "secure-service",
+		Type:    "message",
+		Adapter: "slack",
+		Profile: "assistant",
+	}))
+
+	path, err := GetServicePath("secure-service")
+	require.NoError(t, err)
+
+	fileInfo, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0), fileInfo.Mode().Perm()&0o077)
+
+	dirInfo, err := os.Stat(filepath.Dir(path))
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0), dirInfo.Mode().Perm()&0o027)
+}
+
 func TestDescribeServiceRuntime_TicketAdapters(t *testing.T) {
 	tests := []struct {
 		adapter     string

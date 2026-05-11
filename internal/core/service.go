@@ -162,22 +162,46 @@ func GetServicesDir() (string, error) {
 }
 
 func GetServicePath(id string) (string, error) {
-	if strings.TrimSpace(id) == "" {
-		return "", fmt.Errorf("service id cannot be empty")
+	safeID, err := normalizeServiceID(id)
+	if err != nil {
+		return "", err
 	}
 	dir, err := GetServicesDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, id+".yaml"), nil
+	path := filepath.Join(dir, safeID+".yaml")
+	rel, err := filepath.Rel(dir, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("service id %q resolves outside services directory", id)
+	}
+	return path, nil
+}
+
+func normalizeServiceID(id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return "", fmt.Errorf("service id cannot be empty")
+	}
+	if filepath.IsAbs(id) || id == "." || id == ".." || strings.ContainsAny(id, `/\`) {
+		return "", fmt.Errorf("service id %q must not contain path components", id)
+	}
+	for _, r := range id {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			continue
+		}
+		return "", fmt.Errorf("service id %q contains invalid character %q", id, r)
+	}
+	return id, nil
 }
 
 func SaveService(service *ServiceConfig) error {
 	if service == nil {
 		return fmt.Errorf("service cannot be nil")
 	}
-	if strings.TrimSpace(service.ID) == "" {
-		return fmt.Errorf("service id cannot be empty")
+	id, err := normalizeServiceID(service.ID)
+	if err != nil {
+		return err
 	}
 	if strings.TrimSpace(service.Type) == "" {
 		return fmt.Errorf("service type cannot be empty")
@@ -185,19 +209,20 @@ func SaveService(service *ServiceConfig) error {
 	if strings.TrimSpace(service.Profile) == "" {
 		return fmt.Errorf("service profile cannot be empty")
 	}
+	service.ID = id
 
 	path, err := GetServicePath(service.ID)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("failed to create services directory: %w", err)
 	}
 	data, err := yaml.Marshal(service)
 	if err != nil {
 		return fmt.Errorf("failed to marshal service: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write service: %w", err)
 	}
 	return nil

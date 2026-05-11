@@ -54,8 +54,12 @@ type MessageRouter struct {
 
 // NewMessageRouter creates a MessageRouter with the given RouteResolver and Normalizer.
 func NewMessageRouter(resolver RouteResolver, normalizer *Normalizer) *MessageRouter {
-	core, _ := protocol.NewAPSAdapter()
-	return NewMessageRouterWithExecutor(resolver, normalizer, core)
+	core, err := protocol.NewAPSAdapter()
+	var executor ActionExecutor
+	if err == nil {
+		executor = core
+	}
+	return NewMessageRouterWithExecutor(resolver, normalizer, executor)
 }
 
 func NewMessageRouterWithExecutor(resolver RouteResolver, normalizer *Normalizer, executor ActionExecutor) *MessageRouter {
