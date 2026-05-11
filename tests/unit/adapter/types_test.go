@@ -17,10 +17,10 @@ func TestAdapterTypeValidation(t *testing.T) {
 	}{
 		{"messenger is valid and implemented", adapter.AdapterTypeMessenger, true, true},
 		{"protocol is valid and implemented", adapter.AdapterTypeProtocol, true, true},
-		{"desktop is valid but not implemented", adapter.AdapterTypeDesktop, true, false},
+		{"desktop is valid and implemented", adapter.AdapterTypeDesktop, true, true},
 		{"mobile is valid and implemented", adapter.AdapterTypeMobile, true, true},
-		{"sense is valid but not implemented", adapter.AdapterTypeSense, true, false},
-		{"actuator is valid but not implemented", adapter.AdapterTypeActuator, true, false},
+		{"sense is valid and implemented", adapter.AdapterTypeSense, true, true},
+		{"actuator is valid and implemented", adapter.AdapterTypeActuator, true, true},
 		{"invalid type is not valid", adapter.AdapterType("invalid"), false, false},
 	}
 
@@ -37,8 +37,9 @@ func TestImplementedAdapterTypes(t *testing.T) {
 	assert.Contains(t, impl, adapter.AdapterTypeMessenger)
 	assert.Contains(t, impl, adapter.AdapterTypeProtocol)
 	assert.Contains(t, impl, adapter.AdapterTypeMobile)
-	assert.NotContains(t, impl, adapter.AdapterTypeDesktop)
-	assert.NotContains(t, impl, adapter.AdapterTypeSense)
+	assert.Contains(t, impl, adapter.AdapterTypeDesktop)
+	assert.Contains(t, impl, adapter.AdapterTypeSense)
+	assert.Contains(t, impl, adapter.AdapterTypeActuator)
 }
 
 func TestDefaultStrategyForType(t *testing.T) {
@@ -50,7 +51,9 @@ func TestDefaultStrategyForType(t *testing.T) {
 		{"messenger defaults to subprocess", adapter.AdapterTypeMessenger, adapter.StrategySubprocess},
 		{"protocol defaults to builtin", adapter.AdapterTypeProtocol, adapter.StrategyBuiltin},
 		{"desktop defaults to subprocess", adapter.AdapterTypeDesktop, adapter.StrategySubprocess},
-		{"mobile defaults to subprocess", adapter.AdapterTypeMobile, adapter.StrategySubprocess},
+		{"mobile defaults to builtin", adapter.AdapterTypeMobile, adapter.StrategyBuiltin},
+		{"sense defaults to script", adapter.AdapterTypeSense, adapter.StrategyScript},
+		{"actuator defaults to script", adapter.AdapterTypeActuator, adapter.StrategyScript},
 	}
 
 	for _, tt := range tests {
