@@ -1,11 +1,17 @@
 package skill
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/skills"
+	"hop.top/kit/go/console/output"
 )
 
 // TestSkillSourceFilter — listing.MatchString on Source.
@@ -74,5 +80,103 @@ func TestSkillListCmd_FlagSet(t *testing.T) {
 	// must not redeclare it locally.
 	if f := cmd.Flags().Lookup("profile"); f != nil {
 		t.Error("--profile should inherit from root global, not be local")
+	}
+}
+
+func TestRunSkillScript_Success(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	profileID := "noor"
+	writeSkillFixture(t, dataDir, profileID, "runner", map[string]string{
+		"echo.sh": `#!/bin/sh
+printf 'skill=%s profile=%s script=%s args=%s,%s\n' "$APS_SKILL_NAME" "$APS_PROFILE_ID" "$APS_SKILL_SCRIPT" "$1" "$2"
+`,
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := runSkillScript(context.Background(), profileID, []string{"runner", "echo.sh", "alpha", "beta"}, 1, strings.NewReader(""), &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("runSkillScript returned error: %v", err)
+	}
+	if got, want := stdout.String(), "skill=runner profile=noor script=echo.sh args=alpha,beta\n"; got != want {
+		t.Fatalf("stdout=%q, want %q", got, want)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr=%q, want empty", stderr.String())
+	}
+}
+
+func TestRunSkillScript_MissingSkill(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+
+	err := runSkillScript(context.Background(), "noor", []string{"missing", "echo.sh"}, 1, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("expected missing skill error")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("error=%v, want os.ErrNotExist", err)
+	}
+}
+
+func TestRunSkillScript_MissingScript(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	writeSkillFixture(t, dataDir, "noor", "runner", nil)
+
+	err := runSkillScript(context.Background(), "noor", []string{"runner", "missing.sh"}, 1, strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("expected missing script error")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("error=%v, want os.ErrNotExist", err)
+	}
+}
+
+func TestRunSkillScript_NonzeroExit(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	writeSkillFixture(t, dataDir, "noor", "runner", map[string]string{
+		"fail.sh": `#!/bin/sh
+echo failout
+echo failerr >&2
+exit 23
+`,
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := runSkillScript(context.Background(), "noor", []string{"runner", "fail.sh"}, 1, strings.NewReader(""), &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected nonzero exit error")
+	}
+	var outputErr *output.Error
+	if !errors.As(err, &outputErr) {
+		t.Fatalf("error type=%T, want *output.Error", err)
+	}
+	if outputErr.ExitCode != 23 {
+		t.Fatalf("exit code=%d, want 23", outputErr.ExitCode)
+	}
+	if got, want := stdout.String(), "failout\n"; got != want {
+		t.Fatalf("stdout=%q, want %q", got, want)
+	}
+	if got, want := stderr.String(), "failerr\n"; got != want {
+		t.Fatalf("stderr=%q, want %q", got, want)
+	}
+}
+
+func writeSkillFixture(t *testing.T, dataDir, profileID, skillName string, scripts map[string]string) {
+	t.Helper()
+	base := filepath.Join(dataDir, "profiles", profileID, "skills", skillName)
+	if err := os.MkdirAll(filepath.Join(base, "scripts"), 0755); err != nil {
+		t.Fatalf("create skill scripts dir: %v", err)
+	}
+	skillMD := "---\nname: " + skillName + "\ndescription: Test skill\n---\n\nBody\n"
+	if err := os.WriteFile(filepath.Join(base, "SKILL.md"), []byte(skillMD), 0644); err != nil {
+		t.Fatalf("write SKILL.md: %v", err)
+	}
+	for name, body := range scripts {
+		if err := os.WriteFile(filepath.Join(base, "scripts", name), []byte(body), 0755); err != nil {
+			t.Fatalf("write script %s: %v", name, err)
+		}
 	}
 }
