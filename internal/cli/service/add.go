@@ -45,11 +45,16 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.phoneNumberID, "phone-number-id", "", "WhatsApp phone number ID")
 	cmd.Flags().StringVar(&opts.webhookSecretToken, "webhook-secret-token", "", "Telegram webhook secret token")
 	cmd.Flags().StringVar(&opts.webhookSecretTokenEnv, "webhook-secret-token-env", "", "Environment variable holding Telegram webhook secret token")
+	cmd.Flags().StringVar(&opts.verifyToken, "verify-token", "", "WhatsApp Cloud webhook verification token")
+	cmd.Flags().StringVar(&opts.verifyTokenEnv, "verify-token-env", "", "Environment variable holding WhatsApp Cloud verification token")
 	cmd.Flags().StringArrayVar(&opts.allowedChannels, "allowed-channel", nil, "Allowed message channel ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedGuilds, "allowed-guild", nil, "Allowed Discord guild ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
 	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Message provider signing secret environment variable")
+	cmd.Flags().StringVar(&opts.templateName, "template-name", "", "WhatsApp template name for business-initiated replies")
+	cmd.Flags().StringVar(&opts.languageCode, "language-code", "", "WhatsApp template language code")
+	cmd.Flags().BoolVar(&opts.templateRequired, "template-required", false, "Require WhatsApp outbound delivery to use a template")
 	cmd.Flags().StringVar(&opts.botUserID, "bot-user-id", "", "Slack bot user ID used for mention-only routing")
 	cmd.Flags().BoolVar(&opts.requireBotMention, "require-bot-mention", false, "Require Slack channel messages to mention the bot")
 	cmd.Flags().StringVar(&opts.dedupTTL, "dedup-ttl", "", "Slack Events API duplicate event retention duration")
@@ -98,11 +103,16 @@ type addOptions struct {
 	phoneNumberID         string
 	webhookSecretToken    string
 	webhookSecretTokenEnv string
+	verifyToken           string
+	verifyTokenEnv        string
 	allowedChannels       []string
 	allowedGuilds         []string
 	allowedChats          []string
 	allowedNumbers        []string
 	signingSecretEnv      string
+	templateName          string
+	languageCode          string
+	templateRequired      bool
 	botUserID             string
 	requireBotMention     bool
 	dedupTTL              string
@@ -181,11 +191,18 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "phone_number_id", opts.phoneNumberID)
 	addOption(options, "webhook_secret_token", opts.webhookSecretToken)
 	addOption(options, "webhook_secret_token_env", opts.webhookSecretTokenEnv)
+	addOption(options, "verify_token", opts.verifyToken)
+	addOption(options, "verify_token_env", opts.verifyTokenEnv)
 	addOption(options, "allowed_channels", joinValues(opts.allowedChannels))
 	addOption(options, "allowed_guilds", joinValues(opts.allowedGuilds))
 	addOption(options, "allowed_chats", joinValues(opts.allowedChats))
 	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
 	addOption(options, "signing_secret_env", opts.signingSecretEnv)
+	addOption(options, "template_name", opts.templateName)
+	addOption(options, "language_code", opts.languageCode)
+	if opts.templateRequired {
+		addOption(options, "template_required", "true")
+	}
 	addOption(options, "bot_user_id", opts.botUserID)
 	if opts.requireBotMention {
 		addOption(options, "require_bot_mention", "true")

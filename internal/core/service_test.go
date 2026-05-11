@@ -207,6 +207,67 @@ func TestValidateServiceConfig_SMSProviderConfig(t *testing.T) {
 	assert.Contains(t, invalid.Warnings, "sms service has no allowed numbers; any sender can route inbound messages")
 }
 
+func TestValidateServiceConfig_WhatsAppProviderConfig(t *testing.T) {
+	valid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "wa-support",
+		Type:    "message",
+		Adapter: "whatsapp",
+		Profile: "assistant",
+		Env: map[string]string{
+			"WHATSAPP_ACCESS_TOKEN": "secret:whatsapp-token",
+			"WHATSAPP_VERIFY_TOKEN": "secret:whatsapp-verify",
+			"WHATSAPP_APP_SECRET":   "secret:whatsapp-app-secret",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "whatsapp-cloud",
+			"phone_number_id": "123456789012345",
+			"allowed_numbers": "15550100001",
+			"receive":         "webhook",
+			"reply":           "text",
+		},
+	})
+	assert.True(t, valid.Valid)
+	assert.Empty(t, valid.Issues)
+
+	invalid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "wa-support",
+		Type:    "message",
+		Adapter: "whatsapp",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":    "reply",
+			"provider":          "whatsapp-cloud",
+			"phone_number_id":   "not-a-number",
+			"template_required": "true",
+		},
+	})
+	assert.False(t, invalid.Valid)
+	assert.Contains(t, invalid.Issues, "whatsapp phone_number_id must be numeric")
+	assert.Contains(t, invalid.Issues, "missing env binding WHATSAPP_ACCESS_TOKEN")
+	assert.Contains(t, invalid.Issues, "whatsapp template_required requires option template_name")
+	assert.Contains(t, invalid.Warnings, "whatsapp service has no allowed numbers; any sender can route inbound messages")
+
+	twilio := ValidateServiceConfig(&ServiceConfig{
+		ID:      "wa-twilio",
+		Type:    "message",
+		Adapter: "whatsapp",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TWILIO_ACCOUNT_SID": "AC123",
+			"TWILIO_AUTH_TOKEN":  "twilio-token",
+		},
+		Options: map[string]string{
+			"default_action":  "reply",
+			"provider":        "twilio",
+			"from":            "whatsapp:+15550100002",
+			"allowed_numbers": "whatsapp:+15550100001",
+		},
+	})
+	assert.True(t, twilio.Valid)
+	assert.Empty(t, twilio.Issues)
+}
+
 func TestServiceWebhookURL_MessageService(t *testing.T) {
 	got, err := ServiceWebhookURL(&ServiceConfig{
 		ID:      "support-bot",
@@ -256,6 +317,64 @@ func TestRecordServiceEvents_UpdateDeliveryMetadata(t *testing.T) {
 	require.NotNil(t, got.Delivery)
 	assert.Equal(t, "healthy", got.Delivery.Health)
 	assert.Empty(t, got.Delivery.LastError)
+}
+
+func TestRecordServiceOutboundEvent_StoresRedactedDeliveryAttempts(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, SaveService(&ServiceConfig{
+		ID:      "support-bot",
+		Type:    "message",
+		Adapter: "slack",
+		Profile: "assistant",
+	}))
+	eventTime := time.Date(2026, 5, 11, 14, 0, 0, 0, time.UTC)
+
+	require.NoError(t, RecordServiceOutboundEvent("support-bot", ServiceEventMeta{
+		At:        eventTime,
+		MessageID: "msg-1",
+		Platform:  "slack",
+		ChannelID: "C123",
+		Status:    "dead_letter",
+		Detail:    "provider rejected Authorization: Bearer secret-provider-token",
+		Attempts: []ServiceDeliveryAttempt{
+			{
+				At:            eventTime,
+				Provider:      "slack",
+				MessageID:     "msg-1",
+				ChannelID:     "C123",
+				Attempt:       1,
+				MaxAttempts:   3,
+				Status:        "retry_scheduled",
+				Retriable:     true,
+				Delay:         "1s",
+				RedactedError: "provider rejected Authorization: Bearer secret-provider-token",
+			},
+			{
+				At:            eventTime.Add(time.Second),
+				Provider:      "slack",
+				MessageID:     "msg-1",
+				ChannelID:     "C123",
+				Attempt:       2,
+				MaxAttempts:   3,
+				Status:        "dead_letter",
+				RedactedError: "provider rejected Authorization: Bearer secret-provider-token",
+			},
+		},
+		RetryPolicy: &ServiceRetryPolicy{MaxAttempts: 3, BaseDelay: "1s", MaxDelay: "30s"},
+	}))
+
+	got, err := LoadService("support-bot")
+	require.NoError(t, err)
+	require.NotNil(t, got.Delivery)
+	assert.Equal(t, "failed", got.Delivery.Health)
+	assert.Equal(t, "dead_letter", got.Delivery.Status)
+	assert.NotContains(t, got.Delivery.LastError, "secret-provider-token")
+	require.Len(t, got.Delivery.Attempts, 2)
+	assert.Equal(t, "retry_scheduled", got.Delivery.Attempts[0].Status)
+	assert.True(t, got.Delivery.Attempts[0].Retriable)
+	assert.NotContains(t, got.Delivery.Attempts[1].RedactedError, "secret-provider-token")
+	require.NotNil(t, got.Delivery.RetryPolicy)
+	assert.Equal(t, 3, got.Delivery.RetryPolicy.MaxAttempts)
 }
 
 func TestDescribeServiceRuntime_TicketAdapters(t *testing.T) {
@@ -455,7 +574,7 @@ func TestDescribeServiceRuntime_MessageRuntimeMetadata(t *testing.T) {
 	assert.Equal(t, "native provider webhook ingress", got.Metadata.Ingress)
 	assert.Equal(t, "normalized message execution handoff", got.Metadata.Handoff)
 	assert.Equal(t, "provider delivery interface", got.Metadata.Delivery)
-	assert.Equal(t, "caller-managed retry policy", got.Metadata.Retry)
+	assert.Equal(t, "provider delivery retry policy max_attempts=3 base_delay=1s max_delay=30s", got.Metadata.Retry)
 	assert.Equal(t, []string{"ingress", "normalize", "route", "execute", "deliver", "retry"}, got.Metadata.ErrorHooks)
 	assert.Equal(t, "webhook", got.Metadata.ReceiveMode)
 	assert.Equal(t, []string{"text", "reaction", "file"}, got.Metadata.DeliveryModes)

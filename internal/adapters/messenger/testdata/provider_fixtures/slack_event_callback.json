@@ -1,0 +1,16 @@
+{
+  "type": "event_callback",
+  "team_id": "T012TEAM",
+  "api_app_id": "A012APP",
+  "event_id": "Ev012MESSAGE",
+  "event_time": 1710000000,
+  "event": {
+    "type": "app_mention",
+    "client_msg_id": "msg-slack-1",
+    "user": "U012USER",
+    "channel": "C012CHAN",
+    "channel_type": "channel",
+    "text": "<@U012BOT> triage this",
+    "ts": "1710000000.000001"
+  }
+}

@@ -42,6 +42,7 @@ type Handler struct {
 	validator         *msgtypes.ServiceValidator
 	telegramTransport TelegramTransport
 	slackTransport    SlackTransport
+	whatsappTransport msgtypes.WhatsAppTransport
 }
 
 // NewHandler creates a Handler with the given router, normalizer, and optional
@@ -51,6 +52,8 @@ func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLog
 	validator := msgtypes.NewServiceValidator()
 	validator.Hooks[string(msgtypes.PlatformTelegram)] = msgtypes.TelegramAuthHook{}
 	validator.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
+	validator.Hooks[string(msgtypes.PlatformWhatsApp)] = msgtypes.WhatsAppAuthHook{}
+	validator.Hooks["whatsapp-cloud"] = msgtypes.WhatsAppAuthHook{}
 	h := &Handler{router: router, normalizer: normalizer, logger: logger, validator: validator}
 	for _, opt := range opts {
 		opt(h)
@@ -75,6 +78,12 @@ func WithServiceValidator(v *msgtypes.ServiceValidator) func(*Handler) {
 			if _, ok := v.Hooks[string(msgtypes.PlatformSlack)]; !ok {
 				v.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
 			}
+			if _, ok := v.Hooks[string(msgtypes.PlatformWhatsApp)]; !ok {
+				v.Hooks[string(msgtypes.PlatformWhatsApp)] = msgtypes.WhatsAppAuthHook{}
+			}
+			if _, ok := v.Hooks["whatsapp-cloud"]; !ok {
+				v.Hooks["whatsapp-cloud"] = msgtypes.WhatsAppAuthHook{}
+			}
 		}
 		h.validator = v
 	}
@@ -86,6 +95,10 @@ func WithTelegramTransport(t TelegramTransport) func(*Handler) {
 
 func WithSlackTransport(t SlackTransport) func(*Handler) {
 	return func(h *Handler) { h.slackTransport = t }
+}
+
+func WithWhatsAppTransport(t msgtypes.WhatsAppTransport) func(*Handler) {
+	return func(h *Handler) { h.whatsappTransport = t }
 }
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
@@ -110,6 +123,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, serviceID, adapter string) {
+	if r.Method == http.MethodGet && adapter == string(msgtypes.PlatformWhatsApp) {
+		h.handleWhatsAppVerification(w, r, serviceID, adapter)
+		return
+	}
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "only POST requests are accepted")
 		return
@@ -168,6 +185,10 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	}
 	if service != nil && platform == string(msgtypes.PlatformSlack) && serviceProvider(service, string(msgtypes.PlatformSlack)) == string(msgtypes.PlatformSlack) {
 		h.handleSlackServiceWebhook(w, r, rawBody, messengerName, service)
+		return
+	}
+	if service != nil && platform == string(msgtypes.PlatformWhatsApp) {
+		h.handleWhatsAppServiceWebhook(w, r, rawBody, messengerName, service)
 		return
 	}
 
@@ -306,11 +327,12 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 		validator: h.serviceValidator(),
 		service:   serviceValidationConfig(service),
 	}
+	var deliveryAttempts []msgtypes.DeliveryAttempt
 	runtime, err := msgtypes.NewRuntime(
 		validatingProvider,
 		h.router,
 		&serviceRuntimeExecutor{router: h.router, service: service},
-		msgtypes.RuntimeOptions{ServiceID: serviceID},
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("telegram runtime failed: %v", err))
@@ -329,6 +351,7 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 		RemoteAddr: r.RemoteAddr,
 	})
 	if err != nil {
+		_ = recordServiceDeliveryAttempts(serviceID, deliveryAttempts, nil)
 		writeRuntimeError(w, err)
 		return
 	}
@@ -341,13 +364,18 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 			Status:    "received",
 		})
 		if result.Delivery != nil {
-			_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
-				MessageID: result.Message.ID,
-				Platform:  string(msgtypes.PlatformTelegram),
-				ChannelID: result.Message.Channel.ID,
-				SenderID:  result.Message.Sender.ID,
-				Status:    result.Delivery.Status,
-			})
+			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
+			if len(result.DeliveryAttempts) == 0 {
+				_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+					MessageID: result.Message.ID,
+					Platform:  string(msgtypes.PlatformTelegram),
+					ChannelID: result.Message.Channel.ID,
+					SenderID:  result.Message.Sender.ID,
+					Status:    result.Delivery.Status,
+				})
+			}
+		} else if result.Result != nil {
+			_ = recordServiceExecutionEvent(serviceID, result.Message, result.Result)
 		}
 	}
 
@@ -391,11 +419,12 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 		validator: h.serviceValidator(),
 		service:   serviceValidationConfig(service),
 	}
+	var deliveryAttempts []msgtypes.DeliveryAttempt
 	runtime, err := msgtypes.NewRuntime(
 		validatingProvider,
 		h.router,
 		&serviceRuntimeExecutor{router: h.router, service: service},
-		msgtypes.RuntimeOptions{ServiceID: serviceID},
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("slack runtime failed: %v", err))
@@ -414,6 +443,7 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 		RemoteAddr: r.RemoteAddr,
 	})
 	if err != nil {
+		_ = recordServiceDeliveryAttempts(serviceID, deliveryAttempts, nil)
 		writeProviderRuntimeError(w, string(msgtypes.PlatformSlack), err)
 		return
 	}
@@ -426,13 +456,126 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 			Status:    "received",
 		})
 		if result.Delivery != nil {
-			_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
-				MessageID: result.Message.ID,
-				Platform:  string(msgtypes.PlatformSlack),
-				ChannelID: result.Message.Channel.ID,
-				SenderID:  result.Message.Sender.ID,
-				Status:    result.Delivery.Status,
-			})
+			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
+			if len(result.DeliveryAttempts) == 0 {
+				_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+					MessageID: result.Message.ID,
+					Platform:  string(msgtypes.PlatformSlack),
+					ChannelID: result.Message.Channel.ID,
+					SenderID:  result.Message.Sender.ID,
+					Status:    result.Delivery.Status,
+				})
+			}
+		} else if result.Result != nil {
+			_ = recordServiceExecutionEvent(serviceID, result.Message, result.Result)
+		}
+	}
+
+	response := map[string]any{
+		"status":    "accepted",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	if result != nil {
+		if result.Message != nil {
+			response["message_id"] = result.Message.ID
+		}
+		response["route"] = result.Route.TargetAction()
+		if result.Result != nil {
+			response["status"] = result.Result.Status
+		}
+		if result.Delivery != nil {
+			response["delivery"] = result.Delivery
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) handleWhatsAppVerification(w http.ResponseWriter, r *http.Request, serviceID, adapter string) {
+	service, err := core.LoadService(serviceID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("service %q not found", serviceID))
+		return
+	}
+	if service.Type != "message" || strings.TrimSpace(service.Adapter) != adapter {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q is not a WhatsApp message service", serviceID))
+		return
+	}
+	challenge, err := msgtypes.WhatsAppVerificationChallenge(serviceValidationConfig(service), r.URL.Query())
+	if err != nil {
+		writeValidationError(w, err)
+		return
+	}
+	writeText(w, http.StatusOK, challenge)
+}
+
+func (h *Handler) handleWhatsAppServiceWebhook(w http.ResponseWriter, r *http.Request, rawBody []byte, serviceID string, service *core.ServiceConfig) {
+	provider := msgtypes.NewWhatsAppProvider(msgtypes.WhatsAppProviderConfig{
+		ServiceID:       serviceID,
+		Provider:        serviceProvider(service, "whatsapp-cloud"),
+		AccessToken:     resolveServiceEnv(service, "WHATSAPP_ACCESS_TOKEN"),
+		PhoneNumberID:   serviceOption(service, "phone_number_id"),
+		From:            serviceOption(service, "from"),
+		AccountSID:      resolveServiceEnv(service, "TWILIO_ACCOUNT_SID"),
+		AuthToken:       resolveServiceEnv(service, "TWILIO_AUTH_TOKEN"),
+		BaseURL:         serviceOption(service, "whatsapp_api_base_url"),
+		TemplateName:    serviceOption(service, "template_name"),
+		LanguageCode:    serviceOption(service, "language_code"),
+		RequireTemplate: truthyHandlerOption(serviceOption(service, "template_required")),
+	}, h.whatsappTransport)
+	validatingProvider := &serviceValidatingProvider{
+		base:      provider,
+		validator: h.serviceValidator(),
+		service:   serviceValidationConfig(service),
+	}
+	var deliveryAttempts []msgtypes.DeliveryAttempt
+	runtime, err := msgtypes.NewRuntime(
+		validatingProvider,
+		h.router,
+		&serviceRuntimeExecutor{router: h.router, service: service},
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("whatsapp runtime failed: %v", err))
+		return
+	}
+
+	result, err := runtime.HandleIngress(r.Context(), msgtypes.NativeIngress{
+		ServiceID:  serviceID,
+		Provider:   string(msgtypes.PlatformWhatsApp),
+		Mode:       msgtypes.IngressModeWebhook,
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		Headers:    r.Header,
+		Query:      r.URL.Query(),
+		Body:       rawBody,
+		RemoteAddr: r.RemoteAddr,
+	})
+	if err != nil {
+		_ = recordServiceDeliveryAttempts(serviceID, deliveryAttempts, nil)
+		writeProviderRuntimeError(w, string(msgtypes.PlatformWhatsApp), err)
+		return
+	}
+	if result != nil && result.Message != nil {
+		_ = core.RecordServiceInboundEvent(serviceID, core.ServiceEventMeta{
+			MessageID: result.Message.ID,
+			Platform:  string(msgtypes.PlatformWhatsApp),
+			ChannelID: result.Message.Channel.ID,
+			SenderID:  result.Message.Sender.ID,
+			Status:    "received",
+		})
+		if result.Delivery != nil {
+			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
+			if len(result.DeliveryAttempts) == 0 {
+				_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+					MessageID: result.Message.ID,
+					Platform:  string(msgtypes.PlatformWhatsApp),
+					ChannelID: result.Message.Channel.ID,
+					SenderID:  result.Message.Sender.ID,
+					Status:    result.Delivery.Status,
+				})
+			}
+		} else if result.Result != nil {
+			_ = recordServiceExecutionEvent(serviceID, result.Message, result.Result)
 		}
 	}
 
@@ -505,21 +648,153 @@ func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msg
 	}
 	result.Reply = &msgtypes.DeliveryRequest{
 		Text:     actionResult.Output,
-		Metadata: telegramReplyMetadata(handoff.Message),
+		Metadata: replyMetadata(handoff.Message, e.service),
 	}
 	return result, nil
 }
 
-func telegramReplyMetadata(msg *msgtypes.NormalizedMessage) map[string]any {
+func runtimeOptionsWithDeliveryAttempts(serviceID string, attempts *[]msgtypes.DeliveryAttempt) msgtypes.RuntimeOptions {
+	policy := msgtypes.DefaultRetryPolicy()
+	return msgtypes.RuntimeOptions{
+		ServiceID:   serviceID,
+		RetryPolicy: policy,
+		Hooks: msgtypes.RuntimeHooks{
+			OnDeliveryAttempt: func(_ context.Context, attempt msgtypes.DeliveryAttempt) error {
+				if attempts != nil {
+					*attempts = append(*attempts, attempt)
+				}
+				return nil
+			},
+		},
+	}
+}
+
+func recordServiceDeliveryAttempts(serviceID string, attempts []msgtypes.DeliveryAttempt, msg *msgtypes.NormalizedMessage) error {
+	if len(attempts) == 0 {
+		return nil
+	}
+	last := attempts[len(attempts)-1]
+	at := last.FinishedAt
+	if at.IsZero() {
+		at = last.StartedAt
+	}
+	if at.IsZero() {
+		at = time.Now().UTC()
+	}
+	messageID := last.MessageID
+	channelID := last.ChannelID
+	senderID := ""
+	if msg != nil {
+		if messageID == "" {
+			messageID = msg.ID
+		}
+		if channelID == "" {
+			channelID = msg.Channel.ID
+		}
+		senderID = msg.Sender.ID
+	}
+	return core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+		At:          at,
+		MessageID:   messageID,
+		Platform:    last.Provider,
+		ChannelID:   channelID,
+		SenderID:    senderID,
+		Status:      last.Status,
+		Detail:      last.RedactedError,
+		DeliveryID:  last.DeliveryID,
+		Attempts:    serviceDeliveryAttempts(attempts),
+		RetryPolicy: serviceRetryPolicy(msgtypes.DefaultRetryPolicy()),
+	})
+}
+
+func recordServiceExecutionEvent(serviceID string, msg *msgtypes.NormalizedMessage, result *msgtypes.ExecutionResult) error {
+	if msg == nil || result == nil {
+		return nil
+	}
+	status := "executed"
+	detail := "execution completed without provider delivery"
+	switch strings.TrimSpace(strings.ToLower(result.Status)) {
+	case "success", "completed":
+	case "failed", "error", "timeout":
+		status = "failed"
+		detail = "execution failed before provider delivery"
+	default:
+		if strings.TrimSpace(result.Status) != "" {
+			status = result.Status
+		}
+	}
+	return core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+		MessageID: msg.ID,
+		Platform:  msg.Platform,
+		ChannelID: msg.Channel.ID,
+		SenderID:  msg.Sender.ID,
+		Status:    status,
+		Detail:    detail,
+	})
+}
+
+func serviceDeliveryAttempts(attempts []msgtypes.DeliveryAttempt) []core.ServiceDeliveryAttempt {
+	out := make([]core.ServiceDeliveryAttempt, 0, len(attempts))
+	for _, attempt := range attempts {
+		at := attempt.FinishedAt
+		if at.IsZero() {
+			at = attempt.StartedAt
+		}
+		delay := ""
+		if attempt.Delay > 0 {
+			delay = attempt.Delay.String()
+		}
+		out = append(out, core.ServiceDeliveryAttempt{
+			At:            at,
+			Provider:      attempt.Provider,
+			MessageID:     attempt.MessageID,
+			ChannelID:     attempt.ChannelID,
+			Attempt:       attempt.Attempt,
+			MaxAttempts:   attempt.MaxAttempts,
+			Status:        attempt.Status,
+			DeliveryID:    attempt.DeliveryID,
+			Retriable:     attempt.Retriable,
+			Delay:         delay,
+			RedactedError: attempt.RedactedError,
+		})
+	}
+	return out
+}
+
+func serviceRetryPolicy(policy msgtypes.RetryPolicy) *core.ServiceRetryPolicy {
+	return &core.ServiceRetryPolicy{
+		MaxAttempts: policy.MaxAttempts,
+		BaseDelay:   policy.BaseDelay.String(),
+		MaxDelay:    policy.MaxDelay.String(),
+	}
+}
+
+func replyMetadata(msg *msgtypes.NormalizedMessage, service *core.ServiceConfig) map[string]any {
 	metadata := map[string]any{}
-	if msg == nil || msg.PlatformMetadata == nil {
+	if msg == nil {
 		return metadata
 	}
-	if id, ok := msg.PlatformMetadata["telegram_message_id"]; ok {
-		metadata["reply_to_message_id"] = id
-	}
-	if id, ok := msg.PlatformMetadata["telegram_message_thread_id"]; ok {
-		metadata["message_thread_id"] = id
+	switch msgtypes.MessengerPlatform(msg.Platform) {
+	case msgtypes.PlatformTelegram:
+		if msg.PlatformMetadata == nil {
+			return metadata
+		}
+		if id, ok := msg.PlatformMetadata["telegram_message_id"]; ok {
+			metadata["reply_to_message_id"] = id
+		}
+		if id, ok := msg.PlatformMetadata["telegram_message_thread_id"]; ok {
+			metadata["message_thread_id"] = id
+		}
+	case msgtypes.PlatformWhatsApp:
+		metadata["to"] = msg.Sender.ID
+		metadata["phone_number_id"] = msg.Channel.ID
+		metadata["provider"] = serviceProvider(service, "whatsapp-cloud")
+		if templateName := serviceOption(service, "template_name"); templateName != "" {
+			metadata["template_name"] = templateName
+		}
+		if languageCode := serviceOption(service, "language_code"); languageCode != "" {
+			metadata["language_code"] = languageCode
+		}
 	}
 	return metadata
 }
@@ -533,6 +808,15 @@ func replyMode(service *core.ServiceConfig) string {
 		return "text"
 	}
 	return value
+}
+
+func truthyHandlerOption(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func serviceOption(service *core.ServiceConfig, key string) string {
@@ -780,12 +1064,15 @@ func slackDedupTTL(service *core.ServiceConfig) time.Duration {
 
 func decodeWebhookBody(platform string, headers http.Header, rawBody []byte) (map[string]any, error) {
 	contentType := strings.ToLower(headers.Get("Content-Type"))
-	if msgtypes.MessengerPlatform(platform) == msgtypes.PlatformSMS && strings.Contains(contentType, "application/x-www-form-urlencoded") {
-		values, err := url.ParseQuery(string(rawBody))
-		if err != nil {
-			return nil, fmt.Errorf("invalid SMS form body: %v", err)
+	switch msgtypes.MessengerPlatform(platform) {
+	case msgtypes.PlatformSMS, msgtypes.PlatformWhatsApp:
+		if strings.Contains(contentType, "application/x-www-form-urlencoded") {
+			values, err := url.ParseQuery(string(rawBody))
+			if err != nil {
+				return nil, fmt.Errorf("invalid %s form body: %v", platform, err)
+			}
+			return formToMap(values), nil
 		}
-		return formToMap(values), nil
 	}
 	var body map[string]any
 	if err := json.Unmarshal(rawBody, &body); err != nil {

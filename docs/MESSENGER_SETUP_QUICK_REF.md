@@ -16,7 +16,11 @@ aps service add support-bot \
 
 aps service show support-bot
 aps service routes support-bot
-aps serve --addr 127.0.0.1:8080
+aps service status support-bot --base-url https://hooks.example.com
+aps service test support-bot
+aps service start support-bot \
+  --addr 127.0.0.1:8080 \
+  --base-url https://hooks.example.com
 ```
 
 The route is:
@@ -26,6 +30,20 @@ POST /services/support-bot/webhook
 ```
 
 Configure the platform or a relay to POST provider-shaped JSON to that route.
+Use a public HTTPS ingress, tunnel, or relay for provider callbacks.
+
+`aps service status support-bot --base-url https://hooks.example.com` reports
+the effective provider endpoint:
+
+```text
+webhook_url: https://hooks.example.com/services/support-bot/webhook
+```
+
+Use that exact URL in provider consoles. For local development, use an HTTPS
+tunnel origin as `--base-url` and re-register when the tunnel URL changes. For
+production, put APS behind a reverse proxy or load balancer that terminates TLS,
+forwards to the private APS listener, and preserves method, path, query string,
+headers, and raw body for provider signature verification.
 
 ## Alias Reference
 
@@ -80,7 +98,8 @@ aps service add slack-support \
   --allowed-channel C01ABC2DEF \
   --default-action triage \
   --reply text \
-  --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN
+  --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
+  --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
 
 ### Discord
@@ -92,7 +111,7 @@ aps service add discord-support \
   --allowed-channel 1234567890123456789 \
   --default-action handle-discord \
   --reply text \
-  --env DISCORD_TOKEN=secret:DISCORD_TOKEN
+  --env DISCORD_BOT_TOKEN=secret:DISCORD_BOT_TOKEN
 ```
 
 ### SMS
@@ -106,6 +125,7 @@ aps service add sms-alerts \
   --allowed-number +15551230001 \
   --default-action handle-sms \
   --reply text \
+  --env TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID \
   --env TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN
 ```
 
@@ -120,22 +140,41 @@ aps service add wa-support \
   --allowed-number +15551230001 \
   --default-action handle-whatsapp \
   --reply text \
-  --env WHATSAPP_TOKEN=secret:WHATSAPP_TOKEN
+  --env WHATSAPP_ACCESS_TOKEN=secret:WHATSAPP_ACCESS_TOKEN
 ```
 
 ## Test And Verify
 
-There is no `aps service test` command yet. Use these checks:
+Use these checks:
 
 ```bash
 aps service show support-bot
 aps service routes support-bot
+aps service status support-bot --base-url https://hooks.example.com
+aps service test support-bot
 aps serve --addr 127.0.0.1:8080
 curl -X POST http://127.0.0.1:8080/services/support-bot/webhook \
   -H 'content-type: application/json' \
   -H "x-telegram-bot-api-secret-token: $TELEGRAM_WEBHOOK_SECRET" \
-  -d '{"update_id":1000001,"message":{"message_id":1,"from":{"id":456},"chat":{"id":-1001234567890},"text":"hello"}}'
+  -d '{
+    "update_id": 1000001,
+    "message": {
+      "message_id": 1,
+      "from": {"id": 456},
+      "chat": {"id": -1001234567890},
+      "text": "hello"
+    }
+  }'
 ```
+
+Provider verification challenges use the same public URL:
+
+| Provider | What to verify |
+| --- | --- |
+| Telegram | `setWebhook` URL and `X-Telegram-Bot-Api-Secret-Token` when configured |
+| Slack | Events API URL verification and signed callback raw-body preservation |
+| Twilio SMS/WhatsApp | Exact `--webhook-url` match for `X-Twilio-Signature` |
+| WhatsApp Cloud | `GET` challenge with `hub.verify_token` and `hub.challenge` |
 
 For legacy adapter devices:
 

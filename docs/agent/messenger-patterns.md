@@ -20,6 +20,8 @@ aps service add support-bot \
 
 aps service show support-bot
 aps service routes support-bot
+aps service status support-bot --base-url https://hooks.example.com
+aps service test support-bot
 ```
 
 `aps service show` reports the resolved type, adapter, profile, route, reply
@@ -45,15 +47,24 @@ the target profile action, and returns platform-shaped JSON. For service routes,
 `--default-action handle-telegram` resolves inside the service profile; explicit
 legacy mappings use `profile=action`.
 
-There is no `aps service test` command yet. Current lightweight checks are:
+Current lightweight checks are:
 
 ```bash
 aps service show support-bot
 aps service routes support-bot
+aps service status support-bot --base-url https://hooks.example.com
+aps service test support-bot
 aps serve --addr 127.0.0.1:8080
 curl -X POST http://127.0.0.1:8080/services/support-bot/webhook \
   -H 'content-type: application/json' \
-  -d '{"message":{"message_id":1,"from":{"id":456},"chat":{"id":-1001234567890},"text":"hello"}}'
+  -d '{
+    "message": {
+      "message_id": 1,
+      "from": {"id": 456},
+      "chat": {"id": -1001234567890},
+      "text": "hello"
+    }
+  }'
 ```
 
 `aps adapter messenger test <device>` is for the older adapter-device link
@@ -68,7 +79,7 @@ client is delivering messages to `aps serve`.
 | `telegram` | `type: message`, `adapter: telegram` | Telegram Bot API `message` and `edited_message` JSON | Telegram `sendMessage` JSON | Chat IDs are numeric; groups usually start with `-100`. |
 | `slack` | `type: message`, `adapter: slack` | Slack Events API event envelope JSON | Slack text response JSON | Slack URL verification and app provisioning are outside `aps service add`. |
 | `discord` | `type: message`, `adapter: discord` | Discord message-create style JSON | Discord content response JSON | Discord Gateway/bot runtime is not created by `aps service add`. |
-| `sms` | `type: message`, `adapter: sms` | Twilio-style or lower-case phone message fields in JSON | Text response metadata | The mounted handler expects JSON, so form webhooks need a relay/adapter. |
+| `sms` | `type: message`, `adapter: sms` | Twilio-style form or JSON phone fields | Text response metadata | Twilio signatures require exact public `--webhook-url`. |
 | `whatsapp` | `type: message`, `adapter: whatsapp` | WhatsApp Cloud API JSON or Twilio-style WhatsApp JSON | Text response metadata | Use `--phone-number-id` for Cloud API channel IDs. |
 
 ## Message Vs Ticket Aliases

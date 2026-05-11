@@ -2,12 +2,19 @@ package service
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	xrr "hop.top/xrr"
+	xhttp "hop.top/xrr/adapters/http"
 
 	"hop.top/aps/internal/core"
 )
@@ -82,7 +89,25 @@ func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
 		},
 		Delivery: &core.ServiceDelivery{
 			Health:    "healthy",
+			Status:    "success",
 			UpdatedAt: eventTime,
+			RetryPolicy: &core.ServiceRetryPolicy{
+				MaxAttempts: 3,
+				BaseDelay:   "1s",
+				MaxDelay:    "30s",
+			},
+			Attempts: []core.ServiceDeliveryAttempt{
+				{
+					At:          eventTime.Add(time.Second),
+					Provider:    "telegram",
+					MessageID:   "msg-1",
+					ChannelID:   "-1001",
+					Attempt:     1,
+					MaxAttempts: 3,
+					Status:      "success",
+					DeliveryID:  "99",
+				},
+			},
 		},
 		LastInbound: &core.ServiceEventMeta{
 			At:        eventTime,
@@ -113,6 +138,9 @@ func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
 
 	assert.Contains(t, out.String(), "webhook_url: https://hooks.example.test/services/support-bot/webhook")
 	assert.Contains(t, out.String(), "delivery_health: healthy")
+	assert.Contains(t, out.String(), "delivery_status: success")
+	assert.Contains(t, out.String(), "retry_policy: max_attempts=3 base_delay=1s max_delay=30s")
+	assert.Contains(t, out.String(), "delivery_attempt: 2026-05-11T12:00:01Z provider=telegram message_id=msg-1 channel_id=-1001 attempt=1 max_attempts=3 status=success delivery_id=99")
 	assert.Contains(t, out.String(), "last_inbound: 2026-05-11T12:00:00Z message_id=msg-1 platform=telegram channel_id=-1001 sender_id=42 status=received")
 	assert.Contains(t, out.String(), "last_outbound: 2026-05-11T12:00:01Z message_id=msg-1 platform=telegram channel_id=-1001 sender_id=42 status=success")
 	assert.Contains(t, out.String(), "config_valid: true")
@@ -170,6 +198,136 @@ func TestServiceTest_InvalidMessageConfigFailsBeforeProbe(t *testing.T) {
 	assert.Contains(t, out.String(), "webhook_url: http://127.0.0.1:8080/services/support-bot/webhook")
 }
 
+func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) {
+	tests := []struct {
+		name        string
+		service     *core.ServiceConfig
+		wantReplies string
+	}{
+		{
+			name: "telegram",
+			service: &core.ServiceConfig{
+				ID:      "telegram-support",
+				Type:    "message",
+				Adapter: "telegram",
+				Profile: "assistant",
+				Env:     map[string]string{"TELEGRAM_BOT_TOKEN": "secret:TELEGRAM_BOT_TOKEN"},
+				Options: map[string]string{
+					"default_action":       "assistant=handle_telegram",
+					"webhook_secret_token": "telegram-secret",
+					"reply":                "text",
+				},
+			},
+			wantReplies: "replies: telegram text",
+		},
+		{
+			name: "slack",
+			service: &core.ServiceConfig{
+				ID:      "slack-support",
+				Type:    "message",
+				Adapter: "slack",
+				Profile: "assistant",
+				Env: map[string]string{
+					"SLACK_BOT_TOKEN":      "xoxb-test",
+					"SLACK_SIGNING_SECRET": "test-secret",
+				},
+				Options: map[string]string{
+					"default_action": "assistant=handle_slack",
+					"reply":          "text",
+				},
+			},
+			wantReplies: "replies: slack text",
+		},
+		{
+			name: "discord",
+			service: &core.ServiceConfig{
+				ID:      "discord-support",
+				Type:    "message",
+				Adapter: "discord",
+				Profile: "assistant",
+				Env:     map[string]string{"DISCORD_BOT_TOKEN": "secret:DISCORD_BOT_TOKEN"},
+				Options: map[string]string{
+					"default_action": "assistant=handle_discord",
+					"reply":          "text",
+				},
+			},
+			wantReplies: "replies: discord text",
+		},
+		{
+			name: "sms",
+			service: &core.ServiceConfig{
+				ID:      "sms-alerts",
+				Type:    "message",
+				Adapter: "sms",
+				Profile: "assistant",
+				Env: map[string]string{
+					"TWILIO_ACCOUNT_SID": "AC123",
+					"TWILIO_AUTH_TOKEN":  "twilio-token",
+				},
+				Options: map[string]string{
+					"default_action":  "assistant=handle_sms",
+					"provider":        "twilio",
+					"from":            "+15550100002",
+					"allowed_numbers": "+15550100001",
+					"reply":           "text",
+				},
+			},
+			wantReplies: "replies: twilio text",
+		},
+		{
+			name: "whatsapp",
+			service: &core.ServiceConfig{
+				ID:      "wa-support",
+				Type:    "message",
+				Adapter: "whatsapp",
+				Profile: "assistant",
+				Env:     map[string]string{"WHATSAPP_ACCESS_TOKEN": "secret:WHATSAPP_ACCESS_TOKEN"},
+				Options: map[string]string{
+					"default_action":  "assistant=handle_whatsapp",
+					"provider":        "whatsapp-cloud",
+					"phone_number_id": "123456789012345",
+					"allowed_numbers": "+15551230001",
+					"reply":           "text",
+				},
+			},
+			wantReplies: "replies: whatsapp-cloud text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+			require.NoError(t, core.SaveService(tt.service))
+
+			show := NewServiceCmd()
+			var showOut bytes.Buffer
+			show.SetOut(&showOut)
+			show.SetErr(&showOut)
+			show.SetArgs([]string{"show", tt.service.ID})
+			require.NoError(t, show.Execute())
+			assert.Contains(t, showOut.String(), "receives: HTTP POST /services/"+tt.service.ID+"/webhook")
+			assert.Contains(t, showOut.String(), "executes: normalized message execution handoff")
+			assert.Contains(t, showOut.String(), tt.wantReplies)
+			assert.Contains(t, showOut.String(), "maturity: ready")
+
+			previousClient := http.DefaultClient
+			http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir()}}
+			t.Cleanup(func() { http.DefaultClient = previousClient })
+
+			testCmd := NewServiceCmd()
+			var testOut bytes.Buffer
+			testCmd.SetOut(&testOut)
+			testCmd.SetErr(&testOut)
+			testCmd.SetArgs([]string{"test", tt.service.ID, "--probe", "--base-url", "https://hooks.example.test"})
+			require.NoError(t, testCmd.Execute())
+			assert.Contains(t, testOut.String(), "config_valid: true")
+			assert.Contains(t, testOut.String(), "webhook_url: https://hooks.example.test/services/"+tt.service.ID+"/webhook")
+			assert.Contains(t, testOut.String(), "probe_status: 202")
+			assert.Contains(t, testOut.String(), "probe_response: {\"status\":\"accepted\"}")
+		})
+	}
+}
+
 func TestServiceRoutes_MessageService(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
@@ -198,6 +356,46 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 	routes.SetArgs([]string{"routes", "support-bot"})
 	require.NoError(t, routes.Execute())
 	assert.Equal(t, "/services/support-bot/webhook\n", routesOut.String())
+}
+
+type xrrProbeRoundTripper struct {
+	t   *testing.T
+	dir string
+}
+
+func (rt xrrProbeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	xreq := &xhttp.Request{
+		Method:  req.Method,
+		URL:     req.URL.String(),
+		Headers: map[string]string{"Content-Type": req.Header.Get("Content-Type")},
+		Body:    string(body),
+	}
+	session := xrr.NewSession(xrr.ModeRecord, xrr.NewFileCassette(rt.dir))
+	resp, err := session.Record(context.Background(), xhttp.NewAdapter(), xreq, func() (xrr.Response, error) {
+		assert.Equal(rt.t, http.MethodPost, req.Method)
+		assert.True(rt.t, strings.HasPrefix(req.URL.String(), "https://hooks.example.test/services/"))
+		return &xhttp.Response{
+			Status: http.StatusAccepted,
+			Body:   `{"status":"accepted"}`,
+		}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	xresp, ok := resp.(*xhttp.Response)
+	if !ok {
+		return nil, fmt.Errorf("unexpected xrr response %T", resp)
+	}
+	return &http.Response{
+		StatusCode: xresp.Status,
+		Status:     fmt.Sprintf("%d %s", xresp.Status, http.StatusText(xresp.Status)),
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(xresp.Body)),
+	}, nil
 }
 
 func TestServiceShow_ACPAdvertisesStdioOnlyRuntime(t *testing.T) {
@@ -494,6 +692,10 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--provider", "whatsapp-cloud",
 				"--phone-number-id", "123456789012345",
 				"--allowed-number", "+15551230001",
+				"--verify-token-env", "WHATSAPP_VERIFY_TOKEN",
+				"--signing-secret-env", "WHATSAPP_APP_SECRET",
+				"--template-name", "support_update",
+				"--language-code", "en_US",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -501,6 +703,10 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"provider: whatsapp-cloud",
 				"phone_number_id: 123456789012345",
 				"allowed_numbers: +15551230001",
+				"verify_token_env: WHATSAPP_VERIFY_TOKEN",
+				"signing_secret_env: WHATSAPP_APP_SECRET",
+				"template_name: support_update",
+				"language_code: en_US",
 			},
 		},
 	}

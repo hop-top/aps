@@ -2,9 +2,12 @@ package messenger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"hop.top/aps/internal/logging"
 )
 
 // IngressMode identifies how a provider supplies native events to APS.
@@ -140,6 +143,23 @@ type DeliveryReceipt struct {
 	ProviderData map[string]any `json:"provider_data,omitempty"`
 }
 
+// DeliveryAttempt records one provider delivery try without retaining payloads
+// or unredacted provider error bodies.
+type DeliveryAttempt struct {
+	Provider      string        `json:"provider"`
+	MessageID     string        `json:"message_id,omitempty"`
+	ChannelID     string        `json:"channel_id,omitempty"`
+	DeliveryID    string        `json:"delivery_id,omitempty"`
+	Attempt       int           `json:"attempt"`
+	MaxAttempts   int           `json:"max_attempts"`
+	Status        string        `json:"status"`
+	Retriable     bool          `json:"retriable,omitempty"`
+	Delay         time.Duration `json:"delay,omitempty"`
+	StartedAt     time.Time     `json:"started_at,omitempty"`
+	FinishedAt    time.Time     `json:"finished_at,omitempty"`
+	RedactedError string        `json:"redacted_error,omitempty"`
+}
+
 // ExecutionRoute is the normalized profile action target for a message.
 type ExecutionRoute struct {
 	ProfileID  string `json:"profile_id"`
@@ -200,11 +220,12 @@ type ExecutionResult struct {
 
 // RuntimeResult captures a completed shared runtime pass.
 type RuntimeResult struct {
-	Message  *NormalizedMessage `json:"message,omitempty"`
-	Route    ExecutionRoute     `json:"route"`
-	Handoff  ExecutionHandoff   `json:"handoff"`
-	Result   *ExecutionResult   `json:"result,omitempty"`
-	Delivery *DeliveryReceipt   `json:"delivery,omitempty"`
+	Message          *NormalizedMessage `json:"message,omitempty"`
+	Route            ExecutionRoute     `json:"route"`
+	Handoff          ExecutionHandoff   `json:"handoff"`
+	Result           *ExecutionResult   `json:"result,omitempty"`
+	Delivery         *DeliveryReceipt   `json:"delivery,omitempty"`
+	DeliveryAttempts []DeliveryAttempt  `json:"delivery_attempts,omitempty"`
 }
 
 // RetryPolicy decides whether runtime errors should be retried by the caller.
@@ -260,8 +281,9 @@ func (e *RuntimeError) Unwrap() error {
 
 // RuntimeHooks are advisory extension points for reporting and retry scheduling.
 type RuntimeHooks struct {
-	OnError func(context.Context, *RuntimeError) error
-	OnRetry func(context.Context, RetryDecision) error
+	OnError           func(context.Context, *RuntimeError) error
+	OnRetry           func(context.Context, RetryDecision) error
+	OnDeliveryAttempt func(context.Context, DeliveryAttempt) error
 }
 
 // RuntimeOptions configures the shared provider runtime.
@@ -270,6 +292,7 @@ type RuntimeOptions struct {
 	RetryPolicy RetryPolicy
 	Hooks       RuntimeHooks
 	Now         func() time.Time
+	Sleep       func(context.Context, time.Duration) error
 }
 
 // Runtime coordinates provider ingress, routing, execution, delivery, and
@@ -297,6 +320,9 @@ func NewRuntime(provider MessageProvider, router MessageRouter, executor Message
 	}
 	if options.Now == nil {
 		options.Now = time.Now
+	}
+	if options.Sleep == nil {
+		options.Sleep = sleepContext
 	}
 	if options.RetryPolicy.MaxAttempts == 0 {
 		options.RetryPolicy = DefaultRetryPolicy()
@@ -392,9 +418,10 @@ func (r *Runtime) HandleIngress(ctx context.Context, ingress NativeIngress) (*Ru
 	if err := reply.Validate(); err != nil {
 		return nil, r.runtimeError(ctx, RuntimeStageDeliver, ingress, msg.ID, err)
 	}
-	receipt, err := delivery.DeliverMessage(ctx, reply)
+	receipt, attempts, err := r.deliverWithRetry(ctx, delivery, ingress, msg.ID, reply)
+	runtimeResult.DeliveryAttempts = attempts
 	if err != nil {
-		return nil, r.runtimeError(ctx, RuntimeStageDeliver, ingress, msg.ID, err)
+		return nil, err
 	}
 	runtimeResult.Delivery = receipt
 	return runtimeResult, nil
@@ -448,13 +475,104 @@ func (r *Runtime) runtimeError(ctx context.Context, stage RuntimeStage, ingress 
 		Err:      err,
 	}
 	runtimeErr.Decision = r.options.RetryPolicy.Decide(runtimeErr)
+	r.emitRuntimeError(ctx, runtimeErr)
+	return runtimeErr
+}
+
+func (r *Runtime) emitRuntimeError(ctx context.Context, runtimeErr *RuntimeError) {
 	if r.options.Hooks.OnError != nil {
 		_ = r.options.Hooks.OnError(ctx, runtimeErr)
 	}
 	if runtimeErr.Decision.Retry && r.options.Hooks.OnRetry != nil {
 		_ = r.options.Hooks.OnRetry(ctx, runtimeErr.Decision)
 	}
-	return runtimeErr
+}
+
+func (r *Runtime) deliverWithRetry(
+	ctx context.Context,
+	delivery ProviderDelivery,
+	ingress NativeIngress,
+	msgID string,
+	reply DeliveryRequest,
+) (*DeliveryReceipt, []DeliveryAttempt, error) {
+	policy := r.options.RetryPolicy
+	if policy.MaxAttempts == 0 {
+		policy = DefaultRetryPolicy()
+	}
+	attempt := ingress.Attempt
+	if attempt < 1 {
+		attempt = 1
+	}
+	attempts := []DeliveryAttempt{}
+
+	for {
+		started := r.options.Now().UTC()
+		receipt, err := delivery.DeliverMessage(ctx, reply)
+		finished := r.options.Now().UTC()
+
+		attemptRecord := DeliveryAttempt{
+			Provider:    ingress.Provider,
+			MessageID:   reply.MessageID,
+			ChannelID:   reply.ChannelID,
+			Attempt:     attempt,
+			MaxAttempts: policy.MaxAttempts,
+			StartedAt:   started,
+			FinishedAt:  finished,
+		}
+		if err == nil {
+			if receipt == nil {
+				err = fmt.Errorf("provider %q returned nil delivery receipt", ingress.Provider)
+			} else {
+				if receipt.Provider == "" {
+					receipt.Provider = ingress.Provider
+				}
+				if receipt.Status == "" {
+					receipt.Status = "success"
+				}
+				attemptRecord.Status = receipt.Status
+				attemptRecord.DeliveryID = receipt.DeliveryID
+				attempts = append(attempts, attemptRecord)
+				r.emitDeliveryAttempt(ctx, attemptRecord)
+				return receipt, attempts, nil
+			}
+		}
+
+		safeErr := errors.New(redactProviderError(err))
+		runtimeErr := &RuntimeError{
+			Stage:    RuntimeStageDeliver,
+			Service:  ingress.ServiceID,
+			Provider: ingress.Provider,
+			Message:  msgID,
+			Attempt:  attempt,
+			Err:      safeErr,
+		}
+		runtimeErr.Decision = policy.Decide(runtimeErr)
+		attemptRecord.Retriable = runtimeErr.Decision.Retry
+		attemptRecord.Delay = runtimeErr.Decision.Delay
+		attemptRecord.RedactedError = safeErr.Error()
+		if runtimeErr.Decision.Retry {
+			attemptRecord.Status = "retry_scheduled"
+		} else {
+			attemptRecord.Status = "dead_letter"
+		}
+		attempts = append(attempts, attemptRecord)
+		r.emitDeliveryAttempt(ctx, attemptRecord)
+		r.emitRuntimeError(ctx, runtimeErr)
+
+		if !runtimeErr.Decision.Retry {
+			return nil, attempts, runtimeErr
+		}
+		if err := r.options.Sleep(ctx, runtimeErr.Decision.Delay); err != nil {
+			return nil, attempts, r.runtimeError(ctx, RuntimeStageDeliver, ingress, msgID, err)
+		}
+		attempt++
+	}
+}
+
+func (r *Runtime) emitDeliveryAttempt(ctx context.Context, attempt DeliveryAttempt) {
+	if r.options.Hooks.OnDeliveryAttempt != nil {
+		_ = r.options.Hooks.OnDeliveryAttempt(ctx, attempt)
+	}
 }
 
 func completeDeliveryRequest(reply *DeliveryRequest, ingress NativeIngress, msg *NormalizedMessage) {
@@ -480,6 +598,27 @@ func completeDeliveryRequest(reply *DeliveryRequest, ingress NativeIngress, msg 
 		if _, ok := reply.Metadata["thread_type"]; !ok {
 			reply.Metadata["thread_type"] = msg.Thread.Type
 		}
+	}
+}
+
+func redactProviderError(err error) string {
+	if err == nil {
+		return ""
+	}
+	return logging.Apply(err.Error())
+}
+
+func sleepContext(ctx context.Context, delay time.Duration) error {
+	if delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 

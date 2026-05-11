@@ -110,6 +110,10 @@ func TestRuntimeHandleIngress_NormalizesExecutesAndDelivers(t *testing.T) {
 	assert.Equal(t, "assistant=triage", result.Handoff.TargetAction)
 	assert.Equal(t, 1, result.Handoff.Attempt)
 	assert.Equal(t, "delivery-1", result.Delivery.DeliveryID)
+	require.Len(t, result.DeliveryAttempts, 1)
+	assert.Equal(t, 1, result.DeliveryAttempts[0].Attempt)
+	assert.Equal(t, "sent", result.DeliveryAttempts[0].Status)
+	assert.Equal(t, "delivery-1", result.DeliveryAttempts[0].DeliveryID)
 
 	require.Len(t, provider.deliveries, 1)
 	assert.Equal(t, "slack", provider.deliveries[0].Provider)
@@ -123,7 +127,7 @@ func TestRuntimeHandleIngress_NormalizesExecutesAndDelivers(t *testing.T) {
 
 func TestRuntimeHandleIngress_ReportsRetryableDeliveryError(t *testing.T) {
 	ctx := context.Background()
-	deliveryErr := errors.New("rate limited")
+	deliveryErr := errors.New("rate limited Authorization: Bearer secret-provider-token")
 	provider := &stubProvider{
 		message: &NormalizedMessage{
 			ID:       "msg-1",
@@ -137,8 +141,9 @@ func TestRuntimeHandleIngress_ReportsRetryableDeliveryError(t *testing.T) {
 	router := &stubRouter{route: ExecutionRoute{ProfileID: "assistant", ActionName: "reply"}}
 	executor := &stubExecutor{result: &ExecutionResult{Status: "completed", Reply: &DeliveryRequest{Text: "ack"}}}
 
-	var reported *RuntimeError
-	var retry RetryDecision
+	var reported []*RuntimeError
+	var retries []RetryDecision
+	var attempts []DeliveryAttempt
 	runtime, err := NewRuntime(provider, router, executor, RuntimeOptions{
 		ServiceID: "support-bot",
 		RetryPolicy: RetryPolicy{
@@ -149,14 +154,19 @@ func TestRuntimeHandleIngress_ReportsRetryableDeliveryError(t *testing.T) {
 		},
 		Hooks: RuntimeHooks{
 			OnError: func(_ context.Context, err *RuntimeError) error {
-				reported = err
+				reported = append(reported, err)
 				return nil
 			},
 			OnRetry: func(_ context.Context, decision RetryDecision) error {
-				retry = decision
+				retries = append(retries, decision)
+				return nil
+			},
+			OnDeliveryAttempt: func(_ context.Context, attempt DeliveryAttempt) error {
+				attempts = append(attempts, attempt)
 				return nil
 			},
 		},
+		Sleep: func(context.Context, time.Duration) error { return nil },
 	})
 	require.NoError(t, err)
 
@@ -174,16 +184,22 @@ func TestRuntimeHandleIngress_ReportsRetryableDeliveryError(t *testing.T) {
 	assert.Equal(t, "support-bot", runtimeErr.Service)
 	assert.Equal(t, "slack", runtimeErr.Provider)
 	assert.Equal(t, "msg-1", runtimeErr.Message)
-	assert.Equal(t, 2, runtimeErr.Attempt)
-	assert.ErrorIs(t, err, deliveryErr)
+	assert.Equal(t, 3, runtimeErr.Attempt)
+	assert.NotContains(t, err.Error(), "secret-provider-token")
 
-	require.NotNil(t, reported)
-	assert.Equal(t, RuntimeStageDeliver, reported.Stage)
-	assert.True(t, retry.Retry)
-	assert.Equal(t, 2, retry.Attempt)
-	assert.Equal(t, 3, retry.MaxAttempts)
-	assert.Equal(t, 500*time.Millisecond, retry.Delay)
-	assert.Equal(t, RuntimeStageDeliver, retry.Stage)
+	require.Len(t, reported, 2)
+	assert.Equal(t, RuntimeStageDeliver, reported[0].Stage)
+	require.Len(t, retries, 1)
+	assert.True(t, retries[0].Retry)
+	assert.Equal(t, 2, retries[0].Attempt)
+	assert.Equal(t, 3, retries[0].MaxAttempts)
+	assert.Equal(t, 500*time.Millisecond, retries[0].Delay)
+	assert.Equal(t, RuntimeStageDeliver, retries[0].Stage)
+	require.Len(t, attempts, 2)
+	assert.Equal(t, "retry_scheduled", attempts[0].Status)
+	assert.Equal(t, "dead_letter", attempts[1].Status)
+	assert.NotContains(t, attempts[0].RedactedError, "secret-provider-token")
+	require.Len(t, provider.deliveries, 2)
 }
 
 func TestRetryPolicyDecide(t *testing.T) {

@@ -145,17 +145,60 @@ The important columns are:
 - `REPLIES`: what the caller gets back.
 - `MATURITY`: whether the service should be treated as production-ready.
 
+Public message services also need an operator-visible endpoint field. For a
+message service, `aps service status <id> --base-url <public-origin>` should
+derive the effective provider URL as:
+
+```text
+<public-origin>/services/<service-id>/webhook
+```
+
+Example:
+
+```bash
+aps service status support-bot --base-url https://hooks.example.com
+```
+
+Should report:
+
+```text
+webhook_url: https://hooks.example.com/services/support-bot/webhook
+```
+
+The public origin is an operator assertion, not an APS-managed resource. APS
+uses it for status output, test probes, startup output, and signature
+configuration guidance. It does not create DNS records, TLS certificates,
+provider webhook registrations, tunnels, or reverse proxy rules.
+
+Ingress expectations:
+
+- Local development may use a temporary HTTPS tunnel that forwards to
+  `127.0.0.1:<port>`.
+- Production should use a stable DNS name and reverse proxy or load balancer
+  that terminates TLS and forwards to the private APS listener.
+- The proxy must preserve method, path, query string, headers, and raw request
+  body. Provider signatures commonly cover the exact URL, timestamp, or body.
+- Public provider callback URLs should be HTTPS. Plain HTTP is only acceptable
+  for localhost-only tests or a trusted internal relay.
+- Provider verification challenges use the same effective URL as message
+  delivery: Slack sends a URL verification event, WhatsApp Cloud sends a
+  `GET` challenge with `hub.verify_token` and `hub.challenge`, Telegram
+  validates the registered URL through `setWebhook`, and Twilio signs requests
+  against the exact configured URL.
+
 ## Proposed CLI
 
 Current implemented service commands are `aps service add`, `aps service show`,
-and `aps service routes`; `aps serve` mounts HTTP service routes. The remaining
-commands in this section are future UX shape, not current CLI.
+`aps service routes`, `aps service status`, `aps service test`,
+`aps service start`, and `aps service stop`; `aps serve` mounts HTTP service
+routes. Commands in this section that are not in that list are future UX shape,
+not current CLI.
 
 ### Discovery
 
 ```bash
 aps service list
-aps service status
+aps service status <service-id>
 aps service show <service-id>
 aps service routes <service-id>
 aps service logs <service-id>
@@ -290,7 +333,7 @@ The grammar holds if every type and adapter can express its needs as options aft
 | `--type slack` | `type: message`, `adapter: slack` | `aps service add support-bot --type slack --profile assistant --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN` | `--env`, `--receive`, `--allowed-channel`, `--default-action`, `--reply` | `--type slack --help` resolves alias and shows Slack options |
 | `--type telegram` | `type: message`, `adapter: telegram` | `aps service add support-bot --type telegram --profile assistant --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN --receive polling` | `--env`, `--receive`, `--allowed-chat`, `--default-action`, `--reply` | `--type telegram --help` resolves alias and shows Telegram options |
 | `--type sms` | `type: message`, `adapter: sms` | `aps service add sms-alerts --type sms --profile assistant --env SMS_PROVIDER_TOKEN=secret:SMS_PROVIDER_TOKEN` | `--env`, `--provider`, `--from`, `--allowed-number`, `--reply` | `--type sms --help` resolves alias and shows SMS options |
-| `--type whatsapp` | `type: message`, `adapter: whatsapp` | `aps service add wa-support --type whatsapp --profile assistant --env WHATSAPP_TOKEN=secret:WHATSAPP_TOKEN` | `--env`, `--provider`, `--phone-number-id`, `--allowed-number`, `--reply` | `--type whatsapp --help` resolves alias and shows WhatsApp options |
+| `--type whatsapp` | `type: message`, `adapter: whatsapp` | `aps service add wa-support --type whatsapp --profile assistant --provider whatsapp-cloud --phone-number-id 123456789012345 --env WHATSAPP_ACCESS_TOKEN=secret:WHATSAPP_ACCESS_TOKEN` | `--env`, `--provider`, `--phone-number-id`, `--allowed-number`, `--reply` | `--type whatsapp --help` resolves alias and shows WhatsApp options |
 | `--type github` | `type: ticket`, `adapter: github` | `aps service add repo-inbox --type github --profile maintainer --env GITHUB_TOKEN=secret:GITHUB_TOKEN` | `--env`, `--repo`, `--events`, `--default-action`, `--reply` | `--type github --help` resolves alias and shows GitHub ticket options |
 | `--type jira` | `type: ticket`, `adapter: jira` | `aps service add jira-intake --type jira --profile triage --env JIRA_TOKEN=secret:JIRA_TOKEN` | `--env`, `--site`, `--project`, `--jql`, `--default-action` | `--type jira --help` resolves alias and shows Jira options |
 | `--type events` | `type: events`, `adapter: bus` | `aps service add watcher --type events --profile noor --topics "aps.#,tlc.#" --format jsonl` | `--topics`, `--format`, `--exit-after-events` | `--type events --help` shows observe-only semantics |
@@ -456,6 +499,8 @@ aps service add support-bot \
   --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 aps service show support-bot
 aps service routes support-bot
+aps service status support-bot --base-url https://hooks.example.com
+aps service test support-bot
 aps serve --addr 127.0.0.1:8080
 ```
 
@@ -469,8 +514,11 @@ email, github, gitlab, jira, linear -> type: ticket
 Route/test expectations:
 
 - `aps service routes <id>` prints `/services/<id>/webhook`.
-- There is no `aps service test` command yet; smoke-test the route with
-  `aps serve` plus a provider-shaped JSON POST.
+- `aps service status <id> --base-url <public-origin>` prints the effective
+  provider `webhook_url` to register.
+- `aps service test <id>` validates service config; add `--probe --base-url
+  <public-origin>` to POST a synthetic provider-shaped payload through the
+  public endpoint.
 - `aps adapter messenger test <device>` remains a legacy adapter-device
   pipeline simulation. It is not a service route test and does not verify live
   platform delivery.

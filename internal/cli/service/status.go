@@ -174,6 +174,7 @@ func renderStatus(cmd *cobra.Command, service *core.ServiceConfig, baseURL strin
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "receives: %s\n", runtime.Receives)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "replies: %s\n", runtime.Replies)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "delivery_health: %s\n", deliveryHealth(service))
+	renderDelivery(cmd, service)
 	renderEvent(cmd, "last_inbound", service.LastInbound)
 	renderEvent(cmd, "last_outbound", service.LastOutbound)
 	renderValidation(cmd, validation)
@@ -188,6 +189,40 @@ func renderValidation(cmd *cobra.Command, validation core.ServiceValidationResul
 	}
 	for _, warning := range validation.Warnings {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_warning: %s\n", warning)
+	}
+}
+
+func renderDelivery(cmd *cobra.Command, service *core.ServiceConfig) {
+	if service == nil || service.Delivery == nil {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "delivery_status: unknown")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "retry_policy: max_attempts=3 base_delay=1s max_delay=30s")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "delivery_attempts: none")
+		return
+	}
+	delivery := service.Delivery
+	status := strings.TrimSpace(delivery.Status)
+	if status == "" {
+		status = deliveryHealth(service)
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "delivery_status: %s\n", status)
+	if delivery.LastError != "" {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "delivery_last_error: %s\n", logging.Apply(delivery.LastError))
+	}
+	if delivery.RetryPolicy != nil {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "retry_policy: max_attempts=%d base_delay=%s max_delay=%s\n",
+			delivery.RetryPolicy.MaxAttempts,
+			delivery.RetryPolicy.BaseDelay,
+			delivery.RetryPolicy.MaxDelay,
+		)
+	} else {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "retry_policy: max_attempts=3 base_delay=1s max_delay=30s")
+	}
+	if len(delivery.Attempts) == 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "delivery_attempts: none")
+		return
+	}
+	for _, attempt := range delivery.Attempts {
+		renderDeliveryAttempt(cmd, attempt)
 	}
 }
 
@@ -211,9 +246,40 @@ func renderEvent(cmd *cobra.Command, label string, event *core.ServiceEventMeta)
 	addEventPart("sender_id", event.SenderID)
 	addEventPart("status", event.Status)
 	if event.Detail != "" {
-		addEventPart("detail", event.Detail)
+		addEventPart("detail", logging.Apply(event.Detail))
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", label, strings.Join(parts, " "))
+}
+
+func renderDeliveryAttempt(cmd *cobra.Command, attempt core.ServiceDeliveryAttempt) {
+	parts := []string{}
+	if !attempt.At.IsZero() {
+		parts = append(parts, attempt.At.UTC().Format(time.RFC3339))
+	}
+	add := func(key, value string) {
+		if strings.TrimSpace(value) != "" {
+			parts = append(parts, key+"="+value)
+		}
+	}
+	add("provider", attempt.Provider)
+	add("message_id", attempt.MessageID)
+	add("channel_id", attempt.ChannelID)
+	if attempt.Attempt > 0 {
+		add("attempt", strconv.Itoa(attempt.Attempt))
+	}
+	if attempt.MaxAttempts > 0 {
+		add("max_attempts", strconv.Itoa(attempt.MaxAttempts))
+	}
+	add("status", attempt.Status)
+	add("delivery_id", attempt.DeliveryID)
+	if attempt.Retriable {
+		add("retriable", "true")
+	}
+	add("delay", attempt.Delay)
+	if attempt.RedactedError != "" {
+		add("error", logging.Apply(attempt.RedactedError))
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "delivery_attempt: %s\n", strings.Join(parts, " "))
 }
 
 func deliveryHealth(service *core.ServiceConfig) string {

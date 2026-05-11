@@ -120,6 +120,8 @@ func NewServiceValidator() *ServiceValidator {
 			string(PlatformTelegram): TelegramAuthHook{},
 			string(PlatformSlack):    SlackAuthHook{},
 			string(PlatformDiscord):  DiscordAuthHook{},
+			string(PlatformWhatsApp): WhatsAppAuthHook{},
+			"whatsapp-cloud":         WhatsAppAuthHook{},
 			"twilio":                 TwilioWebhookValidator{},
 		},
 		Replay: NewMemoryReplayStore(),
@@ -179,6 +181,11 @@ func (v *ServiceValidator) ValidateMessage(service ServiceValidationConfig, msg 
 	}
 	if allowed := splitCSV(opts["allowed_numbers"]); len(allowed) > 0 && !containsAny(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, "phone number is not allowed")
+	}
+	if service.Adapter == string(PlatformWhatsApp) {
+		if phoneNumberID := strings.TrimSpace(opts["phone_number_id"]); phoneNumberID != "" && !containsAny([]string{phoneNumberID}, msg.Channel.ID, msg.Channel.PlatformID) {
+			return ErrSenderNotAllowed(service.ID, fmt.Sprintf("phone_number_id %q is not allowed", safeID(msg.Channel.ID)))
+		}
 	}
 	if service.Adapter == string(PlatformSlack) && truthyOption(opts["require_bot_mention"]) && msg.Channel.Type != ChannelTypeDirect {
 		if !slackBotMentioned(msg, opts["bot_user_id"]) {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/aps/internal/logging"
 	kitalias "hop.top/kit/go/console/alias"
 )
 
@@ -54,21 +55,55 @@ type ServiceRuntimeMetadata struct {
 
 // ServiceDelivery describes operator-facing delivery health for a service.
 type ServiceDelivery struct {
-	Health    string    `yaml:"health,omitempty"`
-	LastError string    `yaml:"last_error,omitempty"`
-	UpdatedAt time.Time `yaml:"updated_at,omitempty"`
+	Health      string                   `yaml:"health,omitempty"`
+	Status      string                   `yaml:"status,omitempty"`
+	LastError   string                   `yaml:"last_error,omitempty"`
+	UpdatedAt   time.Time                `yaml:"updated_at,omitempty"`
+	RetryPolicy *ServiceRetryPolicy      `yaml:"retry_policy,omitempty"`
+	Attempts    []ServiceDeliveryAttempt `yaml:"attempts,omitempty"`
+}
+
+// ServiceRetryPolicy describes the operator-visible retry policy that applied
+// to the most recent provider delivery attempt set.
+type ServiceRetryPolicy struct {
+	MaxAttempts int    `yaml:"max_attempts,omitempty"`
+	BaseDelay   string `yaml:"base_delay,omitempty"`
+	MaxDelay    string `yaml:"max_delay,omitempty"`
+}
+
+// ServiceDeliveryAttempt stores provider delivery observability without
+// payloads or unredacted provider error bodies.
+type ServiceDeliveryAttempt struct {
+	At            time.Time `yaml:"at,omitempty"`
+	Provider      string    `yaml:"provider,omitempty"`
+	MessageID     string    `yaml:"message_id,omitempty"`
+	ChannelID     string    `yaml:"channel_id,omitempty"`
+	Attempt       int       `yaml:"attempt,omitempty"`
+	MaxAttempts   int       `yaml:"max_attempts,omitempty"`
+	Status        string    `yaml:"status,omitempty"`
+	DeliveryID    string    `yaml:"delivery_id,omitempty"`
+	Retriable     bool      `yaml:"retriable,omitempty"`
+	Delay         string    `yaml:"delay,omitempty"`
+	RedactedError string    `yaml:"redacted_error,omitempty"`
 }
 
 // ServiceEventMeta stores compact last-event metadata without retaining bodies.
 type ServiceEventMeta struct {
-	At        time.Time `yaml:"at,omitempty"`
-	Direction string    `yaml:"direction,omitempty"`
-	MessageID string    `yaml:"message_id,omitempty"`
-	Platform  string    `yaml:"platform,omitempty"`
-	ChannelID string    `yaml:"channel_id,omitempty"`
-	SenderID  string    `yaml:"sender_id,omitempty"`
-	Status    string    `yaml:"status,omitempty"`
-	Detail    string    `yaml:"detail,omitempty"`
+	At          time.Time                `yaml:"at,omitempty"`
+	Direction   string                   `yaml:"direction,omitempty"`
+	MessageID   string                   `yaml:"message_id,omitempty"`
+	Platform    string                   `yaml:"platform,omitempty"`
+	ChannelID   string                   `yaml:"channel_id,omitempty"`
+	SenderID    string                   `yaml:"sender_id,omitempty"`
+	Status      string                   `yaml:"status,omitempty"`
+	Detail      string                   `yaml:"detail,omitempty"`
+	DeliveryID  string                   `yaml:"delivery_id,omitempty"`
+	Attempt     int                      `yaml:"attempt,omitempty"`
+	MaxAttempts int                      `yaml:"max_attempts,omitempty"`
+	Retriable   bool                     `yaml:"retriable,omitempty"`
+	RetryDelay  string                   `yaml:"retry_delay,omitempty"`
+	Attempts    []ServiceDeliveryAttempt `yaml:"attempts,omitempty"`
+	RetryPolicy *ServiceRetryPolicy      `yaml:"retry_policy,omitempty"`
 }
 
 // ServiceValidationResult is a static config validation report.
@@ -348,13 +383,7 @@ func RecordServiceOutboundEvent(id string, event ServiceEventMeta) error {
 	service.LastOutbound = &recordedEvent
 	delivery := serviceDelivery(service)
 	delivery.UpdatedAt = recordedEvent.At
-	if event.Status == "success" || event.Status == "accepted" {
-		delivery.Health = "healthy"
-		delivery.LastError = ""
-	} else {
-		delivery.Health = "degraded"
-		delivery.LastError = event.Detail
-	}
+	applyOutboundDeliveryState(delivery, recordedEvent)
 	return SaveService(service)
 }
 
@@ -426,7 +455,7 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 				Ingress:     "native provider " + receiveMode + " ingress",
 				Handoff:     "normalized message execution handoff",
 				Delivery:    "provider delivery interface",
-				Retry:       "caller-managed retry policy",
+				Retry:       "provider delivery retry policy max_attempts=3 base_delay=1s max_delay=30s",
 				ErrorHooks:  []string{"ingress", "normalize", "route", "execute", "deliver", "retry"},
 				ReceiveMode: receiveMode,
 				DeliveryModes: []string{
@@ -522,12 +551,35 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 		provider := strings.TrimSpace(strings.ToLower(options["provider"]))
 		if provider == "" {
 			result.Issues = append(result.Issues, "whatsapp message service requires option provider")
-		}
-		if strings.TrimSpace(options["phone_number_id"]) == "" && strings.TrimSpace(options["from"]) == "" {
-			result.Issues = append(result.Issues, "whatsapp message service requires option phone_number_id or from")
+		} else if provider != "whatsapp-cloud" && provider != "twilio" && provider != "generic" {
+			result.Issues = append(result.Issues, fmt.Sprintf("unsupported whatsapp provider %q", options["provider"]))
 		}
 		if provider == "whatsapp-cloud" || provider == "" {
+			if strings.TrimSpace(options["phone_number_id"]) == "" {
+				result.Issues = append(result.Issues, "whatsapp-cloud message service requires option phone_number_id")
+			}
+			if !looksNumericID(options["phone_number_id"]) {
+				result.Issues = append(result.Issues, "whatsapp phone_number_id must be numeric")
+			}
 			requireEnv(env, result, "WHATSAPP_ACCESS_TOKEN")
+			if strings.TrimSpace(options["verify_token"]) == "" && strings.TrimSpace(options["verify_token_env"]) == "" && strings.TrimSpace(env["WHATSAPP_VERIFY_TOKEN"]) == "" {
+				result.Warnings = append(result.Warnings, "whatsapp verify token not set; Cloud webhook verification will fail")
+			}
+			if strings.TrimSpace(options["app_secret"]) == "" && strings.TrimSpace(options["app_secret_env"]) == "" && strings.TrimSpace(options["signing_secret_env"]) == "" && strings.TrimSpace(env["WHATSAPP_APP_SECRET"]) == "" {
+				result.Warnings = append(result.Warnings, "whatsapp app secret not set; Cloud webhook signatures will not be validated")
+			}
+		}
+		if provider == "twilio" {
+			if strings.TrimSpace(options["from"]) == "" {
+				result.Issues = append(result.Issues, "twilio whatsapp message service requires option from")
+			}
+			requireEnv(env, result, "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN")
+		}
+		if strings.TrimSpace(options["allowed_numbers"]) == "" {
+			result.Warnings = append(result.Warnings, "whatsapp service has no allowed numbers; any sender can route inbound messages")
+		}
+		if truthyServiceOption(options["template_required"]) && strings.TrimSpace(options["template_name"]) == "" {
+			result.Issues = append(result.Issues, "whatsapp template_required requires option template_name")
 		}
 	}
 }
@@ -601,6 +653,19 @@ func truthyServiceOption(value string) bool {
 	}
 }
 
+func looksNumericID(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func serviceDelivery(service *ServiceConfig) *ServiceDelivery {
 	if service.Delivery == nil {
 		service.Delivery = &ServiceDelivery{}
@@ -624,7 +689,77 @@ func normalizeServiceEvent(event ServiceEventMeta) ServiceEventMeta {
 	} else {
 		event.At = event.At.UTC()
 	}
+	event.Detail = logging.Apply(event.Detail)
+	for i := range event.Attempts {
+		event.Attempts[i] = normalizeServiceDeliveryAttempt(event.Attempts[i], event.At)
+	}
 	return event
+}
+
+func applyOutboundDeliveryState(delivery *ServiceDelivery, event ServiceEventMeta) {
+	if event.RetryPolicy != nil {
+		delivery.RetryPolicy = event.RetryPolicy
+	}
+	if len(event.Attempts) > 0 {
+		delivery.Attempts = append([]ServiceDeliveryAttempt(nil), event.Attempts...)
+		last := event.Attempts[len(event.Attempts)-1]
+		delivery.Status = last.Status
+		if !last.At.IsZero() {
+			delivery.UpdatedAt = last.At
+		}
+		if last.RedactedError != "" {
+			delivery.LastError = last.RedactedError
+		}
+		setDeliveryHealth(delivery, last.Status)
+		return
+	}
+	if event.Attempt > 0 {
+		attempt := normalizeServiceDeliveryAttempt(ServiceDeliveryAttempt{
+			At:            event.At,
+			Provider:      event.Platform,
+			Attempt:       event.Attempt,
+			MaxAttempts:   event.MaxAttempts,
+			Status:        event.Status,
+			DeliveryID:    event.DeliveryID,
+			Retriable:     event.Retriable,
+			Delay:         event.RetryDelay,
+			RedactedError: event.Detail,
+		}, event.At)
+		delivery.Attempts = []ServiceDeliveryAttempt{attempt}
+	}
+	delivery.Status = event.Status
+	if event.Detail != "" {
+		delivery.LastError = event.Detail
+	}
+	setDeliveryHealth(delivery, event.Status)
+}
+
+func normalizeServiceDeliveryAttempt(attempt ServiceDeliveryAttempt, fallbackAt time.Time) ServiceDeliveryAttempt {
+	if attempt.At.IsZero() {
+		attempt.At = fallbackAt
+	} else {
+		attempt.At = attempt.At.UTC()
+	}
+	attempt.RedactedError = logging.Apply(attempt.RedactedError)
+	return attempt
+}
+
+func setDeliveryHealth(delivery *ServiceDelivery, status string) {
+	switch strings.TrimSpace(strings.ToLower(status)) {
+	case "success", "accepted", "completed", "executed", "sent", "delivered":
+		delivery.Health = "healthy"
+		delivery.LastError = ""
+	case "retry_scheduled", "retrying":
+		delivery.Health = "degraded"
+	case "dead_letter", "failed", "failed_delivery", "error":
+		delivery.Health = "failed"
+	default:
+		if status == "" {
+			delivery.Health = "unknown"
+		} else {
+			delivery.Health = "degraded"
+		}
+	}
 }
 
 func serviceID(service *ServiceConfig) string {
@@ -674,10 +809,39 @@ func SyntheticMessageWebhookPayload(adapter string) ([]byte, error) {
 		})
 	case "whatsapp":
 		return json.Marshal(map[string]any{
-			"MessageSid": "SMAPS000000000000000000000000000001",
-			"From":       "whatsapp:+15550100001",
-			"To":         "whatsapp:+15550100002",
-			"Body":       "aps service test",
+			"object": "whatsapp_business_account",
+			"entry": []any{
+				map[string]any{
+					"id": "123456789000000",
+					"changes": []any{
+						map[string]any{
+							"field": "messages",
+							"value": map[string]any{
+								"messaging_product": "whatsapp",
+								"metadata": map[string]any{
+									"display_phone_number": "+15550100002",
+									"phone_number_id":      "123456789012345",
+								},
+								"contacts": []any{
+									map[string]any{
+										"profile": map[string]any{"name": "APS"},
+										"wa_id":   "15550100001",
+									},
+								},
+								"messages": []any{
+									map[string]any{
+										"from":      "15550100001",
+										"id":        "wamid.APS000000000000000000000000000001",
+										"timestamp": time.Now().Unix(),
+										"type":      "text",
+										"text":      map[string]any{"body": "aps service test"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		})
 	default:
 		return nil, fmt.Errorf("no synthetic webhook payload for message adapter %q", adapter)

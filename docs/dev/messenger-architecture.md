@@ -138,8 +138,8 @@ Attachments, mentions, commands, and unsupported event behavior are defined in
 | Telegram | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Ready when mounted with `aps serve` |
 | Slack | Events API event envelope JSON | text response JSON | Ready when mounted with `aps serve`; app verification is external |
 | Discord | message-create style JSON | content response JSON | Ready when mounted with `aps serve`; Gateway client is external |
-| SMS | Twilio-style or generic phone fields in JSON | text response metadata | Ready for JSON relays; native form webhook handling is external |
-| WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON | text response metadata | Ready for JSON relays |
+| SMS | Twilio-style or generic phone fields in JSON/form | text response metadata | Ready for Twilio or JSON relays |
+| WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON/form | text/template response metadata | Ready for Cloud API and Twilio-compatible relays |
 
 ## Runtime And Testing
 
