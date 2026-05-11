@@ -317,6 +317,18 @@ func TestServer_GetAddress_ReturnsEmpty(t *testing.T) {
 	assert.Equal(t, "", server.GetAddress())
 }
 
+func TestNewACPWebSocketHTTPServer_ConfiguresReadHeaderTimeout(t *testing.T) {
+	ws := NewWebSocketServer(func(transport *WebSocketTransport) error {
+		return nil
+	})
+
+	server := newACPWebSocketHTTPServer(ws)
+
+	require.NotNil(t, server)
+	assert.Equal(t, acpReadHeaderTimeout, server.ReadHeaderTimeout)
+	assert.NotNil(t, server.Handler)
+}
+
 func TestServer_InterfaceCompliance(t *testing.T) {
 	// Verify that Server implements both ProtocolServer and StandaloneProtocolServer
 	core := newMockAPSCore()

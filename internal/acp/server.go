@@ -12,9 +12,12 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"hop.top/aps/internal/core/protocol"
 )
+
+const acpReadHeaderTimeout = 15 * time.Second
 
 // sessionScopedMethods lists JSON-RPC methods whose params carry a
 // sessionId that identifies a live registry session. Requests for
@@ -248,15 +251,7 @@ func (s *Server) startWebSocket(ctx context.Context, addr string) error {
 		s.serveTransport(ctx, transport)
 		return nil
 	})
-	server := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/acp" || r.URL.Path == "/" {
-				ws.ServeHTTP(w, r)
-				return
-			}
-			http.NotFound(w, r)
-		}),
-	}
+	server := newACPWebSocketHTTPServer(ws)
 
 	s.mu.Lock()
 	s.httpServer = server
@@ -277,6 +272,19 @@ func (s *Server) startWebSocket(ctx context.Context, addr string) error {
 		_ = server.Shutdown(context.Background())
 	}()
 	return nil
+}
+
+func newACPWebSocketHTTPServer(ws *WebSocketServer) *http.Server {
+	return &http.Server{
+		ReadHeaderTimeout: acpReadHeaderTimeout,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/acp" || r.URL.Path == "/" {
+				ws.ServeHTTP(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		}),
+	}
 }
 
 func normalizeTransportConfig(config interface{}) *TransportConfig {
