@@ -133,8 +133,8 @@ github-hook   webhook   generic    ops         POST /webhook   profile action   
 worker-a2a    a2a       jsonrpc    worker      JSON-RPC /      placeholder       A2A task       placeholder
 dev-acp       client    acp        dev         stdio JSON-RPC  session ops       JSON-RPC       ready
 watcher       events    bus        noor        bus topics      none              JSONL          observe-only
-support-bot   message   slack      assistant   platform msg    placeholder       platform JSON  component
-repo-inbox    ticket    github     maintainer  repo events     placeholder       status JSON    component
+support-bot   message   slack      assistant   POST /services/support-bot/webhook profile action platform JSON  ready
+repo-inbox    ticket    github     maintainer  repo events     component route   status JSON    component
 mobile-link   mobile    aps        assistant   WS command      ack only          WS status      placeholder
 ```
 
@@ -146,6 +146,10 @@ The important columns are:
 - `MATURITY`: whether the service should be treated as production-ready.
 
 ## Proposed CLI
+
+Current implemented service commands are `aps service add`, `aps service show`,
+and `aps service routes`; `aps serve` mounts HTTP service routes. The remaining
+commands in this section are future UX shape, not current CLI.
 
 ### Discovery
 
@@ -172,8 +176,8 @@ aps service add agent-api --type api --profile worker --addr 127.0.0.1:8080
 aps service add github-hook --type webhook --profile ops --route push=deploy
 aps service add worker-a2a --type a2a --profile worker
 aps service add dev-acp --type client --adapter acp --profile dev --transport stdio
-aps service add support-bot --type slack --profile assistant --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN
-aps service add sms-alerts --type sms --profile assistant --env TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN
+aps service add support-bot --type slack --profile assistant --allowed-channel C01ABC2DEF --default-action triage --reply text --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN
+aps service add sms-alerts --type sms --profile assistant --provider twilio --from +15559870002 --allowed-number +15551230001 --default-action handle-sms --reply text --env TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN
 aps service add repo-inbox --type github --profile maintainer --env GITHUB_TOKEN=secret:GITHUB_TOKEN
 aps service add watcher --type events --profile noor --topics "aps.#,tlc.#"
 aps service add mobile-link --type mobile --profile assistant
@@ -281,7 +285,7 @@ The grammar holds if every type and adapter can express its needs as options aft
 | --- | --- | --- | --- |
 | `--type api` | `type: api`, `adapter: agent-protocol` | `aps service add agent-api --type api --profile worker --addr 127.0.0.1:8080 --auth bearer:AGENT_API_TOKEN` | `--addr`, `--auth`, `--cors`, `--log-level` | `--type api --help` shows HTTP API options |
 | `--type webhook` | `type: webhook`, `adapter: generic` | `aps service add github-hook --type webhook --profile ops --addr 127.0.0.1:9000 --secret GITHUB_WEBHOOK_SECRET --route push=deploy` | `--addr`, `--secret`, `--route`, `--allow-event`, `--dry-run-events` | `--type webhook --help` shows event mapping and signature options |
-| `--type a2a` | `type: a2a`, `adapter: jsonrpc` | `aps service add worker-a2a --type a2a --profile worker --addr 127.0.0.1:8081 --public-endpoint http://localhost:8081` | `--addr`, `--public-endpoint`, `--transport`, `--auth` | `--type a2a --help` shows A2A server/card options and maturity warnings |
+| `--type a2a` | `type: a2a`, `adapter: jsonrpc` | `aps service add worker-a2a --type a2a --profile worker --addr 127.0.0.1:8081 --public-endpoint http://localhost:8081` | `--addr`, `--public-endpoint`, `--transport`, `--auth` | `--type a2a --help` must distinguish HTTP JSON-RPC readiness from placeholder execution, component-only IPC/gRPC/auth helpers, and push config storage without webhook delivery |
 | `--type client --adapter acp` | `type: client`, `adapter: acp` | `aps service add dev-acp --type client --adapter acp --profile dev --transport stdio` | `--transport`, `--mode`, `--allow-terminal`, `--allow-write` | Must clearly mark HTTP/WS as unavailable until wired |
 | `--type slack` | `type: message`, `adapter: slack` | `aps service add support-bot --type slack --profile assistant --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN` | `--env`, `--receive`, `--allowed-channel`, `--default-action`, `--reply` | `--type slack --help` resolves alias and shows Slack options |
 | `--type telegram` | `type: message`, `adapter: telegram` | `aps service add support-bot --type telegram --profile assistant --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN --receive polling` | `--env`, `--receive`, `--allowed-chat`, `--default-action`, `--reply` | `--type telegram --help` resolves alias and shows Telegram options |
@@ -297,6 +301,8 @@ This model keeps command shape stable while allowing each type and adapter to ow
 
 ### Lifecycle
 
+Future lifecycle/test commands:
+
 ```bash
 aps service start <service-id>
 aps service stop <service-id>
@@ -305,6 +311,8 @@ aps service test <service-id>
 ```
 
 ### Routing
+
+Future route-table commands:
 
 ```bash
 aps service route add <service-id> --event github.push --action deploy
@@ -322,6 +330,8 @@ The first supported service flows should be the ones that are already closest to
 ### API Service
 
 Use when an external tool wants an HTTP API to run profile actions.
+
+Future service-managed lifecycle example:
 
 ```bash
 aps service add agent-api --type api --profile worker --addr 127.0.0.1:8080
@@ -347,6 +357,8 @@ Reply semantics:
 ### Webhook Service
 
 Use when a third-party system sends event payloads.
+
+Future service-managed lifecycle example:
 
 ```bash
 aps service add github-hook --type webhook --profile ops --route push=deploy
@@ -386,6 +398,13 @@ Replies: A2A task response
 Maturity: placeholder
 ```
 
+Verified maturity:
+
+- `aps a2a server --profile <id>` is a reachable HTTP JSON-RPC listener with agent-card discovery and filesystem-backed task storage.
+- The executor emits status transitions and a `Processed: <input>` text response; it does not run profile actions, chat, or LLM-backed work.
+- IPC/gRPC transports, mTLS/OpenID/OAuth enforcement, and outbound API-key helpers are component/planned paths, not the normal server path.
+- Push configuration methods store config on the running server, but webhook delivery is not implemented.
+
 The CLI can still allow:
 
 ```bash
@@ -404,40 +423,70 @@ Current honest status:
 Receives: JSON-RPC over stdio
 Executes: session, filesystem, terminal operations
 Replies: JSON-RPC responses
-Maturity: ready for stdio, planned or unwired for HTTP/WebSocket
+Maturity: ready for stdio; HTTP/WebSocket planned or component-only
 ```
 
-Avoid documenting HTTP/WebSocket ACP startup as supported until the CLI actually starts those transports.
+Avoid documenting HTTP/WebSocket ACP startup as supported until the CLI actually starts those transports. `aps acp server <profile>` is the supported command, and `aps acp toggle` accepts `--transport=stdio` only.
 
 ### Message Service
 
-Message services are strong candidates for `aps service`, but the UX needs to separate adapter lifecycle from live action execution.
+Message services now have a user-facing service path. The CLI persists
+canonical `type: message` service config, `aps service routes` reports the
+reachable route, and `aps serve` mounts `POST /services/<service-id>/webhook`.
 
-Current honest status:
+Current honest status for `telegram`, `slack`, `discord`, `sms`, and
+`whatsapp`:
 
 ```text
-Receives: platform messages only if an adapter subprocess or mounted handler is actually running
-Executes: placeholder in built-in Go handler; external subprocess behavior depends on adapter
-Replies: platform-shaped response only in component handler path
-Maturity: component or adapter-dependent
+Receives: provider-shaped JSON over POST /services/<service-id>/webhook
+Executes: routed profile action
+Replies: platform-shaped JSON response
+Maturity: ready when mounted by aps serve
 ```
 
-Suggested CLI behavior:
+Implemented CLI shape:
 
 ```bash
-aps service add support-bot --type telegram --profile assistant --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
-aps service route add support-bot --channel 12345 --action reply
-aps service test support-bot --channel 12345 --message "hello"
+aps service add support-bot \
+  --type telegram \
+  --profile assistant \
+  --allowed-chat 12345 \
+  --default-action reply \
+  --reply text \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
+aps service show support-bot
+aps service routes support-bot
+aps serve --addr 127.0.0.1:8080
 ```
 
-If real execution is not wired, the test output should say:
+Adapter aliases resolve through kit aliasing:
 
 ```text
-Route resolved: support-bot/12345 -> assistant:reply
-Execution: placeholder, profile action was not invoked
-Delivery: not verified
-Maturity: component
+telegram, slack, discord, sms, whatsapp -> type: message
+email, github, gitlab, jira, linear -> type: ticket
 ```
+
+Route/test expectations:
+
+- `aps service routes <id>` prints `/services/<id>/webhook`.
+- There is no `aps service test` command yet; smoke-test the route with
+  `aps serve` plus a provider-shaped JSON POST.
+- `aps adapter messenger test <device>` remains a legacy adapter-device
+  pipeline simulation. It is not a service route test and does not verify live
+  platform delivery.
+- `aps service add` stores platform tokens as environment binding metadata; it
+  does not create a Telegram poller, Slack app, Discord Gateway process, Twilio
+  webhook, or public tunnel.
+
+Current adapter support:
+
+| Adapter | Support level |
+| --- | --- |
+| `telegram` | Normalizes Telegram Bot API `message` and `edited_message` JSON; replies with `sendMessage` JSON. |
+| `slack` | Normalizes Slack Events API event envelope JSON; replies with Slack text response JSON. Slack URL verification remains external. |
+| `discord` | Normalizes Discord message-create style JSON; replies with Discord content response JSON. Gateway connection remains external. |
+| `sms` | Normalizes Twilio-style or generic phone-message fields in JSON; form webhook conversion remains external. |
+| `whatsapp` | Normalizes WhatsApp Cloud API JSON and Twilio-style WhatsApp JSON; replies with text response metadata. |
 
 ### Events Service
 
@@ -545,7 +594,10 @@ Persisted service config makes status, restart, testing, and documentation simpl
 
 ## Testing UX
 
-Every service type should have a test command that reports the same four properties.
+Future `aps service test` behavior should report the same four properties for
+every service type. This command is not implemented yet; current message-service
+smoke tests use `aps service routes`, `aps serve`, and a provider-shaped JSON
+POST.
 
 ```bash
 aps service test <name>
@@ -577,10 +629,10 @@ Profile: assistant
 
 Receive: not verified
 Route: ok
-Execute: placeholder
-Reply: simulated
+Execute: profile action
+Reply: platform JSON
 
-Maturity: component
+Maturity: ready when mounted by aps serve
 ```
 
 ## Documentation Structure
@@ -614,20 +666,47 @@ Recommended docs:
 - Keep `receives`, `executes`, and `replies` visible in status and test output.
 - Prefer one service command group over scattered setup commands in docs.
 
-## Recommended First Cut
+## Recommended Cut Line
 
-Phase 1 should only bless the two strongest current paths:
+Currently bless the strongest mounted paths:
 
 - `api`: Agent Protocol via `aps serve`.
 - `webhook`: generic webhook via `aps webhook server`.
+- `message`: Telegram, Slack, Discord, SMS, and WhatsApp service webhooks via
+  `aps service add` plus `aps serve`.
 
-Phase 2 should reconcile partially built paths:
+Still reconcile partially built paths:
 
-- A2A executor: wire profile-backed execution or label as placeholder.
-- ACP HTTP/WebSocket: wire transport config or document stdio only.
-- Messenger: mount handler and invoke real profile actions, or document subprocess-only adapter behavior.
+- A2A executor: currently labeled as placeholder until profile-backed execution exists.
+- ACP HTTP/WebSocket: currently documented as stdio only for the user-facing command.
 - Mobile: decide whether WebSocket commands execute profile actions.
 - Voice: separate backend lifecycle from channel listener services.
+
+## Gap Coverage Matrix
+
+Status source: `tlc task list --track aps-service-ux --limit 200` and targeted `tlc task show` checks on 2026-05-11. This matrix is the closure ledger for the gaps in `docs/dev/incoming-execution-surfaces-findings.md`; every known gap is represented by a completed task and a documented maturity decision.
+
+| Gap | Final task and status | Design decision | Maturity label |
+| --- | --- | --- | --- |
+| Service UX taxonomy used protocol names instead of user-facing service types. | T-0594 Done; T-0601 Done | Use `aps service add <id> --type <type-or-adapter-alias> --profile <profile>`; resolve adapter aliases through kit aliasing and persist canonical `type` plus `adapter`. | Applies to all service types |
+| Investigation findings were not fully represented as TLC-owned closure work. | T-0602 Done | Backfill every identified incoming-surface gap into the `aps-service-ux` track so later status claims can point to a task instead of an orphaned finding. | Track hygiene |
+| Agent Protocol HTTP was underrepresented as an incoming request/reply surface. | T-0603 Done; T-0617 Done | Treat `aps serve` as the `api` service backing surface. It receives Agent Protocol HTTP requests, executes profile actions, and replies with JSON run metadata or SSE output streams. | `ready` |
+| `aps serve` architecture docs confused active adapter-manager startup with the global protocol registry. | T-0604 Done; T-0619 Done | Document the traced startup path separately from component registries. `aps serve` should be the supported API service route; registry/bridge components are advanced internals unless mounted by a command. | `ready` for `api`; `component` for registry-only paths |
+| Generic protocol HTTP bridge was documented as a usable remote service path without a traced user command. | T-0605 Done; T-0619 Done | Keep bridge components documented as component-level only until a user-facing command mounts them and verifies request/reply behavior. | `component` |
+| Generic webhooks lacked clear reply semantics and older docs implied output-capable behavior. | T-0612 Done; T-0619 Done | Keep `aps webhook server` as the `webhook` service path. It executes mapped profile actions, but successful HTTP replies are status metadata; action stdout/stderr stay on server process streams. | `status-only` |
+| A2A docs overstated profile-backed task execution. | T-0606 Done; T-0617 Done | Expose A2A as a listener/service only with explicit placeholder execution until `internal/a2a.Executor` invokes profile action/chat paths instead of `Processed: <text>`. | `placeholder` |
+| A2A transport, auth, and push claims needed separation from the reachable server path. | T-0607 Done; T-0619 Done | Support claims must distinguish the reachable HTTP JSON-RPC server and agent-card path from component-level transport/auth helpers and planned security modes. | `placeholder` for server execution; `component` or `planned` for unmounted helpers |
+| ACP command docs and runtime transport settings did not match the actual server command. | T-0608 Done; T-0619 Done | `aps acp server <profile>` is the supported ACP service command and is stdio-only today; HTTP/WebSocket transports should be rejected or documented as unwired until the command starts them. | `ready` for stdio; `planned` for HTTP/WebSocket |
+| ACP completeness claims mixed core stdio JSON-RPC behavior with remote bridge/MCP aspirations. | T-0608 Done; T-0619 Done | Split ACP status into supported client/session methods over stdio versus remote bridge behavior that is not a supported service listener. | `ready` for stdio; `component` or `planned` for bridge paths |
+| Message service aliases and adapter catalog were incomplete for the target UX. | T-0595 Done; T-0596 Done; T-0597 Done; T-0601 Done; T-0611 Done | `slack`, `telegram`, `discord`, `sms`, and `whatsapp` resolve to `type: message` with adapter-specific options and docs. | `ready` where the mounted service handler and route exist; otherwise adapter-dependent |
+| Message live intake was component-level and the built-in Go handler was not mounted through a user-facing path. | T-0609 Done; T-0611 Done; T-0617 Done | Mount message service webhooks through the service/runtime route so docs can distinguish live intake from adapter subprocess lifecycle and local test simulation. | `ready` for mounted service route |
+| Message routing returned placeholder dispatch instead of invoking profile-backed execution. | T-0610 Done; T-0611 Done; T-0617 Done | Route normalized platform messages to real profile action execution before documenting message services as action-capable. | `ready` for routed profile execution |
+| Ticket/inbox service adapters were missing from the taxonomy and option model. | T-0598 Done; T-0599 Done; T-0600 Done; T-0611 Done | Add `jira`, `linear`, and `gitlab` ticket adapters alongside existing email/GitHub-style ticket concepts; keep reply behavior explicit as comment/status metadata. | `component` until mounted end-to-end service routes are verified |
+| Events listener risked being treated as an executable automation service. | T-0613 Done; T-0617 Done | Keep `aps listen` and `type: events` observe-only until route matching, target action resolution, handler dispatch, and tests exist. | `observe-only` |
+| Mobile pairing docs could imply HTTPS or profile command execution from the CLI path. | T-0614 Done; T-0615 Done; T-0617 Done | Document CLI pairing as local HTTP/WS by default unless TLS is wired through the command; keep command execution honest unless WebSocket commands call APS core actions. | `placeholder` unless core execution is verified |
+| Voice channel docs mixed backend lifecycle, session registration, and component adapters. | T-0616 Done; T-0617 Done | Separate voice backend process lifecycle from profile-facing voice services. Only mark web/Twilio/messenger channel adapters ready if a traced command mounts them. | `component` unless mounted route exists |
+| Service maturity and reachability assertions need a regression gate. | T-0617 Done | Add or maintain tests/fixtures/test plans for every service type covering receives, executes, replies, and maturity. | Test-owned gate across all labels |
+| Final gap audit itself needed an auditable closure ledger. | T-0618 Done | This matrix maps every known gap to a task, current status, design decision, and maturity label. | Coverage matrix |
 
 ## Follow-Up Tasks
 

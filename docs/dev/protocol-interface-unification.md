@@ -17,7 +17,7 @@ type HTTPBridge interface {
 }
 ```
 
-**Rationale:** Enables any protocol (even stdio-based ones) to be exposed via HTTP without requiring native HTTP support.
+**Rationale:** Provides a component interface for HTTP exposure experiments without requiring native HTTP support. A bridge is not a supported service listener until a user-facing command mounts it and the handler forwards to real protocol behavior.
 
 ### 2. Explicit Interface Declarations
 
@@ -92,7 +92,7 @@ type ProtocolServerAdapter struct {
 func (a *ProtocolServerAdapter) RegisterRoutes(mux *http.ServeMux, core APSCore) error
 ```
 
-**Current maturity:** these bridge components are not mounted by `aps serve` and should not be documented as a supported service listener until a user-facing command wires them.
+**Current maturity:** these bridge components are not mounted by `aps serve` and should not be documented as a supported service listener until a user-facing command wires them. The current generic and JSON-RPC bridge handlers return bridge/status-shaped responses rather than invoking ACP's stdio dispatcher.
 
 ### 4. Updated Tests
 
@@ -130,7 +130,7 @@ Same interface works for:
 Adding new protocols requires:
 1. Implement `ProtocolServer` (required)
 2. Implement optional specialization (`HTTPProtocolAdapter`, `StandaloneProtocolServer`, or `HTTPBridge`)
-3. Register in adapter registry
+3. Register in the appropriate manager or registry path
 4. No changes to core start/stop/monitor logic
 
 ## Design Pattern Visualization
@@ -154,7 +154,7 @@ Adding new protocols requires:
                 │              │
         ┌───────┴──┐    ┌──────┴────────┐
         │          │    │               │
-   Agent      A2A Server      ACP + Bridge
+   Agent      A2A Server      ACP stdio + bridge component
   Protocol
 
 All three types ✅ implement ProtocolServer (base)
@@ -216,9 +216,9 @@ $ go test ./internal/acp ./internal/a2a -v
 ## Next Steps (Optional)
 
 ### Phase 7: HTTP Bridge Integration
-Could expose ACP via HTTP without changing ACP implementation:
+Could expose ACP via HTTP only after the bridge forwards requests to real ACP behavior and a user-facing command mounts it:
 ```go
-// Make ACP accessible via HTTP bridge
+// Prototype bridge construction; not a supported listener by itself.
 acpBridge := protocol.NewJSONRPCHTTPBridge(acpServer)
 mux.Handle("/acp/", acpBridge.GetHTTPHandler())
 ```
@@ -241,7 +241,7 @@ registry.Register("custom", p.(protocol.ProtocolServer))
 
 ### Active `aps serve` registration path
 
-`aps serve` currently mounts HTTP adapters through `adapters.DefaultManager()` and kit `ext.Manager`, not the global `ProtocolRegistry`. The global registry remains useful for tests and experiments, but docs for the runnable service API should describe the manager path unless the CLI is changed.
+`aps serve` currently mounts HTTP adapters through `adapters.DefaultManager()` and kit `ext.Manager`, not the global `ProtocolRegistry`. The global registry remains useful for tests and experiments, but docs for the runnable service API should describe the manager path unless the CLI is changed. Agent Protocol `/v1/*` routes are mounted through this manager path and provide the output-capable API service behavior.
 
 ## Files Modified
 

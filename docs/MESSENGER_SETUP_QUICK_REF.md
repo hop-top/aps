@@ -1,285 +1,178 @@
-# Messenger Setup Quick Reference
+# Message Service Quick Reference
 
-## Fastest Path (Interactive)
+Use `aps service` for new Telegram, Slack, Discord, SMS, and WhatsApp message
+integrations.
+
+## Fastest Path
 
 ```bash
-# For Telegram (recommended - step-by-step guidance)
-./scripts/setup-telegram.sh
+aps service add support-bot \
+  --type telegram \
+  --profile my-agent \
+  --allowed-chat "-1001234567890" \
+  --default-action handle-message \
+  --reply text \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 
-# For any messenger (Telegram, Slack, GitHub, Email)
-./scripts/setup-messenger.sh
+aps service show support-bot
+aps service routes support-bot
+aps serve --addr 127.0.0.1:8080
 ```
 
-These scripts walk you through everything interactively.
+The route is:
 
----
+```text
+POST /services/support-bot/webhook
+```
 
-## Command-Line Shortcuts
+Configure the platform or a relay to POST provider-shaped JSON to that route.
 
-### Telegram Setup (Predefined)
+## Alias Reference
+
+Message adapter aliases:
+
+| Alias | Canonical config |
+| --- | --- |
+| `telegram` | `type: message`, `adapter: telegram` |
+| `slack` | `type: message`, `adapter: slack` |
+| `discord` | `type: message`, `adapter: discord` |
+| `sms` | `type: message`, `adapter: sms` |
+| `whatsapp` | `type: message`, `adapter: whatsapp` |
+
+Ticket aliases, not message aliases:
+
+| Alias | Canonical config |
+| --- | --- |
+| `email` | `type: ticket`, `adapter: email` |
+| `github` | `type: ticket`, `adapter: github` |
+| `gitlab` | `type: ticket`, `adapter: gitlab` |
+| `jira` | `type: ticket`, `adapter: jira` |
+| `linear` | `type: ticket`, `adapter: linear` |
+
+Check alias resolution without writing:
+
 ```bash
-./scripts/setup-messenger.sh \
-  --type=telegram \
-  --profile=my-agent \
-  --messenger=my-telegram \
-  --yes
+aps service add demo --type slack --profile my-agent --dry-run
+aps service add issue-demo --type jira --profile triage --dry-run
 ```
 
-### Slack Setup
+## Platform Examples
+
+### Telegram
+
 ```bash
-./scripts/setup-messenger.sh \
-  --type=slack \
-  --profile=my-bot \
-  --messenger=slack-bot
+aps service add telegram-support \
+  --type telegram \
+  --profile assistant \
+  --allowed-chat "-1001234567890" \
+  --default-action handle-telegram \
+  --reply text \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 ```
 
-### Discord Setup
+### Slack
+
 ```bash
-./scripts/setup-messenger.sh \
-  --type=discord \
-  --profile=my-bot \
-  --messenger=discord-bot
+aps service add slack-support \
+  --type slack \
+  --profile assistant \
+  --allowed-channel C01ABC2DEF \
+  --default-action triage \
+  --reply text \
+  --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN
 ```
 
-### GitHub Webhooks
+### Discord
+
 ```bash
-./scripts/setup-messenger.sh \
-  --type=github \
-  --profile=github-handler
+aps service add discord-support \
+  --type discord \
+  --profile assistant \
+  --allowed-channel 1234567890123456789 \
+  --default-action handle-discord \
+  --reply text \
+  --env DISCORD_TOKEN=secret:DISCORD_TOKEN
 ```
 
----
+### SMS
 
-## Manual One-Liner Examples
-
-### Create Telegram Integration (3 steps)
 ```bash
-# 1. Create profile
-aps profile create my-agent
-
-# 2. Create messenger
-aps messengers create my-telegram --template=subprocess --language=python
-
-# 3. Link with mapping
-aps profile link-messenger my-agent my-telegram \
-  --channel "-1001234567890=my-agent:handle-message" \
-  --default-action "my-agent:default-handler"
-
-# 4. Start
-aps messengers start my-telegram
+aps service add sms-alerts \
+  --type sms \
+  --profile assistant \
+  --provider twilio \
+  --from +15559870002 \
+  --allowed-number +15551230001 \
+  --default-action handle-sms \
+  --reply text \
+  --env TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN
 ```
 
-### Verify Everything Works
+### WhatsApp
+
 ```bash
-# Check messenger is running
-aps messengers status
-
-# View logs
-aps messengers logs my-telegram -f
-
-# List profile links
-aps profile link-info my-agent
+aps service add wa-support \
+  --type whatsapp \
+  --profile assistant \
+  --provider whatsapp-cloud \
+  --phone-number-id 123456789012345 \
+  --allowed-number +15551230001 \
+  --default-action handle-whatsapp \
+  --reply text \
+  --env WHATSAPP_TOKEN=secret:WHATSAPP_TOKEN
 ```
 
----
+## Test And Verify
 
-## Common Patterns
+There is no `aps service test` command yet. Use these checks:
 
-### Multiple Channels → Different Actions
 ```bash
-aps profile link-messenger my-agent my-telegram \
-  --channel "alerts_channel=my-agent:handle-alerts" \
-  --channel "commands_channel=my-agent:handle-commands" \
-  --channel "reports_channel=my-agent:handle-reports"
+aps service show support-bot
+aps service routes support-bot
+aps serve --addr 127.0.0.1:8080
+curl -X POST http://127.0.0.1:8080/services/support-bot/webhook \
+  -H 'content-type: application/json' \
+  -d '{"message":{"message_id":1,"from":{"id":456},"chat":{"id":-1001234567890},"text":"hello"}}'
 ```
 
-### Single Messenger → Multiple Profiles
+For legacy adapter devices:
+
 ```bash
-# Create two profiles
-aps profile create alerts
-aps profile create analytics
-
-# Create one messenger
-aps messengers create main-bot --template=subprocess --language=python
-
-# Link both
-aps profile link-messenger alerts main-bot \
-  --channel "alert_channel=alerts:process"
-aps profile link-messenger analytics main-bot \
-  --channel "analytics_channel=analytics:process"
-
-# One start command serves both
-aps messengers start main-bot
+aps adapter messenger test my-telegram --profile my-agent --channel "-1001234567890"
 ```
 
-### Disable a Messenger Temporarily
+That command simulates the adapter-device route pipeline. It does not verify
+that `aps serve` is reachable from the platform.
+
+## Legacy Adapter Device Commands
+
+Use this path only for subprocess devices or existing messenger link stores:
+
 ```bash
-# Without deleting everything
-aps messengers stop my-telegram
-aps messengers start my-telegram
+aps adapter messenger create my-telegram --type messenger --strategy subprocess
+aps adapter messenger link add my-telegram \
+  --profile my-agent \
+  --mapping "-1001234567890=my-agent=handle-message" \
+  --default-action "my-agent=default-handler"
+aps adapter messenger start my-telegram
+aps adapter messenger logs my-telegram -f
+aps adapter messenger stop my-telegram
 ```
-
-### Update Channels (Add/Remove)
-```bash
-# Add new channel mapping
-aps profile update-mapping my-agent my-telegram \
-  "-1005555555555" "my-agent:new-action"
-
-# Remove a channel
-aps profile remove-mapping my-agent my-telegram "-1002222222222"
-
-# Change default action
-aps profile set-default-action my-agent my-telegram "my-agent:fallback"
-```
-
----
-
-## Messenger Info Reference
-
-| Messenger | Channel ID Format | Token Source | Mode |
-|-----------|-------------------|--------------|------|
-| Telegram | Numeric (e.g., `-1001234567890`) | [@BotFather](https://t.me/botfather) | Subprocess |
-| Slack | Alphanumeric (e.g., `C01ABC2DEF`) | [API Dashboard](https://api.slack.com) | Subprocess |
-| Discord | Numeric (e.g., `1234567890123456789`) | [Developer Portal](https://discord.com/developers) | Subprocess |
-| GitHub | `org/repo` | OAuth App | Webhook |
-| Email | Mailbox (e.g., `inbox@domain.com`) | SMTP Server | Webhook |
-
----
 
 ## Troubleshooting
 
-### "aps command not found"
-```bash
-# Install APS CLI
-go install ./cmd/aps
-# Or add to PATH if already installed
-export PATH=$PATH:$(go env GOPATH)/bin
-```
-
-### "Messenger won't start"
-```bash
-# Check config
-cat ~/.aps/messengers/my-telegram/config.yaml
-
-# Check token exists
-cat ~/.aps/messengers/my-telegram/.env
-
-# Run with verbose output
-aps messengers start my-telegram --verbose
-```
-
-### "Messages not being routed"
-```bash
-# Verify link exists
-aps profile link-info my-agent
-
-# Check messenger is running
-aps messengers status
-
-# Watch logs in real-time
-aps messengers logs my-telegram -f
-
-# Verify channel ID is correct
-# For Telegram: https://api.telegram.org/bot<TOKEN>/getUpdates
-```
-
-### "Action not executing"
-```bash
-# List available actions
-aps profile actions my-agent
-
-# Check action directly
-aps my-agent:handle-message '{"text":"test"}'
-
-# Review execution logs
-aps messengers logs my-telegram -e 20
-```
-
----
-
-## File Locations
-
-```
-~/.aps/profiles/
-  my-agent/
-    config.yaml          # Profile config
-    links/               # Messenger links
-      my-telegram.yaml   # Link definition
-
-~/.aps/messengers/
-  my-telegram/
-    config.yaml          # Messenger config
-    .env                 # Tokens & secrets
-    main.py              # Entry point
-    requirements.txt     # Dependencies
-```
-
----
-
-## Environment Variables
-
-```bash
-# Override messenger token at runtime
-TELEGRAM_TOKEN=xxx aps messengers start my-telegram
-
-# Enable debug logging
-DEBUG=1 aps messengers start my-telegram
-
-# Custom config directory
-APS_CONFIG_DIR=/etc/aps aps messengers start my-telegram
-```
-
----
-
-## Next Steps After Setup
-
-1. **Test Message Routing**
-   ```bash
-   # Send a message to your Telegram group
-   # Watch logs to verify it was received
-   aps messengers logs my-telegram -f
-   ```
-
-2. **Implement Your Action**
-   ```bash
-   # Edit your action in the profile
-   aps profile edit-action my-agent handle-message
-   ```
-
-3. **Monitor in Production**
-   ```bash
-   # Keep logs visible
-   aps messengers logs my-telegram -f
-
-   # Watch status
-   watch -n 1 'aps messengers status'
-   ```
-
-4. **Scale to More Channels**
-   ```bash
-   # Add more channel mappings as needed
-   aps profile update-mapping my-agent my-telegram \
-     "-1009999999999" "my-agent:another-action"
-   ```
-
----
+| Problem | Check |
+| --- | --- |
+| Alias surprise | `aps service add <id> --type <alias> --profile <profile> --dry-run` |
+| Route missing | `aps service routes <id>` and `aps serve` |
+| No action execution | Confirm `--default-action` exists on the service profile |
+| Platform cannot connect | Check tunnel, DNS, `--auth-token`, and bind address |
+| SMS form posts fail | Convert provider form fields to JSON before POSTing to APS |
 
 ## Security Checklist
 
-- [ ] Token stored in `.env` file (not version control)
-- [ ] `.env` file permissions: `chmod 600 ~/.aps/messengers/*/. env`
-- [ ] Profile actions validate input
-- [ ] Sensitive data not logged in messenger output
-- [ ] Private channels used for sensitive operations
-- [ ] Regular review of messenger logs
-- [ ] Credentials rotated periodically
-
----
-
-## Additional Resources
-
-- **Full Telegram Guide**: `docs/TELEGRAM_SETUP.md`
-- **Full Discord Guide**: `docs/DISCORD_SETUP.md`
-- **Architecture**: `docs/stories/050-multi-device-workspace-access.md`
-- **API Reference**: `docs/` (messenger types)
-- **Examples**: `tests/e2e/` (real usage patterns)
+- Store real tokens in secret-backed environment variables.
+- Use `aps serve --auth-token` for exposed HTTP routes.
+- Validate all incoming message content in profile actions.
+- Avoid logging sensitive message payloads.
+- Grant platform apps minimum required permissions.

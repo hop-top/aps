@@ -2,17 +2,23 @@
 
 ## Overview
 
-ACP is a JSON-RPC 2.0 based protocol for editor-to-agent communication. In APS, ACP is implemented as a standalone protocol server that manages its own stdio/WebSocket transports.
+ACP is a JSON-RPC 2.0 based protocol for editor-to-agent communication. In APS, the user-facing ACP server is a standalone protocol server over stdio JSON-RPC.
 
-**Status:** ✅ Phase 6 Complete (Documentation & Polish)
+**Status:** stdio server ready. HTTP and WebSocket transport helpers exist as component/prototype code, but `aps acp server` does not expose them as supported listeners.
 
 ## Architecture
 
 ### Protocol Server Type
 - **Implements:** `protocol.ProtocolServer` + `protocol.StandaloneProtocolServer`
 - **Location:** `internal/acp/`
-- **Transport:** stdio (JSON-RPC), WebSocket (optional), HTTP bridge (optional)
+- **Transport:** stdio JSON-RPC through `aps acp server <profile>`
 - **Model:** Bidirectional streaming with sessions
+
+Remote ACP transport maturity:
+
+- WebSocket transport helpers exist in `internal/acp/transport_ws.go`, but the CLI does not start them.
+- HTTP bridge helpers exist in `internal/core/protocol/http_bridge.go`, but they return bridge/status-shaped responses and are not mounted by `aps serve`.
+- Non-stdio ACP transport values are rejected by `aps acp toggle` and by `Server.Start` when passed directly.
 
 ### Key Components
 
@@ -185,13 +191,14 @@ type ACPCore interface {
 
 ```bash
 # Start ACP server for a profile
-aps acp start --profile my-agent
+aps acp server my-agent
 
-# With WebSocket transport (remote)
-aps acp start --profile my-agent --transport ws --port 9000
+# Enable ACP configuration for a profile
+aps acp toggle --profile my-agent --enabled=on --transport stdio
 
-# With custom permission rules
-aps acp start --profile my-agent --config ./acp-config.yaml
+# HTTP and WebSocket transports are not wired to aps acp server yet
+aps acp toggle --profile my-agent --transport ws
+# error: ACP transport "ws" is not wired to aps acp server yet; use --transport=stdio
 ```
 
 ## Configuration
@@ -228,14 +235,17 @@ profiles:
 ## Limitations & Future Work
 
 ### Current Limitations
-- HTTP bridge not yet integrated (Phase 7)
+- User-facing ACP transport is stdio only
+- HTTP bridge is component-only and not mounted by `aps serve`
+- WebSocket helper is not wired to `aps acp server`
 - Session persistence not implemented (Phase 7)
 - No OAuth2 support (Phase 8)
 - Content blocks limited to text/image/audio
 
 ### Phase 7: HTTP Exposure
 ```go
-// Expose ACP via HTTP bridge for remote access
+// Prototype-only: construct an HTTP bridge component.
+// This is not mounted by aps serve and does not make ACP a supported HTTP service.
 bridge := protocol.NewJSONRPCHTTPBridge(acpServer)
 mux.Handle("/acp/", bridge.GetHTTPHandler())
 ```
@@ -255,5 +265,5 @@ mux.Handle("/acp/", bridge.GetHTTPHandler())
 
 ---
 
-**Implementation Status:** ✅ Complete
-**Last Updated:** 2026-02-01
+**Implementation Status:** stdio ACP server ready; remote transports component/planned
+**Last Updated:** 2026-05-11

@@ -163,11 +163,11 @@ aps adapter create <name>            # new device
 aps adapter start <id>               # start device
 aps adapter stop <id>                # stop device
 aps adapter status <id>              # device status
-aps adapter link <id> <profile>      # link to profile
-aps adapter unlink <id> <profile>    # unlink
+aps adapter link add <id> --profile <profile>     # link to profile
+aps adapter link delete <id> --profile <profile>  # unlink
 aps adapter attach <id> <workspace>  # attach to workspace
 aps adapter detach <id> <workspace>  # detach
-aps adapter test <id>                # test messenger pipeline
+aps adapter messenger test <id>      # test legacy messenger pipeline
 aps adapter logs <id>                # view device logs
 aps adapter channels <id>            # list known channels
 
@@ -320,7 +320,7 @@ aps version                          # version info
 | Session orphaned | `aps session terminate <id>` then `delete <id>` |
 | Capability missing | `aps capability list`; install with `aps capability install` |
 | A2A task stuck | `aps a2a tasks show <id>`; cancel + retry |
-| Messenger not receiving | `aps adapter test <id>`; check `aps adapter logs <id>` |
+| Messenger not receiving | For services, check `aps service routes <id>` and `aps serve`; for legacy devices, run `aps adapter messenger test <id>` and check `aps adapter logs <id>` |
 | Wrong workspace active | `aps workspace use <workspace>` |
 | Conflict blocks collab | `aps workspace conflicts`; then `aps workspace resolve <id>` |
 | Serve won't start | Check port with `lsof -i :8080`; use `--addr` for alt port |

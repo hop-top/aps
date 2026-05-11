@@ -15,11 +15,11 @@ All agent communication protocols in APS implement a **common `ProtocolServer` i
 └─────────────────────────────────────────────────────────────────┘
                               ↕
 ┌─────────────────────────────────────────────────────────────────┐
-│ Transport Layer (HTTP, WebSocket, stdio, IPC)                  │
+│ Transport Layer (HTTP, stdio, IPC; component WebSocket helpers)│
 ├─────────────────────────────────────────────────────────────────┤
 │ ┌─────────────────┐  ┌──────────────┐  ┌────────────────────┐ │
 │ │ HTTPBridge      │  │ HTTP Adapter │  │ Native Transports  │ │
-│ │ (stdio→HTTP)    │  │ (registration)  │ (stdio, WebSocket) │ │
+│ │ (component)     │  │ (registration)  │ (HTTP, stdio, IPC) │ │
 │ └─────────────────┘  └──────────────┘  └────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                               ↕
@@ -105,7 +105,7 @@ type StandaloneProtocolServer interface {
 
 **Used by:**
 - A2A Server - manages own HTTP server (port 8081)
-- ACP Server - manages own stdio/WebSocket transports
+- ACP Server - manages its own stdio transport through `aps acp server`
 
 **Pattern:** Protocols implementing this interface manage their own server lifecycle and can run on separate ports/transports.
 
@@ -125,9 +125,9 @@ type HTTPBridge interface {
 - `DefaultHTTPBridge` - generic HTTP bridge component for any protocol
 - `JSONRPCHTTPBridge` - specialized JSON-RPC over HTTP bridge component
 
-**Pattern:** Allows stdio-based protocols (like ACP) to be exposed via HTTP for remote access.
+**Pattern:** Component layer for experimenting with HTTP exposure of non-HTTP protocols.
 
-**Current maturity:** component-only. Bridge constructors and handlers exist, but `aps serve` does not mount them and no user-facing service path exposes them as a supported listener.
+**Current maturity:** component-only. Bridge constructors and handlers exist, but `aps serve` does not mount them, the generic bridge returns bridge/status-shaped responses, and no user-facing service path exposes them as a supported listener.
 
 ## Implementation Details
 
@@ -165,7 +165,7 @@ Specialized for JSON-RPC 2.0 protocols:
 ```go
 bridge := NewJSONRPCHTTPBridge(acpServer)
 handler := bridge.GetHTTPHandler()
-// Now ACP (stdio) is accessible via HTTP endpoints
+// Component handler only; not mounted by aps serve
 ```
 
 #### ProtocolServerAdapter
@@ -199,8 +199,8 @@ adapter.RegisterRoutes(mux, core)  // Can register routes if needed
 ```
 1. A2AServer/ACPServer created
 2. Start(ctx, config) called:
-   a. Creates its own HTTP/transport server
-   b. Starts listening on configured port/transport
+   a. Creates its own transport server
+   b. Starts listening on the configured supported transport
    c. Runs independently in background goroutine
    d. Monitors context cancellation
 3. Status() returns "running" while server runs
@@ -209,23 +209,23 @@ adapter.RegisterRoutes(mux, core)  // Can register routes if needed
 
 **Characteristics:**
 - Independent server per protocol
-- Can use different transports (HTTP, stdio, WebSocket)
+- Can use different transports by protocol. A2A's user-facing server is HTTP JSON-RPC; ACP's user-facing server is stdio JSON-RPC.
 - Persistent bidirectional communication
 - Can run on different ports/sockets
 
-### Pattern 3: HTTP Bridge (Exposing stdio via HTTP)
+### Pattern 3: HTTP Bridge Component
 
 ```
 1. ACPServer created (native stdio transport)
 2. JSONRPCHTTPBridge created wrapping ACPServer
 3. Bridge.GetHTTPHandler() returns HTTP handler
-4. Handler mounted in main HTTP mux (port 8080)
-5. HTTP clients → HTTP handler → JSONRPCHTTPBridge → ACPServer (stdio)
+4. A caller could mount the handler in an HTTP mux
+5. HTTP clients -> HTTP handler -> JSONRPCHTTPBridge -> bridge/status response
 ```
 
 **Characteristics:**
-- Translates between HTTP and native protocol
-- Optional layer for remote access
+- Intended to translate between HTTP and native protocol
+- Component-level only until a command mounts it and the bridge forwards to the real protocol handler
 - Can be applied to any protocol
 - Reuses main HTTP server infrastructure
 
@@ -249,7 +249,7 @@ func runServe() {
 }
 ```
 
-`DefaultManager()` registers the Agent Protocol extension. `buildServerHandler` then asks the manager to mount every extension that implements `protocol.HTTPProtocolAdapter`. Today that means Agent Protocol routes under `/v1/*`.
+`DefaultManager()` registers the default APS extensions. `buildServerHandler` then asks the manager to mount every extension that implements `protocol.HTTPProtocolAdapter`. Agent Protocol is the API service implementation and mounts `/v1/*` routes through this path.
 
 The package-global `ProtocolRegistry` still exists for protocol experiments and standalone-server lifecycle tests, but it is not the runtime registration path for `aps serve`.
 
@@ -281,7 +281,7 @@ All protocols use same `Name()`, `Start()`, `Stop()`, `Status()` methods.
 New protocols can be added without modifying core registration logic.
 
 ### ✅ Transport Agnostic
-HTTP, stdio, WebSocket, IPC - all treated as transport layers.
+HTTP, stdio, and IPC are treated as transport layers. WebSocket helpers exist for some component paths, but ACP WebSocket is not wired to the user-facing server command.
 
 ### ✅ Shared Business Logic
 All protocols use same `APSCore` for sessions, agents, profiles.
@@ -289,7 +289,7 @@ All protocols use same `APSCore` for sessions, agents, profiles.
 ### ✅ Flexible Deployment
 - Integrate via HTTP routes (lightweight)
 - Run standalone (independent)
-- Expose via HTTP bridge (remote access)
+- Expose via HTTP bridge only after an explicit user-facing command mounts and supports it
 
 ## Practical Examples
 
@@ -314,24 +314,26 @@ for _, p := range protocols {
 }
 ```
 
-### Example 2: Expose Standalone Server via HTTP
+### Example 2: Prototype HTTP Bridge Component
 
 ```go
-// ACP runs on stdio natively
+// ACP runs on stdio natively through aps acp server.
 acpServer := acp.NewServer("my-profile", core)
 
-// Create HTTP bridge for remote access
+// Create a bridge component. This is not mounted by aps serve today.
 bridge := protocol.NewJSONRPCHTTPBridge(acpServer)
 
-// Mount bridge handler in main HTTP server
+// Prototype-only mount by a caller that owns an HTTP mux.
 mux.Handle("/acp/", bridge.GetHTTPHandler())
 
-// Now both work:
+// Supported user-facing path:
 // 1. stdio: ACP protocol via stdio (local editors)
-// 2. HTTP: Bridge endpoint (remote clients)
+//
+// Component/planned path:
+// 2. HTTP: bridge handler after real forwarding and service wiring are added
 ```
 
-### Example 3: Register Protocol at Compile Time
+### Example 3: Legacy/Internal Registry Registration
 
 ```go
 // In internal/adapters/init.go
@@ -344,6 +346,8 @@ func init() {
     registry.RegisterStandaloneServer("acp", acp.NewServer)
 }
 ```
+
+The package-global registry is available for tests and experiments. `aps serve` uses `adapters.DefaultManager()` and kit's `ext.Manager` instead.
 
 ## Key Design Decisions
 
