@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sort"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -149,16 +150,77 @@ func StartWebSocketServer(addr string, handler func(*WebSocketTransport) error) 
 	return httpServer.Serve(listener)
 }
 
-// MCPBridge handles integration with MCP servers
+// MCPTool describes a tool exposed by a registered MCP server.
+type MCPTool struct {
+	Server      string      `json:"server,omitempty"`
+	Name        string      `json:"name"`
+	Description string      `json:"description,omitempty"`
+	InputSchema interface{} `json:"inputSchema,omitempty"`
+}
+
+// MCPToolProvider lists tool metadata for a registered MCP server.
+type MCPToolProvider interface {
+	ListMCPTools() ([]MCPTool, error)
+}
+
+// MCPToolCaller dispatches a tool call to a registered MCP server.
+type MCPToolCaller interface {
+	CallMCPTool(toolName string, arguments json.RawMessage) (interface{}, error)
+}
+
+// MCPServer combines the metadata and call surfaces required by MCPBridge.
+type MCPServer interface {
+	MCPToolProvider
+	MCPToolCaller
+}
+
+// MCPToolCallerFunc adapts a function into an MCPToolCaller.
+type MCPToolCallerFunc func(toolName string, arguments json.RawMessage) (interface{}, error)
+
+// CallMCPTool calls f(toolName, arguments).
+func (f MCPToolCallerFunc) CallMCPTool(toolName string, arguments json.RawMessage) (interface{}, error) {
+	return f(toolName, arguments)
+}
+
+// MCPServerConfig is a simple in-process MCP server registration.
+type MCPServerConfig struct {
+	Type    string        `json:"type,omitempty"`
+	Command string        `json:"command,omitempty"`
+	Tools   []MCPTool     `json:"tools,omitempty"`
+	Caller  MCPToolCaller `json:"-"`
+}
+
+// ListMCPTools returns the static tools configured for this server.
+func (cfg MCPServerConfig) ListMCPTools() ([]MCPTool, error) {
+	tools := make([]MCPTool, len(cfg.Tools))
+	copy(tools, cfg.Tools)
+	return tools, nil
+}
+
+// CallMCPTool dispatches to the configured caller.
+func (cfg MCPServerConfig) CallMCPTool(toolName string, arguments json.RawMessage) (interface{}, error) {
+	if cfg.Caller == nil {
+		return nil, fmt.Errorf("MCP server has no tool caller")
+	}
+	return cfg.Caller.CallMCPTool(toolName, arguments)
+}
+
+type mcpServerRegistration struct {
+	config   interface{}
+	provider MCPToolProvider
+	caller   MCPToolCaller
+}
+
+// MCPBridge handles integration with MCP servers.
 type MCPBridge struct {
-	servers map[string]interface{} // MCP server configurations
+	servers map[string]mcpServerRegistration
 	mu      sync.RWMutex
 }
 
 // NewMCPBridge creates a new MCP bridge
 func NewMCPBridge() *MCPBridge {
 	return &MCPBridge{
-		servers: make(map[string]interface{}),
+		servers: make(map[string]mcpServerRegistration),
 	}
 }
 
@@ -171,7 +233,15 @@ func (mb *MCPBridge) RegisterMCPServer(name string, config interface{}) error {
 		return fmt.Errorf("server name cannot be empty")
 	}
 
-	mb.servers[name] = config
+	reg := mcpServerRegistration{config: config}
+	if provider, ok := config.(MCPToolProvider); ok {
+		reg.provider = provider
+	}
+	if caller, ok := config.(MCPToolCaller); ok {
+		reg.caller = caller
+	}
+
+	mb.servers[name] = reg
 	return nil
 }
 
@@ -184,6 +254,7 @@ func (mb *MCPBridge) ListMCPServers() []string {
 	for name := range mb.servers {
 		servers = append(servers, name)
 	}
+	sort.Strings(servers)
 
 	return servers
 }
@@ -193,29 +264,85 @@ func (mb *MCPBridge) GetMCPServerConfig(name string) (interface{}, error) {
 	mb.mu.RLock()
 	defer mb.mu.RUnlock()
 
-	config, exists := mb.servers[name]
+	reg, exists := mb.servers[name]
 	if !exists {
 		return nil, fmt.Errorf("MCP server not found: %s", name)
 	}
 
-	return config, nil
+	return reg.config, nil
+}
+
+type namedMCPRegistration struct {
+	name string
+	reg  mcpServerRegistration
+}
+
+func (mb *MCPBridge) registrations() []namedMCPRegistration {
+	mb.mu.RLock()
+	defer mb.mu.RUnlock()
+
+	regs := make([]namedMCPRegistration, 0, len(mb.servers))
+	for name, reg := range mb.servers {
+		regs = append(regs, namedMCPRegistration{name: name, reg: reg})
+	}
+	sort.Slice(regs, func(i, j int) bool {
+		return regs[i].name < regs[j].name
+	})
+	return regs
+}
+
+// ListMCPTools returns tools available from registered MCP servers.
+func (mb *MCPBridge) ListMCPTools() ([]MCPTool, error) {
+	regs := mb.registrations()
+
+	tools := make([]MCPTool, 0)
+	for _, entry := range regs {
+		if entry.reg.provider == nil {
+			continue
+		}
+
+		serverTools, err := entry.reg.provider.ListMCPTools()
+		if err != nil {
+			return nil, fmt.Errorf("list MCP tools for %s: %w", entry.name, err)
+		}
+		for _, tool := range serverTools {
+			if tool.Name == "" {
+				return nil, fmt.Errorf("MCP server %s returned a tool without a name", entry.name)
+			}
+			tool.Server = entry.name
+			tools = append(tools, tool)
+		}
+	}
+
+	sort.Slice(tools, func(i, j int) bool {
+		if tools[i].Server == tools[j].Server {
+			return tools[i].Name < tools[j].Name
+		}
+		return tools[i].Server < tools[j].Server
+	})
+	return tools, nil
 }
 
 // GetAvailableTools returns tools available from registered MCP servers
 func (mb *MCPBridge) GetAvailableTools() []map[string]interface{} {
-	mb.mu.RLock()
-	defer mb.mu.RUnlock()
+	registeredTools, err := mb.ListMCPTools()
+	if err != nil {
+		return nil
+	}
 
-	tools := make([]map[string]interface{}, 0)
-
-	// For now, return a placeholder structure
-	// In a real implementation, this would query the MCP servers
-	for serverName := range mb.servers {
-		tools = append(tools, map[string]interface{}{
-			"server": serverName,
-			"name":   "placeholder_tool",
-			"description": "Tool from " + serverName,
-		})
+	tools := make([]map[string]interface{}, 0, len(registeredTools))
+	for _, tool := range registeredTools {
+		item := map[string]interface{}{
+			"server": tool.Server,
+			"name":   tool.Name,
+		}
+		if tool.Description != "" {
+			item["description"] = tool.Description
+		}
+		if tool.InputSchema != nil {
+			item["inputSchema"] = tool.InputSchema
+		}
+		tools = append(tools, item)
 	}
 
 	return tools
@@ -223,15 +350,33 @@ func (mb *MCPBridge) GetAvailableTools() []map[string]interface{} {
 
 // CallMCPTool calls a tool on an MCP server
 func (mb *MCPBridge) CallMCPTool(serverName string, toolName string, arguments json.RawMessage) (interface{}, error) {
-	_, err := mb.GetMCPServerConfig(serverName)
-	if err != nil {
-		return nil, err
+	mb.mu.RLock()
+	reg, exists := mb.servers[serverName]
+	mb.mu.RUnlock()
+	if !exists {
+		return nil, fmt.Errorf("MCP server not found: %s", serverName)
+	}
+	if reg.provider == nil {
+		return nil, fmt.Errorf("MCP server has no registered tools: %s", serverName)
 	}
 
-	// In a real implementation, this would forward to the actual MCP server
-	// For now, return a placeholder response
-	return map[string]interface{}{
-		"result": "Tool call placeholder for " + toolName,
-		"server": serverName,
-	}, nil
+	tools, err := reg.provider.ListMCPTools()
+	if err != nil {
+		return nil, fmt.Errorf("list MCP tools for %s: %w", serverName, err)
+	}
+	found := false
+	for _, tool := range tools {
+		if tool.Name == toolName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("MCP tool not found: %s/%s", serverName, toolName)
+	}
+	if reg.caller == nil {
+		return nil, fmt.Errorf("MCP server has no tool caller: %s", serverName)
+	}
+
+	return reg.caller.CallMCPTool(toolName, arguments)
 }
