@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"hop.top/aps/internal/adapters"
+	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
 )
 
@@ -109,5 +110,41 @@ func TestBuildServerHandler_HealthBypassesAuth(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status: got %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestBuildServerHandler_MessageServiceWebhookMounted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	if err := core.SaveService(&core.ServiceConfig{
+		ID:      "support-bot",
+		Type:    "message",
+		Adapter: "telegram",
+		Profile: "assistant",
+	}); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+	handler := newTestHandler(t, "")
+
+	body := `{
+		"message": {
+			"message_id": 1,
+			"from": {"id": 456, "first_name": "Alice"},
+			"chat": {"id": -1001234567890, "type": "group"},
+			"text": "hello"
+		}
+	}`
+	req := httptest.NewRequest(http.MethodPost, "/services/support-bot/webhook", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusNotFound {
+		t.Fatalf("message service webhook route was not mounted; body=%s", rec.Body.String())
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "message_id") {
+		t.Fatalf("response should be messenger pipeline JSON; body=%s", rec.Body.String())
 	}
 }

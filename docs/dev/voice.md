@@ -1,6 +1,8 @@
 # Voice
 
-APS manages speech-to-speech backend services (PersonaPlex, Moshi) and routes voice sessions across web, terminal, messaging, and telephony channels. Each APS profile maps to a voice persona; APS auto-generates the backend's text prompt from the profile's `persona` fields.
+APS currently exposes voice backend lifecycle commands and voice session registration. Web, Twilio, and messenger voice adapters exist as Go components, but the current CLI does not mount them as reachable profile-facing services.
+
+The design intent is speech-to-speech service routing across web, terminal, messaging, and telephony channels. Treat that routing as component-level or planned unless a command in this document explicitly says it starts a listener.
 
 ## Quick Start
 
@@ -8,7 +10,7 @@ APS manages speech-to-speech backend services (PersonaPlex, Moshi) and routes vo
 # Start the voice backend service
 aps voice service start
 
-# Start a voice session (defaults to web channel)
+# Register a voice session record (does not mount a web listener)
 aps voice start --profile my-profile
 
 # List active sessions
@@ -18,13 +20,13 @@ aps voice session list
 ## CLI Reference
 
 ```
-aps voice start [--profile <id>] [--channel web|tui|telegram|twilio]
+aps voice start --profile <id> [--channel web|tui|telegram|twilio]
 aps voice service start
 aps voice service stop
 aps voice service status
-aps voice session list
-aps voice session attach <id>
 ```
+
+`aps voice service start|stop|status` controls the backend process only. `aps voice start` registers a voice session for metadata/routing work; it does not start the WebSocket or Twilio HTTP handlers. Use `aps session list --type voice` for voice session records.
 
 ## Configuration
 
@@ -87,16 +89,26 @@ voice:
 
 All secret values are key names resolved from `secrets.env` at runtime — the same convention used elsewhere in APS.
 
+## Current Maturity
+
+| Surface | User command | Listener mounted | Execution/reply behavior | Maturity |
+| --- | --- | --- | --- | --- |
+| Backend lifecycle | `aps voice service start` | No APS intake route; starts the configured backend process | CLI status only | process lifecycle |
+| Session registration | `aps voice start --profile <id>` | No | Registers a voice session record | component support |
+| Web adapter | component `voice.NewWebAdapter` | Only if another caller mounts it | WebSocket audio/text frames | component |
+| Twilio adapter | component `voice.NewTwilioAdapter` | Only if another caller mounts it | Twilio Media Streams WebSocket frames | component |
+| Messenger voice handler | component `voice.NewMessengerVoiceHandler` | Only if attached to a mounted messenger handler | Emits voice channel sessions from audio attachments | component |
+
 ## Persona Prompt Auto-Generation
 
-When `prompt_template` is empty, APS generates the backend text prompt from `persona` fields. `tone`, `style`, and `risk` map to natural-language instructions that are injected into the backend before each session. Setting `prompt_template` overrides auto-generation.
+When `prompt_template` is empty, APS can generate the backend text prompt from `persona` fields. `tone`, `style`, and `risk` map to natural-language instructions intended for backend session setup. The mounted channel pipeline that injects those prompts is not exposed by the current CLI service path.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        APS CLI                              │
-│  aps voice start [--profile <id>]                           │
+│  aps voice start --profile <id>                             │
 │  aps voice service start|stop|status                        │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -105,9 +117,9 @@ When `prompt_template` is empty, APS generates the backend text prompt from `per
 │  (internal/voice/)                                          │
 │  - Profile → backend config mapping                         │
 │  - Service lifecycle management                             │
-│  - Session routing (explicit / intent-based)                │
-│  - Transcript → Action pipeline                             │
-│  - Response → channel pipeline                              │
+│  - Session registration                                     │
+│  - Component channel adapters                               │
+│  - Future mounted channel routing                           │
 └──────┬──────────────────────────────────┬───────────────────┘
        │                                  │
 ┌──────▼──────┐                 ┌─────────▼────────────┐
@@ -155,48 +167,45 @@ type ChannelSession interface {
 
 ### Web UI
 
-Serves PersonaPlex's React client statically and proxies the WebSocket to the backend. APS injects the resolved profile config (voice ID, prompt) at page load. Minimal implementation — mostly a reverse proxy.
+`NewWebAdapter(profileID)` implements an HTTP handler for WebSocket voice sessions at `/ws`. The current `aps voice` CLI does not mount this handler, serve a browser UI, or proxy it to a backend.
 
 ### Hex TUI (terminal)
 
-A separate Haskell binary connects to APS over a local Unix socket. APS exposes a voice session API; the TUI consumes it. The TUI captures microphone input, renders the transcript, and pipes audio frames to the orchestrator.
+A terminal channel remains design-level in this tree. The current CLI can register a session with `--channel tui`, but no traced command mounts a TUI voice transport.
 
 ### Messenger (Telegram, WhatsApp)
 
-Hooks into APS's existing messenger layer. Incoming voice messages decode to PCM and enter the pipeline. Responses return as audio files or text depending on channel capability. The existing link store maps user accounts to profiles.
+`NewMessengerVoiceHandler()` can be attached to the messenger webhook handler component. It detects audio attachments and emits `ChannelSession` objects. The current messenger live intake path is not mounted by the traced `aps messenger` lifecycle, so this is component-only until a mounted messenger route wires it.
 
 ### Telephony (Twilio)
 
-Twilio streams call audio over its Media Streams WebSocket. The adapter bridges Twilio's mulaw/8 kHz format to the backend's PCM/24 kHz. Phone numbers map to profiles via `voice.channels.twilio.phone_number` in the profile config.
+`NewTwilioAdapter(phoneNumber, profileID)` implements an HTTP handler for Twilio Media Streams WebSocket connections at `/twilio/media-stream`. The current `aps voice` CLI does not mount this handler or expose a public telephony route.
 
 ## Session Routing Modes
 
-**Explicit** — `aps voice start --profile <id>` selects a profile before connecting. The session runs under that profile for its duration.
+**Explicit** — `aps voice start --profile <id>` records a voice session for a selected profile and channel. It does not accept audio by itself.
 
-**Intent-based** — a lightweight classifier runs on each transcript chunk. When it detects with high confidence that a different profile should handle the request, the session migrates — same audio connection, new persona prompt injected mid-session.
+**Intent-based** — design-level. No current mounted voice service route was traced that classifies transcript chunks and migrates profiles.
 
-**Mid-session switch** — an explicit escape hatch. The user or an action can request a profile switch during an active session via `SessionManager.SwitchProfile`.
+**Mid-session switch** — component-level. `SessionManager.SwitchProfile` exists, but no user-facing mounted voice channel path was traced.
 
 ## Session Lifecycle
 
 ```
-channel connects
+component channel connects, if mounted by a caller
       │
       ▼
 SessionManager.Create(profileID, channelType)
       │
       ├── resolve profile voice config
-      ├── BackendManager connect → WebSocket
-      ├── inject persona prompt + voice_id
-      └── open pipeline
+      ├── backend/session component setup
+      └── open component pipeline
             │
             ▼
       [active session]
             │
-            ├── transcript arrives
-            │     ├── intent routing → migrate to different profile
-            │     ├── action keyword → ActionRouter.dispatch()
-            │     └── conversational → pass back to backend
+            ├── audio/text frames arrive through component adapters
+            │     └── mounted execution/reply pipeline not yet exposed by CLI
             │
             └── channel disconnects / timeout → Session.Close()
 ```

@@ -10,6 +10,7 @@ func NewServiceCmd() *cobra.Command {
 
 	cmd.AddCommand(newAddCmd())
 	cmd.AddCommand(newShowCmd())
+	cmd.AddCommand(newRoutesCmd())
 
 	return cmd
 }

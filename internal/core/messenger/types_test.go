@@ -138,13 +138,31 @@ func TestNormalizedMessage_TextPreview(t *testing.T) {
 	}
 }
 
+func TestChannelIDFormat_MessagePlatforms(t *testing.T) {
+	tests := []MessengerPlatform{
+		PlatformTelegram,
+		PlatformSlack,
+		PlatformDiscord,
+		PlatformSMS,
+		PlatformWhatsApp,
+	}
+
+	for _, platform := range tests {
+		t.Run(string(platform), func(t *testing.T) {
+			if ChannelIDFormat[platform] == "" {
+				t.Fatalf("ChannelIDFormat[%s] is empty", platform)
+			}
+		})
+	}
+}
+
 func TestParseTargetAction(t *testing.T) {
 	tests := []struct {
-		name       string
-		input      string
+		name        string
+		input       string
 		wantProfile string
 		wantAction  string
-		wantErr    bool
+		wantErr     bool
 	}{
 		{
 			name:        "equals separator",
@@ -302,11 +320,11 @@ func TestProfileMessengerLink_Validate(t *testing.T) {
 
 func TestProfileMessengerLink_GetActionForChannel(t *testing.T) {
 	tests := []struct {
-		name          string
-		link          ProfileMessengerLink
-		channelID     string
-		wantAction    string
-		wantFound     bool
+		name       string
+		link       ProfileMessengerLink
+		channelID  string
+		wantAction string
+		wantFound  bool
 	}{
 		{
 			name: "mapped channel",

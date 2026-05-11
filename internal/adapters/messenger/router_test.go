@@ -2,9 +2,11 @@ package messenger
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	msgtypes "hop.top/aps/internal/core/messenger"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // mockResolver implements RouteResolver for testing.
@@ -28,7 +30,35 @@ func newTestRouter(links map[string]*msgtypes.ProfileMessengerLink, actions map[
 		actions: actions,
 	}
 	normalizer := NewNormalizer()
-	return NewMessageRouter(resolver, normalizer)
+	return NewMessageRouterWithExecutor(resolver, normalizer, &fakeActionExecutor{})
+}
+
+type fakeActionExecutor struct {
+	status protocol.RunStatus
+	output string
+	err    error
+	input  protocol.RunInput
+}
+
+func (f *fakeActionExecutor) ExecuteRun(ctx context.Context, input protocol.RunInput, stream protocol.StreamWriter) (*protocol.RunState, error) {
+	f.input = input
+	if f.err != nil {
+		return nil, f.err
+	}
+	status := f.status
+	if status == "" {
+		status = protocol.RunStatusCompleted
+	}
+	output := f.output
+	if output == "" {
+		output = "action output"
+	}
+	return &protocol.RunState{
+		ProfileID: input.ProfileID,
+		ActionID:  input.ActionID,
+		Status:    status,
+		Output:    output,
+	}, nil
 }
 
 func TestMessageRouter_Route_Success(t *testing.T) {
@@ -172,6 +202,41 @@ func TestMessageRouter_Route_UnknownChannel(t *testing.T) {
 				t.Errorf("profileID should be empty, got %q", result.ProfileID)
 			}
 		})
+	}
+}
+
+func TestMessageRouter_Route_UsesConfiguredMessengerName(t *testing.T) {
+	key := "support-bot:C01ABC2DEF"
+	router := newTestRouter(
+		map[string]*msgtypes.ProfileMessengerLink{
+			key: {
+				ProfileID:     "assistant",
+				MessengerName: "support-bot",
+				Enabled:       true,
+			},
+		},
+		map[string]string{key: "assistant=reply"},
+	)
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:       "msg_service_route",
+		Platform: "slack",
+		Sender:   msgtypes.Sender{ID: "U123"},
+		Channel:  msgtypes.Channel{ID: "C01ABC2DEF"},
+		PlatformMetadata: map[string]any{
+			"messenger_name": "support-bot",
+		},
+	}
+
+	result, err := router.Route(context.Background(), msg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != "routed" {
+		t.Fatalf("status = %q, want routed", result.Status)
+	}
+	if result.ProfileID != "assistant" || result.ActionName != "reply" {
+		t.Fatalf("route = %s/%s, want assistant/reply", result.ProfileID, result.ActionName)
 	}
 }
 
@@ -336,10 +401,8 @@ func TestMessageRouter_HandleMessage_ContextCancelled(t *testing.T) {
 }
 
 func TestMessageRouter_ExecuteAction(t *testing.T) {
-	router := newTestRouter(
-		map[string]*msgtypes.ProfileMessengerLink{},
-		map[string]string{},
-	)
+	executor := &fakeActionExecutor{output: "real action output"}
+	router := NewMessageRouterWithExecutor(&mockResolver{}, NewNormalizer(), executor)
 
 	tests := []struct {
 		name       string
@@ -385,6 +448,16 @@ func TestMessageRouter_ExecuteAction(t *testing.T) {
 			}
 			if result.Output == "" {
 				t.Error("output should contain dispatch information")
+			}
+			if result.Output != "real action output" {
+				t.Errorf("output = %q, want real action output", result.Output)
+			}
+			var payload msgtypes.NormalizedMessage
+			if err := json.Unmarshal(executor.input.Payload, &payload); err != nil {
+				t.Fatalf("payload should be normalized message JSON: %v", err)
+			}
+			if payload.ID != tt.msg.ID {
+				t.Errorf("payload ID = %q, want %q", payload.ID, tt.msg.ID)
 			}
 			if result.ExecutionTime < 0 {
 				t.Error("execution time should not be negative")

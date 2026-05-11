@@ -19,10 +19,10 @@ const (
 type AdapterCapabilityType string
 
 const (
-	CapRunStateless     AdapterCapabilityType = "run:stateless"
-	CapRunStreaming      AdapterCapabilityType = "run:streaming"
-	CapMonitorSessions  AdapterCapabilityType = "monitor:sessions"
-	CapMonitorLogs      AdapterCapabilityType = "monitor:logs"
+	CapRunStateless    AdapterCapabilityType = "run:stateless"
+	CapRunStreaming    AdapterCapabilityType = "run:streaming"
+	CapMonitorSessions AdapterCapabilityType = "monitor:sessions"
+	CapMonitorLogs     AdapterCapabilityType = "monitor:logs"
 )
 
 // AllCapabilities returns all valid device capabilities
@@ -67,12 +67,12 @@ type QRPayload struct {
 
 // MobileAdapter represents a registered mobile adapter
 type MobileAdapter struct {
-	AdapterID         string       `json:"device_id"`
+	AdapterID        string       `json:"device_id"`
 	ProfileID        string       `json:"profile_id"`
-	AdapterName       string       `json:"device_name"`
-	AdapterOS         string       `json:"device_os"`
-	AdapterVersion    string       `json:"adapter_version,omitempty"`
-	AdapterModel      string       `json:"adapter_model,omitempty"`
+	AdapterName      string       `json:"device_name"`
+	AdapterOS        string       `json:"device_os"`
+	AdapterVersion   string       `json:"adapter_version,omitempty"`
+	AdapterModel     string       `json:"adapter_model,omitempty"`
 	RegisteredAt     time.Time    `json:"registered_at"`
 	LastSeenAt       time.Time    `json:"last_seen_at"`
 	ExpiresAt        time.Time    `json:"expires_at"`
@@ -85,13 +85,13 @@ type MobileAdapter struct {
 
 // MobileAdapterRegistry is the on-disk format for the mobile adapter registry
 type MobileAdapterRegistryData struct {
-	Version string          `json:"version"`
+	Version  string           `json:"version"`
 	Adapters []*MobileAdapter `json:"adapters"`
 }
 
 // PairingRequest is sent by the mobile client to pair
 type PairingRequest struct {
-	PairingCode   string `json:"pairing_code"`
+	PairingCode    string `json:"pairing_code"`
 	AdapterName    string `json:"device_name"`
 	AdapterOS      string `json:"device_os"`
 	AdapterVersion string `json:"adapter_version,omitempty"`
@@ -100,12 +100,12 @@ type PairingRequest struct {
 
 // PairingResponse is returned after successful pairing
 type PairingResponse struct {
-	AdapterID    string `json:"device_id"`
-	Token       string `json:"token"`
-	WSEndpoint  string `json:"ws_endpoint"`
-	ExpiresAt   string `json:"expires_at"`
-	ProfileID   string `json:"profile_id"`
-	Status      string `json:"status"`
+	AdapterID  string `json:"device_id"`
+	Token      string `json:"token"`
+	WSEndpoint string `json:"ws_endpoint"`
+	ExpiresAt  string `json:"expires_at"`
+	ProfileID  string `json:"profile_id"`
+	Status     string `json:"status"`
 }
 
 // WSMessage is the WebSocket message format
@@ -130,6 +130,9 @@ type WSStatusPayload struct {
 	StartedAt  string `json:"started_at,omitempty"`
 	ExitCode   *int   `json:"exit_code,omitempty"`
 	DurationMs int64  `json:"duration_ms,omitempty"`
+	Maturity   string `json:"maturity,omitempty"`
+	Executes   string `json:"executes,omitempty"`
+	Message    string `json:"message,omitempty"`
 }
 
 // WSOutputPayload is the payload for command output

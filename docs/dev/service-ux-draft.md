@@ -363,6 +363,14 @@ Replies: status JSON, not action stdout
 Maturity: status-only
 ```
 
+Current decision for T-0612:
+
+- Keep the generic webhook service `status-only` until there is a separate output-capable reply contract.
+- `aps webhook server` runs the mapped profile action synchronously through `core.RunAction`, so a non-zero action result can still become an HTTP failure.
+- The successful HTTP reply is delivery/execution metadata: `status`, `delivery_id`, `event`, `profile`, and `action`.
+- Action stdout and stderr belong to the webhook server process streams today. They are not captured into the HTTP response and should not be shown as caller-visible webhook output in service UX.
+- If output-capable webhooks are added later, require an explicit reply mode such as `--reply output|status`, a bounded response-size policy, and tests for stdout, stderr, exit status, timeouts, and secret redaction before changing maturity from `status-only`.
+
 ## Service Types That Need Honest UX
 
 ### A2A Service
@@ -446,6 +454,14 @@ Maturity: observe-only
 
 Only promote it to an execution service after route DSL and handler dispatch exist.
 
+Current decision for T-0613:
+
+- Keep the events service `observe-only`.
+- The current reachable command is `aps listen --profile <id>`, which subscribes to bus topic patterns and writes one JSONL record per observed event.
+- There is no route table, target action resolution, handler dispatch, or caller reply path in this surface.
+- `aps service add ... --type events` and `aps service status` should therefore present `EXECUTES: none`, `REPLIES: JSONL to stdout`, and `MATURITY: observe-only`.
+- Do not accept `--route`, `--action`, or other executable-service options for events until route dispatch is implemented and covered by tests.
+
 ### Mobile Service
 
 Mobile pairing fits `service` if described as a pairing/control service.
@@ -453,13 +469,13 @@ Mobile pairing fits `service` if described as a pairing/control service.
 Current honest status:
 
 ```text
-Receives: pairing requests and WebSocket command messages
-Executes: pairing/token flow; command execution TODO
-Replies: pairing responses and command acknowledgements
+Receives: pairing requests and WebSocket command messages over HTTP/WS by default
+Executes: pairing/token flow; no profile action execution
+Replies: pairing responses and placeholder command acknowledgements
 Maturity: placeholder for command execution
 ```
 
-The UX should not imply remote profile execution from mobile until command handling calls the APS core action path.
+The UX should not imply HTTPS or remote profile execution from mobile until the CLI pairing path wires TLS certificates and command handling calls the APS core action path. `AdapterServer` has component-level TLS support when constructed with a certificate, but `aps adapter pair` does not expose that configuration today.
 
 ### Voice Service
 
@@ -473,9 +489,9 @@ Suggested distinction:
 Current honest status:
 
 ```text
-Receives: audio only through component adapters when mounted
-Executes: backend/session lifecycle exists; action pipeline claims need verification
-Replies: audio/text frames depending on channel component
+Receives: audio only through component adapters if another caller mounts them
+Executes: backend process lifecycle and session registration only from current CLI commands
+Replies: component-level audio/text frames; no traced profile-facing service mount
 Maturity: component
 ```
 

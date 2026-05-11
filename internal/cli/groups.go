@@ -29,6 +29,7 @@ var commandGroups = map[string]string{
 	"adapter":   "pipelines",
 	"webhook":   "pipelines",
 	"directory": "pipelines",
+	"service":   "pipelines",
 	"action":    "pipelines",
 	"skill":     "pipelines",
 

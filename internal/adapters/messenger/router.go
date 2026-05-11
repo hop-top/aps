@@ -2,10 +2,12 @@ package messenger
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	msgtypes "hop.top/aps/internal/core/messenger"
+	"hop.top/aps/internal/core/protocol"
 )
 
 // RouteResolver resolves a messenger channel to its linked profile and action.
@@ -16,6 +18,10 @@ type RouteResolver interface {
 	// mapping string for the given messenger name and channel ID. If no route
 	// is found, it returns an error satisfying msgtypes.IsUnknownChannel.
 	ResolveChannelRoute(messengerName, channelID string) (*msgtypes.ProfileMessengerLink, string, error)
+}
+
+type ActionExecutor interface {
+	ExecuteRun(ctx context.Context, input protocol.RunInput, stream protocol.StreamWriter) (*protocol.RunState, error)
 }
 
 // RoutingResult captures the outcome of routing a message to a profile action.
@@ -43,13 +49,20 @@ type ActionResult struct {
 type MessageRouter struct {
 	resolver   RouteResolver
 	normalizer *Normalizer
+	executor   ActionExecutor
 }
 
 // NewMessageRouter creates a MessageRouter with the given RouteResolver and Normalizer.
 func NewMessageRouter(resolver RouteResolver, normalizer *Normalizer) *MessageRouter {
+	core, _ := protocol.NewAPSAdapter()
+	return NewMessageRouterWithExecutor(resolver, normalizer, core)
+}
+
+func NewMessageRouterWithExecutor(resolver RouteResolver, normalizer *Normalizer, executor ActionExecutor) *MessageRouter {
 	return &MessageRouter{
 		resolver:   resolver,
 		normalizer: normalizer,
+		executor:   executor,
 	}
 }
 
@@ -69,7 +82,14 @@ func (r *MessageRouter) Route(ctx context.Context, msg *msgtypes.NormalizedMessa
 		MessageID: msg.ID,
 	}
 
-	link, actionMapping, err := r.resolver.ResolveChannelRoute(msg.Platform, msg.Channel.ID)
+	messengerName := msg.Platform
+	if msg.PlatformMetadata != nil {
+		if configuredName, ok := msg.PlatformMetadata["messenger_name"].(string); ok && configuredName != "" {
+			messengerName = configuredName
+		}
+	}
+
+	link, actionMapping, err := r.resolver.ResolveChannelRoute(messengerName, msg.Channel.ID)
 	if err != nil {
 		if msgtypes.IsUnknownChannel(err) {
 			result.Status = "unknown_channel"
@@ -108,27 +128,48 @@ func (r *MessageRouter) Route(ctx context.Context, msg *msgtypes.NormalizedMessa
 	return result, nil
 }
 
-// ExecuteAction invokes the routed action for a message. This is currently a
-// placeholder that will integrate with the A2A Protocol Server once available.
-// It records wall-clock execution time and returns a successful ActionResult.
+// ExecuteAction invokes the routed profile action with the normalized message
+// JSON as stdin and returns captured stdout for platform replies.
 func (r *MessageRouter) ExecuteAction(ctx context.Context, profileID, actionName string, msg *msgtypes.NormalizedMessage) (*ActionResult, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if r.executor == nil {
+		return nil, fmt.Errorf("message action executor is not configured")
+	}
 
 	start := time.Now()
 
-	// Placeholder: the real implementation will dispatch to the A2A protocol
-	// server, invoking the profile's registered action with the normalized
-	// message as input. For now we record what would happen.
-	output := fmt.Sprintf("action %q dispatched to profile %q (message %s, platform %s, channel %s)",
-		actionName, profileID, msg.ID, msg.Platform, msg.Channel.ID)
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode message payload: %w", err)
+	}
+	state, err := r.executor.ExecuteRun(ctx, protocol.RunInput{
+		ProfileID: profileID,
+		ActionID:  actionName,
+		Payload:   payload,
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	if state == nil {
+		return nil, fmt.Errorf("action executor returned nil run state")
+	}
 
 	elapsed := time.Since(start)
+	status := "success"
+	output := state.Output
+	if state.Status != protocol.RunStatusCompleted {
+		status = "failed"
+		if output == "" {
+			output = state.Error
+		}
+	}
 
 	return &ActionResult{
-		Status:        "success",
+		Status:        status,
 		Output:        output,
+		OutputData:    state,
 		ExecutionTime: elapsed,
 	}, nil
 }

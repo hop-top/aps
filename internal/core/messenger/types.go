@@ -8,17 +8,17 @@ import (
 
 // NormalizedMessage is the unified message format across all messaging platforms.
 type NormalizedMessage struct {
-	ID               string                 `json:"id" yaml:"id"`
-	Timestamp        time.Time              `json:"timestamp" yaml:"timestamp"`
-	Platform         string                 `json:"platform" yaml:"platform"`
-	WorkspaceID      string                 `json:"workspace_id,omitempty" yaml:"workspace_id,omitempty"`
-	ProfileID        string                 `json:"profile_id,omitempty" yaml:"profile_id,omitempty"`
-	Sender           Sender                 `json:"sender" yaml:"sender"`
-	Channel          Channel                `json:"channel" yaml:"channel"`
-	Text             string                 `json:"text" yaml:"text"`
-	Thread           *Thread                `json:"thread,omitempty" yaml:"thread,omitempty"`
-	Reactions        []Reaction             `json:"reactions,omitempty" yaml:"reactions,omitempty"`
-	Attachments      []Attachment           `json:"attachments,omitempty" yaml:"attachments,omitempty"`
+	ID               string         `json:"id" yaml:"id"`
+	Timestamp        time.Time      `json:"timestamp" yaml:"timestamp"`
+	Platform         string         `json:"platform" yaml:"platform"`
+	WorkspaceID      string         `json:"workspace_id,omitempty" yaml:"workspace_id,omitempty"`
+	ProfileID        string         `json:"profile_id,omitempty" yaml:"profile_id,omitempty"`
+	Sender           Sender         `json:"sender" yaml:"sender"`
+	Channel          Channel        `json:"channel" yaml:"channel"`
+	Text             string         `json:"text" yaml:"text"`
+	Thread           *Thread        `json:"thread,omitempty" yaml:"thread,omitempty"`
+	Reactions        []Reaction     `json:"reactions,omitempty" yaml:"reactions,omitempty"`
+	Attachments      []Attachment   `json:"attachments,omitempty" yaml:"attachments,omitempty"`
 	PlatformMetadata map[string]any `json:"platform_metadata,omitempty" yaml:"platform_metadata,omitempty"`
 }
 
@@ -152,6 +152,8 @@ const (
 	PlatformDiscord  MessengerPlatform = "discord"
 	PlatformGitHub   MessengerPlatform = "github"
 	PlatformEmail    MessengerPlatform = "email"
+	PlatformSMS      MessengerPlatform = "sms"
+	PlatformWhatsApp MessengerPlatform = "whatsapp"
 )
 
 // ChannelIDFormat documents the expected channel ID format per platform.
@@ -161,4 +163,6 @@ var ChannelIDFormat = map[MessengerPlatform]string{
 	PlatformDiscord:  "Numeric channel ID (e.g., 1234567890123456789)",
 	PlatformGitHub:   "org/repo (e.g., myorg/myrepo)",
 	PlatformEmail:    "Mailbox name or email address (e.g., inbox, work@co.com)",
+	PlatformSMS:      "Phone number receiving SMS (e.g., +15551234567)",
+	PlatformWhatsApp: "WhatsApp phone number ID or receiving number (e.g., 123456789012345)",
 }

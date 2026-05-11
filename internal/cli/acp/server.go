@@ -22,7 +22,7 @@ func NewServerCmd() *cobra.Command {
 		Long: `Start an ACP (Agent Client Protocol) server for a profile.
 
 The server communicates with editor clients via JSON-RPC 2.0 over stdio
-or other transports (HTTP, WebSocket).
+transport. HTTP and WebSocket ACP transports are not wired to this command yet.
 
 Example:
   aps acp server my-profile`,
@@ -55,6 +55,9 @@ func runACPServer(profileID string) error {
 		}
 		logging.GetLogger().Info("acp enabled with defaults", "transport", "stdio")
 	}
+	if profile.ACP != nil && profile.ACP.Transport != "" && profile.ACP.Transport != "stdio" {
+		return fmt.Errorf("ACP transport %q is configured but aps acp server currently supports stdio only", profile.ACP.Transport)
+	}
 
 	// Get the protocol core adapter
 	coreAdapter, err := protocol.NewAPSAdapter()
@@ -84,7 +87,7 @@ func runACPServer(profileID string) error {
 	}()
 
 	// Start server
-	if err := acpServer.Start(ctx, nil); err != nil {
+	if err := acpServer.Start(ctx, &acp.TransportConfig{Transport: profile.ACP.Transport}); err != nil {
 		return fmt.Errorf("failed to start ACP server: %w", err)
 	}
 

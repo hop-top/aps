@@ -52,6 +52,10 @@ type Transport interface {
 	Close() error
 }
 
+type TransportConfig struct {
+	Transport string
+}
+
 // Verify ACP Server implements the common protocol interface
 var _ protocol.ProtocolServer = (*Server)(nil)
 
@@ -164,8 +168,11 @@ func (s *Server) GetAddress() string {
 
 // createTransport creates the appropriate transport based on configuration
 func (s *Server) createTransport(config interface{}) (Transport, error) {
-	// For now, default to stdio transport
-	// In future, can support HTTP, WebSocket based on config
+	if cfg, ok := config.(*TransportConfig); ok && cfg != nil {
+		if cfg.Transport != "" && cfg.Transport != "stdio" {
+			return nil, fmt.Errorf("ACP transport %q is not implemented; stdio is the only wired transport", cfg.Transport)
+		}
+	}
 	return NewStdioTransport(os.Stdin, os.Stdout), nil
 }
 

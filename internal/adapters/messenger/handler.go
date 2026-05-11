@@ -72,8 +72,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handleWebhook(w, r, platform)
 }
 
+func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, serviceID, adapter string) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "only POST requests are accepted")
+		return
+	}
+	if serviceID == "" || adapter == "" {
+		writeError(w, http.StatusInternalServerError, "message service is not configured")
+		return
+	}
+	h.handleWebhookForMessenger(w, r, adapter, serviceID)
+}
+
 // handleWebhook processes a single webhook event for the given platform.
 func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request, platform string) {
+	h.handleWebhookForMessenger(w, r, platform, "")
+}
+
+func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Request, platform, messengerName string) {
 	// Decode the raw JSON payload.
 	var body map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -86,6 +102,12 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request, platform
 	if err != nil {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("normalization failed: %v", err))
 		return
+	}
+	if messengerName != "" {
+		if msg.PlatformMetadata == nil {
+			msg.PlatformMetadata = map[string]any{}
+		}
+		msg.PlatformMetadata["messenger_name"] = messengerName
 	}
 
 	// Log the received message if a logger is available.

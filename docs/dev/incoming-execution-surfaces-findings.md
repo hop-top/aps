@@ -72,10 +72,17 @@ Observed behavior:
 - Does not capture action stdout/stderr into the HTTP response; action output streams to process stdio.
 - `--profile` can auto-enable webhook capability.
 
+Current service UX decision:
+
+- Treat this as `status-only`, not output-capable.
+- Successful replies are status metadata: `status`, `delivery_id`, `event`, `profile`, and `action`.
+- Action stdout/stderr remain server process output today and are not part of the HTTP response body.
+- Promoting this to output-capable requires a new reply policy, bounded output handling, and regression tests.
+
 Open questions:
 
 - Whether documentation currently presents this clearly as a first-class incoming execution path.
-- Whether output capture/reply semantics are intentionally status-only or incomplete.
+- Whether a future output-capable mode is worth adding as a separate explicit reply policy.
 
 ### A2A Server
 
@@ -149,6 +156,12 @@ Gap signal:
 
 - Useful for awareness and piping, but not yet a direct action dispatch or reply mechanism.
 
+Current service UX decision:
+
+- Keep this service type `observe-only` until route matching, profile action dispatch, and tests exist.
+- Service UX should show `EXECUTES: none`, `REPLIES: JSONL to stdout`, and `MATURITY: observe-only`.
+- Events should not accept executable-service options such as routes or actions before dispatch exists.
+
 ### Messenger Webhook Handler
 
 The handler exists, but production mounting and real action dispatch are unclear/incomplete.
@@ -196,9 +209,9 @@ Observed behavior:
 - The server exposes `/aps/adapter/{profileID}/health`, `/pair`, and `/ws`.
 - Pairing creates an adapter identity and token.
 - The WebSocket path authenticates device connections and accepts messages of type `command`.
-- `handleCommand` currently parses the command payload, emits a `running` status, then emits `received`.
-- The command execution path contains a TODO to execute through APS core later.
-- `runPair` builds the displayed endpoint with `https://`, but the traced server startup path does not pass a TLS certificate option into `NewAdapterServer`; this needs confirmation before documenting the endpoint scheme as HTTPS.
+- `runPair` starts the pairing server without a TLS certificate, so the advertised QR endpoint is plain `http://` and the pairing response returns a `ws://` WebSocket endpoint.
+- `AdapterServer` has a component-level `WithTLSCert` option; when a caller provides a certificate, the server uses TLS 1.2+ and pairing responses switch to `wss://`. The traced CLI pairing path does not expose certificate flags.
+- `handleCommand` currently parses the command payload, emits a `running` status, then emits `received` with `maturity: placeholder`, `executes: none`, and a message that the command was not executed.
 
 Gap signal:
 
@@ -242,7 +255,7 @@ This matrix is a working snapshot from CLI route tracing plus an `xray explore` 
 | Messenger adapter lifecycle | `aps messenger start <name>` / `aps adapter start <name>` | Starts adapter runtime; messenger defaults to subprocess strategy | External `aps-adapter-<name>` or local `run` executable for subprocess; built-in strategy only marks runtime running | CLI status/PID; platform replies depend on external subprocess, if any | Reachable lifecycle command, not the built-in Go webhook handler |
 | Messenger test | `aps messenger test <name>` | No listener; local pipeline simulation | Resolves channel route; execute/denormalize/send steps are simulated | CLI step report; `--send` marks send as successful without verified platform delivery in this path | Reachable test harness, not live intake |
 | Messenger webhook handler | Component `internal/adapters/messenger.Handler` | HTTP POST `/messengers/{platform}/webhook` if mounted | `MessageRouter.HandleMessage`; `ExecuteAction` returns placeholder dispatch text | Platform-shaped response via denormalizer or generic status | Component exists, no traced production mount, placeholder execution |
-| Mobile pairing server | `aps adapter pair --profile <id>` | HTTP/WebSocket under `/aps/adapter/{profileID}`: `/health`, `/pair`, `/ws` | Pairing/token flow; WebSocket `command` handler currently acknowledges only | WebSocket status messages `running` then `received`; no profile action result | Reachable pairing/control channel, command execution TODO |
+| Mobile pairing server | `aps adapter pair --profile <id>` | HTTP/WebSocket under `/aps/adapter/{profileID}`: `/health`, `/pair`, `/ws`; CLI advertises `http://` and returns `ws://` unless another caller injects a TLS certificate | Pairing/token flow; WebSocket `command` handler currently acknowledges only | WebSocket status messages `running` then placeholder `received`; no profile action result | Reachable pairing/control channel, placeholder command execution |
 | Voice backend lifecycle | `aps voice service start` | Starts configured backend process; no APS HTTP route mounted by this command | External backend binary | CLI status only | Reachable process lifecycle, not an intake route by itself |
 | Voice session registration | `aps voice start --profile <id>` | No listener mounted; registers a session for channel metadata | `voice.RegisterSession` | CLI prints session ID | Reachable session registration, not an external listener |
 | Voice Web/Twilio adapters | Component constructors `NewWebAdapter`, `NewTwilioAdapter` | WebSocket `/ws`; WebSocket `/twilio/media-stream` if mounted | Channel session audio/text channels | WebSocket audio/text frames | Component exists, no traced CLI mount |
@@ -293,7 +306,7 @@ This table compares current documentation claims against the reachability matrix
 | Messenger CLI examples | `docs/agent/messenger-patterns.md`; `docs/dev/messenger-architecture.md` | Uses `aps messengers create --template=subprocess --language=python`, `aps profile link-messenger`, `aps adapter test` | Current CLI uses `aps messenger` alias over adapter commands; create flags are `--type`, `--strategy`; links appear under adapter/messenger link commands | Documentation stale | Refresh command examples from current cobra commands before changing feature behavior |
 | Voice channels | `docs/dev/voice.md` | APS routes sessions across web, TUI, Telegram, Twilio; web serves UI/proxy; messenger and Twilio adapters bridge audio into pipeline | Backend lifecycle and session registration exist; Web/Twilio adapter components exist; no traced CLI command mounts those HTTP/WebSocket handlers; voice action pipeline claims need verification | Documentation misleading or aspirational | Start from `internal/cli/voice.go`, `internal/voice/adapter_web.go`, `adapter_twilio.go`, `voice_messenger.go` |
 | Event listener daemon | `docs/dev/event-topics.md` | Listener daemon subscribes and future route DSL will dispatch profile rules | `aps listen` subscribes and prints JSONL only; docs generally frame richer routing as planned | Documentation mostly aligned | Keep as future-oriented; cross-link `aps listen` current behavior |
-| Mobile pairing | `docs/dev/adapters.md`; `docs/dev/bundles.md`; current findings | Mobile pairing via QR and WebSockets | `aps adapter pair` starts pairing server and WebSocket, but command messages are acknowledged only; endpoint scheme may be documented/advertised as HTTPS without confirmed TLS in traced path | Feature incomplete; further verification needed | Start from `internal/cli/adapter/pair.go` and `internal/core/adapter/mobile/server.go` |
+| Mobile pairing | `docs/dev/adapters.md`; `docs/dev/bundles.md`; current findings | Mobile pairing via QR and WebSockets | `aps adapter pair` starts pairing server and WebSocket over plain HTTP/WS by default; command messages are acknowledged only and marked placeholder. TLS is component-supported through `WithTLSCert`, not exposed by the CLI path. | Feature incomplete; docs should not imply HTTPS or profile execution by default | Start from `internal/cli/adapter/pair.go` and `internal/core/adapter/mobile/server.go` |
 | Generic protocol HTTP bridge | `docs/dev/architecture/protocol-server-architecture.md`; `docs/dev/protocol-interface-unification.md` | HTTP bridge can expose ACP/stdio protocols remotely | Bridge components return placeholder responses; `ProtocolServerAdapter.RegisterRoutes` is no-op; no traced user-facing mount | Component exists but not wired; docs overstate practical availability | Start from `internal/core/protocol/http_bridge.go` and registry usage |
 
 ## Next Investigation Starting Points
@@ -301,4 +314,4 @@ This table compares current documentation claims against the reachability matrix
 1. Add test-coverage evidence to the matrix where it changes confidence, especially for `aps serve`, `aps webhook server`, A2A, ACP, messenger, mobile pairing, and voice.
 2. Decide whether the next deliverable is documentation correction, feature completion, or both for each high-risk area.
 3. For Telegram/chat work, start from `internal/adapters/messenger`, the adapter lifecycle in `internal/core/adapter`, and the `aps-chat` track, because current messenger action dispatch and A2A executor are not yet profile-backed chat execution paths.
-4. Confirm whether mobile pairing is intended to advertise `https://` by default or whether TLS setup is missing from the traced `aps adapter pair` path.
+4. Decide whether `aps adapter pair` should grow user-facing TLS certificate flags, self-signed development certificates, or remain explicitly local-network HTTP/WS.

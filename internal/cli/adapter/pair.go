@@ -40,7 +40,7 @@ func newPairCmd() *cobra.Command {
 		Long: `Start a device server and display a QR code for mobile device pairing.
 
 The QR code contains connection details that the mobile APS app uses to
-establish a secure WebSocket connection to this profile.`,
+establish a WebSocket connection to this profile.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPair(cmd.Context(), profileID, expires, qrExpires, capabilities,
 				port, bindAddr, noQR, codeOnly, qrOutput, jsonOutput, quiet)
@@ -173,8 +173,9 @@ func runPair(ctx context.Context, profileID, expires, qrExpires string,
 		certFingerprint = ""
 	}
 
-	// Build endpoint
-	endpoint := fmt.Sprintf("https://%s:%d/aps/adapter/%s", bindAddr, port, profileID)
+	// Build endpoint. The pairing server currently starts without a TLS
+	// certificate from this CLI path, so advertise the actual HTTP route.
+	endpoint := fmt.Sprintf("http://%s:%d/aps/adapter/%s", bindAddr, port, profileID)
 
 	// Create QR payload
 	payload := mobile.NewQRPayload(profileID, endpoint, pairingCode, certFingerprint, capabilities, qrExpiryDuration)

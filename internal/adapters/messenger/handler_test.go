@@ -32,7 +32,7 @@ func newTestHandler(links map[string]*msgtypes.ProfileMessengerLink, actions map
 		actions: actions,
 	}
 	normalizer := NewNormalizer()
-	router := NewMessageRouter(resolver, normalizer)
+	router := NewMessageRouterWithExecutor(resolver, normalizer, &fakeActionExecutor{})
 	return NewHandler(router, normalizer, logger)
 }
 

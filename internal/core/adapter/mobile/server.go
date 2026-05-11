@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	DefaultPort          = 8443
-	HeartbeatInterval    = 30 * time.Second
-	WriteWait            = 10 * time.Second
-	PongWait             = 60 * time.Second
-	MaxMessageSize       = 512 * 1024 // 512KB
+	DefaultPort       = 8443
+	HeartbeatInterval = 30 * time.Second
+	WriteWait         = 10 * time.Second
+	PongWait          = 60 * time.Second
+	MaxMessageSize    = 512 * 1024 // 512KB
 )
 
 // AdapterServer manages the HTTP + WebSocket server for mobile adapter connections.
@@ -46,9 +46,9 @@ type AdapterServer struct {
 	tlsCert *tls.Certificate
 
 	// Config
-	profileID       string
+	profileID        string
 	approvalRequired bool
-	maxAdapters       int
+	maxAdapters      int
 }
 
 // PairingSession tracks an active pairing code
@@ -62,11 +62,11 @@ type PairingSession struct {
 
 // AdapterConnection tracks an active WebSocket connection
 type AdapterConnection struct {
-	conn     *websocket.Conn
-	device   *MobileAdapter
-	mu       sync.Mutex
-	closeCh  chan struct{}
-	closed   bool
+	conn    *websocket.Conn
+	device  *MobileAdapter
+	mu      sync.Mutex
+	closeCh chan struct{}
+	closed  bool
 }
 
 // NewAdapterServer creates a new device server
@@ -78,7 +78,7 @@ func NewAdapterServer(profileID string, registry *Registry, tokenMgr *TokenManag
 		status:       "stopped",
 		conns:        make(map[string]*AdapterConnection),
 		pairingCodes: make(map[string]*PairingSession),
-		maxAdapters:   10,
+		maxAdapters:  10,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -312,12 +312,12 @@ func (s *AdapterServer) handlePair(w http.ResponseWriter, r *http.Request) {
 	// Create mobile adapter record
 	now := time.Now()
 	device := &MobileAdapter{
-		AdapterID:         deviceID,
+		AdapterID:        deviceID,
 		ProfileID:        s.profileID,
-		AdapterName:       req.AdapterName,
-		AdapterOS:         req.AdapterOS,
-		AdapterVersion:    req.AdapterVersion,
-		AdapterModel:      req.AdapterModel,
+		AdapterName:      req.AdapterName,
+		AdapterOS:        req.AdapterOS,
+		AdapterVersion:   req.AdapterVersion,
+		AdapterModel:     req.AdapterModel,
 		RegisteredAt:     now,
 		LastSeenAt:       now,
 		ExpiresAt:        now.Add(DefaultTokenExpiry),
@@ -348,7 +348,7 @@ func (s *AdapterServer) handlePair(w http.ResponseWriter, r *http.Request) {
 	wsEndpoint := fmt.Sprintf("%s://%s/aps/adapter/%s/ws", scheme, r.Host, s.profileID)
 
 	resp := PairingResponse{
-		AdapterID:   deviceID,
+		AdapterID:  deviceID,
 		Token:      tokenString,
 		WSEndpoint: wsEndpoint,
 		ExpiresAt:  device.ExpiresAt.Format(time.RFC3339),
@@ -495,8 +495,8 @@ func (s *AdapterServer) handleCommand(dc *AdapterConnection, msg *WSMessage) {
 	payloadBytes, err := json.Marshal(msg.Payload)
 	if err != nil {
 		dc.WriteJSON(&WSMessage{
-			ID:   msg.ID,
-			Type: "error",
+			ID:      msg.ID,
+			Type:    "error",
 			Payload: map[string]string{"error": "invalid payload"},
 		})
 		return
@@ -505,8 +505,8 @@ func (s *AdapterServer) handleCommand(dc *AdapterConnection, msg *WSMessage) {
 	var cmdPayload WSCommandPayload
 	if err := json.Unmarshal(payloadBytes, &cmdPayload); err != nil {
 		dc.WriteJSON(&WSMessage{
-			ID:   msg.ID,
-			Type: "error",
+			ID:      msg.ID,
+			Type:    "error",
 			Payload: map[string]string{"error": "invalid command payload"},
 		})
 		return
@@ -522,13 +522,16 @@ func (s *AdapterServer) handleCommand(dc *AdapterConnection, msg *WSMessage) {
 		},
 	})
 
-	// TODO: Execute command via APSCore.ExecuteRun() when integrated with serve command
-	// For now, acknowledge receipt
+	// Mobile commands are intentionally placeholder-only until this server is
+	// wired to the APS core execution path.
 	dc.WriteJSON(&WSMessage{
 		ID:   msg.ID,
 		Type: "status",
 		Payload: WSStatusPayload{
-			Status: "received",
+			Status:   "received",
+			Maturity: "placeholder",
+			Executes: "none",
+			Message:  fmt.Sprintf("mobile command %q received but not executed", cmdPayload.Command),
 		},
 	})
 }

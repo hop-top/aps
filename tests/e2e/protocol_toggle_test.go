@@ -194,7 +194,7 @@ func TestACPToggle_Disable(t *testing.T) {
 	assert.NotContains(t, string(content), "- agent-protocol")
 }
 
-func TestACPToggle_CustomConfig(t *testing.T) {
+func TestACPToggle_RejectsUnwiredNetworkTransport(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 	profileID := "test-acp-custom"
@@ -203,18 +203,9 @@ func TestACPToggle_CustomConfig(t *testing.T) {
 	_, _, err := runAPS(t, home, "profile", "create", profileID, "--display-name", "Test ACP Custom")
 	require.NoError(t, err)
 
-	// Enable ACP with custom transport and port
-	stdout, _, err := runAPS(t, home, "acp", "toggle", "--profile", profileID, "--transport", "http", "--port", "9000")
-	require.NoError(t, err)
-	assert.Contains(t, stdout, "http")
-	assert.Contains(t, stdout, "9000")
-
-	// Verify config
-	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
-	content, err := os.ReadFile(profilePath)
-	require.NoError(t, err)
-	assert.Contains(t, string(content), "transport: http")
-	assert.Contains(t, string(content), "port: 9000")
+	_, stderr, err := runAPS(t, home, "acp", "toggle", "--profile", profileID, "--transport", "http", "--port", "9000")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "stdio")
 }
 
 func TestACPServer_AutoEnable(t *testing.T) {

@@ -31,6 +31,22 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringArrayVar(&opts.env, "env", nil, "Environment binding KEY=VALUE, repeatable")
 	cmd.Flags().StringArrayVar(&opts.labels, "label", nil, "Metadata label KEY=VALUE, repeatable")
 	cmd.Flags().StringVar(&opts.description, "description", "", "Human-readable description")
+	cmd.Flags().StringVar(&opts.site, "site", "", "Ticket adapter site or base URL")
+	cmd.Flags().StringVar(&opts.project, "project", "", "Ticket adapter project key, ID, or path")
+	cmd.Flags().StringVar(&opts.jql, "jql", "", "Jira issue query")
+	cmd.Flags().StringVar(&opts.workspace, "workspace", "", "Linear workspace key or ID")
+	cmd.Flags().StringVar(&opts.team, "team", "", "Linear team key or ID")
+	cmd.Flags().StringVar(&opts.group, "group", "", "GitLab group path or ID")
+	cmd.Flags().StringVar(&opts.events, "events", "", "Comma-separated ticket events to receive")
+	cmd.Flags().StringVar(&opts.receive, "receive", "", "Message receive mode: polling or webhook")
+	cmd.Flags().StringVar(&opts.provider, "provider", "", "Message provider, such as twilio or whatsapp-cloud")
+	cmd.Flags().StringVar(&opts.from, "from", "", "Sender phone number or provider identity")
+	cmd.Flags().StringVar(&opts.phoneNumberID, "phone-number-id", "", "WhatsApp phone number ID")
+	cmd.Flags().StringArrayVar(&opts.allowedChannels, "allowed-channel", nil, "Allowed message channel ID, repeatable")
+	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
+	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
+	cmd.Flags().StringVar(&opts.defaultAction, "default-action", "", "Default profile action for routed messages or tickets")
+	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
 	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate without writing")
 
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
@@ -54,13 +70,29 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 }
 
 type addOptions struct {
-	typeInput   string
-	adapter     string
-	profile     string
-	env         []string
-	labels      []string
-	description string
-	dryRun      bool
+	typeInput       string
+	adapter         string
+	profile         string
+	env             []string
+	labels          []string
+	description     string
+	site            string
+	project         string
+	jql             string
+	workspace       string
+	team            string
+	group           string
+	events          string
+	receive         string
+	provider        string
+	from            string
+	phoneNumberID   string
+	allowedChannels []string
+	allowedChats    []string
+	allowedNumbers  []string
+	defaultAction   string
+	reply           string
+	dryRun          bool
 }
 
 func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
@@ -89,6 +121,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Description: opts.description,
 		Env:         env,
 		Labels:      labels,
+		Options:     serviceOptions(opts),
 	}
 
 	printResolved(cmd, resolved)
@@ -106,6 +139,48 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved: %s\n", path)
 	return nil
+}
+
+func serviceOptions(opts addOptions) map[string]string {
+	options := map[string]string{}
+	addOption(options, "site", opts.site)
+	addOption(options, "project", opts.project)
+	addOption(options, "jql", opts.jql)
+	addOption(options, "workspace", opts.workspace)
+	addOption(options, "team", opts.team)
+	addOption(options, "group", opts.group)
+	addOption(options, "events", opts.events)
+	addOption(options, "receive", opts.receive)
+	addOption(options, "provider", opts.provider)
+	addOption(options, "from", opts.from)
+	addOption(options, "phone_number_id", opts.phoneNumberID)
+	addOption(options, "allowed_channels", joinValues(opts.allowedChannels))
+	addOption(options, "allowed_chats", joinValues(opts.allowedChats))
+	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
+	addOption(options, "default_action", opts.defaultAction)
+	addOption(options, "reply", opts.reply)
+	if len(options) == 0 {
+		return nil
+	}
+	return options
+}
+
+func joinValues(values []string) string {
+	clean := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			clean = append(clean, value)
+		}
+	}
+	return strings.Join(clean, ",")
+}
+
+func addOption(options map[string]string, key, value string) {
+	value = strings.TrimSpace(value)
+	if value != "" {
+		options[key] = value
+	}
 }
 
 func printResolved(cmd *cobra.Command, resolved core.ResolvedServiceType) {

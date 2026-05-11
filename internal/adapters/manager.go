@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"hop.top/aps/internal/adapters/agentprotocol"
+	"hop.top/aps/internal/adapters/messenger"
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/kit/go/ai/ext"
 )
@@ -92,5 +93,6 @@ func (m *Manager) RegisterRoutes(mux *http.ServeMux, core protocol.APSCore) erro
 func DefaultManager() *Manager {
 	m := NewManager()
 	m.Add(agentprotocol.NewAgentProtocolAdapter())
+	m.Add(messenger.NewAdapter())
 	return m
 }

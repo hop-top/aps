@@ -3,6 +3,7 @@ package messenger
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	msgtypes "hop.top/aps/internal/core/messenger"
@@ -33,10 +34,16 @@ func (n *Normalizer) Normalize(platform string, raw map[string]any) (*msgtypes.N
 		msg, err = n.normalizeTelegram(raw)
 	case msgtypes.PlatformSlack:
 		msg, err = n.normalizeSlack(raw)
+	case msgtypes.PlatformDiscord:
+		msg, err = n.normalizeDiscord(raw)
 	case msgtypes.PlatformGitHub:
 		msg, err = n.normalizeGitHub(raw)
 	case msgtypes.PlatformEmail:
 		msg, err = n.normalizeEmail(raw)
+	case msgtypes.PlatformSMS:
+		msg, err = n.normalizeSMS(raw)
+	case msgtypes.PlatformWhatsApp:
+		msg, err = n.normalizeWhatsApp(raw)
 	default:
 		return nil, msgtypes.ErrNormalizeFailed(platform, fmt.Errorf("unsupported platform %q", platform))
 	}
@@ -182,6 +189,79 @@ func (n *Normalizer) normalizeSlack(raw map[string]any) (*msgtypes.NormalizedMes
 				if att.URL != "" {
 					msg.Attachments = append(msg.Attachments, att)
 				}
+			}
+		}
+	}
+
+	return msg, nil
+}
+
+// normalizeDiscord extracts fields from a Discord message payload.
+// Expected structure: {"id": "...", "author": {"id": "..."}, "channel_id": "...", "content": "..."}.
+func (n *Normalizer) normalizeDiscord(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	author := getMap(raw, "author")
+	if author == nil {
+		return nil, fmt.Errorf("missing author in discord message")
+	}
+
+	senderID := getString(author, "id")
+	channelID := getString(raw, "channel_id")
+	if senderID == "" || channelID == "" {
+		return nil, fmt.Errorf("missing author id or channel_id in discord message")
+	}
+
+	channelType := "group"
+	if getString(raw, "guild_id") == "" {
+		channelType = "direct"
+	}
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:          firstNonEmpty(getString(raw, "id"), fmt.Sprintf("msg_%d", time.Now().UnixNano())),
+		Timestamp:   time.Now().UTC(),
+		Platform:    string(msgtypes.PlatformDiscord),
+		WorkspaceID: getString(raw, "guild_id"),
+		Sender: msgtypes.Sender{
+			ID:             senderID,
+			Name:           firstNonEmpty(getString(author, "global_name"), getString(author, "username")),
+			PlatformHandle: getString(author, "username"),
+			PlatformID:     senderID,
+		},
+		Channel: msgtypes.Channel{
+			ID:         channelID,
+			Name:       getString(raw, "channel_name"),
+			Type:       channelType,
+			PlatformID: channelID,
+		},
+		Text:             getString(raw, "content"),
+		PlatformMetadata: raw,
+	}
+
+	if threadID := getString(raw, "thread_id"); threadID != "" {
+		msg.Thread = &msgtypes.Thread{ID: threadID, Type: "topic"}
+	} else if ref := getMap(raw, "message_reference"); ref != nil {
+		if messageID := getString(ref, "message_id"); messageID != "" {
+			msg.Thread = &msgtypes.Thread{ID: messageID, Type: "reply"}
+		}
+	} else if ref := getMap(raw, "referenced_message"); ref != nil {
+		if messageID := getString(ref, "id"); messageID != "" {
+			msg.Thread = &msgtypes.Thread{ID: messageID, Type: "reply"}
+		}
+	}
+
+	if attachments, ok := raw["attachments"].([]any); ok {
+		for _, a := range attachments {
+			attMap, ok := a.(map[string]any)
+			if !ok {
+				continue
+			}
+			att := msgtypes.Attachment{
+				Type:      discordAttachmentType(getString(attMap, "content_type"), getString(attMap, "filename")),
+				URL:       getString(attMap, "url"),
+				MimeType:  getString(attMap, "content_type"),
+				SizeBytes: getInt64(attMap, "size"),
+			}
+			if att.URL != "" {
+				msg.Attachments = append(msg.Attachments, att)
 			}
 		}
 	}
@@ -351,6 +431,153 @@ func (n *Normalizer) normalizeEmail(raw map[string]any) (*msgtypes.NormalizedMes
 	return msg, nil
 }
 
+// normalizeSMS extracts fields from an SMS provider webhook. Twilio-style
+// field names are supported alongside lower-case generic names.
+func (n *Normalizer) normalizeSMS(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	return n.normalizePhoneMessage(string(msgtypes.PlatformSMS), raw)
+}
+
+// normalizeWhatsApp extracts fields from either a WhatsApp Cloud API webhook
+// payload or a Twilio-style WhatsApp message webhook.
+func (n *Normalizer) normalizeWhatsApp(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	if entry := firstMap(raw, "entry"); entry != nil {
+		return n.normalizeWhatsAppCloud(raw, entry)
+	}
+	return n.normalizePhoneMessage(string(msgtypes.PlatformWhatsApp), raw)
+}
+
+func (n *Normalizer) normalizePhoneMessage(platform string, raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	from := firstNonEmpty(getString(raw, "From"), getString(raw, "from"))
+	to := firstNonEmpty(getString(raw, "To"), getString(raw, "to"))
+	if from == "" {
+		return nil, fmt.Errorf("missing from field in %s event", platform)
+	}
+	if to == "" {
+		return nil, fmt.Errorf("missing to field in %s event", platform)
+	}
+
+	text := firstNonEmpty(getString(raw, "Body"), getString(raw, "body"), getString(raw, "text"))
+	messageID := firstNonEmpty(
+		getString(raw, "MessageSid"),
+		getString(raw, "SmsSid"),
+		getString(raw, "WaId"),
+		getString(raw, "message_id"),
+		fmt.Sprintf("msg_%d", time.Now().UnixNano()),
+	)
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:        messageID,
+		Timestamp: time.Now().UTC(),
+		Platform:  platform,
+		Sender: msgtypes.Sender{
+			ID:             from,
+			Name:           from,
+			PlatformHandle: from,
+			PlatformID:     from,
+		},
+		Channel: msgtypes.Channel{
+			ID:         to,
+			Name:       to,
+			Type:       "direct",
+			PlatformID: to,
+		},
+		Text:             text,
+		PlatformMetadata: raw,
+	}
+
+	mediaCount := getInt64(raw, "NumMedia")
+	for i := int64(0); i < mediaCount; i++ {
+		idx := strconv.FormatInt(i, 10)
+		url := getString(raw, "MediaUrl"+idx)
+		if url == "" {
+			continue
+		}
+		mimeType := getString(raw, "MediaContentType"+idx)
+		msg.Attachments = append(msg.Attachments, msgtypes.Attachment{
+			Type:     mediaAttachmentType(mimeType),
+			URL:      url,
+			MimeType: mimeType,
+		})
+	}
+
+	return msg, nil
+}
+
+func (n *Normalizer) normalizeWhatsAppCloud(raw map[string]any, entry map[string]any) (*msgtypes.NormalizedMessage, error) {
+	change := firstMap(entry, "changes")
+	if change == nil {
+		return nil, fmt.Errorf("missing changes in whatsapp event")
+	}
+	value := getMap(change, "value")
+	if value == nil {
+		return nil, fmt.Errorf("missing value in whatsapp change")
+	}
+	message := firstMap(value, "messages")
+	if message == nil {
+		return nil, fmt.Errorf("missing messages in whatsapp value")
+	}
+
+	from := getString(message, "from")
+	if from == "" {
+		return nil, fmt.Errorf("missing from in whatsapp message")
+	}
+
+	metadata := getMap(value, "metadata")
+	channelID := ""
+	channelName := ""
+	if metadata != nil {
+		channelID = firstNonEmpty(getString(metadata, "phone_number_id"), getString(metadata, "display_phone_number"))
+		channelName = getString(metadata, "display_phone_number")
+	}
+	if channelID == "" {
+		return nil, fmt.Errorf("missing phone_number_id in whatsapp metadata")
+	}
+
+	contact := firstMap(value, "contacts")
+	profile := map[string]any(nil)
+	if contact != nil {
+		profile = getMap(contact, "profile")
+	}
+
+	text := ""
+	if textMap := getMap(message, "text"); textMap != nil {
+		text = getString(textMap, "body")
+	}
+	attachments := whatsappAttachments(message)
+	if text == "" && len(attachments) > 0 {
+		text = firstNonEmpty(getString(getMap(message, getString(message, "type")), "caption"), getString(message, "type"))
+	}
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:        firstNonEmpty(getString(message, "id"), fmt.Sprintf("msg_%d", time.Now().UnixNano())),
+		Timestamp: parseUnixTimestamp(getString(message, "timestamp")),
+		Platform:  string(msgtypes.PlatformWhatsApp),
+		Sender: msgtypes.Sender{
+			ID:             from,
+			Name:           getString(profile, "name"),
+			PlatformHandle: from,
+			PlatformID:     from,
+		},
+		Channel: msgtypes.Channel{
+			ID:         channelID,
+			Name:       channelName,
+			Type:       "direct",
+			PlatformID: channelID,
+		},
+		Text:             text,
+		Attachments:      attachments,
+		PlatformMetadata: raw,
+	}
+
+	if contextMap := getMap(message, "context"); contextMap != nil {
+		if contextID := getString(contextMap, "id"); contextID != "" {
+			msg.Thread = &msgtypes.Thread{ID: contextID, Type: "reply"}
+		}
+	}
+
+	return msg, nil
+}
+
 // Denormalize converts an ActionResult into a platform-specific response payload
 // suitable for sending back through the platform's API.
 func (n *Normalizer) Denormalize(platform string, result *ActionResult) (map[string]any, error) {
@@ -363,10 +590,16 @@ func (n *Normalizer) Denormalize(platform string, result *ActionResult) (map[str
 		return n.denormalizeTelegram(result), nil
 	case msgtypes.PlatformSlack:
 		return n.denormalizeSlack(result), nil
+	case msgtypes.PlatformDiscord:
+		return n.denormalizeDiscord(result), nil
 	case msgtypes.PlatformGitHub:
 		return n.denormalizeGitHub(result), nil
 	case msgtypes.PlatformEmail:
 		return n.denormalizeEmail(result), nil
+	case msgtypes.PlatformSMS:
+		return n.denormalizeSMS(result), nil
+	case msgtypes.PlatformWhatsApp:
+		return n.denormalizeWhatsApp(result), nil
 	default:
 		return map[string]any{
 			"status": result.Status,
@@ -398,6 +631,19 @@ func (n *Normalizer) denormalizeSlack(result *ActionResult) map[string]any {
 	return resp
 }
 
+func (n *Normalizer) denormalizeDiscord(result *ActionResult) map[string]any {
+	resp := map[string]any{
+		"content": result.Output,
+		"allowed_mentions": map[string]any{
+			"parse": []string{},
+		},
+	}
+	if result.OutputData != nil {
+		resp["embeds"] = result.OutputData
+	}
+	return resp
+}
+
 func (n *Normalizer) denormalizeGitHub(result *ActionResult) map[string]any {
 	resp := map[string]any{
 		"body": result.Output,
@@ -414,6 +660,25 @@ func (n *Normalizer) denormalizeEmail(result *ActionResult) map[string]any {
 	resp := map[string]any{
 		"body":    result.Output,
 		"subject": "Re: Action Result",
+	}
+	if result.OutputData != nil {
+		resp["data"] = result.OutputData
+	}
+	return resp
+}
+
+func (n *Normalizer) denormalizeSMS(result *ActionResult) map[string]any {
+	return map[string]any{
+		"body": result.Output,
+	}
+}
+
+func (n *Normalizer) denormalizeWhatsApp(result *ActionResult) map[string]any {
+	resp := map[string]any{
+		"type": "text",
+		"text": map[string]any{
+			"body": result.Output,
+		},
 	}
 	if result.OutputData != nil {
 		resp["data"] = result.OutputData
@@ -474,6 +739,99 @@ func getMap(m map[string]any, key string) map[string]any {
 		return sub
 	}
 	return nil
+}
+
+func getSlice(m map[string]any, key string) []any {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return nil
+	}
+	if values, ok := v.([]any); ok {
+		return values
+	}
+	return nil
+}
+
+func firstMap(m map[string]any, key string) map[string]any {
+	values := getSlice(m, key)
+	if len(values) == 0 {
+		return nil
+	}
+	first, ok := values[0].(map[string]any)
+	if !ok {
+		return nil
+	}
+	return first
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func parseUnixTimestamp(value string) time.Time {
+	if value == "" {
+		return time.Now().UTC()
+	}
+	seconds, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Now().UTC()
+	}
+	return time.Unix(seconds, 0).UTC()
+}
+
+func mediaAttachmentType(mimeType string) string {
+	switch {
+	case strings.HasPrefix(mimeType, "audio/"):
+		return "audio"
+	case strings.HasPrefix(mimeType, "image/"):
+		return "image"
+	case strings.HasPrefix(mimeType, "video/"):
+		return "video"
+	case mimeType != "":
+		return "file"
+	default:
+		return ""
+	}
+}
+
+func discordAttachmentType(mimeType, filename string) string {
+	if attachmentType := mediaAttachmentType(mimeType); attachmentType != "" {
+		return attachmentType
+	}
+	if filename != "" {
+		return "file"
+	}
+	return ""
+}
+
+func whatsappAttachments(message map[string]any) []msgtypes.Attachment {
+	messageType := getString(message, "type")
+	media := getMap(message, messageType)
+	if media == nil {
+		return nil
+	}
+
+	switch messageType {
+	case "audio", "document", "image", "sticker", "video":
+	default:
+		return nil
+	}
+
+	attType := messageType
+	if attType == "document" || attType == "sticker" {
+		attType = "file"
+	}
+
+	return []msgtypes.Attachment{{
+		Type:     attType,
+		URL:      getString(media, "id"),
+		MimeType: getString(media, "mime_type"),
+	}}
 }
 
 // formatInt64 converts an int64 to its string representation.

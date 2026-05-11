@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -183,4 +184,53 @@ func TestWebhook_BusTokenMissingGracefulFallback(t *testing.T) {
 	content, err := os.ReadFile(proof)
 	require.NoError(t, err, "action should still run when bus is disabled")
 	assert.Contains(t, string(content), "ran")
+}
+
+// T-0612: webhook replies are intentionally status-only. The mapped
+// action still runs synchronously and may write to the server process stdout,
+// but the HTTP response must remain delivery metadata rather than action
+// stdout/stderr.
+func TestWebhook_ReplyIsStatusOnlyNotActionOutput(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	profileID := "status-only-hook"
+
+	_, _, err := runAPS(t, home, "profile", "create", profileID)
+	require.NoError(t, err)
+
+	actionsDir := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "actions")
+	require.NoError(t, os.MkdirAll(actionsDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(actionsDir, "hook.sh"),
+		[]byte("#!/bin/sh\necho action-output-from-webhook"), 0755))
+
+	cmd := prepareAPS(t, home, nil, "webhook", "server",
+		"--addr", "127.0.0.1:0",
+		"--event-map", "reply.event="+profileID+":hook",
+		"--secret", "replysecret")
+	var stderr bytes.Buffer
+	var stdout bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Stdout = &stdout
+	url := startWebhookServer(t, cmd, &stderr)
+
+	body := []byte(`{"reply":true}`)
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
+	req.Header.Set("X-APS-Event", "reply.event")
+	req.Header.Set("X-APS-Signature", sign("replysecret", body))
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var got map[string]string
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+	assert.Equal(t, "executed", got["status"])
+	assert.Equal(t, "reply.event", got["event"])
+	assert.Equal(t, profileID, got["profile"])
+	assert.Equal(t, "hook", got["action"])
+	assert.NotContains(t, got, "output")
+
+	require.Eventually(t, func() bool {
+		return strings.Contains(stdout.String(), "action-output-from-webhook")
+	}, time.Second, 25*time.Millisecond, "action stdout should go to server stdout")
 }

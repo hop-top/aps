@@ -20,6 +20,16 @@ type ServiceConfig struct {
 	Description string            `yaml:"description,omitempty"`
 	Env         map[string]string `yaml:"env,omitempty"`
 	Labels      map[string]string `yaml:"labels,omitempty"`
+	Options     map[string]string `yaml:"options,omitempty"`
+}
+
+// ServiceRuntimeInfo describes reachable behavior for a persisted service.
+type ServiceRuntimeInfo struct {
+	Receives string
+	Executes string
+	Replies  string
+	Maturity string
+	Routes   []string
 }
 
 // ResolvedServiceType records how user-facing service type input resolved.
@@ -210,4 +220,64 @@ func LoadService(id string) (*ServiceConfig, error) {
 		return nil, fmt.Errorf("service ID mismatch: path=%s, content=%s", id, service.ID)
 	}
 	return &service, nil
+}
+
+func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
+	if service == nil {
+		return ServiceRuntimeInfo{Maturity: "planned"}
+	}
+
+	switch service.Type {
+	case "client":
+		if service.Adapter == "acp" {
+			return ServiceRuntimeInfo{
+				Receives: "stdio JSON-RPC",
+				Executes: "ACP session, filesystem, terminal, and skill methods",
+				Replies:  "JSON-RPC responses",
+				Maturity: "ready",
+				Routes:   []string{"aps acp server " + service.Profile},
+			}
+		}
+	case "message":
+		route := "/services/" + service.ID + "/webhook"
+		return ServiceRuntimeInfo{
+			Receives: "HTTP POST " + route,
+			Executes: "profile action",
+			Replies:  service.Adapter + " webhook JSON",
+			Maturity: "ready",
+			Routes:   []string{route},
+		}
+	case "ticket":
+		return describeTicketServiceRuntime(service)
+	}
+
+	return ServiceRuntimeInfo{
+		Receives: "not mounted by aps service runtime",
+		Executes: "not verified",
+		Replies:  "not verified",
+		Maturity: "planned",
+	}
+}
+
+func describeTicketServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
+	route := "/services/" + service.ID + "/ticket/" + service.Adapter
+	info := ServiceRuntimeInfo{
+		Receives: "ticket events",
+		Executes: "routed profile action with normalized ticket payload",
+		Replies:  "status metadata",
+		Maturity: "component",
+		Routes:   []string{route},
+	}
+	switch service.Adapter {
+	case "jira":
+		info.Receives = "Jira issue/comment events"
+		info.Replies = "Jira comment body or status metadata"
+	case "linear":
+		info.Receives = "Linear issue/comment events"
+		info.Replies = "Linear comment body or status metadata"
+	case "gitlab":
+		info.Receives = "GitLab issue/MR/note events"
+		info.Replies = "GitLab note body or status metadata"
+	}
+	return info
 }

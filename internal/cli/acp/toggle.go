@@ -30,8 +30,7 @@ With --enabled=on, forces enable. With --enabled=off, forces disable.
 Examples:
   aps acp toggle --profile worker                    # Toggle ACP
   aps acp toggle --profile worker --enabled=on      # Force enable
-  aps acp toggle --profile worker --enabled=off     # Force disable
-  aps acp toggle --profile worker --transport=http --port=8088`,
+  aps acp toggle --profile worker --enabled=off     # Force disable`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Load profile
 			profile, err := core.LoadProfile(profileID)
@@ -78,9 +77,9 @@ Examples:
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&enabled, "enabled", "", "Enable (on), disable (off), or toggle (omit or blank)")
-	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport (stdio, http, ws)")
-	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Listen host (for http/ws)")
-	cmd.Flags().StringVar(&port, "port", "8088", "Listen port (for http/ws)")
+	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport (currently only stdio)")
+	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Reserved listen host for future network transports")
+	cmd.Flags().StringVar(&port, "port", "8088", "Reserved listen port for future network transports")
 
 	return cmd
 }
@@ -99,14 +98,8 @@ func enableACP(profile *core.Profile, transport, host, port string) error {
 		// For now, allow it to pass through
 	}
 
-	// Validate transport
-	validTransports := map[string]bool{
-		"stdio": true,
-		"http":  true,
-		"ws":    true,
-	}
-	if !validTransports[transport] {
-		return fmt.Errorf("invalid transport: %s (use: stdio, http, ws)", transport)
+	if transport != "stdio" {
+		return fmt.Errorf("ACP transport %q is not wired to aps acp server yet; use --transport=stdio", transport)
 	}
 
 	// Add "agent-protocol" capability (deduplicates automatically)

@@ -10,10 +10,10 @@ func TestNormalizer_NormalizeTelegram(t *testing.T) {
 	n := NewNormalizer()
 
 	tests := []struct {
-		name       string
-		raw        map[string]any
-		wantErr    bool
-		check      func(t *testing.T, msg *msgtypes.NormalizedMessage)
+		name    string
+		raw     map[string]any
+		wantErr bool
+		check   func(t *testing.T, msg *msgtypes.NormalizedMessage)
 	}{
 		{
 			name: "typical group message",
@@ -761,6 +761,257 @@ func TestNormalizer_NormalizeEmail(t *testing.T) {
 	}
 }
 
+func TestNormalizer_NormalizeDiscord(t *testing.T) {
+	n := NewNormalizer()
+
+	tests := []struct {
+		name    string
+		raw     map[string]any
+		wantErr bool
+		check   func(t *testing.T, msg *msgtypes.NormalizedMessage)
+	}{
+		{
+			name: "guild channel message",
+			raw: map[string]any{
+				"id":         "1100000000000000001",
+				"channel_id": "1200000000000000002",
+				"guild_id":   "1300000000000000003",
+				"content":    "Hello from Discord",
+				"author": map[string]any{
+					"id":          "1400000000000000004",
+					"username":    "alice",
+					"global_name": "Alice A.",
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Platform != "discord" {
+					t.Errorf("platform = %q, want discord", msg.Platform)
+				}
+				if msg.WorkspaceID != "1300000000000000003" {
+					t.Errorf("workspaceID = %q, want guild id", msg.WorkspaceID)
+				}
+				if msg.Sender.ID != "1400000000000000004" {
+					t.Errorf("sender.ID = %q, want author id", msg.Sender.ID)
+				}
+				if msg.Sender.Name != "Alice A." {
+					t.Errorf("sender.Name = %q, want global name", msg.Sender.Name)
+				}
+				if msg.Channel.ID != "1200000000000000002" {
+					t.Errorf("channel.ID = %q, want channel id", msg.Channel.ID)
+				}
+				if msg.Channel.Type != "group" {
+					t.Errorf("channel.Type = %q, want group", msg.Channel.Type)
+				}
+				if msg.Text != "Hello from Discord" {
+					t.Errorf("text = %q, want message content", msg.Text)
+				}
+			},
+		},
+		{
+			name: "direct message with reply and attachment",
+			raw: map[string]any{
+				"id":         "1100000000000000001",
+				"channel_id": "1200000000000000002",
+				"content":    "see attached",
+				"author": map[string]any{
+					"id":       "1400000000000000004",
+					"username": "alice",
+				},
+				"message_reference": map[string]any{
+					"message_id": "1000000000000000000",
+				},
+				"attachments": []any{
+					map[string]any{
+						"url":          "https://cdn.discordapp.com/file.png",
+						"content_type": "image/png",
+						"filename":     "file.png",
+						"size":         float64(2048),
+					},
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Channel.Type != "direct" {
+					t.Errorf("channel.Type = %q, want direct", msg.Channel.Type)
+				}
+				if msg.Thread == nil || msg.Thread.ID != "1000000000000000000" {
+					t.Fatalf("thread = %#v, want reply thread", msg.Thread)
+				}
+				if len(msg.Attachments) != 1 {
+					t.Fatalf("attachments count = %d, want 1", len(msg.Attachments))
+				}
+				if msg.Attachments[0].Type != "image" {
+					t.Errorf("attachment type = %q, want image", msg.Attachments[0].Type)
+				}
+				if msg.Attachments[0].SizeBytes != 2048 {
+					t.Errorf("attachment size = %d, want 2048", msg.Attachments[0].SizeBytes)
+				}
+			},
+		},
+		{
+			name:    "missing author",
+			raw:     map[string]any{"channel_id": "1200000000000000002", "content": "no author"},
+			wantErr: true,
+		},
+		{
+			name: "missing channel",
+			raw: map[string]any{
+				"author": map[string]any{"id": "1400000000000000004"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, err := n.Normalize("discord", tt.raw)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			tt.check(t, msg)
+		})
+	}
+}
+
+func TestNormalizer_NormalizeSMS(t *testing.T) {
+	n := NewNormalizer()
+
+	msg, err := n.Normalize("sms", map[string]any{
+		"MessageSid":        "SM123",
+		"From":              "+15551230001",
+		"To":                "+15559870002",
+		"Body":              "Hello over SMS",
+		"NumMedia":          "1",
+		"MediaUrl0":         "https://api.twilio.com/media/ME123",
+		"MediaContentType0": "image/jpeg",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if msg.Platform != "sms" {
+		t.Errorf("platform = %q, want sms", msg.Platform)
+	}
+	if msg.ID != "SM123" {
+		t.Errorf("id = %q, want SM123", msg.ID)
+	}
+	if msg.Sender.ID != "+15551230001" {
+		t.Errorf("sender.ID = %q, want from number", msg.Sender.ID)
+	}
+	if msg.Channel.ID != "+15559870002" {
+		t.Errorf("channel.ID = %q, want receiving number", msg.Channel.ID)
+	}
+	if msg.Text != "Hello over SMS" {
+		t.Errorf("text = %q, want body", msg.Text)
+	}
+	if len(msg.Attachments) != 1 || msg.Attachments[0].Type != "image" {
+		t.Fatalf("attachments = %#v, want one image attachment", msg.Attachments)
+	}
+}
+
+func TestNormalizer_NormalizeWhatsApp(t *testing.T) {
+	n := NewNormalizer()
+
+	tests := []struct {
+		name  string
+		raw   map[string]any
+		check func(t *testing.T, msg *msgtypes.NormalizedMessage)
+	}{
+		{
+			name: "cloud api text message",
+			raw: map[string]any{
+				"entry": []any{
+					map[string]any{
+						"changes": []any{
+							map[string]any{
+								"value": map[string]any{
+									"metadata": map[string]any{
+										"phone_number_id":      "123456789012345",
+										"display_phone_number": "+15559870002",
+									},
+									"contacts": []any{
+										map[string]any{
+											"profile": map[string]any{"name": "Alice"},
+										},
+									},
+									"messages": []any{
+										map[string]any{
+											"id":        "wamid.123",
+											"from":      "+15551230001",
+											"timestamp": "1710000000",
+											"type":      "text",
+											"text":      map[string]any{"body": "Hello on WhatsApp"},
+											"context":   map[string]any{"id": "wamid.parent"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.ID != "wamid.123" {
+					t.Errorf("id = %q, want cloud message id", msg.ID)
+				}
+				if msg.Channel.ID != "123456789012345" {
+					t.Errorf("channel.ID = %q, want phone number id", msg.Channel.ID)
+				}
+				if msg.Channel.Name != "+15559870002" {
+					t.Errorf("channel.Name = %q, want display phone", msg.Channel.Name)
+				}
+				if msg.Sender.Name != "Alice" {
+					t.Errorf("sender.Name = %q, want contact name", msg.Sender.Name)
+				}
+				if msg.Text != "Hello on WhatsApp" {
+					t.Errorf("text = %q, want text body", msg.Text)
+				}
+				if msg.Thread == nil || msg.Thread.ID != "wamid.parent" {
+					t.Fatalf("thread = %#v, want context reply", msg.Thread)
+				}
+			},
+		},
+		{
+			name: "twilio style whatsapp message",
+			raw: map[string]any{
+				"MessageSid": "SM123",
+				"From":       "whatsapp:+15551230001",
+				"To":         "whatsapp:+15559870002",
+				"Body":       "Hello through Twilio WhatsApp",
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Channel.ID != "whatsapp:+15559870002" {
+					t.Errorf("channel.ID = %q, want receiving WhatsApp number", msg.Channel.ID)
+				}
+				if msg.Text != "Hello through Twilio WhatsApp" {
+					t.Errorf("text = %q, want body", msg.Text)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, err := n.Normalize("whatsapp", tt.raw)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if msg.Platform != "whatsapp" {
+				t.Errorf("platform = %q, want whatsapp", msg.Platform)
+			}
+			tt.check(t, msg)
+		})
+	}
+}
+
 func TestNormalizer_NormalizeUnsupportedPlatform(t *testing.T) {
 	n := NewNormalizer()
 
@@ -771,7 +1022,7 @@ func TestNormalizer_NormalizeUnsupportedPlatform(t *testing.T) {
 	}{
 		{
 			name:     "unknown platform",
-			platform: "discord",
+			platform: "matrix",
 			raw:      map[string]any{"message": "hello"},
 		},
 		{
@@ -802,7 +1053,7 @@ func TestNormalizer_NormalizeUnsupportedPlatform(t *testing.T) {
 func TestNormalizer_NormalizeNilPayload(t *testing.T) {
 	n := NewNormalizer()
 
-	platforms := []string{"telegram", "slack", "github", "email"}
+	platforms := []string{"telegram", "slack", "discord", "github", "email", "sms", "whatsapp"}
 	for _, platform := range platforms {
 		t.Run(platform, func(t *testing.T) {
 			msg, err := n.Normalize(platform, nil)
@@ -894,6 +1145,23 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			},
 		},
 		{
+			name:     "discord success",
+			platform: "discord",
+			result: &ActionResult{
+				Status: "success",
+				Output: "Discord response text.",
+			},
+			check: func(t *testing.T, resp map[string]any) {
+				t.Helper()
+				if resp["content"] != "Discord response text." {
+					t.Errorf("content = %v, want Discord response text", resp["content"])
+				}
+				if resp["allowed_mentions"] == nil {
+					t.Error("allowed_mentions should be set")
+				}
+			},
+		},
+		{
 			name:     "github success",
 			platform: "github",
 			result: &ActionResult{
@@ -957,8 +1225,43 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			},
 		},
 		{
+			name:     "sms success",
+			platform: "sms",
+			result: &ActionResult{
+				Status: "success",
+				Output: "SMS response body.",
+			},
+			check: func(t *testing.T, resp map[string]any) {
+				t.Helper()
+				if resp["body"] != "SMS response body." {
+					t.Errorf("body = %v, want SMS response body", resp["body"])
+				}
+			},
+		},
+		{
+			name:     "whatsapp success",
+			platform: "whatsapp",
+			result: &ActionResult{
+				Status: "success",
+				Output: "WhatsApp response body.",
+			},
+			check: func(t *testing.T, resp map[string]any) {
+				t.Helper()
+				if resp["type"] != "text" {
+					t.Errorf("type = %v, want text", resp["type"])
+				}
+				text, ok := resp["text"].(map[string]any)
+				if !ok {
+					t.Fatalf("text = %#v, want text object", resp["text"])
+				}
+				if text["body"] != "WhatsApp response body." {
+					t.Errorf("text.body = %v, want WhatsApp response body", text["body"])
+				}
+			},
+		},
+		{
 			name:     "unknown platform returns generic response",
-			platform: "discord",
+			platform: "matrix",
 			result: &ActionResult{
 				Status: "success",
 				Output: "generic output",

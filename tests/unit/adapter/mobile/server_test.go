@@ -131,6 +131,7 @@ func TestPairingEndpoint(t *testing.T) {
 
 		assert.NotEmpty(t, pairResp.AdapterID)
 		assert.NotEmpty(t, pairResp.Token)
+		assert.True(t, strings.HasPrefix(pairResp.WSEndpoint, "ws://"), "ws_endpoint should match non-TLS server")
 		assert.Equal(t, "test-profile", pairResp.ProfileID)
 		assert.Equal(t, "active", pairResp.Status)
 	})
@@ -309,13 +310,25 @@ func TestWebSocketMessaging(t *testing.T) {
 		err = conn.WriteJSON(cmd)
 		require.NoError(t, err)
 
-		// Should receive at least one status response
+		// Should receive running, then explicit placeholder acknowledgement.
 		var statusMsg mobile.WSMessage
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		err = conn.ReadJSON(&statusMsg)
 		require.NoError(t, err)
 		assert.Equal(t, "req-1", statusMsg.ID)
 		assert.Equal(t, "status", statusMsg.Type)
+
+		var receivedMsg mobile.WSMessage
+		err = conn.ReadJSON(&receivedMsg)
+		require.NoError(t, err)
+		assert.Equal(t, "req-1", receivedMsg.ID)
+		assert.Equal(t, "status", receivedMsg.Type)
+		payload, ok := receivedMsg.Payload.(map[string]any)
+		require.True(t, ok)
+		assert.Equal(t, "received", payload["status"])
+		assert.Equal(t, "placeholder", payload["maturity"])
+		assert.Equal(t, "none", payload["executes"])
+		assert.Contains(t, payload["message"], "received but not executed")
 	})
 
 	t.Run("unknown message type returns error", func(t *testing.T) {
