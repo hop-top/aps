@@ -228,6 +228,30 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 	}
 
 	switch service.Type {
+	case "api":
+		return ServiceRuntimeInfo{
+			Receives: "Agent Protocol HTTP requests",
+			Executes: "profile action",
+			Replies:  "JSON run/thread/store responses or SSE output stream",
+			Maturity: "ready",
+			Routes:   []string{"/health", "/v1/runs", "/v1/threads", "/v1/agents", "/v1/store", "/v1/skills"},
+		}
+	case "webhook":
+		return ServiceRuntimeInfo{
+			Receives: "HTTP POST /webhook with X-APS-Event",
+			Executes: "mapped profile action",
+			Replies:  "status JSON, not action stdout",
+			Maturity: "status-only",
+			Routes:   []string{"/webhook"},
+		}
+	case "a2a":
+		return ServiceRuntimeInfo{
+			Receives: "A2A JSON-RPC task messages",
+			Executes: "placeholder text processing",
+			Replies:  "A2A task response",
+			Maturity: "placeholder",
+			Routes:   []string{"aps a2a server --profile " + service.Profile},
+		}
 	case "client":
 		if service.Adapter == "acp" {
 			return ServiceRuntimeInfo{
@@ -249,6 +273,29 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		}
 	case "ticket":
 		return describeTicketServiceRuntime(service)
+	case "events":
+		return ServiceRuntimeInfo{
+			Receives: "bus topics",
+			Executes: "none",
+			Replies:  "JSONL to stdout",
+			Maturity: "observe-only",
+			Routes:   []string{"aps listen --profile " + service.Profile},
+		}
+	case "mobile":
+		return ServiceRuntimeInfo{
+			Receives: "pairing requests and WebSocket command messages",
+			Executes: "pairing/token flow; command execution placeholder",
+			Replies:  "pairing responses and placeholder command acknowledgements",
+			Maturity: "placeholder",
+			Routes:   []string{"aps adapter pair --profile " + service.Profile},
+		}
+	case "voice":
+		return ServiceRuntimeInfo{
+			Receives: "component voice adapters only; no service route mounted",
+			Executes: "backend process lifecycle and session registration only",
+			Replies:  "component-level audio/text frames",
+			Maturity: "component",
+		}
 	}
 
 	return ServiceRuntimeInfo{

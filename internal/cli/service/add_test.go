@@ -113,6 +113,144 @@ func TestServiceShow_ACPAdvertisesStdioOnlyRuntime(t *testing.T) {
 	assert.Contains(t, out.String(), "maturity: ready")
 }
 
+func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "api",
+			args: []string{"add", "agent-api", "--type", "api", "--profile", "worker"},
+			want: []string{
+				"type: api",
+				"adapter: agent-protocol",
+				"receives: Agent Protocol HTTP requests",
+				"executes: profile action",
+				"replies: JSON run/thread/store responses or SSE output stream",
+				"maturity: ready",
+			},
+		},
+		{
+			name: "webhook",
+			args: []string{"add", "github-hook", "--type", "webhook", "--profile", "ops"},
+			want: []string{
+				"type: webhook",
+				"adapter: generic",
+				"receives: HTTP POST /webhook with X-APS-Event",
+				"executes: mapped profile action",
+				"replies: status JSON, not action stdout",
+				"maturity: status-only",
+			},
+		},
+		{
+			name: "a2a",
+			args: []string{"add", "worker-a2a", "--type", "a2a", "--profile", "worker"},
+			want: []string{
+				"type: a2a",
+				"adapter: jsonrpc",
+				"receives: A2A JSON-RPC task messages",
+				"executes: placeholder text processing",
+				"replies: A2A task response",
+				"maturity: placeholder",
+			},
+		},
+		{
+			name: "client acp",
+			args: []string{"add", "dev-acp-matrix", "--type", "client", "--adapter", "acp", "--profile", "dev"},
+			want: []string{
+				"type: client",
+				"adapter: acp",
+				"receives: stdio JSON-RPC",
+				"executes: ACP session, filesystem, terminal, and skill methods",
+				"replies: JSON-RPC responses",
+				"maturity: ready",
+			},
+		},
+		{
+			name: "message",
+			args: []string{"add", "support-bot-matrix", "--type", "telegram", "--profile", "assistant"},
+			want: []string{
+				"type: message",
+				"adapter: telegram",
+				"receives: HTTP POST /services/support-bot-matrix/webhook",
+				"executes: profile action",
+				"replies: telegram webhook JSON",
+				"maturity: ready",
+			},
+		},
+		{
+			name: "ticket",
+			args: []string{"add", "repo-inbox", "--type", "github", "--profile", "maintainer"},
+			want: []string{
+				"type: ticket",
+				"adapter: github",
+				"receives: ticket events",
+				"executes: routed profile action with normalized ticket payload",
+				"replies: status metadata",
+				"maturity: component",
+			},
+		},
+		{
+			name: "events",
+			args: []string{"add", "watcher", "--type", "events", "--profile", "noor"},
+			want: []string{
+				"type: events",
+				"adapter: bus",
+				"receives: bus topics",
+				"executes: none",
+				"replies: JSONL to stdout",
+				"maturity: observe-only",
+			},
+		},
+		{
+			name: "mobile",
+			args: []string{"add", "mobile-link", "--type", "mobile", "--profile", "assistant"},
+			want: []string{
+				"type: mobile",
+				"adapter: aps",
+				"receives: pairing requests and WebSocket command messages",
+				"executes: pairing/token flow; command execution placeholder",
+				"replies: pairing responses and placeholder command acknowledgements",
+				"maturity: placeholder",
+			},
+		},
+		{
+			name: "voice",
+			args: []string{"add", "voice-web", "--type", "voice", "--adapter", "web", "--profile", "assistant"},
+			want: []string{
+				"type: voice",
+				"adapter: web",
+				"receives: component voice adapters only; no service route mounted",
+				"executes: backend process lifecycle and session registration only",
+				"replies: component-level audio/text frames",
+				"maturity: component",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			add := NewServiceCmd()
+			add.SetArgs(tt.args)
+			require.NoError(t, add.Execute())
+
+			show := NewServiceCmd()
+			var out bytes.Buffer
+			show.SetOut(&out)
+			show.SetErr(&out)
+			show.SetArgs([]string{"show", tt.args[1]})
+			require.NoError(t, show.Execute())
+
+			for _, want := range tt.want {
+				assert.Contains(t, out.String(), want)
+			}
+		})
+	}
+}
+
 func TestAddCmd_PersistsTicketAdapterOptions(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 

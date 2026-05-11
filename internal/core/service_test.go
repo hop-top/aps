@@ -57,12 +57,27 @@ func TestResolveServiceType_TicketAdapterAliases(t *testing.T) {
 }
 
 func TestResolveServiceType_CanonicalDefaultAdapter(t *testing.T) {
-	got, err := ResolveServiceType("a2a", "")
-	require.NoError(t, err)
+	tests := []struct {
+		input       string
+		wantAdapter string
+	}{
+		{"api", "agent-protocol"},
+		{"webhook", "generic"},
+		{"a2a", "jsonrpc"},
+		{"events", "bus"},
+		{"mobile", "aps"},
+	}
 
-	assert.Equal(t, "a2a", got.Type)
-	assert.Equal(t, "jsonrpc", got.Adapter)
-	assert.False(t, got.Aliased)
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := ResolveServiceType(tt.input, "")
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.input, got.Type)
+			assert.Equal(t, tt.wantAdapter, got.Adapter)
+			assert.False(t, got.Aliased)
+		})
+	}
 }
 
 func TestResolveServiceType_RequiresAdapter(t *testing.T) {
@@ -143,6 +158,156 @@ func TestDescribeServiceRuntime_TicketAdapters(t *testing.T) {
 			assert.Equal(t, tt.wantReply, got.Replies)
 			assert.Equal(t, "component", got.Maturity)
 			assert.Equal(t, []string{"/services/" + tt.adapter + "-inbox/ticket/" + tt.adapter}, got.Routes)
+		})
+	}
+}
+
+func TestDescribeServiceRuntime_ServiceUXSurfaceMatrix(t *testing.T) {
+	tests := []struct {
+		name        string
+		service     *ServiceConfig
+		wantReceive string
+		wantExecute string
+		wantReply   string
+		wantMature  string
+		wantRoutes  []string
+	}{
+		{
+			name: "api",
+			service: &ServiceConfig{
+				ID:      "agent-api",
+				Type:    "api",
+				Adapter: "agent-protocol",
+				Profile: "worker",
+			},
+			wantReceive: "Agent Protocol HTTP requests",
+			wantExecute: "profile action",
+			wantReply:   "JSON run/thread/store responses or SSE output stream",
+			wantMature:  "ready",
+			wantRoutes:  []string{"/health", "/v1/runs", "/v1/threads", "/v1/agents", "/v1/store", "/v1/skills"},
+		},
+		{
+			name: "webhook",
+			service: &ServiceConfig{
+				ID:      "github-hook",
+				Type:    "webhook",
+				Adapter: "generic",
+				Profile: "ops",
+			},
+			wantReceive: "HTTP POST /webhook with X-APS-Event",
+			wantExecute: "mapped profile action",
+			wantReply:   "status JSON, not action stdout",
+			wantMature:  "status-only",
+			wantRoutes:  []string{"/webhook"},
+		},
+		{
+			name: "a2a",
+			service: &ServiceConfig{
+				ID:      "worker-a2a",
+				Type:    "a2a",
+				Adapter: "jsonrpc",
+				Profile: "worker",
+			},
+			wantReceive: "A2A JSON-RPC task messages",
+			wantExecute: "placeholder text processing",
+			wantReply:   "A2A task response",
+			wantMature:  "placeholder",
+			wantRoutes:  []string{"aps a2a server --profile worker"},
+		},
+		{
+			name: "client acp",
+			service: &ServiceConfig{
+				ID:      "dev-acp",
+				Type:    "client",
+				Adapter: "acp",
+				Profile: "dev",
+			},
+			wantReceive: "stdio JSON-RPC",
+			wantExecute: "ACP session, filesystem, terminal, and skill methods",
+			wantReply:   "JSON-RPC responses",
+			wantMature:  "ready",
+			wantRoutes:  []string{"aps acp server dev"},
+		},
+		{
+			name: "message",
+			service: &ServiceConfig{
+				ID:      "support-bot",
+				Type:    "message",
+				Adapter: "telegram",
+				Profile: "assistant",
+			},
+			wantReceive: "HTTP POST /services/support-bot/webhook",
+			wantExecute: "profile action",
+			wantReply:   "telegram webhook JSON",
+			wantMature:  "ready",
+			wantRoutes:  []string{"/services/support-bot/webhook"},
+		},
+		{
+			name: "ticket",
+			service: &ServiceConfig{
+				ID:      "repo-inbox",
+				Type:    "ticket",
+				Adapter: "github",
+				Profile: "maintainer",
+			},
+			wantReceive: "ticket events",
+			wantExecute: "routed profile action with normalized ticket payload",
+			wantReply:   "status metadata",
+			wantMature:  "component",
+			wantRoutes:  []string{"/services/repo-inbox/ticket/github"},
+		},
+		{
+			name: "events",
+			service: &ServiceConfig{
+				ID:      "watcher",
+				Type:    "events",
+				Adapter: "bus",
+				Profile: "noor",
+			},
+			wantReceive: "bus topics",
+			wantExecute: "none",
+			wantReply:   "JSONL to stdout",
+			wantMature:  "observe-only",
+			wantRoutes:  []string{"aps listen --profile noor"},
+		},
+		{
+			name: "mobile",
+			service: &ServiceConfig{
+				ID:      "mobile-link",
+				Type:    "mobile",
+				Adapter: "aps",
+				Profile: "assistant",
+			},
+			wantReceive: "pairing requests and WebSocket command messages",
+			wantExecute: "pairing/token flow; command execution placeholder",
+			wantReply:   "pairing responses and placeholder command acknowledgements",
+			wantMature:  "placeholder",
+			wantRoutes:  []string{"aps adapter pair --profile assistant"},
+		},
+		{
+			name: "voice",
+			service: &ServiceConfig{
+				ID:      "voice-web",
+				Type:    "voice",
+				Adapter: "web",
+				Profile: "assistant",
+			},
+			wantReceive: "component voice adapters only; no service route mounted",
+			wantExecute: "backend process lifecycle and session registration only",
+			wantReply:   "component-level audio/text frames",
+			wantMature:  "component",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DescribeServiceRuntime(tt.service)
+
+			assert.Equal(t, tt.wantReceive, got.Receives)
+			assert.Equal(t, tt.wantExecute, got.Executes)
+			assert.Equal(t, tt.wantReply, got.Replies)
+			assert.Equal(t, tt.wantMature, got.Maturity)
+			assert.Equal(t, tt.wantRoutes, got.Routes)
 		})
 	}
 }
