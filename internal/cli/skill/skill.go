@@ -1,8 +1,12 @@
 package skill
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,6 +17,7 @@ import (
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/skills"
 	"hop.top/aps/internal/styles"
+	"hop.top/kit/go/console/output"
 )
 
 // skillSummaryRow is the table row shape for `aps skill list` (T-0440).
@@ -311,15 +316,174 @@ func newRunCmd() *cobra.Command {
 		Long:  `Execute a script from a skill.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: Implement skill script execution
-			// This will integrate with the existing action executor and isolation system
-			return fmt.Errorf("not yet implemented")
+			return runSkillScript(cmd.Context(), profileID, args, cmd.ArgsLenAtDash(), cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 		},
 	}
 
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID")
 
 	return cmd
+}
+
+func runSkillScript(ctx context.Context, profileID string, args []string, dashIdx int, stdin io.Reader, stdout, stderr io.Writer) error {
+	if dashIdx == -1 {
+		return fmt.Errorf("missing '--' separator\nUsage: aps skill run <skill-name> -- <script> [args...]")
+	}
+	if dashIdx != 1 {
+		return fmt.Errorf("expected exactly one skill name before '--'")
+	}
+
+	skillName := args[0]
+	commandArgs := args[dashIdx:]
+	if len(commandArgs) == 0 {
+		return fmt.Errorf("no script specified")
+	}
+
+	scriptName := commandArgs[0]
+	if err := validateSkillScriptName(scriptName); err != nil {
+		return err
+	}
+
+	cfg := skills.DefaultConfig()
+	registry := skills.NewRegistry(profileID, cfg.SkillSources, cfg.AutoDetectIDEPaths)
+	if err := registry.Discover(); err != nil {
+		return fmt.Errorf("failed to discover skills: %w", err)
+	}
+
+	skill, found := registry.Get(skillName)
+	if !found {
+		return fmt.Errorf("skill %q not found: %w", skillName, os.ErrNotExist)
+	}
+	if !skill.HasScript(scriptName) {
+		return fmt.Errorf("script %q not found in skill %q: %w", scriptName, skillName, os.ErrNotExist)
+	}
+
+	scriptPath, err := checkedSkillScriptPath(skill, scriptName)
+	if err != nil {
+		return err
+	}
+
+	start := time.Now()
+	telemetry := newSkillTelemetry(cfg)
+	if telemetry != nil {
+		_ = telemetry.TrackInvocation(skillName, profileID, "", "cli", "process")
+	}
+
+	err = execSkillScript(ctx, skill, scriptName, scriptPath, commandArgs[1:], profileID, stdin, stdout, stderr)
+	durationMs := time.Since(start).Milliseconds()
+	if err != nil {
+		if telemetry != nil {
+			_ = telemetry.TrackFailure(skillName, profileID, "", scriptName, durationMs, sanitizedSkillScriptError(err))
+		}
+		return skillScriptRunError(skillName, scriptName, err)
+	}
+
+	if telemetry != nil {
+		_ = telemetry.TrackCompletion(skillName, profileID, "", scriptName, durationMs, nil)
+	}
+	return nil
+}
+
+func validateSkillScriptName(scriptName string) error {
+	switch {
+	case scriptName == "":
+		return fmt.Errorf("script name is required")
+	case filepath.IsAbs(scriptName):
+		return fmt.Errorf("script %q must be a filename under scripts/", scriptName)
+	case filepath.Clean(scriptName) != scriptName:
+		return fmt.Errorf("script %q must be a filename under scripts/", scriptName)
+	case strings.Contains(scriptName, "/") || strings.Contains(scriptName, `\`):
+		return fmt.Errorf("script %q must be a filename under scripts/", scriptName)
+	}
+	return nil
+}
+
+func checkedSkillScriptPath(skill *skills.Skill, scriptName string) (string, error) {
+	scriptsDir := filepath.Join(skill.BasePath, "scripts")
+	scriptPath := skill.GetScriptPath(scriptName)
+	info, err := os.Lstat(scriptPath)
+	if err != nil {
+		return "", fmt.Errorf("script %q not found in skill %q: %w", scriptName, skill.Name, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("script %q in skill %q is a directory", scriptName, skill.Name)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("script %q in skill %q must not be a symlink", scriptName, skill.Name)
+	}
+
+	absDir, err := filepath.Abs(scriptsDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve scripts directory: %w", err)
+	}
+	absPath, err := filepath.Abs(scriptPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve script path: %w", err)
+	}
+	if filepath.Dir(absPath) != absDir {
+		return "", fmt.Errorf("script %q must resolve under scripts/", scriptName)
+	}
+	return absPath, nil
+}
+
+func execSkillScript(ctx context.Context, skill *skills.Skill, scriptName, scriptPath string, args []string, profileID string, stdin io.Reader, stdout, stderr io.Writer) error {
+	command, commandArgs := skillScriptCommand(scriptName, scriptPath, args)
+	cmd := exec.CommandContext(ctx, command, commandArgs...)
+	cmd.Dir = skill.BasePath
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	cmd.Env = append(os.Environ(),
+		"APS_PROFILE_ID="+profileID,
+		"APS_SKILL_NAME="+skill.Name,
+		"APS_SKILL_DIR="+skill.BasePath,
+		"APS_SKILL_SCRIPT="+scriptName,
+	)
+	return cmd.Run()
+}
+
+func skillScriptCommand(scriptName, scriptPath string, args []string) (string, []string) {
+	ext := strings.ToLower(filepath.Ext(scriptName))
+	switch ext {
+	case ".sh":
+		return "sh", append([]string{scriptPath}, args...)
+	case ".bash":
+		return "bash", append([]string{scriptPath}, args...)
+	case ".py":
+		return "python3", append([]string{scriptPath}, args...)
+	case ".js", ".cjs", ".mjs":
+		return "node", append([]string{scriptPath}, args...)
+	default:
+		return scriptPath, args
+	}
+}
+
+func skillScriptRunError(skillName, scriptName string, err error) error {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return &output.Error{
+			Code:     output.CodeGeneric,
+			Message:  fmt.Sprintf("skill %q script %q failed: %v", skillName, scriptName, err),
+			ExitCode: exitErr.ExitCode(),
+		}
+	}
+	return fmt.Errorf("run skill %q script %q: %w", skillName, scriptName, err)
+}
+
+func sanitizedSkillScriptError(err error) error {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return fmt.Errorf("script exited with code %d", exitErr.ExitCode())
+	}
+	return err
+}
+
+func newSkillTelemetry(cfg *skills.Config) *skills.Telemetry {
+	telemetry, err := skills.NewTelemetry(&cfg.Telemetry)
+	if err != nil {
+		return nil
+	}
+	return telemetry
 }
 
 // newStatsCmd creates the 'skill stats' command
