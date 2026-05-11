@@ -1,6 +1,10 @@
 package acp
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
 	"hop.top/aps/internal/skills"
 )
 
@@ -73,7 +77,7 @@ func (s *Server) handleSkillList(req *JSONRPCRequest) *JSONRPCResponse {
 	}
 
 	// Create registry and discover skills
-	registry := skills.NewRegistry(profileID, []string{}, false)
+	registry := newSkillRegistry(profileID)
 	if err := registry.Discover(); err != nil {
 		return s.errorResponse(req.ID, ErrInternalError)
 	}
@@ -130,7 +134,7 @@ func (s *Server) handleSkillGet(req *JSONRPCRequest) *JSONRPCResponse {
 	}
 
 	// Create registry and discover skills
-	registry := skills.NewRegistry(profileID, []string{}, false)
+	registry := newSkillRegistry(profileID)
 	if err := registry.Discover(); err != nil {
 		return s.errorResponse(req.ID, ErrInternalError)
 	}
@@ -184,15 +188,77 @@ func (s *Server) handleSkillInvoke(req *JSONRPCRequest) *JSONRPCResponse {
 		return s.errorResponse(req.ID, ErrPermissionDenied)
 	}
 
-	// For now, return a placeholder response indicating the skill would be executed
-	// Full execution will be implemented in Phase 5
+	registry := newSkillRegistry(session.ProfileID)
+	if err := registry.Discover(); err != nil {
+		return s.errorResponse(req.ID, ErrInternalError)
+	}
+
+	skill, found := registry.Get(params.SkillID)
+	if !found {
+		return s.errorResponse(req.ID, NewErrorResponse(ErrCodeResourceNotFound, "skill not found", map[string]interface{}{
+			"skillId": params.SkillID,
+		}))
+	}
+
+	scripts, err := skill.ListScripts()
+	if err != nil {
+		return s.errorResponse(req.ID, ErrInternalError)
+	}
+	if !containsScript(scripts, params.Script) {
+		return s.errorResponse(req.ID, NewErrorResponse(ErrCodeResourceNotFound, "skill script not found", map[string]interface{}{
+			"skillId": params.SkillID,
+			"script":  params.Script,
+		}))
+	}
+
+	argsJSON, err := json.Marshal(params.Args)
+	if err != nil {
+		return s.errorResponse(req.ID, NewErrorResponse(ErrCodeInvalidParams, "invalid skill arguments", nil))
+	}
+
+	term, err := s.terminalManager.CreateTerminal(
+		skill.GetScriptPath(params.Script),
+		nil,
+		skill.BasePath,
+		map[string]string{
+			"APS_PROFILE_ID":      session.ProfileID,
+			"APS_SESSION_ID":      params.SessionID,
+			"APS_SKILL_ID":        skill.Name,
+			"APS_SKILL_SCRIPT":    params.Script,
+			"APS_SKILL_ARGS_JSON": string(argsJSON),
+		},
+	)
+	if err != nil {
+		return s.errorResponse(req.ID, NewErrorResponse(ErrCodeInternalError, "failed to invoke skill script", err.Error()))
+	}
+
 	result := map[string]interface{}{
-		"runId":    "run_" + params.SkillID + "_" + params.Script + "_placeholder",
-		"status":   "queued",
-		"skillId":  params.SkillID,
-		"script":   params.Script,
-		"sessionId": params.SessionID,
+		"runId":      fmt.Sprintf("skill_%s", term.ID),
+		"terminalId": term.ID,
+		"status":     term.Status,
+		"skillId":    skill.Name,
+		"script":     params.Script,
+		"sessionId":  params.SessionID,
+		"profileId":  session.ProfileID,
+		"location":   skill.BasePath,
 	}
 
 	return s.successResponse(req.ID, result)
+}
+
+func newSkillRegistry(profileID string) *skills.Registry {
+	cfg := skills.DefaultConfig()
+	return skills.NewRegistry(profileID, cfg.SkillSources, cfg.AutoDetectIDEPaths)
+}
+
+func containsScript(scripts []string, script string) bool {
+	if script == "" || strings.Contains(script, "/") || strings.Contains(script, "\\") {
+		return false
+	}
+	for _, candidate := range scripts {
+		if candidate == script {
+			return true
+		}
+	}
+	return false
 }
