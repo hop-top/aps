@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"hop.top/aps/internal/core"
 	msgtypes "hop.top/aps/internal/core/messenger"
+	"hop.top/aps/internal/logging"
 )
 
 // VoiceHandler handles voice messages (audio attachments) from messenger platforms.
@@ -33,13 +36,14 @@ type Handler struct {
 	normalizer   *Normalizer
 	logger       MessageLogger
 	voiceHandler VoiceHandler
+	validator    *msgtypes.ServiceValidator
 }
 
 // NewHandler creates a Handler with the given router, normalizer, and optional
 // logger. The logger may be nil, in which case message logging is skipped.
 // Additional functional options may be provided (e.g. WithVoiceHandler).
 func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLogger, opts ...func(*Handler)) *Handler {
-	h := &Handler{router: router, normalizer: normalizer, logger: logger}
+	h := &Handler{router: router, normalizer: normalizer, logger: logger, validator: msgtypes.NewServiceValidator()}
 	for _, opt := range opts {
 		opt(h)
 	}
@@ -49,6 +53,10 @@ func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLog
 // WithVoiceHandler attaches a voice pipeline handler to the messenger Handler.
 func WithVoiceHandler(vh VoiceHandler) func(*Handler) {
 	return func(h *Handler) { h.voiceHandler = vh }
+}
+
+func WithServiceValidator(v *msgtypes.ServiceValidator) func(*Handler) {
+	return func(h *Handler) { h.validator = v }
 }
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
@@ -81,18 +89,48 @@ func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, se
 		writeError(w, http.StatusInternalServerError, "message service is not configured")
 		return
 	}
-	h.handleWebhookForMessenger(w, r, adapter, serviceID)
+	service, err := core.LoadService(serviceID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("service %q not found", serviceID))
+		return
+	}
+	if service.Type != "message" {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q has type %q, not message", serviceID, service.Type))
+		return
+	}
+	if strings.TrimSpace(service.Adapter) != adapter {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q has adapter %q, not %q", serviceID, service.Adapter, adapter))
+		return
+	}
+	h.handleWebhookForMessenger(w, r, adapter, serviceID, service)
 }
 
 // handleWebhook processes a single webhook event for the given platform.
 func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request, platform string) {
-	h.handleWebhookForMessenger(w, r, platform, "")
+	h.handleWebhookForMessenger(w, r, platform, "", nil)
 }
 
-func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Request, platform, messengerName string) {
+func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Request, platform, messengerName string, service *core.ServiceConfig) {
 	// Decode the raw JSON payload.
+	rawBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to read request body: %v", err))
+		return
+	}
+	if service != nil {
+		validationConfig := serviceValidationConfig(service)
+		if err := h.serviceValidator().ValidateRequest(r.Context(), msgtypes.RequestValidationInput{
+			Service: validationConfig,
+			Headers: r.Header,
+			Body:    rawBody,
+		}); err != nil {
+			writeValidationError(w, err)
+			return
+		}
+	}
+
 	var body map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(rawBody, &body); err != nil {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid JSON body: %v", err))
 		return
 	}
@@ -108,6 +146,19 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 			msg.PlatformMetadata = map[string]any{}
 		}
 		msg.PlatformMetadata["messenger_name"] = messengerName
+		_ = core.RecordServiceInboundEvent(messengerName, core.ServiceEventMeta{
+			MessageID: msg.ID,
+			Platform:  platform,
+			ChannelID: msg.Channel.ID,
+			SenderID:  msg.Sender.ID,
+			Status:    "received",
+		})
+	}
+	if service != nil {
+		if err := h.serviceValidator().ValidateMessage(serviceValidationConfig(service), msg); err != nil {
+			writeValidationError(w, err)
+			return
+		}
 	}
 
 	// Log the received message if a logger is available.
@@ -136,6 +187,16 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 		// Log the failure if possible.
 		if h.logger != nil {
 			_ = h.logger.LogActionExecuted(msg.ID, "", "failed", 0)
+		}
+		if messengerName != "" {
+			_ = core.RecordServiceOutboundEvent(messengerName, core.ServiceEventMeta{
+				MessageID: msg.ID,
+				Platform:  platform,
+				ChannelID: msg.Channel.ID,
+				SenderID:  msg.Sender.ID,
+				Status:    "failed",
+				Detail:    err.Error(),
+			})
 		}
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("message handling failed: %v", err))
 		return
@@ -174,6 +235,16 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 
 	response["message_id"] = msg.ID
 	response["timestamp"] = time.Now().UTC().Format(time.RFC3339)
+	if messengerName != "" {
+		_ = core.RecordServiceOutboundEvent(messengerName, core.ServiceEventMeta{
+			MessageID: msg.ID,
+			Platform:  platform,
+			ChannelID: msg.Channel.ID,
+			SenderID:  msg.Sender.ID,
+			Status:    result.Status,
+			Detail:    result.Output,
+		})
+	}
 
 	writeJSON(w, http.StatusOK, response)
 }
@@ -230,7 +301,12 @@ func extractActionFromOutput(output string) string {
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	body, err := json.Marshal(data)
+	if err != nil {
+		json.NewEncoder(w).Encode(data)
+		return
+	}
+	_, _ = w.Write(logging.ApplyBytes(body))
 }
 
 // hasAudioAttachment reports whether the message contains at least one audio attachment.
@@ -247,10 +323,44 @@ func hasAudioAttachment(msg *msgtypes.NormalizedMessage) bool {
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{
+	body, err := json.Marshal(map[string]any{
 		"error":     http.StatusText(status),
 		"code":      status,
 		"message":   message,
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": http.StatusText(status), "code": status})
+		return
+	}
+	_, _ = w.Write(logging.ApplyBytes(body))
+}
+
+func (h *Handler) serviceValidator() *msgtypes.ServiceValidator {
+	if h.validator != nil {
+		return h.validator
+	}
+	return msgtypes.NewServiceValidator()
+}
+
+func writeValidationError(w http.ResponseWriter, err error) {
+	switch {
+	case msgtypes.IsAuthFailed(err):
+		writeError(w, http.StatusUnauthorized, fmt.Sprintf("message provider validation failed: %v", err))
+	case msgtypes.IsSenderNotAllowed(err):
+		writeError(w, http.StatusForbidden, fmt.Sprintf("message sender not allowed: %v", err))
+	default:
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("message provider validation failed: %v", err))
+	}
+}
+
+func serviceValidationConfig(service *core.ServiceConfig) msgtypes.ServiceValidationConfig {
+	if service == nil {
+		return msgtypes.ServiceValidationConfig{}
+	}
+	return msgtypes.ServiceValidationConfig{
+		ID:      service.ID,
+		Adapter: service.Adapter,
+		Options: service.Options,
+	}
 }

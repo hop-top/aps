@@ -111,6 +111,18 @@ registrations.
 | Thread context | replies | replies/threads | `thread_ts` | no | message context |
 | External setup | Bot/webhook | Bot/Gateway or relay | App events | Provider relay if form encoded | Cloud webhook or relay |
 
+## Conversation State
+
+APS derives deterministic conversation and session keys from the normalized
+message. Channel messages use the platform channel as the conversation; platform
+replies add the platform thread ID to the session. Direct messages and phone
+messages include the sender ID, so callers sharing one receiving number remain
+separate multi-turn sessions.
+
+The full policy for platform channel/user/thread/phone mapping, attachments,
+mentions/commands, and unsupported events is in
+[Message conversation and thread policy](dev/message-conversation-policy.md).
+
 ## Common Patterns
 
 ### One Profile, Multiple Platforms

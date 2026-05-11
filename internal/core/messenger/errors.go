@@ -6,18 +6,21 @@ import "fmt"
 type ErrorCode string
 
 const (
-	ErrCodeLinkNotFound      ErrorCode = "link_not_found"
-	ErrCodeLinkAlreadyExists ErrorCode = "link_already_exists"
-	ErrCodeMappingConflict   ErrorCode = "mapping_conflict"
-	ErrCodeUnknownChannel    ErrorCode = "unknown_channel"
-	ErrCodeActionNotFound    ErrorCode = "action_not_found"
-	ErrCodeActionFailed      ErrorCode = "action_failed"
+	ErrCodeLinkNotFound       ErrorCode = "link_not_found"
+	ErrCodeLinkAlreadyExists  ErrorCode = "link_already_exists"
+	ErrCodeMappingConflict    ErrorCode = "mapping_conflict"
+	ErrCodeUnknownChannel     ErrorCode = "unknown_channel"
+	ErrCodeActionNotFound     ErrorCode = "action_not_found"
+	ErrCodeActionFailed       ErrorCode = "action_failed"
 	ErrCodeIsolationViolation ErrorCode = "isolation_violation"
-	ErrCodeRoutingFailed     ErrorCode = "routing_failed"
-	ErrCodeNormalizeFailed   ErrorCode = "normalize_failed"
-	ErrCodeLogWriteFailed    ErrorCode = "log_write_failed"
-	ErrCodeMissingSecret     ErrorCode = "missing_secret"
-	ErrCodeInvalidMapping    ErrorCode = "invalid_mapping"
+	ErrCodeRoutingFailed      ErrorCode = "routing_failed"
+	ErrCodeNormalizeFailed    ErrorCode = "normalize_failed"
+	ErrCodeLogWriteFailed     ErrorCode = "log_write_failed"
+	ErrCodeMissingSecret      ErrorCode = "missing_secret"
+	ErrCodeInvalidMapping     ErrorCode = "invalid_mapping"
+	ErrCodeAuthFailed         ErrorCode = "auth_failed"
+	ErrCodeReplayRejected     ErrorCode = "replay_rejected"
+	ErrCodeSenderNotAllowed   ErrorCode = "sender_not_allowed"
 )
 
 // MessengerError is the structured error type for messenger operations.
@@ -131,6 +134,30 @@ func ErrMissingSecret(name string) error {
 	}
 }
 
+func ErrAuthFailed(messengerName, reason string) error {
+	return &MessengerError{
+		Name:    messengerName,
+		Message: reason,
+		Code:    ErrCodeAuthFailed,
+	}
+}
+
+func ErrReplayRejected(messengerName, reason string) error {
+	return &MessengerError{
+		Name:    messengerName,
+		Message: reason,
+		Code:    ErrCodeReplayRejected,
+	}
+}
+
+func ErrSenderNotAllowed(messengerName, reason string) error {
+	return &MessengerError{
+		Name:    messengerName,
+		Message: reason,
+		Code:    ErrCodeSenderNotAllowed,
+	}
+}
+
 // Error type checkers
 
 func IsMappingConflict(err error) bool {
@@ -164,6 +191,20 @@ func IsIsolationViolation(err error) bool {
 func IsActionNotFound(err error) bool {
 	if e, ok := err.(*MessengerError); ok {
 		return e.Code == ErrCodeActionNotFound
+	}
+	return false
+}
+
+func IsAuthFailed(err error) bool {
+	if e, ok := err.(*MessengerError); ok {
+		return e.Code == ErrCodeAuthFailed || e.Code == ErrCodeReplayRejected
+	}
+	return false
+}
+
+func IsSenderNotAllowed(err error) bool {
+	if e, ok := err.(*MessengerError); ok {
+		return e.Code == ErrCodeSenderNotAllowed
 	}
 	return false
 }

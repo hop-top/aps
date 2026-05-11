@@ -1,11 +1,13 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	kitalias "hop.top/kit/go/console/alias"
@@ -13,14 +15,17 @@ import (
 
 // ServiceConfig is the persisted profile-facing service definition.
 type ServiceConfig struct {
-	ID          string            `yaml:"id"`
-	Type        string            `yaml:"type"`
-	Adapter     string            `yaml:"adapter,omitempty"`
-	Profile     string            `yaml:"profile"`
-	Description string            `yaml:"description,omitempty"`
-	Env         map[string]string `yaml:"env,omitempty"`
-	Labels      map[string]string `yaml:"labels,omitempty"`
-	Options     map[string]string `yaml:"options,omitempty"`
+	ID           string            `yaml:"id"`
+	Type         string            `yaml:"type"`
+	Adapter      string            `yaml:"adapter,omitempty"`
+	Profile      string            `yaml:"profile"`
+	Description  string            `yaml:"description,omitempty"`
+	Env          map[string]string `yaml:"env,omitempty"`
+	Labels       map[string]string `yaml:"labels,omitempty"`
+	Options      map[string]string `yaml:"options,omitempty"`
+	Delivery     *ServiceDelivery  `yaml:"delivery,omitempty"`
+	LastInbound  *ServiceEventMeta `yaml:"last_inbound,omitempty"`
+	LastOutbound *ServiceEventMeta `yaml:"last_outbound,omitempty"`
 }
 
 // ServiceRuntimeInfo describes reachable behavior for a persisted service.
@@ -30,6 +35,47 @@ type ServiceRuntimeInfo struct {
 	Replies  string
 	Maturity string
 	Routes   []string
+	Metadata ServiceRuntimeMetadata
+}
+
+// ServiceRuntimeMetadata captures contract-level service runtime details that
+// are too structured for the display-oriented receives/executes/replies fields.
+type ServiceRuntimeMetadata struct {
+	Runtime       string
+	Provider      string
+	Ingress       string
+	Handoff       string
+	Delivery      string
+	Retry         string
+	ErrorHooks    []string
+	ReceiveMode   string
+	DeliveryModes []string
+}
+
+// ServiceDelivery describes operator-facing delivery health for a service.
+type ServiceDelivery struct {
+	Health    string    `yaml:"health,omitempty"`
+	LastError string    `yaml:"last_error,omitempty"`
+	UpdatedAt time.Time `yaml:"updated_at,omitempty"`
+}
+
+// ServiceEventMeta stores compact last-event metadata without retaining bodies.
+type ServiceEventMeta struct {
+	At        time.Time `yaml:"at,omitempty"`
+	Direction string    `yaml:"direction,omitempty"`
+	MessageID string    `yaml:"message_id,omitempty"`
+	Platform  string    `yaml:"platform,omitempty"`
+	ChannelID string    `yaml:"channel_id,omitempty"`
+	SenderID  string    `yaml:"sender_id,omitempty"`
+	Status    string    `yaml:"status,omitempty"`
+	Detail    string    `yaml:"detail,omitempty"`
+}
+
+// ServiceValidationResult is a static config validation report.
+type ServiceValidationResult struct {
+	Valid    bool
+	Issues   []string
+	Warnings []string
 }
 
 // ResolvedServiceType records how user-facing service type input resolved.
@@ -222,6 +268,96 @@ func LoadService(id string) (*ServiceConfig, error) {
 	return &service, nil
 }
 
+func ServiceWebhookPath(service *ServiceConfig) string {
+	if service == nil {
+		return ""
+	}
+	switch service.Type {
+	case "message":
+		return "/services/" + service.ID + "/webhook"
+	case "ticket":
+		return "/services/" + service.ID + "/ticket/" + service.Adapter
+	case "webhook":
+		return "/webhook"
+	default:
+		return ""
+	}
+}
+
+func ServiceWebhookURL(service *ServiceConfig, baseURL string) (string, error) {
+	path := ServiceWebhookPath(service)
+	if path == "" {
+		return "", fmt.Errorf("service %q does not expose an HTTP webhook route", serviceID(service))
+	}
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		baseURL = "http://127.0.0.1:8080"
+	}
+	return strings.TrimRight(baseURL, "/") + path, nil
+}
+
+func ValidateServiceConfig(service *ServiceConfig) ServiceValidationResult {
+	result := ServiceValidationResult{Valid: true}
+	if service == nil {
+		result.Issues = append(result.Issues, "service config is required")
+		result.Valid = false
+		return result
+	}
+	if strings.TrimSpace(service.ID) == "" {
+		result.Issues = append(result.Issues, "service id is required")
+	}
+	if strings.TrimSpace(service.Type) == "" {
+		result.Issues = append(result.Issues, "service type is required")
+	}
+	if strings.TrimSpace(service.Profile) == "" {
+		result.Issues = append(result.Issues, "service profile is required")
+	}
+	if service.Type == "message" {
+		validateMessageServiceConfig(service, &result)
+	}
+	result.Valid = len(result.Issues) == 0
+	return result
+}
+
+func RecordServiceInboundEvent(id string, event ServiceEventMeta) error {
+	service, err := LoadService(id)
+	if err != nil {
+		return err
+	}
+	event.Direction = "inbound"
+	if event.Status == "" {
+		event.Status = "received"
+	}
+	recordedEvent := normalizeServiceEvent(event)
+	service.LastInbound = &recordedEvent
+	serviceDelivery(service).Health = deliveryHealth(service)
+	service.Delivery.UpdatedAt = recordedEvent.At
+	return SaveService(service)
+}
+
+func RecordServiceOutboundEvent(id string, event ServiceEventMeta) error {
+	service, err := LoadService(id)
+	if err != nil {
+		return err
+	}
+	event.Direction = "outbound"
+	if event.Status == "" {
+		event.Status = "unknown"
+	}
+	recordedEvent := normalizeServiceEvent(event)
+	service.LastOutbound = &recordedEvent
+	delivery := serviceDelivery(service)
+	delivery.UpdatedAt = recordedEvent.At
+	if event.Status == "success" || event.Status == "accepted" {
+		delivery.Health = "healthy"
+		delivery.LastError = ""
+	} else {
+		delivery.Health = "degraded"
+		delivery.LastError = event.Detail
+	}
+	return SaveService(service)
+}
+
 func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 	if service == nil {
 		return ServiceRuntimeInfo{Maturity: "planned"}
@@ -264,12 +400,41 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		}
 	case "message":
 		route := "/services/" + service.ID + "/webhook"
+		provider := service.Adapter
+		receiveMode := "webhook"
+		replyMode := "provider delivery"
+		if service.Options != nil {
+			if value := strings.TrimSpace(service.Options["provider"]); value != "" {
+				provider = value
+			}
+			if value := strings.TrimSpace(service.Options["receive"]); value != "" {
+				receiveMode = value
+			}
+			if value := strings.TrimSpace(service.Options["reply"]); value != "" {
+				replyMode = value
+			}
+		}
 		return ServiceRuntimeInfo{
 			Receives: "HTTP POST " + route,
-			Executes: "profile action",
-			Replies:  service.Adapter + " webhook JSON",
+			Executes: "normalized message execution handoff",
+			Replies:  provider + " " + replyMode,
 			Maturity: "ready",
 			Routes:   []string{route},
+			Metadata: ServiceRuntimeMetadata{
+				Runtime:     "message-provider",
+				Provider:    provider,
+				Ingress:     "native provider " + receiveMode + " ingress",
+				Handoff:     "normalized message execution handoff",
+				Delivery:    "provider delivery interface",
+				Retry:       "caller-managed retry policy",
+				ErrorHooks:  []string{"ingress", "normalize", "route", "execute", "deliver", "retry"},
+				ReceiveMode: receiveMode,
+				DeliveryModes: []string{
+					"text",
+					"reaction",
+					"file",
+				},
+			},
 		}
 	case "ticket":
 		return describeTicketServiceRuntime(service)
@@ -303,6 +468,181 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		Executes: "not verified",
 		Replies:  "not verified",
 		Maturity: "planned",
+	}
+}
+
+func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidationResult) {
+	adapter := strings.TrimSpace(strings.ToLower(service.Adapter))
+	if adapter == "" {
+		result.Issues = append(result.Issues, "message service requires an adapter")
+		return
+	}
+	if !knownMessageAdapters[adapter] {
+		result.Issues = append(result.Issues, fmt.Sprintf("unsupported message adapter %q", service.Adapter))
+		return
+	}
+	options := service.Options
+	env := service.Env
+	if strings.TrimSpace(options["default_action"]) == "" {
+		result.Issues = append(result.Issues, "message service requires option default_action to dispatch inbound messages")
+	}
+	validateMessageReceiveMode(options["receive"], result)
+	validateMessageReplyMode(options["reply"], result)
+	switch adapter {
+	case "telegram":
+		requireEnv(env, result, "TELEGRAM_BOT_TOKEN")
+	case "slack":
+		requireEnv(env, result, "SLACK_BOT_TOKEN", "SLACK_SIGNING_SECRET")
+	case "discord":
+		requireEnv(env, result, "DISCORD_BOT_TOKEN")
+	case "sms":
+		provider := strings.TrimSpace(strings.ToLower(options["provider"]))
+		if provider == "" {
+			result.Issues = append(result.Issues, "sms message service requires option provider")
+		}
+		if strings.TrimSpace(options["from"]) == "" {
+			result.Issues = append(result.Issues, "sms message service requires option from")
+		}
+		if provider == "twilio" || provider == "" {
+			requireEnv(env, result, "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN")
+		}
+	case "whatsapp":
+		provider := strings.TrimSpace(strings.ToLower(options["provider"]))
+		if provider == "" {
+			result.Issues = append(result.Issues, "whatsapp message service requires option provider")
+		}
+		if strings.TrimSpace(options["phone_number_id"]) == "" && strings.TrimSpace(options["from"]) == "" {
+			result.Issues = append(result.Issues, "whatsapp message service requires option phone_number_id or from")
+		}
+		if provider == "whatsapp-cloud" || provider == "" {
+			requireEnv(env, result, "WHATSAPP_ACCESS_TOKEN")
+		}
+	}
+}
+
+var knownMessageAdapters = map[string]bool{
+	"telegram": true,
+	"slack":    true,
+	"discord":  true,
+	"sms":      true,
+	"whatsapp": true,
+}
+
+func validateMessageReceiveMode(value string, result *ServiceValidationResult) {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		result.Warnings = append(result.Warnings, "message receive mode not set; assuming webhook")
+		return
+	}
+	switch value {
+	case "webhook", "polling":
+	default:
+		result.Issues = append(result.Issues, "message receive mode must be webhook or polling")
+	}
+}
+
+func validateMessageReplyMode(value string, result *ServiceValidationResult) {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		result.Warnings = append(result.Warnings, "reply mode not set; assuming text")
+		return
+	}
+	switch value {
+	case "text", "auto", "none":
+		if value == "none" {
+			result.Warnings = append(result.Warnings, "reply mode none disables outbound delivery")
+		}
+	default:
+		result.Issues = append(result.Issues, "reply mode must be text, auto, or none")
+	}
+}
+
+func requireEnv(env map[string]string, result *ServiceValidationResult, keys ...string) {
+	for _, key := range keys {
+		if strings.TrimSpace(env[key]) == "" {
+			result.Issues = append(result.Issues, "missing env binding "+key)
+		}
+	}
+}
+
+func serviceDelivery(service *ServiceConfig) *ServiceDelivery {
+	if service.Delivery == nil {
+		service.Delivery = &ServiceDelivery{}
+	}
+	return service.Delivery
+}
+
+func deliveryHealth(service *ServiceConfig) string {
+	if service.Delivery != nil && service.Delivery.Health != "" {
+		return service.Delivery.Health
+	}
+	if service.LastInbound != nil || service.LastOutbound != nil {
+		return "receiving"
+	}
+	return "unknown"
+}
+
+func normalizeServiceEvent(event ServiceEventMeta) ServiceEventMeta {
+	if event.At.IsZero() {
+		event.At = time.Now().UTC()
+	} else {
+		event.At = event.At.UTC()
+	}
+	return event
+}
+
+func serviceID(service *ServiceConfig) string {
+	if service == nil {
+		return ""
+	}
+	return service.ID
+}
+
+func SyntheticMessageWebhookPayload(adapter string) ([]byte, error) {
+	switch strings.TrimSpace(strings.ToLower(adapter)) {
+	case "telegram":
+		return json.Marshal(map[string]any{
+			"message": map[string]any{
+				"message_id": 1,
+				"from":       map[string]any{"id": 1001, "first_name": "APS"},
+				"chat":       map[string]any{"id": -1001234567890, "type": "group"},
+				"text":       "aps service test",
+			},
+		})
+	case "slack":
+		return json.Marshal(map[string]any{
+			"event": map[string]any{
+				"client_msg_id": "aps-service-test",
+				"user":          "U012TEST",
+				"channel":       "C012TEST",
+				"text":          "aps service test",
+				"ts":            fmt.Sprintf("%d.000000", time.Now().Unix()),
+			},
+		})
+	case "discord":
+		return json.Marshal(map[string]any{
+			"id":         "aps-service-test",
+			"channel_id": "123456789012345678",
+			"content":    "aps service test",
+			"author":     map[string]any{"id": "987654321098765432", "username": "aps"},
+			"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		})
+	case "sms":
+		return json.Marshal(map[string]any{
+			"MessageSid": "SMAPS000000000000000000000000000000",
+			"From":       "+15550100001",
+			"To":         "+15550100002",
+			"Body":       "aps service test",
+		})
+	case "whatsapp":
+		return json.Marshal(map[string]any{
+			"MessageSid": "SMAPS000000000000000000000000000001",
+			"From":       "whatsapp:+15550100001",
+			"To":         "whatsapp:+15550100002",
+			"Body":       "aps service test",
+		})
+	default:
+		return nil, fmt.Errorf("no synthetic webhook payload for message adapter %q", adapter)
 	}
 }
 

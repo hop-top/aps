@@ -125,6 +125,14 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	}
 
 	printResolved(cmd, resolved)
+	validation := core.ValidateServiceConfig(service)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_valid: %t\n", validation.Valid)
+	for _, issue := range validation.Issues {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_issue: %s\n", issue)
+	}
+	for _, warning := range validation.Warnings {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_warning: %s\n", warning)
+	}
 	if opts.dryRun {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "dry_run: true")
 		return nil

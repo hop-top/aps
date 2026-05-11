@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"hop.top/aps/internal/core"
 )
 
 func TestAddCmd_DryRunShowsAliasResolution(t *testing.T) {
@@ -61,6 +64,85 @@ func TestAddCmd_PersistsCanonicalConfig(t *testing.T) {
 	assert.Contains(t, showOut.String(), "profile: maintainer")
 }
 
+func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	eventTime := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "support-bot",
+		Type:    "message",
+		Adapter: "telegram",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TELEGRAM_BOT_TOKEN": "secret:telegram",
+		},
+		Options: map[string]string{
+			"default_action": "reply",
+			"receive":        "webhook",
+			"reply":          "text",
+		},
+		Delivery: &core.ServiceDelivery{
+			Health:    "healthy",
+			UpdatedAt: eventTime,
+		},
+		LastInbound: &core.ServiceEventMeta{
+			At:        eventTime,
+			Direction: "inbound",
+			MessageID: "msg-1",
+			Platform:  "telegram",
+			ChannelID: "-1001",
+			SenderID:  "42",
+			Status:    "received",
+		},
+		LastOutbound: &core.ServiceEventMeta{
+			At:        eventTime.Add(time.Second),
+			Direction: "outbound",
+			MessageID: "msg-1",
+			Platform:  "telegram",
+			ChannelID: "-1001",
+			SenderID:  "42",
+			Status:    "success",
+		},
+	}))
+
+	cmd := NewServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"status", "support-bot", "--base-url", "https://hooks.example.test"})
+	require.NoError(t, cmd.Execute())
+
+	assert.Contains(t, out.String(), "webhook_url: https://hooks.example.test/services/support-bot/webhook")
+	assert.Contains(t, out.String(), "delivery_health: healthy")
+	assert.Contains(t, out.String(), "last_inbound: 2026-05-11T12:00:00Z message_id=msg-1 platform=telegram channel_id=-1001 sender_id=42 status=received")
+	assert.Contains(t, out.String(), "last_outbound: 2026-05-11T12:00:01Z message_id=msg-1 platform=telegram channel_id=-1001 sender_id=42 status=success")
+	assert.Contains(t, out.String(), "config_valid: true")
+	assert.Contains(t, out.String(), "start: aps service start support-bot")
+}
+
+func TestServiceTest_InvalidMessageConfigFailsBeforeProbe(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "support-bot",
+		Type:    "message",
+		Adapter: "telegram",
+		Profile: "assistant",
+	}))
+
+	cmd := NewServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"test", "support-bot"})
+	err := cmd.Execute()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "service config is invalid")
+	assert.Contains(t, out.String(), "config_valid: false")
+	assert.Contains(t, out.String(), "config_issue: message service requires option default_action")
+	assert.Contains(t, out.String(), "config_issue: missing env binding TELEGRAM_BOT_TOKEN")
+	assert.Contains(t, out.String(), "webhook_url: http://127.0.0.1:8080/services/support-bot/webhook")
+}
+
 func TestServiceRoutes_MessageService(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
@@ -79,7 +161,7 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 	show.SetArgs([]string{"show", "support-bot"})
 	require.NoError(t, show.Execute())
 	assert.Contains(t, showOut.String(), "receives: HTTP POST /services/support-bot/webhook")
-	assert.Contains(t, showOut.String(), "executes: profile action")
+	assert.Contains(t, showOut.String(), "executes: normalized message execution handoff")
 	assert.Contains(t, showOut.String(), "maturity: ready")
 
 	routes := NewServiceCmd()
@@ -176,8 +258,8 @@ func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
 				"type: message",
 				"adapter: telegram",
 				"receives: HTTP POST /services/support-bot-matrix/webhook",
-				"executes: profile action",
-				"replies: telegram webhook JSON",
+				"executes: normalized message execution handoff",
+				"replies: telegram provider delivery",
 				"maturity: ready",
 			},
 		},
