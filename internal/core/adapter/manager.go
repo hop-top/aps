@@ -47,6 +47,9 @@ func (m *Manager) CreateAdapter(name string, deviceType AdapterType, strategy Lo
 	if strategy == "" {
 		strategy = DefaultStrategyForType(deviceType)
 	}
+	if !IsLoadingStrategyValid(strategy) {
+		return nil, ErrStrategyInvalid(string(strategy))
+	}
 
 	device := &Adapter{
 		Name:      name,
