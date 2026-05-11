@@ -104,14 +104,26 @@ func twilioAuthToken(service ServiceValidationConfig) string {
 		service.Env = map[string]string{}
 	}
 	return firstConfigured(
-		service.Options["twilio_auth_token"],
-		service.Options["auth_token"],
-		service.Options["signature_secret"],
+		resolveConfiguredSecret(service.Options["twilio_auth_token"]),
+		resolveConfiguredSecret(service.Options["auth_token"]),
+		resolveConfiguredSecret(service.Options["signature_secret"]),
 		getenv(service.Options["auth_token_env"]),
 		getenv(service.Options["signature_secret_env"]),
-		service.Env["TWILIO_AUTH_TOKEN"],
+		serviceEnvLiteral(service.Env, "TWILIO_AUTH_TOKEN"),
+		getenv(serviceEnvSecretName(service.Env, "TWILIO_AUTH_TOKEN")),
 		getenv("TWILIO_AUTH_TOKEN"),
 	)
+}
+
+func resolveConfiguredSecret(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if strings.HasPrefix(value, "secret:") {
+		return getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
+	}
+	return value
 }
 
 // SMSProvider is a first-class SMS message provider with mockable delivery.

@@ -289,6 +289,8 @@ func TestServiceValidator_DiscordAllowedGuilds(t *testing.T) {
 }
 
 func TestServiceValidator_TwilioSignature(t *testing.T) {
+	t.Setenv("ALT_TWILIO_AUTH_TOKEN", "twilio-token")
+
 	form := url.Values{}
 	form.Set("MessageSid", "SM123")
 	form.Set("From", "+15550100001")
@@ -305,7 +307,7 @@ func TestServiceValidator_TwilioSignature(t *testing.T) {
 			ID:      "sms-alerts",
 			Adapter: "sms",
 			Env: map[string]string{
-				"TWILIO_AUTH_TOKEN": "twilio-token",
+				"TWILIO_AUTH_TOKEN": "secret:ALT_TWILIO_AUTH_TOKEN",
 			},
 			Options: map[string]string{
 				"provider": "twilio",

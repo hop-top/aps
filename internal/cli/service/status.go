@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core"
+	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/aps/internal/logging"
 )
@@ -312,6 +314,7 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 	if service.Adapter == "slack" {
 		signSlackProbe(req, service, payload)
 	}
+	signProviderProbe(req, service, payload)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("webhook probe failed: %w", err)
@@ -354,17 +357,99 @@ func signSlackProbe(req *http.Request, service *core.ServiceConfig, payload []by
 	req.Header.Set("X-Slack-Signature", "v0="+hex.EncodeToString(mac.Sum(nil)))
 }
 
+func signProviderProbe(req *http.Request, service *core.ServiceConfig, payload []byte) {
+	if service == nil {
+		return
+	}
+	switch strings.TrimSpace(strings.ToLower(service.Adapter)) {
+	case "sms":
+		if serviceProvider(service, "twilio") == "twilio" {
+			signTwilioProbe(req, service, payload)
+		}
+	case "whatsapp":
+		switch serviceProvider(service, "whatsapp-cloud") {
+		case "twilio":
+			signTwilioProbe(req, service, payload)
+		case "whatsapp-cloud":
+			signWhatsAppCloudProbe(req, service, payload)
+		}
+	}
+}
+
+func signTwilioProbe(req *http.Request, service *core.ServiceConfig, payload []byte) {
+	token := serviceConfiguredSecret(
+		service,
+		[]string{"twilio_auth_token", "auth_token", "signature_secret"},
+		[]string{"auth_token_env", "signature_secret_env"},
+		"TWILIO_AUTH_TOKEN",
+	)
+	if token == "" {
+		return
+	}
+	form, _ := url.ParseQuery(string(payload))
+	req.Header.Set(msgtypes.TwilioSignatureHeader, msgtypes.TwilioSignature(token, req.URL.String(), form))
+}
+
+func signWhatsAppCloudProbe(req *http.Request, service *core.ServiceConfig, payload []byte) {
+	secret := serviceConfiguredSecret(
+		service,
+		[]string{"app_secret", "signature_secret"},
+		[]string{"app_secret_env", "signature_secret_env", "signing_secret_env"},
+		"WHATSAPP_APP_SECRET",
+	)
+	if secret == "" {
+		return
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write(payload)
+	req.Header.Set(msgtypes.WhatsAppSignatureHeader, "sha256="+hex.EncodeToString(mac.Sum(nil)))
+}
+
+func serviceProvider(service *core.ServiceConfig, fallback string) string {
+	if service != nil && service.Options != nil {
+		if provider := strings.TrimSpace(strings.ToLower(service.Options["provider"])); provider != "" {
+			return provider
+		}
+	}
+	return fallback
+}
+
+func serviceConfiguredSecret(service *core.ServiceConfig, optionKeys []string, optionEnvKeys []string, envKeys ...string) string {
+	if service != nil && service.Options != nil {
+		for _, key := range optionKeys {
+			if value := resolveServiceSecretValue(service.Options[key]); value != "" {
+				return value
+			}
+		}
+		for _, key := range optionEnvKeys {
+			if value := os.Getenv(strings.TrimSpace(service.Options[key])); value != "" {
+				return value
+			}
+		}
+	}
+	for _, key := range envKeys {
+		if value := serviceEnvSecret(service, key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 func serviceEnvSecret(service *core.ServiceConfig, key string) string {
 	if service != nil && service.Env != nil {
-		value := strings.TrimSpace(service.Env[key])
-		if strings.HasPrefix(value, "secret:") {
-			return os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
-		}
-		if value != "" {
+		if value := resolveServiceSecretValue(service.Env[key]); value != "" {
 			return value
 		}
 	}
 	return os.Getenv(key)
+}
+
+func resolveServiceSecretValue(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(value, "secret:") {
+		return os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
+	}
+	return value
 }
 
 func serveServiceHTTP(ctx context.Context, addr string) error {

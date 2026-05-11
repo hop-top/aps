@@ -3,9 +3,13 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +21,7 @@ import (
 	xhttp "hop.top/xrr/adapters/http"
 
 	"hop.top/aps/internal/core"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 func TestAddCmd_DryRunShowsAliasResolution(t *testing.T) {
@@ -203,6 +208,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 		name        string
 		service     *core.ServiceConfig
 		wantReplies string
+		assertProbe func(*testing.T, *http.Request, []byte)
 	}{
 		{
 			name: "telegram",
@@ -219,6 +225,9 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				},
 			},
 			wantReplies: "replies: telegram text",
+			assertProbe: func(t *testing.T, req *http.Request, _ []byte) {
+				assert.Equal(t, "telegram-secret", req.Header.Get("X-Telegram-Bot-Api-Secret-Token"))
+			},
 		},
 		{
 			name: "slack",
@@ -237,6 +246,10 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				},
 			},
 			wantReplies: "replies: slack text",
+			assertProbe: func(t *testing.T, req *http.Request, _ []byte) {
+				assert.NotEmpty(t, req.Header.Get("X-Slack-Request-Timestamp"))
+				assert.NotEmpty(t, req.Header.Get("X-Slack-Signature"))
+			},
 		},
 		{
 			name: "discord",
@@ -262,7 +275,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				Profile: "assistant",
 				Env: map[string]string{
 					"TWILIO_ACCOUNT_SID": "AC123",
-					"TWILIO_AUTH_TOKEN":  "twilio-token",
+					"TWILIO_AUTH_TOKEN":  "secret:TWILIO_AUTH_TOKEN",
 				},
 				Options: map[string]string{
 					"default_action":  "assistant=handle_sms",
@@ -273,6 +286,11 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				},
 			},
 			wantReplies: "replies: twilio text",
+			assertProbe: func(t *testing.T, req *http.Request, body []byte) {
+				form, err := url.ParseQuery(string(body))
+				require.NoError(t, err)
+				assert.Equal(t, msgtypes.TwilioSignature("twilio-token", req.URL.String(), form), req.Header.Get(msgtypes.TwilioSignatureHeader))
+			},
 		},
 		{
 			name: "whatsapp",
@@ -281,7 +299,10 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				Type:    "message",
 				Adapter: "whatsapp",
 				Profile: "assistant",
-				Env:     map[string]string{"WHATSAPP_ACCESS_TOKEN": "secret:WHATSAPP_ACCESS_TOKEN"},
+				Env: map[string]string{
+					"WHATSAPP_ACCESS_TOKEN": "secret:WHATSAPP_ACCESS_TOKEN",
+					"WHATSAPP_APP_SECRET":   "secret:WHATSAPP_APP_SECRET",
+				},
 				Options: map[string]string{
 					"default_action":  "assistant=handle_whatsapp",
 					"provider":        "whatsapp-cloud",
@@ -291,12 +312,17 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 				},
 			},
 			wantReplies: "replies: whatsapp-cloud text",
+			assertProbe: func(t *testing.T, req *http.Request, body []byte) {
+				assert.Equal(t, "sha256="+testHMACSHA256Hex("whatsapp-secret", body), req.Header.Get(msgtypes.WhatsAppSignatureHeader))
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+			t.Setenv("TWILIO_AUTH_TOKEN", "twilio-token")
+			t.Setenv("WHATSAPP_APP_SECRET", "whatsapp-secret")
 			require.NoError(t, core.SaveService(tt.service))
 
 			show := NewServiceCmd()
@@ -311,7 +337,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 			assert.Contains(t, showOut.String(), "maturity: ready")
 
 			previousClient := http.DefaultClient
-			http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir()}}
+			http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir(), assertRequest: tt.assertProbe}}
 			t.Cleanup(func() { http.DefaultClient = previousClient })
 
 			testCmd := NewServiceCmd()
@@ -359,14 +385,18 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 }
 
 type xrrProbeRoundTripper struct {
-	t   *testing.T
-	dir string
+	t             *testing.T
+	dir           string
+	assertRequest func(*testing.T, *http.Request, []byte)
 }
 
 func (rt xrrProbeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
+	}
+	if rt.assertRequest != nil {
+		rt.assertRequest(rt.t, req, body)
 	}
 	xreq := &xhttp.Request{
 		Method:  req.Method,
@@ -396,6 +426,12 @@ func (rt xrrProbeRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		Header:     http.Header{"Content-Type": {"application/json"}},
 		Body:       io.NopCloser(strings.NewReader(xresp.Body)),
 	}, nil
+}
+
+func testHMACSHA256Hex(secret string, body []byte) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write(body)
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func TestServiceShow_ACPAdvertisesStdioOnlyRuntime(t *testing.T) {
