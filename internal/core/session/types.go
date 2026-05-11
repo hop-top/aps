@@ -16,4 +16,9 @@ const (
 	// handles, audio pipeline) lives in internal/voice/ and keys off the
 	// unified session ID stored here.
 	SessionTypeVoice SessionType = "voice"
+
+	// SessionTypeChat is a native APS chat session. Chat-specific turns are
+	// persisted by internal/core/chat while lifecycle remains in the unified
+	// session registry.
+	SessionTypeChat SessionType = "chat"
 )

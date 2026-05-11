@@ -7,11 +7,17 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
+	"net/http"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
 	"hop.top/aps/internal/core/protocol"
 )
+
+const acpReadHeaderTimeout = 15 * time.Second
 
 // sessionScopedMethods lists JSON-RPC methods whose params carry a
 // sessionId that identifies a live registry session. Requests for
@@ -38,6 +44,8 @@ type Server struct {
 	permissionManager *PermissionManager
 	terminalManager   *TerminalManager
 	transport         Transport
+	httpServer        *http.Server
+	address           string
 	ctx               context.Context
 	cancel            context.CancelFunc
 	initialized       bool
@@ -53,7 +61,8 @@ type Transport interface {
 }
 
 type TransportConfig struct {
-	Transport string
+	Transport  string
+	ListenAddr string
 }
 
 // Verify ACP Server implements the common protocol interface
@@ -102,6 +111,15 @@ func (s *Server) Start(ctx context.Context, config interface{}) error {
 	s.ctx = serverCtx
 	s.cancel = cancel
 
+	cfg := normalizeTransportConfig(config)
+	if isWebSocketTransport(cfg.Transport) {
+		if err := s.startWebSocket(serverCtx, cfg.ListenAddr); err != nil {
+			cancel()
+			return err
+		}
+		return nil
+	}
+
 	// Create transport based on config
 	transport, err := s.createTransport(config)
 	if err != nil {
@@ -136,6 +154,9 @@ func (s *Server) Stop() error {
 	if s.transport != nil {
 		s.transport.Close()
 	}
+	if s.httpServer != nil {
+		_ = s.httpServer.Shutdown(context.Background())
+	}
 
 	// Release all terminals
 	s.terminalManager.ReleaseAll()
@@ -163,15 +184,16 @@ func (s *Server) Status() string {
 
 // GetAddress returns the server address (empty for stdio)
 func (s *Server) GetAddress() string {
-	return "" // Stdio has no network address
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.address
 }
 
 // createTransport creates the appropriate transport based on configuration
 func (s *Server) createTransport(config interface{}) (Transport, error) {
-	if cfg, ok := config.(*TransportConfig); ok && cfg != nil {
-		if cfg.Transport != "" && cfg.Transport != "stdio" {
-			return nil, fmt.Errorf("ACP transport %q is not implemented; stdio is the only wired transport", cfg.Transport)
-		}
+	cfg := normalizeTransportConfig(config)
+	if cfg.Transport != "" && cfg.Transport != "stdio" {
+		return nil, fmt.Errorf("invalid transport %q", cfg.Transport)
 	}
 	return NewStdioTransport(os.Stdin, os.Stdout), nil
 }
@@ -184,18 +206,23 @@ func (s *Server) messageLoop() {
 		s.mu.Unlock()
 	}()
 
+	s.serveTransport(s.ctx, s.transport)
+}
+
+func (s *Server) serveTransport(ctx context.Context, transport Transport) {
+	defer transport.Close()
 	for {
 		select {
-		case <-s.ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 		}
 
 		// Read next request from transport
-		req, err := s.transport.Read()
+		req, err := transport.Read()
 		if err != nil {
 			if err != io.EOF {
-				s.sendError(nil, ErrInternalError)
+				_ = transport.Write(s.errorResponse(nil, ErrInternalError))
 			}
 			return
 		}
@@ -205,11 +232,78 @@ func (s *Server) messageLoop() {
 
 		// Send response if this is a request (has ID), not a notification
 		if req.ID != nil {
-			if err := s.transport.Write(response); err != nil {
+			if err := transport.Write(response); err != nil {
 				return
 			}
 		}
 	}
+}
+
+func (s *Server) startWebSocket(ctx context.Context, addr string) error {
+	if strings.TrimSpace(addr) == "" {
+		addr = "127.0.0.1:8088"
+	}
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("start ACP websocket listener: %w", err)
+	}
+	ws := NewWebSocketServer(func(transport *WebSocketTransport) error {
+		s.serveTransport(ctx, transport)
+		return nil
+	})
+	server := newACPWebSocketHTTPServer(ws)
+
+	s.mu.Lock()
+	s.httpServer = server
+	s.address = listener.Addr().String()
+	s.status = "running"
+	s.mu.Unlock()
+
+	go func() {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			log.Printf("ACP websocket server error: %v", err)
+		}
+		s.mu.Lock()
+		s.status = "stopped"
+		s.mu.Unlock()
+	}()
+	go func() {
+		<-ctx.Done()
+		_ = server.Shutdown(context.Background())
+	}()
+	return nil
+}
+
+func newACPWebSocketHTTPServer(ws *WebSocketServer) *http.Server {
+	return &http.Server{
+		ReadHeaderTimeout: acpReadHeaderTimeout,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/acp" || r.URL.Path == "/" {
+				ws.ServeHTTP(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		}),
+	}
+}
+
+func normalizeTransportConfig(config interface{}) *TransportConfig {
+	cfg, _ := config.(*TransportConfig)
+	if cfg == nil {
+		cfg = &TransportConfig{}
+	}
+	if cfg.Transport == "" {
+		cfg.Transport = "stdio"
+	}
+	cfg.Transport = strings.ToLower(strings.TrimSpace(cfg.Transport))
+	if cfg.Transport == "websocket" {
+		cfg.Transport = "ws"
+	}
+	return cfg
+}
+
+func isWebSocketTransport(transport string) bool {
+	return transport == "ws"
 }
 
 // handleRequest processes a JSON-RPC request and returns a response

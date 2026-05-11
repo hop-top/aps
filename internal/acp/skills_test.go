@@ -15,17 +15,17 @@ func TestHandleSkillList(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Set XDG_DATA_HOME
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
-	// Create test skills
-	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
-	require.NoError(t, os.MkdirAll(globalSkillsDir, 0755))
+	// Create test skills in the profile path. On macOS the global
+	// skills path intentionally follows Application Support instead of
+	// XDG_DATA_HOME, while profile paths stay under APS_DATA_PATH.
+	profileSkillsDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent", "skills")
+	require.NoError(t, os.MkdirAll(profileSkillsDir, 0755))
 
-	setupTestSkill(t, globalSkillsDir, "acp-skill-1")
-	setupTestSkill(t, globalSkillsDir, "acp-skill-2")
+	setupTestSkill(t, profileSkillsDir, "acp-skill-1")
+	setupTestSkill(t, profileSkillsDir, "acp-skill-2")
 
 	// Create mock core
 	mockCore := &mockAPSCore{}
@@ -45,13 +45,13 @@ func TestHandleSkillList(t *testing.T) {
 				ProfileID: "testagent",
 			},
 			expectedError:    false,
-			expectedMinCount: 0, // May find skills or not in isolated test
+			expectedMinCount: 2,
 		},
 		{
 			name:             "list skills with default profile",
 			params:           SkillListParams{},
 			expectedError:    false,
-			expectedMinCount: 0, // May find skills or not in isolated test
+			expectedMinCount: 2,
 		},
 	}
 
@@ -89,16 +89,14 @@ func TestHandleSkillGet(t *testing.T) {
 	// Setup test environment
 	tmpDir := t.TempDir()
 
-	// Set XDG_DATA_HOME
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
-	defer os.Setenv("XDG_DATA_HOME", oldXDG)
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
 
 	// Create test skill
-	globalSkillsDir := filepath.Join(tmpDir, "data", "aps", "skills")
-	require.NoError(t, os.MkdirAll(globalSkillsDir, 0755))
+	profileSkillsDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent", "skills")
+	require.NoError(t, os.MkdirAll(profileSkillsDir, 0755))
 
-	setupTestSkill(t, globalSkillsDir, "acp-skill")
+	setupTestSkill(t, profileSkillsDir, "acp-skill")
 
 	// Create mock core
 	mockCore := &mockAPSCore{}
@@ -113,12 +111,13 @@ func TestHandleSkillGet(t *testing.T) {
 		expectedSkill string
 	}{
 		{
-			name: "skill not found (expected - isolated test)",
+			name: "get skill successfully",
 			params: SkillGetParams{
 				SkillID:   "acp-skill",
 				ProfileID: "testagent",
 			},
-			expectedError: true, // Skill won't be found in isolated test environment
+			expectedError: false,
+			expectedSkill: "acp-skill",
 		},
 		{
 			name: "skill not found",
@@ -164,6 +163,19 @@ func TestHandleSkillGet(t *testing.T) {
 
 // TestHandleSkillInvoke tests the skill/invoke JSON-RPC method
 func TestHandleSkillInvoke(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", filepath.Join(tmpDir, "data", "aps"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tmpDir, "data"))
+
+	profileSkillsDir := filepath.Join(tmpDir, "data", "aps", "profiles", "testagent", "skills")
+	require.NoError(t, os.MkdirAll(profileSkillsDir, 0755))
+	setupTestSkill(t, profileSkillsDir, "test-skill")
+	require.NoError(t, os.WriteFile(
+		filepath.Join(profileSkillsDir, "test-skill", "scripts", "process.sh"),
+		[]byte("#!/bin/sh\nprintf 'skill=%s\\n' \"$APS_SKILL_ID\"\nprintf 'script=%s\\n' \"$APS_SKILL_SCRIPT\"\nprintf 'args=%s\\n' \"$APS_SKILL_ARGS_JSON\"\n"),
+		0755,
+	))
+
 	// Create mock core
 	mockCore := &mockAPSCore{}
 
@@ -192,6 +204,7 @@ func TestHandleSkillInvoke(t *testing.T) {
 		name          string
 		params        SkillInvokeParams
 		expectedError bool
+		expectedCode  ErrorCode
 	}{
 		{
 			name: "invoke skill successfully",
@@ -204,12 +217,43 @@ func TestHandleSkillInvoke(t *testing.T) {
 			expectedError: false,
 		},
 		{
+			name: "unknown skill",
+			params: SkillInvokeParams{
+				SkillID:   "missing-skill",
+				Script:    "process.sh",
+				SessionID: "sess_123",
+			},
+			expectedError: true,
+			expectedCode:  ErrCodeResourceNotFound,
+		},
+		{
+			name: "unknown script",
+			params: SkillInvokeParams{
+				SkillID:   "test-skill",
+				Script:    "missing.sh",
+				SessionID: "sess_123",
+			},
+			expectedError: true,
+			expectedCode:  ErrCodeResourceNotFound,
+		},
+		{
+			name: "script traversal is rejected",
+			params: SkillInvokeParams{
+				SkillID:   "test-skill",
+				Script:    "../SKILL.md",
+				SessionID: "sess_123",
+			},
+			expectedError: true,
+			expectedCode:  ErrCodeResourceNotFound,
+		},
+		{
 			name: "missing skill ID",
 			params: SkillInvokeParams{
 				Script:    "process.sh",
 				SessionID: "sess_123",
 			},
 			expectedError: true,
+			expectedCode:  ErrCodeInvalidParams,
 		},
 		{
 			name: "missing script",
@@ -218,6 +262,7 @@ func TestHandleSkillInvoke(t *testing.T) {
 				SessionID: "sess_123",
 			},
 			expectedError: true,
+			expectedCode:  ErrCodeInvalidParams,
 		},
 		{
 			name: "missing session ID",
@@ -226,6 +271,7 @@ func TestHandleSkillInvoke(t *testing.T) {
 				Script:  "process.sh",
 			},
 			expectedError: true,
+			expectedCode:  ErrCodeInvalidParams,
 		},
 	}
 
@@ -242,6 +288,9 @@ func TestHandleSkillInvoke(t *testing.T) {
 
 			if tt.expectedError {
 				assert.NotNil(t, resp.Error)
+				if tt.expectedCode != 0 {
+					assert.Equal(t, tt.expectedCode, resp.Error.Code)
+				}
 			} else {
 				assert.Nil(t, resp.Error)
 				assert.NotNil(t, resp.Result)
@@ -250,7 +299,21 @@ func TestHandleSkillInvoke(t *testing.T) {
 				require.True(t, ok)
 
 				assert.NotEmpty(t, resultMap["runId"])
-				assert.Equal(t, "queued", resultMap["status"])
+				assert.NotContains(t, resultMap["runId"], "placeholder")
+				assert.NotEmpty(t, resultMap["terminalId"])
+				assert.Equal(t, "test-skill", resultMap["skillId"])
+				assert.Equal(t, "process.sh", resultMap["script"])
+
+				terminalID, ok := resultMap["terminalId"].(string)
+				require.True(t, ok)
+				exitCode, err := server.terminalManager.WaitForExit(terminalID)
+				require.NoError(t, err)
+				assert.Equal(t, 0, exitCode)
+				output, err := server.terminalManager.GetOutput(terminalID)
+				require.NoError(t, err)
+				assert.Contains(t, output, "skill=test-skill")
+				assert.Contains(t, output, "script=process.sh")
+				assert.Contains(t, output, `"input":"test"`)
 			}
 		})
 	}

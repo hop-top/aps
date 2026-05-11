@@ -57,7 +57,7 @@ func newCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, desktop, mobile)")
+	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, mobile, desktop, sense, actuator)")
 	cmd.Flags().StringVar(&strategy, "strategy", "", "Loading strategy (subprocess, script, builtin)")
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Create as profile-scoped device")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
@@ -85,6 +85,9 @@ func runCreate(name, deviceType, strategy, profileID string, jsonOut bool) error
 	ls := coreadapter.LoadingStrategy(strategy)
 	if ls == "" {
 		ls = coreadapter.DefaultStrategyForType(dt)
+	}
+	if !coreadapter.IsLoadingStrategyValid(ls) {
+		return fmt.Errorf("invalid loading strategy %q (valid: subprocess, script, builtin)", strategy)
 	}
 
 	dev, err := defaultManager.CreateAdapter(name, dt, ls, scope, profileID)

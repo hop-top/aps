@@ -176,3 +176,10 @@ func IsAdapterTypeNotImplemented(err error) bool {
 	}
 	return false
 }
+
+func IsStrategyInvalid(err error) bool {
+	if e, ok := err.(*AdapterError); ok {
+		return e.Code == ErrCodeStrategyInvalid
+	}
+	return false
+}

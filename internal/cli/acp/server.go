@@ -22,7 +22,7 @@ func NewServerCmd() *cobra.Command {
 		Long: `Start an ACP (Agent Client Protocol) server for a profile.
 
 The server communicates with editor clients via JSON-RPC 2.0 over stdio
-transport. HTTP and WebSocket ACP transports are not wired to this command yet.
+or WebSocket transport, based on the profile ACP configuration.
 
 Example:
   aps acp server my-profile`,
@@ -55,10 +55,6 @@ func runACPServer(profileID string) error {
 		}
 		logging.GetLogger().Info("acp enabled with defaults", "transport", "stdio")
 	}
-	if profile.ACP != nil && profile.ACP.Transport != "" && profile.ACP.Transport != "stdio" {
-		return fmt.Errorf("ACP transport %q is configured but aps acp server currently supports stdio only", profile.ACP.Transport)
-	}
-
 	// Get the protocol core adapter
 	coreAdapter, err := protocol.NewAPSAdapter()
 	if err != nil {
@@ -86,12 +82,18 @@ func runACPServer(profileID string) error {
 		cancel()
 	}()
 
+	transport := normalizeACPTransport(profile.ACP.Transport)
+	listenAddr := profile.ACP.ListenAddr
+	if transport != "stdio" {
+		listenAddr = fmt.Sprintf("%s:%d", profile.ACP.ListenAddr, profile.ACP.Port)
+	}
+
 	// Start server
-	if err := acpServer.Start(ctx, &acp.TransportConfig{Transport: profile.ACP.Transport}); err != nil {
+	if err := acpServer.Start(ctx, &acp.TransportConfig{Transport: transport, ListenAddr: listenAddr}); err != nil {
 		return fmt.Errorf("failed to start ACP server: %w", err)
 	}
 
-	logging.GetLogger().Info("acp server started", "profile", profileID, "protocol", 1)
+	logging.GetLogger().Info("acp server started", "profile", profileID, "protocol", 1, "transport", transport, "address", acpServer.GetAddress())
 
 	// Wait for context to be cancelled
 	<-ctx.Done()
