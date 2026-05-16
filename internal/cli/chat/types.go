@@ -35,10 +35,12 @@ type Message struct {
 }
 
 type Options struct {
-	Once     string
-	Model    string
-	NoStream bool
-	Attach   string
+	Once         string
+	Model        string
+	NoStream     bool
+	Attach       string
+	Invite       []string
+	MaxAutoTurns int
 }
 
 const (

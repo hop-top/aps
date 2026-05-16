@@ -52,39 +52,6 @@ func NewParticipants(profiles []*core.Profile) ([]Participant, error) {
 	return participants, nil
 }
 
-// RenderSystemPrompt is the single-profile persona renderer used by chat.
-func RenderSystemPrompt(profile *core.Profile) string {
-	if profile == nil {
-		return ""
-	}
-
-	var lines []string
-	name := participantName(profile)
-	lines = append(lines, fmt.Sprintf("You are %s.", name))
-	lines = append(lines, fmt.Sprintf("Profile URI: %s", profile.URI()))
-
-	if profile.Persona.Tone != "" {
-		lines = append(lines, fmt.Sprintf("Tone: %s", profile.Persona.Tone))
-	}
-	if profile.Persona.Style != "" {
-		lines = append(lines, fmt.Sprintf("Style: %s", profile.Persona.Style))
-	}
-	if profile.Persona.Risk != "" {
-		lines = append(lines, fmt.Sprintf("Risk posture: %s", profile.Persona.Risk))
-	}
-	if len(profile.Roles) > 0 {
-		lines = append(lines, fmt.Sprintf("Roles: %s", strings.Join(profile.Roles, ", ")))
-	}
-	if profile.Preferences.Language != "" {
-		lines = append(lines, fmt.Sprintf("Language: %s", profile.Preferences.Language))
-	}
-	if profile.Preferences.Timezone != "" {
-		lines = append(lines, fmt.Sprintf("Timezone: %s", profile.Preferences.Timezone))
-	}
-
-	return strings.Join(lines, "\n")
-}
-
 // ComposeSystemPrompt builds a single system prompt where only the active
 // speaker receives their persona as direct instructions ("You are X"). Other
 // participants are described as third-person metadata so the model does not
@@ -135,21 +102,27 @@ func ComposeSystemPrompt(participants []Participant, activeSpeakerID string) (st
 	return strings.TrimSpace(b.String()), nil
 }
 
-// stripDirectivesFromPrompt removes the second-person "You are X." opener and
-// the "Profile URI:" line from a rendered persona, leaving only neutral
-// descriptors safe to embed in a section about a non-active participant.
+// stripDirectivesFromPrompt removes the second-person "You are X." opener from
+// a rendered persona, leaving only neutral descriptors safe to embed in a
+// section about a non-active participant. The persona renderer packs the
+// "You are X." sentence onto the same line as Tone/Style/Risk, so this strips
+// only that leading sentence rather than the whole line.
 func stripDirectivesFromPrompt(prompt string) string {
 	lines := strings.Split(prompt, "\n")
 	kept := make([]string, 0, len(lines))
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "You are ") {
+			if idx := strings.Index(trimmed, ". "); idx >= 0 {
+				trimmed = strings.TrimSpace(trimmed[idx+2:])
+			} else {
+				continue
+			}
+		}
+		if trimmed == "" {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "Profile URI:") {
-			continue
-		}
-		kept = append(kept, line)
+		kept = append(kept, trimmed)
 	}
 	return strings.TrimSpace(strings.Join(kept, "\n"))
 }

@@ -11,6 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"hop.top/aps/internal/core"
+	corechat "hop.top/aps/internal/core/chat"
 )
 
 type model struct {
@@ -190,10 +191,14 @@ func visibleMessages(messages []Message, maxLines int) []Message {
 }
 
 func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string, history []Message) tea.Cmd {
+	return turnCmdAs(ctx, engine, sess, sess.profileID, opts, prompt, history)
+}
+
+func turnCmdAs(ctx context.Context, engine CoreEngine, sess *chatSession, speakerID string, opts Options, prompt string, history []Message) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := engine.Turn(ctx, TurnRequest{
 			SessionID: sess.id,
-			ProfileID: sess.profileID,
+			ProfileID: speakerID,
 			Prompt:    prompt,
 			Model:     opts.Model,
 			NoStream:  opts.NoStream,
@@ -207,10 +212,14 @@ func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Opt
 }
 
 func streamStartCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string, history []Message) tea.Cmd {
+	return streamStartCmdAs(ctx, engine, sess, sess.profileID, opts, prompt, history)
+}
+
+func streamStartCmdAs(ctx context.Context, engine CoreEngine, sess *chatSession, speakerID string, opts Options, prompt string, history []Message) tea.Cmd {
 	return func() tea.Msg {
 		ch, err := engine.StreamTurn(ctx, TurnRequest{
 			SessionID: sess.id,
-			ProfileID: sess.profileID,
+			ProfileID: speakerID,
 			Prompt:    prompt,
 			Model:     opts.Model,
 			History:   history,
@@ -243,3 +252,218 @@ var (
 	assistantStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("114"))
 	errorStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("196"))
 )
+
+// multiModel wraps the single-profile model with round-robin participant
+// rotation. The active speaker advances on every assistant turn so each new
+// user message is answered by the next participant in order.
+type multiModel struct {
+	ctx           context.Context
+	engine        CoreEngine
+	session       *chatSession
+	owner         *core.Profile
+	participants  []corechat.Participant
+	policy        corechat.RoundRobinPolicy
+	auto          corechat.AutoSession
+	lastSpeakerID string
+	currentName   string
+	opts          Options
+	input         textinput.Model
+	width         int
+	height        int
+	err           error
+	streaming     bool
+	streamBuf     strings.Builder
+}
+
+// (queuedCmd field removed; startNextTurn now returns the cmd alongside the model.)
+
+func runTUIMulti(ctx context.Context, engine CoreEngine, sess *chatSession, owner *core.Profile, participants []corechat.Participant, opts Options) error {
+	if os.Getenv("APS_CHAT_TUI_TEST") == "1" {
+		fmt.Fprint(os.Stdout, renderMultiTranscript(owner.ID, sess, participants, opts, 17, ""))
+	}
+	p := tea.NewProgram(
+		newMultiModel(ctx, engine, sess, owner, participants, opts),
+		tea.WithWindowSize(80, 24),
+		tea.WithEnvironment(os.Environ()),
+		tea.WithColorProfile(colorprofile.ANSI256),
+	)
+	_, err := p.Run()
+	return err
+}
+
+func newMultiModel(ctx context.Context, engine CoreEngine, sess *chatSession, owner *core.Profile, participants []corechat.Participant, opts Options) multiModel {
+	input := textinput.New()
+	input.Prompt = "> "
+	names := make([]string, 0, len(participants))
+	for _, p := range participants {
+		names = append(names, p.DisplayName)
+	}
+	input.Placeholder = "Message " + strings.Join(names, ", ")
+	input.SetWidth(72)
+	_ = input.Focus()
+	return multiModel{
+		ctx:          ctx,
+		engine:       engine,
+		session:      sess,
+		owner:        owner,
+		participants: participants,
+		policy:       corechat.NewRoundRobinPolicy(),
+		auto:         corechat.NewAutoSession(opts.MaxAutoTurns),
+		opts:         opts,
+		input:        input,
+		width:        80,
+		height:       24,
+	}
+}
+
+func (m multiModel) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.input.SetWidth(max(10, msg.Width-4))
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
+			return m, tea.Quit
+		case "enter":
+			text := strings.TrimSpace(m.input.Value())
+			if text == "" || m.streaming {
+				return m, nil
+			}
+			m.input.SetValue("")
+
+			if cmd, ok := ParseMetaCommand(text); ok {
+				m.auto.Apply(cmd)
+				return m, nil
+			}
+
+			if err := m.session.append(roleUser, text); err != nil {
+				m.err = err
+				return m, nil
+			}
+			next, cmd := m.startNextTurn(text)
+			return next, cmd
+		}
+	case responseMsg:
+		m.streaming = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		if err := m.session.replaceLastAssistant(msg.content); err != nil {
+			m.err = err
+			return m, nil
+		}
+		if m.auto.ShouldAutoContinue() {
+			m.auto.RecordAutoTurn()
+			next, cmd := m.startNextTurn("")
+			return next, cmd
+		}
+	case streamMsg:
+		if msg.err != nil {
+			m.streaming = false
+			m.err = msg.err
+			return m, nil
+		}
+		if msg.delta != "" {
+			m.streamBuf.WriteString(msg.delta)
+			m.session.setLastAssistant(m.streamBuf.String())
+		}
+		if msg.done {
+			m.streaming = false
+			if err := m.session.replaceLastAssistant(m.streamBuf.String()); err != nil {
+				m.err = err
+				return m, nil
+			}
+			if m.auto.ShouldAutoContinue() {
+				m.auto.RecordAutoTurn()
+				next, cmd := m.startNextTurn("")
+				return next, cmd
+			}
+			return m, nil
+		}
+		return m, streamNextCmd(msg.ch)
+	}
+
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m multiModel) startNextTurn(prompt string) (multiModel, tea.Cmd) {
+	speaker, err := m.policy.Next(corechat.TurnState{Participants: m.participants, LastSpeakerID: m.lastSpeakerID})
+	if err != nil {
+		m.err = err
+		return m, nil
+	}
+	m.currentName = speaker.DisplayName
+	m.lastSpeakerID = speaker.ID
+
+	history := append([]Message(nil), m.session.messages...)
+	m.session.messages = append(m.session.messages, Message{Role: roleAssistant})
+	m.streaming = true
+	m.streamBuf.Reset()
+
+	if m.opts.NoStream {
+		return m, turnCmdAs(m.ctx, m.engine, m.session, speaker.ID, m.opts, prompt, history)
+	}
+	return m, streamStartCmdAs(m.ctx, m.engine, m.session, speaker.ID, m.opts, prompt, history)
+}
+
+func (m multiModel) View() tea.View {
+	var b strings.Builder
+	b.WriteString(renderMultiTranscript(m.owner.ID, m.session, m.participants, m.opts, max(4, m.height-7), m.currentName))
+	b.WriteString("\n")
+	if m.err != nil {
+		b.WriteString(errorStyle.Render("error: " + m.err.Error()))
+		b.WriteString("\n")
+	}
+	if m.streaming {
+		b.WriteString(statusStyle.Render(m.currentName + " is responding..."))
+		b.WriteString("\n")
+	}
+	b.WriteString(m.input.View())
+	b.WriteString("\n")
+	b.WriteString(statusStyle.Render("esc/ctrl+c quit  :auto/:human/:done meta-commands"))
+	return tea.NewView(b.String())
+}
+
+func renderMultiTranscript(ownerID string, sess *chatSession, participants []corechat.Participant, opts Options, maxMessages int, currentSpeaker string) string {
+	var b strings.Builder
+	names := make([]string, 0, len(participants))
+	for _, p := range participants {
+		names = append(names, p.DisplayName)
+	}
+	title := titleStyle.Render("aps chat " + ownerID + " (" + strings.Join(names, ", ") + ")")
+	status := statusStyle.Render(fmt.Sprintf("session %s", sess.id))
+	if opts.Model != "" {
+		status = statusStyle.Render(fmt.Sprintf("session %s  model %s", sess.id, opts.Model))
+	}
+	b.WriteString(title)
+	b.WriteString("\n")
+	b.WriteString(status)
+	b.WriteString("\n\n")
+	for _, msg := range visibleMessages(sess.messages, maxMessages) {
+		switch msg.Role {
+		case roleUser:
+			b.WriteString(userStyle.Render("you: "))
+		case roleAssistant:
+			label := currentSpeaker
+			if label == "" && len(participants) > 0 {
+				label = participants[0].DisplayName
+			}
+			b.WriteString(assistantStyle.Render(label + ": "))
+		default:
+			b.WriteString(statusStyle.Render(msg.Role + ": "))
+		}
+		b.WriteString(msg.Content)
+		b.WriteString("\n\n")
+	}
+	return b.String()
+}
+

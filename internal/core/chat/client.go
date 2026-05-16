@@ -2,7 +2,9 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"hop.top/kit/go/ai/llm"
@@ -17,20 +19,24 @@ func NewLLMClient(ctx context.Context, profileID string, resolved ResolvedLLMCon
 	if resolved.ProviderURI == "" {
 		return nil, fmt.Errorf("chat llm provider is not configured")
 	}
-	key, err := ResolveProviderKey(ctx, profileID, CandidateProviderURIs(resolved))
-	if err != nil {
-		return nil, err
-	}
 
-	primary, err := newProvider(resolved.ProviderURI, resolved.Model, key.Value, resolved)
+	primary, err := buildProvider(ctx, profileID, resolved.ProviderURI, resolved.Model, resolved)
 	if err != nil {
 		return nil, err
 	}
 
 	var opts []llm.Option
 	for _, fbURI := range resolved.FallbackURIs {
-		fb, err := newProvider(fbURI, "", key.Value, resolved)
+		fb, err := buildProvider(ctx, profileID, fbURI, "", resolved)
 		if err != nil {
+			// A missing credential for a fallback provider is non-fatal:
+			// the chain still works as long as the primary (or another
+			// fallback) has one. Skip the unauthorized fallback rather
+			// than failing the whole client construction.
+			var unauth *UnauthorizedError
+			if errors.As(err, &unauth) {
+				continue
+			}
 			return nil, err
 		}
 		opts = append(opts, llm.WithFallback(fb))
@@ -38,26 +44,50 @@ func NewLLMClient(ctx context.Context, profileID string, resolved ResolvedLLMCon
 	return llm.NewClient(primary, opts...), nil
 }
 
-func newProvider(providerURI, model, apiKey string, resolved ResolvedLLMConfig) (llm.Provider, error) {
+// buildProvider resolves the credential for providerURI specifically (not
+// reusing the primary's key) and constructs the provider via llm.Resolve with
+// URL-encoded query parameters.
+func buildProvider(ctx context.Context, profileID, providerURI, model string, resolved ResolvedLLMConfig) (llm.Provider, error) {
+	key, err := ResolveProviderKeyFor(ctx, profileID, providerURI)
+	if err != nil {
+		return nil, err
+	}
+	uri, err := buildProviderURI(providerURI, model, key.Value, resolved.Config.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	return llm.Resolve(uri)
+}
+
+func buildProviderURI(providerURI, model, apiKey, baseURL string) (string, error) {
 	uri := providerURI
 	if model != "" {
 		if parsed, err := llm.ParseURI(uri); err == nil && parsed.Model == "" {
 			uri = parsed.Scheme + "://" + model
 		}
 	}
-	var params []string
+
+	base, query := splitURIQuery(uri)
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return "", fmt.Errorf("parse provider uri query: %w", err)
+	}
 	if apiKey != "" {
-		params = append(params, "api_key="+apiKey)
+		values.Set("api_key", apiKey)
 	}
-	if resolved.Config.BaseURL != "" {
-		params = append(params, "base_url="+resolved.Config.BaseURL)
+	if baseURL != "" {
+		values.Set("base_url", baseURL)
 	}
-	if len(params) > 0 {
-		sep := "?"
-		if strings.Contains(uri, "?") {
-			sep = "&"
-		}
-		uri += sep + strings.Join(params, "&")
+	encoded := values.Encode()
+	if encoded == "" {
+		return base, nil
 	}
-	return llm.Resolve(uri)
+	return base + "?" + encoded, nil
+}
+
+func splitURIQuery(uri string) (string, string) {
+	if idx := strings.Index(uri, "?"); idx >= 0 {
+		return uri[:idx], uri[idx+1:]
+	}
+	return uri, ""
 }

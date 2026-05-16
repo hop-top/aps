@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 type Store struct {
@@ -17,8 +18,11 @@ func NewStore(dataDir string) *Store {
 }
 
 func (s *Store) Load(sessionID string) (*Transcript, error) {
-	path := s.path(sessionID)
-	data, err := os.ReadFile(path) // #nosec G304 -- path is rooted under APS data dir.
+	path, err := s.path(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(path) // #nosec G304 -- sessionID validated; path rooted under APS data dir.
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, os.ErrNotExist
@@ -39,6 +43,10 @@ func (s *Store) Save(transcript *Transcript) error {
 	if transcript.SessionID == "" {
 		return fmt.Errorf("chat transcript session ID cannot be empty")
 	}
+	path, err := s.path(transcript.SessionID)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(s.root, 0700); err != nil {
 		return fmt.Errorf("create chat transcript dir: %w", err)
 	}
@@ -46,12 +54,20 @@ func (s *Store) Save(transcript *Transcript) error {
 	if err != nil {
 		return fmt.Errorf("marshal chat transcript: %w", err)
 	}
-	if err := os.WriteFile(s.path(transcript.SessionID), data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("write chat transcript: %w", err)
 	}
 	return nil
 }
 
-func (s *Store) path(sessionID string) string {
-	return filepath.Join(s.root, sessionID+".json")
+// safeSessionIDPattern restricts sessionIDs to a conservative set that cannot
+// contain path separators, "..", NUL bytes, or other characters that would let
+// a caller escape the chat transcript directory.
+var safeSessionIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+func (s *Store) path(sessionID string) (string, error) {
+	if !safeSessionIDPattern.MatchString(sessionID) {
+		return "", fmt.Errorf("invalid chat session id %q", sessionID)
+	}
+	return filepath.Join(s.root, sessionID+".json"), nil
 }
