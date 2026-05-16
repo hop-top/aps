@@ -3,8 +3,8 @@ package chat
 import "context"
 
 // CoreEngine is the CLI adapter boundary expected from internal/core/chat.
-// Worker 1 should be able to replace newEngine with a core-backed
-// implementation without changing Cobra or TUI code.
+// newEngine is a placeholder; swapping it for a core-backed implementation
+// must not require changes to the Cobra command or TUI layer.
 type CoreEngine interface {
 	Turn(context.Context, TurnRequest) (TurnResponse, error)
 	StreamTurn(context.Context, TurnRequest) (<-chan StreamChunk, error)

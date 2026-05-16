@@ -95,13 +95,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = err
 				return m, nil
 			}
+			history := append([]Message(nil), m.session.messages...)
 			m.session.messages = append(m.session.messages, Message{Role: roleAssistant})
 			m.streaming = true
 			m.streamBuf.Reset()
 			if m.opts.NoStream {
-				return m, turnCmd(m.ctx, m.engine, m.session, m.opts, prompt)
+				return m, turnCmd(m.ctx, m.engine, m.session, m.opts, prompt, history)
 			}
-			return m, streamStartCmd(m.ctx, m.engine, m.session, m.opts, prompt)
+			return m, streamStartCmd(m.ctx, m.engine, m.session, m.opts, prompt, history)
 		}
 	case responseMsg:
 		m.streaming = false
@@ -120,14 +121,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.delta != "" {
 			m.streamBuf.WriteString(msg.delta)
-			if err := m.session.replaceLastAssistant(m.streamBuf.String()); err != nil {
-				m.streaming = false
-				m.err = err
-				return m, nil
-			}
+			m.session.setLastAssistant(m.streamBuf.String())
 		}
 		if msg.done {
 			m.streaming = false
+			if err := m.session.replaceLastAssistant(m.streamBuf.String()); err != nil {
+				m.err = err
+			}
 			return m, nil
 		}
 		return m, streamNextCmd(msg.ch)
@@ -189,7 +189,7 @@ func visibleMessages(messages []Message, maxLines int) []Message {
 	return messages[len(messages)-maxLines:]
 }
 
-func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string) tea.Cmd {
+func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string, history []Message) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := engine.Turn(ctx, TurnRequest{
 			SessionID: sess.id,
@@ -197,7 +197,7 @@ func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Opt
 			Prompt:    prompt,
 			Model:     opts.Model,
 			NoStream:  opts.NoStream,
-			History:   sess.messages,
+			History:   history,
 		})
 		if err != nil {
 			return responseMsg{err: err}
@@ -206,14 +206,14 @@ func turnCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Opt
 	}
 }
 
-func streamStartCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string) tea.Cmd {
+func streamStartCmd(ctx context.Context, engine CoreEngine, sess *chatSession, opts Options, prompt string, history []Message) tea.Cmd {
 	return func() tea.Msg {
 		ch, err := engine.StreamTurn(ctx, TurnRequest{
 			SessionID: sess.id,
 			ProfileID: sess.profileID,
 			Prompt:    prompt,
 			Model:     opts.Model,
-			History:   sess.messages,
+			History:   history,
 		})
 		if err != nil {
 			return streamMsg{err: err}

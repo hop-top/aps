@@ -2,7 +2,6 @@ package chat
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/core"
@@ -32,7 +31,6 @@ func Run(cmd *cobra.Command, profileID string, opts Options) error {
 	}
 	engine, err := newEngine(profile)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 	sess, err := startOrAttachSession(profile, opts.Attach)

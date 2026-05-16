@@ -29,6 +29,9 @@ func startOrAttachSession(profile *core.Profile, attachID string) (*chatSession,
 		if string(sess.Type) != sessionType {
 			return nil, fmt.Errorf("session %s is not a chat session", attachID)
 		}
+		if sess.ProfileID != profile.ID {
+			return nil, fmt.Errorf("session %s belongs to profile %s, not %s", attachID, sess.ProfileID, profile.ID)
+		}
 		messages, err := decodeMessages(sess.Environment[transcriptKey])
 		if err != nil {
 			return nil, fmt.Errorf("decode chat transcript: %w", err)
@@ -69,12 +72,18 @@ func (s *chatSession) append(role, content string) error {
 }
 
 func (s *chatSession) replaceLastAssistant(content string) error {
+	s.setLastAssistant(content)
+	return s.persist()
+}
+
+// setLastAssistant updates the in-memory transcript without touching disk.
+// Used by streaming to avoid a write per delta; pair with persist() at end.
+func (s *chatSession) setLastAssistant(content string) {
 	if len(s.messages) == 0 || s.messages[len(s.messages)-1].Role != roleAssistant {
 		s.messages = append(s.messages, Message{Role: roleAssistant, Content: content})
-	} else {
-		s.messages[len(s.messages)-1].Content = content
+		return
 	}
-	return s.persist()
+	s.messages[len(s.messages)-1].Content = content
 }
 
 func (s *chatSession) persist() error {
