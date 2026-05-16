@@ -82,24 +82,24 @@ const (
 
 // Profile represents an agent profile configuration
 type Profile struct {
-	ID           string             `yaml:"id"`
-	DisplayName  string             `yaml:"display_name"`
-	Email        string             `yaml:"email,omitempty"`
-	Avatar       string             `yaml:"avatar,omitempty"` // URL or local path to profile image
-	Color        string             `yaml:"color,omitempty"`  // hex color (e.g. "#3b82f6") for UI rendering
-	Persona      Persona            `yaml:"persona,omitempty"`
-	Capabilities []string           `yaml:"capabilities,omitempty"`
-	Accounts     map[string]Account `yaml:"accounts,omitempty"`
-	Preferences  Preferences        `yaml:"preferences,omitempty"`
-	Limits       Limits             `yaml:"limits,omitempty"`
-	Git          GitConfig          `yaml:"git,omitempty"`
-	SSH          SSHConfig          `yaml:"ssh,omitempty"`
-	Webhooks     WebhookConfig      `yaml:"webhooks,omitempty"`
-	Isolation    IsolationConfig    `yaml:"isolation,omitempty"`
-	A2A           *A2AConfig          `yaml:"a2a,omitempty"`
-	ACP           *ACPConfig          `yaml:"acp,omitempty"`
+	ID            string               `yaml:"id"`
+	DisplayName   string               `yaml:"display_name"`
+	Email         string               `yaml:"email,omitempty"`
+	Avatar        string               `yaml:"avatar,omitempty"` // URL or local path to profile image
+	Color         string               `yaml:"color,omitempty"`  // hex color (e.g. "#3b82f6") for UI rendering
+	Persona       Persona              `yaml:"persona,omitempty"`
+	Capabilities  []string             `yaml:"capabilities,omitempty"`
+	Accounts      map[string]Account   `yaml:"accounts,omitempty"`
+	Preferences   Preferences          `yaml:"preferences,omitempty"`
+	Limits        Limits               `yaml:"limits,omitempty"`
+	Git           GitConfig            `yaml:"git,omitempty"`
+	SSH           SSHConfig            `yaml:"ssh,omitempty"`
+	Webhooks      WebhookConfig        `yaml:"webhooks,omitempty"`
+	Isolation     IsolationConfig      `yaml:"isolation,omitempty"`
+	A2A           *A2AConfig           `yaml:"a2a,omitempty"`
+	ACP           *ACPConfig           `yaml:"acp,omitempty"`
 	Mobile        *MobileAdapterConfig `yaml:"mobile,omitempty"`
-	Workspace     *WorkspaceLink      `yaml:"workspace,omitempty"`
+	Workspace     *WorkspaceLink       `yaml:"workspace,omitempty"`
 	Observability *ObservabilityConfig `yaml:"observability,omitempty"`
 	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
 	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
@@ -107,7 +107,7 @@ type Profile struct {
 	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
-	Roles         []string             `yaml:"roles,omitempty"`  // owner, assignee, evaluator, auditor
+	Roles         []string             `yaml:"roles,omitempty"` // owner, assignee, evaluator, auditor
 	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty"`
 }
 
@@ -198,9 +198,9 @@ type ObservabilityConfig struct {
 
 // DirectoryConfig holds AGNTCY Directory registration configuration
 type DirectoryConfig struct {
-	Endpoint    string `yaml:"endpoint,omitempty"`     // Directory service URL
-	AutoRegister bool  `yaml:"auto_register,omitempty"`
-	AutoRefresh  bool  `yaml:"auto_refresh,omitempty"`
+	Endpoint     string `yaml:"endpoint,omitempty"` // Directory service URL
+	AutoRegister bool   `yaml:"auto_register,omitempty"`
+	AutoRefresh  bool   `yaml:"auto_refresh,omitempty"`
 }
 
 // IdentityConfig holds DID-based agent identity configuration
