@@ -28,6 +28,7 @@ func TestParseProfileRef(t *testing.T) {
 		{name: "wrong scheme", input: "tlc://profile/noor", wantErr: true},
 		{name: "wrong space", input: "aps://workspace/foo", wantErr: true},
 		{name: "empty", input: "", wantErr: true},
+		{name: "empty uri form", input: "aps://profile/", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

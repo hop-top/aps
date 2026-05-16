@@ -43,5 +43,8 @@ func ParseProfileRef(s string) (string, error) {
 	if u.Space != ProfileURISpace {
 		return "", fmt.Errorf("invalid profile ref space %q (want %q)", u.Space, ProfileURISpace)
 	}
+	if u.ID == "" {
+		return "", fmt.Errorf("empty profile ref")
+	}
 	return u.ID, nil
 }
