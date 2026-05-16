@@ -4,27 +4,6 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
-### Added — aps-chat messenger bridge (track: `aps-chat`, T-0586/T-0424/T-0425)
-
-**Added**
-
-- Message services can opt into native chat execution with
-  `options.execution: chat`. In that mode the shared provider runtime routes
-  normalized message handoffs through a `ChatTurnRunner` bridge instead of
-  action stdout, and delivers assistant replies through the existing provider
-  `DeliveryRequest` path.
-- Telegram has focused fake-transport coverage proving inbound webhook text is
-  normalized, keyed with `NormalizedMessage.ConversationState().SessionID`,
-  handed to the chat bridge, and returned via Bot API `sendMessage`.
-
-**Documented pending integration**
-
-- The planned `aps chat <profile-id>` CLI surface includes the single-profile
-  REPL, `--once` one-shot mode, `--invite` multi-profile mode, profile
-  `llm:` config, and `SessionTypeChat` registry entries. Those pieces depend
-  on the companion aps-chat lanes that own `internal/cli/chat`,
-  `internal/core/chat`, and `internal/core/session`.
-
 ### Added — kit/runtime/policy adoption (track: `aps-policy-adoption`, T-1290..T-1293)
 
 `aps` now adopts kit's runtime policy engine

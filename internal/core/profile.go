@@ -105,23 +105,10 @@ type Profile struct {
 	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
 	Trust         *TrustConfig         `yaml:"trust,omitempty"`
 	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
-	LLM           *LLMConfig           `yaml:"llm,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
 	Roles         []string             `yaml:"roles,omitempty"` // owner, assignee, evaluator, auditor
 	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty"`
-}
-
-// LLMConfig holds native chat model and routing preferences for a profile.
-type LLMConfig struct {
-	Provider     string         `yaml:"provider,omitempty"`
-	DefaultModel string         `yaml:"default_model,omitempty"`
-	BaseURL      string         `yaml:"base_url,omitempty"`
-	Routers      []string       `yaml:"routers,omitempty"`
-	RouterConfig map[string]any `yaml:"router_config,omitempty"`
-	Fallback     []string       `yaml:"fallback,omitempty"`
-	StrongModel  string         `yaml:"strong_model,omitempty"`
-	WeakModel    string         `yaml:"weak_model,omitempty"`
 }
 
 // ScopeConfig defines access boundaries for a profile.

@@ -14,7 +14,6 @@ var commandGroups = map[string]string{
 	"voice":   "interact",
 	"session": "interact",
 	"listen":  "interact",
-	"chat":    "interact",
 
 	// ORGANIZE — taxonomy + scoping (the nouns aps owns).
 	"profile":    "organize",

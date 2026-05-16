@@ -149,64 +149,6 @@ func TestHandler_TelegramServiceWebhookValidatesSecretAndDelivers(t *testing.T) 
 	}
 }
 
-func TestHandler_TelegramServiceWebhookChatModeDeliversNativeChatReply(t *testing.T) {
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	t.Setenv("TELEGRAM_BOT_TOKEN", "bot-token")
-	if err := core.SaveService(&core.ServiceConfig{
-		ID:      "support-bot",
-		Type:    "message",
-		Adapter: "telegram",
-		Profile: "assistant",
-		Env: map[string]string{
-			"TELEGRAM_BOT_TOKEN": "secret:TELEGRAM_BOT_TOKEN",
-		},
-		Options: map[string]string{
-			"default_action":       "chat",
-			"execution":            "chat",
-			"allowed_chats":        "-1001234567890",
-			"webhook_secret_token": "telegram-secret",
-		},
-	}); err != nil {
-		t.Fatalf("SaveService: %v", err)
-	}
-
-	executor := &fakeActionExecutor{output: "action output should not be used"}
-	chat := &captureChatTurnRunner{reply: "assistant reply from chat"}
-	transport := &captureTelegramTransport{response: &TelegramAPIResponse{
-		OK:     true,
-		Result: &TelegramMessageSummary{MessageID: 9001},
-	}}
-	handler := newServiceTestHandler(executor, WithTelegramTransport(transport), WithChatTurnRunner(chat))
-	body := `{"update_id":555,"message":{"message_id":77,"date":1773230400,"from":{"id":42,"first_name":"Ada"},"chat":{"id":-1001234567890,"type":"group"},"text":"hello from telegram"}}`
-	req := httptest.NewRequest(http.MethodPost, "/services/support-bot/webhook", strings.NewReader(body))
-	req.Header.Set(coremessenger.TelegramSecretTokenHeader, "telegram-secret")
-	rec := httptest.NewRecorder()
-
-	handler.ServeServiceWebhook(rec, req, "support-bot", "telegram")
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-	if executor.input.ProfileID != "" || executor.input.ActionID != "" {
-		t.Fatalf("action executor input = %#v, want no action execution", executor.input)
-	}
-	if chat.turn.ProfileID != "assistant" || chat.turn.Text != "hello from telegram" {
-		t.Fatalf("chat turn = %#v", chat.turn)
-	}
-	if chat.turn.SessionID == "" || chat.turn.SessionID != chat.turn.Message.ConversationState().SessionID {
-		t.Fatalf("chat session = %q, want ConversationState session", chat.turn.SessionID)
-	}
-	if transport.token != "bot-token" || transport.request.Text != "assistant reply from chat" {
-		t.Fatalf("telegram sendMessage = token %q request %#v", transport.token, transport.request)
-	}
-	if transport.request.ReplyParameters == nil || transport.request.ReplyParameters.MessageID != 77 {
-		t.Fatalf("reply target = %#v, want message 77", transport.request.ReplyParameters)
-	}
-	if !strings.Contains(rec.Body.String(), `"delivery"`) {
-		t.Fatalf("response missing delivery: %s", rec.Body.String())
-	}
-}
-
 func TestHandler_TelegramServiceWebhookRejectsMissingSecret(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	if err := core.SaveService(&core.ServiceConfig{
@@ -302,21 +244,4 @@ func (t *captureTelegramTransport) SendMessage(_ context.Context, botToken strin
 		return t.response, nil
 	}
 	return &TelegramAPIResponse{OK: true, Result: &TelegramMessageSummary{MessageID: 1}}, nil
-}
-
-type captureChatTurnRunner struct {
-	turn  ChatTurn
-	reply string
-	err   error
-}
-
-func (r *captureChatTurnRunner) RunChatTurn(_ context.Context, turn ChatTurn) (*ChatTurnResult, error) {
-	r.turn = turn
-	if r.err != nil {
-		return nil, r.err
-	}
-	return &ChatTurnResult{
-		SessionID: turn.SessionID,
-		ReplyText: r.reply,
-	}, nil
 }
