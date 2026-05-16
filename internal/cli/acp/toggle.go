@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -78,9 +77,9 @@ Examples:
 	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&enabled, "enabled", "", "Enable (on), disable (off), or toggle (omit or blank)")
-	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport (stdio, ws, websocket)")
-	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Listen host for network transports")
-	cmd.Flags().StringVar(&port, "port", "8088", "Listen port for network transports")
+	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport (currently only stdio)")
+	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Reserved listen host for future network transports")
+	cmd.Flags().StringVar(&port, "port", "8088", "Reserved listen port for future network transports")
 
 	return cmd
 }
@@ -99,9 +98,8 @@ func enableACP(profile *core.Profile, transport, host, port string) error {
 		// For now, allow it to pass through
 	}
 
-	transport = normalizeACPTransport(transport)
-	if !validACPTransport(transport) {
-		return fmt.Errorf("invalid transport %q: use stdio, ws, or websocket", transport)
+	if transport != "stdio" {
+		return fmt.Errorf("ACP transport %q is not wired to aps acp server yet; use --transport=stdio", transport)
 	}
 
 	// Add "agent-protocol" capability (deduplicates automatically)
@@ -138,26 +136,6 @@ func enableACP(profile *core.Profile, transport, host, port string) error {
 	}
 
 	return nil
-}
-
-func normalizeACPTransport(transport string) string {
-	transport = strings.ToLower(strings.TrimSpace(transport))
-	if transport == "" {
-		return "stdio"
-	}
-	if transport == "websocket" {
-		return "ws"
-	}
-	return transport
-}
-
-func validACPTransport(transport string) bool {
-	switch normalizeACPTransport(transport) {
-	case "stdio", "ws":
-		return true
-	default:
-		return false
-	}
 }
 
 func disableACP(profile *core.Profile) error {

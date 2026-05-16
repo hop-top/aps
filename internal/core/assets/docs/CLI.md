@@ -181,47 +181,6 @@ aps myagent codex "write tests"
 aps myagent
 ```
 
-## Chat Commands
-
-### `aps chat`
-
-Open a native, profile-backed LLM chat session.
-
-```bash
-aps chat <profile-id>
-aps chat <profile-id> --once "<message>"
-aps chat <profile-id> --invite <other-profile-id>[,<other-profile-id>]
-aps chat <profile-id> --attach <session-id>
-aps chat <profile-id> --model <model-id>
-aps chat <profile-id> --no-stream
-```
-
-**Status:** the aps-chat track owns this command surface. The messenger
-service bridge can already route `options.execution: chat` handoffs into a
-native chat runner when that runner is registered; the CLI command,
-`SessionTypeChat` registry support, profile `llm:` resolution, and
-multi-profile turn policy are delivered by companion aps-chat lanes.
-
-Message services that should use native chat, rather than a profile action,
-set the persisted service option:
-
-```yaml
-options:
-  default_action: chat
-  execution: chat
-  reply: text
-```
-
-Chat-mode message services use the normalized message conversation state as
-their session key:
-
-```text
-NormalizedMessage.ConversationState().SessionID
-```
-
-Assistant replies are delivered through the configured message provider, for
-example Telegram `sendMessage`, not through action stdout or a socket bridge.
-
 ## Action Commands
 
 ### `aps action list`

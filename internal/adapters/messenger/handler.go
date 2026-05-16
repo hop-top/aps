@@ -40,7 +40,6 @@ type Handler struct {
 	logger            MessageLogger
 	voiceHandler      VoiceHandler
 	validator         *msgtypes.ServiceValidator
-	chatRunner        ChatTurnRunner
 	telegramTransport TelegramTransport
 	slackTransport    SlackTransport
 	whatsappTransport msgtypes.WhatsAppTransport
@@ -100,10 +99,6 @@ func WithSlackTransport(t SlackTransport) func(*Handler) {
 
 func WithWhatsAppTransport(t msgtypes.WhatsAppTransport) func(*Handler) {
 	return func(h *Handler) { h.whatsappTransport = t }
-}
-
-func WithChatTurnRunner(runner ChatTurnRunner) func(*Handler) {
-	return func(h *Handler) { h.chatRunner = runner }
 }
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
@@ -336,7 +331,7 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 	runtime, err := msgtypes.NewRuntime(
 		validatingProvider,
 		h.router,
-		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
+		&serviceRuntimeExecutor{router: h.router, service: service},
 		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
 	)
 	if err != nil {
@@ -428,7 +423,7 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 	runtime, err := msgtypes.NewRuntime(
 		validatingProvider,
 		h.router,
-		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
+		&serviceRuntimeExecutor{router: h.router, service: service},
 		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
 	)
 	if err != nil {
@@ -536,7 +531,7 @@ func (h *Handler) handleWhatsAppServiceWebhook(w http.ResponseWriter, r *http.Re
 	runtime, err := msgtypes.NewRuntime(
 		validatingProvider,
 		h.router,
-		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
+		&serviceRuntimeExecutor{router: h.router, service: service},
 		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
 	)
 	if err != nil {
@@ -635,15 +630,11 @@ func (p *serviceValidatingProvider) DeliverMessage(ctx context.Context, delivery
 }
 
 type serviceRuntimeExecutor struct {
-	router     *MessageRouter
-	service    *core.ServiceConfig
-	chatRunner ChatTurnRunner
+	router  *MessageRouter
+	service *core.ServiceConfig
 }
 
 func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error) {
-	if serviceExecutionMode(e.service) == "chat" {
-		return NewChatMessageExecutor(e.chatRunner, e.service).ExecuteMessage(ctx, handoff)
-	}
 	actionResult, err := e.router.ExecuteAction(ctx, handoff.ProfileID, handoff.ActionName, handoff.Message)
 	if err != nil {
 		return nil, err
@@ -815,17 +806,6 @@ func replyMode(service *core.ServiceConfig) string {
 	value := strings.TrimSpace(strings.ToLower(service.Options["reply"]))
 	if value == "" || value == "auto" {
 		return "text"
-	}
-	return value
-}
-
-func serviceExecutionMode(service *core.ServiceConfig) string {
-	if service == nil || service.Options == nil {
-		return "action"
-	}
-	value := strings.TrimSpace(strings.ToLower(service.Options["execution"]))
-	if value == "" {
-		return "action"
 	}
 	return value
 }
