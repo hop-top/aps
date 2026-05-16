@@ -30,16 +30,31 @@ func TestComposeSystemPromptUsesRenderedPromptsAndActiveSpeaker(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"Active speaker: Reza (aps://profile/reza)",
-		"## Speaker: Noor (aps://profile/noor)",
-		"## Speaker: Reza (aps://profile/reza) [active]",
-		"Tone: direct",
+		"You are Reza.",
 		"Style: evidence-first",
-		"Roles: reviewer",
+		"## Other speakers in this conversation",
+		"- Noor (aps://profile/noor)",
+		"You are the active speaker for this turn (Reza).",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("prompt missing %q:\n%s", want, got)
 		}
+	}
+	// Inactive personas must NOT appear as direct directives.
+	for _, banned := range []string{
+		"You are Noor.",
+	} {
+		if strings.Contains(got, banned) {
+			t.Fatalf("prompt unexpectedly contains directive %q for inactive speaker:\n%s", banned, got)
+		}
+	}
+}
+
+func TestNewParticipantsRejectsDuplicateID(t *testing.T) {
+	noor := &core.Profile{ID: "noor", DisplayName: "Noor"}
+	_, err := NewParticipants([]*core.Profile{noor, noor})
+	if err == nil {
+		t.Fatal("expected duplicate-id error")
 	}
 }
 

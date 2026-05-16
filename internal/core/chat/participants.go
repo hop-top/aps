@@ -33,13 +33,20 @@ func NewParticipant(profile *core.Profile) (Participant, error) {
 }
 
 // NewParticipants renders profiles into chat participants, preserving order.
+// Duplicate profile IDs are rejected so the single-active-speaker invariant
+// holds and round-robin progression cannot stall on duplicates.
 func NewParticipants(profiles []*core.Profile) ([]Participant, error) {
 	participants := make([]Participant, 0, len(profiles))
+	seen := make(map[string]struct{}, len(profiles))
 	for _, profile := range profiles {
 		participant, err := NewParticipant(profile)
 		if err != nil {
 			return nil, err
 		}
+		if _, dup := seen[participant.ID]; dup {
+			return nil, fmt.Errorf("duplicate participant id %q", participant.ID)
+		}
+		seen[participant.ID] = struct{}{}
 		participants = append(participants, participant)
 	}
 	return participants, nil
@@ -78,8 +85,10 @@ func RenderSystemPrompt(profile *core.Profile) string {
 	return strings.Join(lines, "\n")
 }
 
-// ComposeSystemPrompt joins each participant's rendered prompt under speaker
-// headers and marks the one participant that should answer this turn.
+// ComposeSystemPrompt builds a single system prompt where only the active
+// speaker receives their persona as direct instructions ("You are X"). Other
+// participants are described as third-person metadata so the model does not
+// adopt or answer as the wrong speaker.
 func ComposeSystemPrompt(participants []Participant, activeSpeakerID string) (string, error) {
 	if len(participants) == 0 {
 		return "", fmt.Errorf("at least one participant is required")
@@ -91,29 +100,69 @@ func ComposeSystemPrompt(participants []Participant, activeSpeakerID string) (st
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "Active speaker: %s (%s)\n", active.DisplayName, active.URI)
-	b.WriteString("Only the active speaker should respond for this turn.\n")
+	b.WriteString(strings.TrimSpace(active.SystemPrompt))
+	b.WriteByte('\n')
 
+	others := make([]Participant, 0, len(participants)-1)
 	for _, participant := range participants {
-		b.WriteString("\n## Speaker: ")
-		b.WriteString(participant.DisplayName)
-		b.WriteString(" (")
-		b.WriteString(participant.URI)
-		b.WriteString(")")
 		if participant.ID == active.ID {
-			b.WriteString(" [active]")
+			continue
 		}
-		b.WriteByte('\n')
-		if participant.ID == active.ID {
-			b.WriteString("Active speaker: yes\n")
-		} else {
-			b.WriteString("Active speaker: no\n")
-		}
-		b.WriteString(strings.TrimSpace(participant.SystemPrompt))
-		b.WriteByte('\n')
+		others = append(others, participant)
 	}
 
+	if len(others) > 0 {
+		b.WriteString("\n## Other speakers in this conversation\n")
+		b.WriteString("These are described for context only. Do not adopt their voice or respond on their behalf.\n")
+		for _, participant := range others {
+			b.WriteString("\n- ")
+			b.WriteString(participant.DisplayName)
+			b.WriteString(" (")
+			b.WriteString(participant.URI)
+			b.WriteString(")\n")
+			descriptors := stripDirectivesFromPrompt(participant.SystemPrompt)
+			if descriptors != "" {
+				b.WriteString(indent(descriptors, "  "))
+				b.WriteByte('\n')
+			}
+		}
+	}
+
+	b.WriteString("\n## Turn\n")
+	fmt.Fprintf(&b, "You are the active speaker for this turn (%s).\n", active.DisplayName)
+	b.WriteString("Respond only as yourself.\n")
+
 	return strings.TrimSpace(b.String()), nil
+}
+
+// stripDirectivesFromPrompt removes the second-person "You are X." opener and
+// the "Profile URI:" line from a rendered persona, leaving only neutral
+// descriptors safe to embed in a section about a non-active participant.
+func stripDirectivesFromPrompt(prompt string) string {
+	lines := strings.Split(prompt, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "You are ") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "Profile URI:") {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
+func indent(s, prefix string) string {
+	if s == "" {
+		return ""
+	}
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
 }
 
 // FindParticipant returns the participant with id. Empty id selects the first
