@@ -63,7 +63,7 @@ func TestGroupIDsMatchHelpConfig(t *testing.T) {
 // between groups so the convention drift is visible in PR review.
 func TestCommandGroupsContent(t *testing.T) {
 	want := map[string][]string{
-		"interact":   {"run", "serve", "voice", "session", "listen"},
+		"interact":   {"run", "serve", "voice", "session", "listen", "chat"},
 		"organize":   {"profile", "capability", "bundle", "squad", "workspace", "contact"},
 		"pipelines":  {"a2a", "acp", "adapter", "webhook", "directory", "service", "action", "skill"},
 		"security":   {"identity", "policy"},
