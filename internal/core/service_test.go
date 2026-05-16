@@ -212,14 +212,16 @@ func TestValidateServiceConfig_MessageProviderConfig(t *testing.T) {
 		Adapter: "telegram",
 		Profile: "assistant",
 		Options: map[string]string{
-			"receive": "invalid",
-			"reply":   "comment",
+			"receive":   "invalid",
+			"reply":     "comment",
+			"execution": "chats",
 		},
 	})
 	assert.False(t, invalid.Valid)
 	assert.Contains(t, invalid.Issues, "message service requires option default_action to dispatch inbound messages")
 	assert.Contains(t, invalid.Issues, "message receive mode must be webhook or polling")
 	assert.Contains(t, invalid.Issues, "reply mode must be text, auto, or none")
+	assert.Contains(t, invalid.Issues, "execution mode must be action or chat")
 	assert.Contains(t, invalid.Issues, "missing env binding TELEGRAM_BOT_TOKEN")
 }
 
