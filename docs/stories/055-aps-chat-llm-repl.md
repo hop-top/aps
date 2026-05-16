@@ -1,5 +1,6 @@
 ---
-status: paper
+status: implementation
+note: Messenger service chat-mode bridge is implemented in T-0586; the full CLI command and SessionTypeChat registry support depend on companion aps-chat lanes.
 ---
 
 # Aps Chat — Native Profile-Backed LLM REPL
