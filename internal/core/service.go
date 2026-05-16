@@ -542,6 +542,7 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 	}
 	validateMessageReceiveMode(options["receive"], result)
 	validateMessageReplyMode(options["reply"], result)
+	validateMessageExecutionMode(options["execution"], result)
 	switch adapter {
 	case "telegram":
 		requireEnv(env, result, "TELEGRAM_BOT_TOKEN")
@@ -658,6 +659,18 @@ func validateMessageReplyMode(value string, result *ServiceValidationResult) {
 		}
 	default:
 		result.Issues = append(result.Issues, "reply mode must be text, auto, or none")
+	}
+}
+
+func validateMessageExecutionMode(value string, result *ServiceValidationResult) {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return
+	}
+	switch value {
+	case "action", "chat":
+	default:
+		result.Issues = append(result.Issues, "execution mode must be action or chat")
 	}
 }
 

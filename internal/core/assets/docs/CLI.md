@@ -183,11 +183,20 @@ aps myagent
 
 ## Chat Commands
 
-### `aps chat`
+### Planned: `aps chat`
 
-Open a native, profile-backed LLM chat session.
+> **Not yet available.** The CLI command, `SessionTypeChat` registry
+> support, profile `llm:` resolution, and multi-profile turn policy are
+> being delivered by the aps-chat track in companion lanes. The messenger
+> service bridge documented below can already route
+> `options.execution: chat` handoffs into a native chat runner once that
+> runner is registered.
+
+The planned `aps chat` command will open a native, profile-backed LLM chat
+session:
 
 ```bash
+# Planned surface — not yet wired in this build.
 aps chat <profile-id>
 aps chat <profile-id> --once "<message>"
 aps chat <profile-id> --invite <other-profile-id>[,<other-profile-id>]
@@ -195,12 +204,6 @@ aps chat <profile-id> --attach <session-id>
 aps chat <profile-id> --model <model-id>
 aps chat <profile-id> --no-stream
 ```
-
-**Status:** the aps-chat track owns this command surface. The messenger
-service bridge can already route `options.execution: chat` handoffs into a
-native chat runner when that runner is registered; the CLI command,
-`SessionTypeChat` registry support, profile `llm:` resolution, and
-multi-profile turn policy are delivered by companion aps-chat lanes.
 
 Message services that should use native chat, rather than a profile action,
 set the persisted service option:

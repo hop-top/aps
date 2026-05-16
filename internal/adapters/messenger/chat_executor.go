@@ -45,16 +45,14 @@ type ChatTurnResult struct {
 
 // ChatMessageExecutor routes message handoffs into the native chat runtime.
 type ChatMessageExecutor struct {
-	runner      ChatTurnRunner
-	service     *core.ServiceConfig
-	failureText string
+	runner  ChatTurnRunner
+	service *core.ServiceConfig
 }
 
 func NewChatMessageExecutor(runner ChatTurnRunner, service *core.ServiceConfig) *ChatMessageExecutor {
 	return &ChatMessageExecutor{
-		runner:      runner,
-		service:     service,
-		failureText: defaultChatFailureReply,
+		runner:  runner,
+		service: service,
 	}
 }
 
@@ -100,7 +98,7 @@ func (e *ChatMessageExecutor) ExecuteMessage(ctx context.Context, handoff msgtyp
 
 	text := strings.TrimSpace(reply.ReplyText)
 	result := &msgtypes.ExecutionResult{
-		Status:   "completed",
+		Status:   "success",
 		Output:   text,
 		Metadata: chatExecutionMetadata(state, reply),
 	}
@@ -115,13 +113,9 @@ func (e *ChatMessageExecutor) ExecuteMessage(ctx context.Context, handoff msgtyp
 }
 
 func (e *ChatMessageExecutor) failureResult(msg *msgtypes.NormalizedMessage, turn ChatTurn) *msgtypes.ExecutionResult {
-	text := strings.TrimSpace(e.failureText)
-	if text == "" {
-		text = defaultChatFailureReply
-	}
 	result := &msgtypes.ExecutionResult{
 		Status: "failed",
-		Output: text,
+		Output: defaultChatFailureReply,
 		Metadata: map[string]string{
 			"session_id":      turn.SessionID,
 			"conversation_id": turn.ConversationID,
@@ -129,7 +123,7 @@ func (e *ChatMessageExecutor) failureResult(msg *msgtypes.NormalizedMessage, tur
 	}
 	if replyMode(e.service) != "none" {
 		result.Reply = &msgtypes.DeliveryRequest{
-			Text:     text,
+			Text:     defaultChatFailureReply,
 			Metadata: replyMetadata(msg, e.service),
 		}
 	}

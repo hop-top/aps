@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"hop.top/aps/internal/core"
@@ -635,14 +636,23 @@ func (p *serviceValidatingProvider) DeliverMessage(ctx context.Context, delivery
 }
 
 type serviceRuntimeExecutor struct {
-	router     *MessageRouter
-	service    *core.ServiceConfig
-	chatRunner ChatTurnRunner
+	router      *MessageRouter
+	service     *core.ServiceConfig
+	chatRunner  ChatTurnRunner
+	chatExecMu  sync.Once
+	chatExecVal *ChatMessageExecutor
+}
+
+func (e *serviceRuntimeExecutor) chatExecutor() *ChatMessageExecutor {
+	e.chatExecMu.Do(func() {
+		e.chatExecVal = NewChatMessageExecutor(e.chatRunner, e.service)
+	})
+	return e.chatExecVal
 }
 
 func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error) {
 	if serviceExecutionMode(e.service) == "chat" {
-		return NewChatMessageExecutor(e.chatRunner, e.service).ExecuteMessage(ctx, handoff)
+		return e.chatExecutor().ExecuteMessage(ctx, handoff)
 	}
 	actionResult, err := e.router.ExecuteAction(ctx, handoff.ProfileID, handoff.ActionName, handoff.Message)
 	if err != nil {
