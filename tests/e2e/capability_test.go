@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +13,7 @@ import (
 func TestCapabilityCommands(t *testing.T) {
 	// Setup isolated HOME
 	tmpHome := t.TempDir()
-	env := append(os.Environ(), fmt.Sprintf("HOME=%s", tmpHome))
+	env := sandboxEnv(tmpHome)
 
 	// 1. Create a dummy capability source
 	sourceDir := filepath.Join(tmpHome, "test-source")

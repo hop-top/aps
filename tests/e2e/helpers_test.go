@@ -2,45 +2,26 @@ package e2e
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"os/exec"
-	"strings"
 	"testing"
 )
 
-// prepareAPS creates the command with environment set up
+// prepareAPS builds a sandboxed aps invocation: HOME and all XDG_*
+// directories point at homeDir, APS_DATA_PATH is stripped from the
+// parent, and APS_NO_BUS_WARN=1 keeps stderr clean. Extra env
+// overrides take precedence (and may un-set APS_NO_BUS_WARN by
+// passing it as ""). Tests that exercise the bus-token warning
+// explicitly (webhook_gap) set APS_NO_BUS_WARN="" via extraEnv.
 func prepareAPS(t *testing.T, homeDir string, extraEnv map[string]string, args ...string) *exec.Cmd {
 	t.Helper()
 	cmd := exec.Command(apsBinary, args...)
-
-	// Keys overridden by the test harness
-	overridden := map[string]bool{
-		"HOME":          true,
-		"USERPROFILE":   true,
-		"XDG_DATA_HOME": true,
-		"APS_DATA_PATH": true,
+	if extraEnv == nil {
+		extraEnv = map[string]string{}
 	}
-
-	newEnv := []string{}
-	newEnv = append(newEnv, fmt.Sprintf("HOME=%s", homeDir))
-	newEnv = append(newEnv, fmt.Sprintf("USERPROFILE=%s", homeDir))
-	newEnv = append(newEnv, fmt.Sprintf("XDG_DATA_HOME=%s/.local/share", homeDir))
-
-	// Add extra environment variables
-	for k, v := range extraEnv {
-		overridden[k] = true
-		newEnv = append(newEnv, fmt.Sprintf("%s=%s", k, v))
+	if _, set := extraEnv["APS_NO_BUS_WARN"]; !set {
+		extraEnv["APS_NO_BUS_WARN"] = "1"
 	}
-
-	for _, e := range os.Environ() {
-		key := strings.Split(e, "=")[0]
-		if overridden[key] {
-			continue
-		}
-		newEnv = append(newEnv, e)
-	}
-	cmd.Env = newEnv
+	cmd.Env = sandboxEnvWith(homeDir, extraEnv)
 	return cmd
 }
 
