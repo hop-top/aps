@@ -55,7 +55,13 @@ func init() {
 		token = os.Getenv("BUS_TOKEN")
 	}
 	if token == "" {
-		fmt.Fprintln(os.Stderr, "warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled")
+		// Tests that don't exercise the bus opt out via APS_NO_BUS_WARN to
+		// keep stderr clean (e.g. progress-JSONL contract tests). The
+		// webhook_gap test exercises this warning explicitly and leaves
+		// the flag unset.
+		if os.Getenv("APS_NO_BUS_WARN") == "" {
+			fmt.Fprintln(os.Stderr, "warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled")
+		}
 		return
 	}
 

@@ -71,6 +71,11 @@ var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
 	Short:   "Agent Profile System CLI",
+	// kit 0.4 defaults EnforceValidate=true, which rejects all 169 aps
+	// leaves lacking kit/side-effect annotations. Annotation rollout is
+	// scoped to the aps-kit-12fcc-conformance track (T-0647..T-0662);
+	// flip this back to the default once that track lands.
+	DisableValidate: true,
 	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.

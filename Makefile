@@ -2,7 +2,7 @@
 
 BINARY_NAME=aps
 BIN_DIR=bin
-VERSION=$(shell cat VERSION.txt 2>/dev/null | sed 's/\.$$//' || echo "dev")
+VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS=-ldflags "-X hop.top/aps/internal/version.Version=$(VERSION) -X hop.top/aps/internal/version.Commit=$(COMMIT) -X hop.top/aps/internal/version.Date=$(DATE) -X hop.top/aps/internal/version.BuiltBy=makefile"

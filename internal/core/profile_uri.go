@@ -2,8 +2,9 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
-	"hop.top/uri"
+	urischeme "hop.top/uri/scheme"
 )
 
 // ProfileURIScheme is the canonical scheme for aps profile URIs.
@@ -15,7 +16,7 @@ const ProfileURISpace = "profile"
 // URI returns the canonical URI for this profile (aps://profile/<id>).
 // Cross-tool refs use this form (e.g. linking from tlc, ctxt, wsm).
 func (p *Profile) URI() string {
-	u := &uri.URI{Scheme: ProfileURIScheme, Space: ProfileURISpace, ID: p.ID}
+	u := &urischeme.URI{Scheme: ProfileURIScheme, Namespace: ProfileURISpace, ID: p.ID}
 	return u.String()
 }
 
@@ -24,24 +25,26 @@ func (p *Profile) URI() string {
 // Returns an error for empty input or refs with a non-aps scheme or
 // non-profile space.
 func ParseProfileRef(s string) (string, error) {
-	u, err := uri.Parse(s)
+	if s == "" {
+		return "", fmt.Errorf("empty profile ref")
+	}
+
+	// Bare id form (no scheme separator). hop.top/uri@v0.2 Parse rejects
+	// inputs without a scheme, so handle bare ids before delegating.
+	if !strings.Contains(s, "://") {
+		return s, nil
+	}
+
+	u, err := urischeme.Parse(s)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parse profile ref: %w", err)
 	}
 
-	// Bare id form: Parse returns URI{ID: s}.
-	if u.Scheme == "" && u.Space == "" {
-		if u.ID == "" {
-			return "", fmt.Errorf("empty profile ref")
-		}
-		return u.ID, nil
-	}
-
-	if u.Scheme != "" && u.Scheme != ProfileURIScheme {
+	if u.Scheme != ProfileURIScheme {
 		return "", fmt.Errorf("invalid profile ref scheme %q (want %q)", u.Scheme, ProfileURIScheme)
 	}
-	if u.Space != ProfileURISpace {
-		return "", fmt.Errorf("invalid profile ref space %q (want %q)", u.Space, ProfileURISpace)
+	if u.Namespace != ProfileURISpace {
+		return "", fmt.Errorf("invalid profile ref space %q (want %q)", u.Namespace, ProfileURISpace)
 	}
 	return u.ID, nil
 }

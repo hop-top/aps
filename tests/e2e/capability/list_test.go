@@ -45,12 +45,47 @@ func compileBinary() error {
 func runCap(t *testing.T, home string, args ...string) (string, string, error) {
 	t.Helper()
 	cmd := exec.Command(apsBinary, args...)
-	cmd.Env = append(os.Environ(), "HOME="+home)
+	cmd.Env = sandboxEnv(home)
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return stdout.String(), stderr.String(), err
+}
+
+// sandboxEnv returns an environment that points HOME and all
+// XDG_*_HOME paths at home, and strips APS_DATA_PATH from the parent
+// so tests can't read or write the user's real ~/.local/share/aps.
+// hop.top/aps/internal/core.GetDataDir resolves to
+// $APS_DATA_PATH > $XDG_DATA_HOME/aps > ~/.local/share/aps.
+func sandboxEnv(home string) []string {
+	overridden := map[string]bool{
+		"HOME":            true,
+		"USERPROFILE":     true,
+		"XDG_DATA_HOME":   true,
+		"XDG_CONFIG_HOME": true,
+		"XDG_CACHE_HOME":  true,
+		"XDG_STATE_HOME":  true,
+		"APS_DATA_PATH":   true,
+	}
+	env := []string{
+		"HOME=" + home,
+		"USERPROFILE=" + home,
+		"XDG_DATA_HOME=" + filepath.Join(home, ".local", "share"),
+		"XDG_CONFIG_HOME=" + filepath.Join(home, ".config"),
+		"XDG_CACHE_HOME=" + filepath.Join(home, ".cache"),
+		"XDG_STATE_HOME=" + filepath.Join(home, ".local", "state"),
+	}
+	for _, e := range os.Environ() {
+		key := e
+		if i := strings.IndexByte(e, '='); i >= 0 {
+			key = e[:i]
+		}
+		if !overridden[key] {
+			env = append(env, e)
+		}
+	}
+	return env
 }
 
 // TestCapabilityList_FormatJSON exercises the listing.RenderList JSON

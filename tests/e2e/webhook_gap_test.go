@@ -142,9 +142,11 @@ func TestWebhook_BusTokenMissingGracefulFallback(t *testing.T) {
 	profileID := "no-bus-tok"
 
 	// Stage profile + action up front (these stages also init the bus
-	// with no token; capture warnings here too).
+	// with no token; capture warnings here too). APS_NO_BUS_WARN must
+	// be empty to opt back in to the warning that the rest of the
+	// e2e helpers suppress by default.
 	_, createErr, err := runAPSWithEnv(t, home,
-		map[string]string{"APS_BUS_TOKEN": "", "BUS_TOKEN": ""},
+		map[string]string{"APS_BUS_TOKEN": "", "BUS_TOKEN": "", "APS_NO_BUS_WARN": ""},
 		"profile", "create", profileID)
 	require.NoError(t, err)
 	assert.Contains(t, createErr, "bus disabled",
@@ -157,7 +159,7 @@ func TestWebhook_BusTokenMissingGracefulFallback(t *testing.T) {
 		[]byte(fmt.Sprintf("#!/bin/sh\necho ran > %s", proof)), 0755))
 
 	cmd := prepareAPS(t, home,
-		map[string]string{"APS_BUS_TOKEN": "", "BUS_TOKEN": ""},
+		map[string]string{"APS_BUS_TOKEN": "", "BUS_TOKEN": "", "APS_NO_BUS_WARN": ""},
 		"webhook", "server",
 		"--addr", "127.0.0.1:0",
 		"--event-map", "bus.event="+profileID+":hook",
