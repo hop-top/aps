@@ -366,10 +366,21 @@ func TestHandler_Terminal_GetOutput(t *testing.T) {
 	term, err := tm.CreateTerminal("echo", []string{"test-output"}, "", map[string]string{})
 	require.NoError(t, err)
 
-	// Wait for command to complete
-	time.Sleep(100 * time.Millisecond)
+	// Wait for command to exit so the output reader goroutines have
+	// drained their pipes. A fixed sleep races on slower runners
+	// (Linux CI) where the child + reader goroutine haven't appended
+	// to the buffer yet — see T-0677.
+	_, err = tm.WaitForExit(term.ID)
+	require.NoError(t, err)
 
-	output, err := tm.GetOutput(term.ID)
+	// After exit, the readers may still be flushing the final line.
+	// Poll briefly until the buffer is populated.
+	var output string
+	require.Eventually(t, func() bool {
+		output, err = tm.GetOutput(term.ID)
+		return err == nil && output != ""
+	}, 2*time.Second, 10*time.Millisecond, "expected non-empty output after process exit")
+
 	assert.NoError(t, err)
 	assert.NotEmpty(t, output)
 }
