@@ -37,7 +37,7 @@ func ParseProfileRef(s string) (string, error) {
 
 	u, err := urischeme.Parse(s)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parse profile ref: %w", err)
 	}
 
 	if u.Scheme != ProfileURIScheme {

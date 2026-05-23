@@ -3,9 +3,11 @@
 # Docs: https://mise.jdx.dev
 
 [tools]
-go = "1.26.1"
+go = "1.26.3"
 goreleaser = "latest"
-golangci-lint = "latest"
+# Pin minor version so local + CI agree on enabled linters and
+# formatter rules. Bump in lockstep with .github/workflows/lint.yml.
+golangci-lint = "2.12.2"
 act = "latest"
 lychee = "latest"
 

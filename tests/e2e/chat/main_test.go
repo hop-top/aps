@@ -99,10 +99,10 @@ func fakeEnv(response string) map[string]string {
 		// Suppress lipgloss v2 / bubbletea v2 terminal-feature probes
 		// (OSC 11 background-color query, DA1, DSR cursor pos). The
 		// test pty doesn't respond to them, so the TUI hangs at boot.
-		"NO_COLOR":     "1",
-		"CLICOLOR":     "0",
-		"TERM":         "dumb",
-		"TERM_PROGRAM": "Apple_Terminal",
+		"NO_COLOR":        "1",
+		"CLICOLOR":        "0",
+		"TERM":            "dumb",
+		"TERM_PROGRAM":    "Apple_Terminal",
 		"APS_NO_BUS_WARN": "1",
 	}
 }

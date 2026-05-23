@@ -29,5 +29,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
+          # Pinned in lockstep with mise.toml so local + CI agree
+          # on enabled linters and formatter rules.
+          version: v2.12.2
           args: --timeout=5m ./...
           only-new-issues: true
