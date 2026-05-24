@@ -59,7 +59,7 @@ func TestStorage_Save_Task(t *testing.T) {
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
 
-	version, err := storage.Save(ctx, task, event, 0)
+	version, err := storage.Save(ctx, task, event, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, a2a.TaskVersion(1), version)
 
@@ -86,7 +86,7 @@ func TestStorage_Get_Task(t *testing.T) {
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
 
-	_, err = storage.Save(ctx, originalTask, event, 0)
+	_, err = storage.Save(ctx, originalTask, event, nil, 0)
 	require.NoError(t, err)
 
 	retrievedTask, version, err := storage.Get(ctx, taskID)
@@ -132,7 +132,7 @@ func TestStorage_List_Tasks(t *testing.T) {
 			Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
 		}
 		event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-		_, err = storage.Save(ctx, task, event, 0)
+		_, err = storage.Save(ctx, task, event, nil, 0)
 		require.NoError(t, err)
 	}
 
@@ -281,7 +281,7 @@ func TestStorage_CreateMessageFile(t *testing.T) {
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
 
 	// Create task first
-	_, err = storage.Save(ctx, task, event, 0)
+	_, err = storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Create message
@@ -343,7 +343,7 @@ func TestStorage_Concurrent_SaveAndGet(t *testing.T) {
 				Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
 			}
 			event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-			_, err := storage.Save(ctx, task, event, 0)
+			_, err := storage.Save(ctx, task, event, nil, 0)
 			assert.NoError(t, err)
 		}(i)
 	}
@@ -412,15 +412,15 @@ func TestStorage_VersionIncrement(t *testing.T) {
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
 
 	// Save task multiple times
-	version1, err := storage.Save(ctx, task, event, 0)
+	version1, err := storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 	assert.Equal(t, a2a.TaskVersion(1), version1)
 
-	version2, err := storage.Save(ctx, task, event, version1)
+	version2, err := storage.Save(ctx, task, event, task, version1)
 	require.NoError(t, err)
 	assert.Equal(t, a2a.TaskVersion(2), version2)
 
-	version3, err := storage.Save(ctx, task, event, version2)
+	version3, err := storage.Save(ctx, task, event, task, version2)
 	require.NoError(t, err)
 	assert.Equal(t, a2a.TaskVersion(3), version3)
 }
@@ -478,4 +478,71 @@ func TestStorage_AgentCardValidation(t *testing.T) {
 	assert.Equal(t, originalCard.Version, retrievedCard.Version)
 	assert.Equal(t, originalCard.URL, retrievedCard.URL)
 	assert.Equal(t, len(originalCard.Skills), len(retrievedCard.Skills))
+}
+
+// TestStorage_Save_WithPrevTask exercises the v0.3.15 Save signature where the
+// caller passes a snapshot of the previous task version as a hint. The filesystem
+// backend treats it as advisory, so the call should succeed identically whether
+// prev is nil or a populated *a2a.Task, and version bookkeeping must still chain
+// off prevVersion.
+func TestStorage_Save_WithPrevTask(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := &StorageConfig{BasePath: tmpDir}
+	storage, err := NewStorage(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	task := &a2a.Task{
+		ID:     a2a.NewTaskID(),
+		Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+	}
+	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
+
+	v1, err := storage.Save(ctx, task, event, nil, 0)
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskVersion(1), v1)
+
+	stored, _, err := storage.Get(ctx, task.ID)
+	require.NoError(t, err)
+
+	v2, err := storage.Save(ctx, task, event, stored, v1)
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskVersion(2), v2)
+
+	v3, err := storage.Save(ctx, task, event, nil, v2)
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskVersion(3), v3)
+}
+
+// TestStorage_List_RoundTrip verifies the storage List method returns tasks
+// previously persisted via Save and that the response shape matches what
+// OnListTasks delegates back to a JSON-RPC caller.
+func TestStorage_List_RoundTrip(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := &StorageConfig{BasePath: tmpDir}
+	storage, err := NewStorage(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
+
+	ids := make(map[a2a.TaskID]struct{}, 3)
+	for i := 0; i < 3; i++ {
+		task := &a2a.Task{
+			ID:     a2a.NewTaskID(),
+			Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+		}
+		ids[task.ID] = struct{}{}
+		_, err := storage.Save(ctx, task, event, nil, 0)
+		require.NoError(t, err)
+	}
+
+	resp, err := storage.List(ctx, &a2a.ListTasksRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Len(t, resp.Tasks, 3)
+	for _, task := range resp.Tasks {
+		_, ok := ids[task.ID]
+		assert.Truef(t, ok, "unexpected task id %s in List response", task.ID)
+	}
 }

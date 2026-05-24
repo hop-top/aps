@@ -7,7 +7,7 @@ require (
 	charm.land/bubbletea/v2 v2.0.5
 	charm.land/lipgloss/v2 v2.0.3
 	charm.land/log/v2 v2.0.0
-	github.com/a2aproject/a2a-go v0.3.4
+	github.com/a2aproject/a2a-go v0.3.15
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/huh v1.0.0
 	github.com/creack/pty v1.1.24

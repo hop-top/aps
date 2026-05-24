@@ -495,7 +495,7 @@ func TestServer_OnGetTask(t *testing.T) {
 		Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-	_, err = server.storage.Save(ctx, task, event, 0)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Get the task
@@ -557,7 +557,7 @@ func TestServer_OnGetTask_WithHistoryLength(t *testing.T) {
 		History: []*a2a.Message{},
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-	_, err = server.storage.Save(ctx, task, event, 0)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Get task with limited history
@@ -595,7 +595,7 @@ func TestServer_OnCancelTask(t *testing.T) {
 		Status: a2a.TaskStatus{State: a2a.TaskStateWorking},
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateWorking, nil)
-	_, err = server.storage.Save(ctx, task, event, 0)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Cancel the task
@@ -655,7 +655,7 @@ func TestServer_OnSendMessage(t *testing.T) {
 		Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-	_, err = server.storage.Save(ctx, task, event, 0)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Create a message with the same task ID
@@ -719,7 +719,7 @@ func TestServer_OnSendMessage_WithTaskID(t *testing.T) {
 		Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
 	}
 	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
-	_, err = server.storage.Save(ctx, task, event, 0)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
 	require.NoError(t, err)
 
 	// Send a message to that task
@@ -733,4 +733,43 @@ func TestServer_OnSendMessage_WithTaskID(t *testing.T) {
 	result, err := server.OnSendMessage(ctx, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+// TestServer_OnListTasks verifies the v0.3.15 tasks/list handler returns
+// tasks previously persisted via the underlying TaskStore. nil and empty
+// request bodies both yield the same well-formed response.
+func TestServer_OnListTasks(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := &StorageConfig{BasePath: tmpDir}
+
+	profile := &core.Profile{
+		ID:           "test-profile",
+		Capabilities: []string{"a2a"},
+		A2A:          &core.A2AConfig{},
+	}
+
+	server, err := NewServer(profile, config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	resp, err := server.OnListTasks(ctx, nil)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Empty(t, resp.Tasks)
+
+	taskID := a2a.NewTaskID()
+	task := &a2a.Task{
+		ID:     taskID,
+		Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+	}
+	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
+	_, err = server.storage.Save(ctx, task, event, nil, 0)
+	require.NoError(t, err)
+
+	resp, err = server.OnListTasks(ctx, &a2a.ListTasksRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Tasks, 1)
+	assert.Equal(t, taskID, resp.Tasks[0].ID)
 }

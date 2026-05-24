@@ -57,16 +57,19 @@ func NewStorage(config *StorageConfig) (*Storage, error) {
 	return &Storage{config: config}, nil
 }
 
-// Save implements a2asrv.TaskStore interface
-func (s *Storage) Save(ctx context.Context, task *a2a.Task, event a2a.Event, prev a2a.TaskVersion) (a2a.TaskVersion, error) {
+// Save implements a2asrv.TaskStore interface.
+// The prev *a2a.Task argument is a hint for optimistic concurrency; the
+// filesystem backend tracks versions monotonically per-task via prevVersion
+// and does not need a prior snapshot for collision detection.
+func (s *Storage) Save(_ context.Context, task *a2a.Task, event a2a.Event, prev *a2a.Task, prevVersion a2a.TaskVersion) (a2a.TaskVersion, error) {
+	_ = prev
+
 	taskDir := filepath.Join(s.config.TasksPath, string(task.ID))
 
-	// Create task directory if it doesn't exist
 	if err := os.MkdirAll(taskDir, 0700); err != nil {
 		return 0, ErrStorageFailed("create task directory", err)
 	}
 
-	// Save task metadata
 	metaPath := filepath.Join(taskDir, "meta.json")
 	data, err := json.MarshalIndent(task, "", "  ")
 	if err != nil {
@@ -76,7 +79,6 @@ func (s *Storage) Save(ctx context.Context, task *a2a.Task, event a2a.Event, pre
 		return 0, ErrStorageFailed("write task", err)
 	}
 
-	// Save the event that triggered this update
 	eventData, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
 		return 0, ErrStorageFailed("marshal event", err)
@@ -86,12 +88,11 @@ func (s *Storage) Save(ctx context.Context, task *a2a.Task, event a2a.Event, pre
 		return 0, ErrStorageFailed("write event", err)
 	}
 
-	// Generate new version - increment previous version
 	var newVersion a2a.TaskVersion
-	if prev == 0 {
+	if prevVersion == 0 {
 		newVersion = 1
 	} else {
-		newVersion = prev + 1
+		newVersion = prevVersion + 1
 	}
 
 	return newVersion, nil
