@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/core"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/console/progress"
 )
@@ -68,5 +69,11 @@ var runCmd = &cobra.Command{
 }
 
 func init() {
+	// T-0648 — kit signature annotations. `run` executes an opaque
+	// subprocess in a profile context; the agent budget treats it as
+	// a local state-mutating verb. Idempotency depends on the spawned
+	// command, so the kit-level tag is conditional.
+	kitcli.SetSideEffect(runCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(runCmd, kitcli.IdempotencyConditional)
 	rootCmd.AddCommand(runCmd)
 }

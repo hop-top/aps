@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -146,4 +147,8 @@ func init() {
 	profileTrustCmd.Flags().String("domain", "", "Filter by trust domain")
 	profileTrustCmd.Flags().Bool("history", false, "Show trust history entries")
 	profileTrustCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// T-0648 — `profile trust` reads scores + history; pure read.
+	kitcli.SetSideEffect(profileTrustCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(profileTrustCmd, kitcli.IdempotencyYes)
 }

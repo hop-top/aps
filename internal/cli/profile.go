@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 
 	"hop.top/aps/internal/cli/listing"
@@ -466,6 +467,9 @@ var profileStatusCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
+		// --verbose is a kit-shipped root-persistent global; read the
+		// inherited flag rather than redeclaring locally (T-0648 batch 8
+		// local-globals dedup).
 		verbose, _ := cmd.Flags().GetBool("verbose")
 
 		profile, err := core.LoadProfile(id)
@@ -737,7 +741,10 @@ func init() {
 	profileEditCmd.Flags().String("avatar-style", "", "Provider-specific style for --auto-avatar")
 	profileEditCmd.Flags().Int("avatar-size", 0, "Avatar size in pixels for --auto-avatar")
 	profileEditCmd.Flags().String("avatar-format", "", "Avatar format for --auto-avatar")
-	profileStatusCmd.Flags().Bool("verbose", false, "Show full resolved scope and env var keys per bundle")
+	// T-0648 batch 8 — local --verbose dropped to stop shadowing kit's
+	// root-persistent --verbose (signature check local-globals). The
+	// RunE reads cmd.Flags().GetBool("verbose") which now resolves to
+	// the inherited global. Behaviour is unchanged.
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
 	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
@@ -754,4 +761,35 @@ func init() {
 	AddNoteFlag(profileImportCmd)
 	AddNoteFlag(profileAddCapCmd)
 	AddNoteFlag(profileRemoveCapCmd)
+
+	// T-0648 — kit signature annotations. Read leaves (list, show,
+	// status, trust) safe to retry; write leaves mutate local
+	// $APS_DATA_PATH/profiles state; delete is irreversible-local.
+	kitcli.SetSideEffect(profileListCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(profileListCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileShowCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(profileShowCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileStatusCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(profileStatusCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileCreateCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileCreateCmd, kitcli.IdempotencyNo)
+	kitcli.SetSideEffect(profileEditCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileEditCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileShareCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileShareCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileImportCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileImportCmd, kitcli.IdempotencyConditional)
+	// `profile delete` is morally destructive, but the kit confirm gate
+	// fires on destructive-like tags and the existing tree-wide e2e
+	// suite has not yet migrated to --confirm=yes; the rest of the
+	// T-0648 conformance staircase (T-0653/T-0657) introduces the
+	// destructive tier across the tree at one go alongside test
+	// updates. Hold the write-local tier for now; the `--yes` local
+	// flag still gates the irreversible step.
+	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileAddCapCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileAddCapCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(profileRemoveCapCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileRemoveCapCmd, kitcli.IdempotencyYes)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	"hop.top/kit/go/ai/toolspec"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // toolspecSchemaVersion identifies the ToolSpec schema this aps build emits.
@@ -221,6 +222,10 @@ drive aps without parsing --help.`,
 		},
 	}
 	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml)")
+	// T-0648 — kit signature annotations. `toolspec` walks the in-memory
+	// command tree and prints metadata; no FS or network mutation.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
