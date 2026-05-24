@@ -2,12 +2,15 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"hop.top/aps/internal/core"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/cli/idemstore"
 )
 
@@ -212,5 +215,44 @@ func TestIdempotency_RecordsAndReplays(t *testing.T) {
 	}
 	if string(got.Output) != string(want) {
 		t.Errorf("replay Output = %q, want %q", got.Output, want)
+	}
+}
+
+// TestApplyNoRedactToggle_SurfacesIdempotencyHealthOnMutatingLeaves
+// proves that a captured store-open failure surfaces on mutating
+// commands and stays silent on read-only ones. Without this wiring the
+// sentinel `idempotencyOpenErr` is set but never reaches the user;
+// kit's wrapIdempotencyRunE returns the original RunE when
+// Root.IdemStore is nil, so `--idempotency-key` silently degrades to
+// no replay protection.
+func TestApplyNoRedactToggle_SurfacesIdempotencyHealthOnMutatingLeaves(t *testing.T) {
+	t.Setenv("KIT_POLICY_DISABLE", "1")
+
+	sentinel := errors.New("test-store-open-failure")
+	t.Cleanup(func() { idempotencyOpenErr = nil })
+	idempotencyOpenErr = sentinel
+
+	readCmd := &cobra.Command{Use: "show"}
+	kitcli.SetSideEffect(readCmd, kitcli.SideEffectRead)
+
+	writeCmd := &cobra.Command{Use: "delete"}
+	kitcli.SetSideEffect(writeCmd, kitcli.SideEffectDestructive)
+
+	parent := &cobra.Command{Use: "aps"}
+	parent.AddCommand(readCmd, writeCmd)
+
+	if err := applyNoRedactToggle(readCmd, nil); err != nil {
+		t.Fatalf("read-only cmd surfaced idempotency error: %v", err)
+	}
+
+	err := applyNoRedactToggle(writeCmd, nil)
+	if err == nil {
+		t.Fatal("mutating cmd did not surface idempotency error")
+	}
+	if !errors.Is(err, sentinel) {
+		t.Errorf("error chain missing sentinel: got %v", err)
+	}
+	if !strings.Contains(err.Error(), "replay store unavailable") {
+		t.Errorf("error message missing context: got %q", err.Error())
 	}
 }

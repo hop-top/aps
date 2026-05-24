@@ -64,6 +64,18 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	if _, err := initPolicyEngine(eventBus); err != nil {
 		return err
 	}
+	// Surface a captured idempotency-store open failure on mutating
+	// leaves only. Read-only paths (--help, completion, status, list,
+	// show) stay usable so an operator can investigate and recover
+	// without the store. Without this check, a malformed/unwritable
+	// idemstore.db silently degrades every `--idempotency-key` call to
+	// no replay protection — kit's wrapIdempotencyRunE returns the
+	// original RunE unchanged when Root.IdemStore is nil.
+	if kitcli.IsMutating(cmd) {
+		if err := idempotencyHealthErr(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
