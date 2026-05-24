@@ -9,6 +9,7 @@ import (
 
 	"hop.top/aps/internal/cli/listing"
 	coresquad "hop.top/aps/internal/core/squad"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -59,6 +60,10 @@ func newListCmd() *cobra.Command {
 
 	cmd.Flags().String("member", "", "Filter to squads containing this profile ID")
 	cmd.Flags().String("role", "", "Filter by squad type (stream-aligned, enabling, complicated-subsystem, platform)")
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

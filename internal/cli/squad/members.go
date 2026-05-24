@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // newMembersCmd returns the `squad members` mid-level command grouping
@@ -16,6 +17,11 @@ func newMembersCmd() *cobra.Command {
 		Use:   "members",
 		Short: "Manage squad membership",
 	}
+	// T-0648 — intermediate ancestor for depth-3 leaves
+	// (`aps squad members add|remove`). Signature validator requires
+	// kit/hierarchical on every intermediate ancestor of a depth-3
+	// leaf.
+	kitcli.SetHierarchical(cmd)
 	cmd.AddCommand(newAddMemberCmd())
 	cmd.AddCommand(newRemoveMemberCmd())
 	return cmd
@@ -31,6 +37,9 @@ func newAddMemberCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 
@@ -53,6 +62,10 @@ func newRemoveMemberCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+	// T-0648 — kit 0.4 signature annotations. Remove-by-id is
+	// naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

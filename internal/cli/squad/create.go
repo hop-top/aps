@@ -9,6 +9,7 @@ import (
 	coresquad "hop.top/aps/internal/core/squad"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newCreateCmd() *cobra.Command {
@@ -33,6 +34,10 @@ func newCreateCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("domain")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

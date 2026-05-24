@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewLogsCmd() *cobra.Command {
@@ -39,6 +40,11 @@ func NewLogsCmd() *cobra.Command {
 	cmd.Flags().BoolP("follow", "f", false, "Follow log output")
 	cmd.Flags().String("tail", "", "Number of lines to show from the end (\"all\" for entire buffer)")
 	cmd.Flags().Bool("timestamps", false, "Show timestamps")
+
+	// T-0648 — kit 0.4 signature annotations. logs is read-only (it
+	// drives tmux capture-pane to read the existing buffer).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
