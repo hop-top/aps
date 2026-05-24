@@ -65,6 +65,14 @@ func newMessengersCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "messengers",
 		Short: "Migrate messengers to adapter framework",
+		Long: `Migrate legacy messengers from ~/.aps/messengers into the unified adapter framework.
+
+Discovers every directory with a manifest.yaml under ~/.aps/messengers and
+converts each into the adapter shape under $APS_DATA_PATH. --only takes a
+comma-separated allowlist; --backup snapshots the source tree under
+xdg.DataDir("aps")/backups/messengers-<YYYYMMDD>/ before any mutation;
+--dry-run previews the plan without touching disk. Idempotent: re-running
+after a successful migration is a no-op when no legacy entries remain.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// --dry-run is auto-registered by kit/cli as a persistent
 			// global (bound to viper key kit.dry_run). Read from the

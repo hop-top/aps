@@ -29,7 +29,14 @@ func newListCmd() *cobra.Command {
 		Use:     "list <workspace-id>",
 		Aliases: []string{"ls"},
 		Short:   "List workspace policies",
-		Args:    cobra.ExactArgs(1),
+		Long: `List the multidevice policy attached to the given workspace.
+
+Reads the policy via multidevice.LoadPolicy(workspace-id) and renders the
+mode plus per-device allow/deny rows as a styled table on a TTY. --json
+emits the raw policy.Policy struct for structured callers. Read-only: no
+state mutation, no network calls. Missing or unparseable policies return
+the underlying error rather than an empty table.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPolicyList(args[0], jsonOutput)
 		},
