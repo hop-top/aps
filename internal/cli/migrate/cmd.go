@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
+	"hop.top/kit/go/console/progress"
 	"hop.top/kit/go/core/xdg"
 )
 
@@ -79,7 +81,7 @@ after a successful migration is a no-op when no legacy entries remain.`,
 			// inherited flag set instead of redeclaring locally
 			// (signature validator local-globals check, T-0648).
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			return runMessengersMigrate(dryRun, backup, only)
+			return runMessengersMigrate(cmd.Context(), dryRun, backup, only)
 		},
 	}
 
@@ -91,7 +93,7 @@ after a successful migration is a no-op when no legacy entries remain.`,
 	return cmd
 }
 
-func runMessengersMigrate(dryRun, backup bool, only string) error {
+func runMessengersMigrate(ctx context.Context, dryRun, backup bool, only string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -141,7 +143,7 @@ func runMessengersMigrate(dryRun, backup bool, only string) error {
 			dimStyle.Render(backupDir))
 	}
 
-	return executeMigration(messengers)
+	return executeMigration(ctx, messengers)
 }
 
 func discoverMessengers(dir string) ([]messengerMigrate, error) {
@@ -271,8 +273,11 @@ func createBackup(source, target string) error {
 	})
 }
 
-func executeMigration(messengers []messengerMigrate) error {
+func executeMigration(ctx context.Context, messengers []messengerMigrate) error {
 	fmt.Println("Migrating messengers to adapters...")
+
+	r := progress.FromContext(ctx)
+	total := int64(len(messengers))
 
 	success := 0
 	failed := 0
@@ -280,13 +285,19 @@ func executeMigration(messengers []messengerMigrate) error {
 	for i, m := range messengers {
 		fmt.Printf("  [%d/%d] %-16s ", i+1, len(messengers), m.Name)
 
+		r.Emit(ctx, progress.Event{Phase: "migrate", Item: m.Name, Bytes: int64(i), Total: total})
+
 		err := migrateMessenger(m)
 		if err != nil {
+			okFalse := false
+			r.Emit(ctx, progress.Event{Phase: "migrate", Item: m.Name, OK: &okFalse})
 			fmt.Printf("%s: %s\n", errorStyle.Render("failed"), dimStyle.Render(err.Error()))
 			failed++
 			continue
 		}
 
+		okTrue := true
+		r.Emit(ctx, progress.Event{Phase: "migrate", Item: m.Name, OK: &okTrue})
 		fmt.Println(successStyle.Render("migrated"))
 		success++
 	}
