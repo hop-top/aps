@@ -40,13 +40,13 @@ func NewStorage(config *StorageConfig) (*Storage, error) {
 		ipcPath = filepath.Join(config.BasePath, "..", "ipc", "queues")
 	}
 
-	if err := os.MkdirAll(tasksPath, 0700); err != nil {
+	if err := os.MkdirAll(tasksPath, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create tasks directory: %w", err)
 	}
-	if err := os.MkdirAll(agentCardsPath, 0700); err != nil {
+	if err := os.MkdirAll(agentCardsPath, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create agent-cards directory: %w", err)
 	}
-	if err := os.MkdirAll(ipcPath, 0700); err != nil {
+	if err := os.MkdirAll(ipcPath, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create ipc directory: %w", err)
 	}
 
@@ -57,41 +57,42 @@ func NewStorage(config *StorageConfig) (*Storage, error) {
 	return &Storage{config: config}, nil
 }
 
-// Save implements a2asrv.TaskStore interface
-func (s *Storage) Save(ctx context.Context, task *a2a.Task, event a2a.Event, prev a2a.TaskVersion) (a2a.TaskVersion, error) {
+// Save implements a2asrv.TaskStore interface.
+// Performs version arithmetic only (newVersion = prevVersion + 1) and
+// does NOT validate prevVersion against any stored value or compare
+// against the prev *a2a.Task snapshot. Concurrent writers on the same
+// TaskID will race; the second write overwrites the first. Callers
+// that need collision detection must coordinate externally.
+func (s *Storage) Save(_ context.Context, task *a2a.Task, event a2a.Event, _ *a2a.Task, prevVersion a2a.TaskVersion) (a2a.TaskVersion, error) {
 	taskDir := filepath.Join(s.config.TasksPath, string(task.ID))
 
-	// Create task directory if it doesn't exist
-	if err := os.MkdirAll(taskDir, 0700); err != nil {
+	if err := os.MkdirAll(taskDir, 0o700); err != nil {
 		return 0, ErrStorageFailed("create task directory", err)
 	}
 
-	// Save task metadata
 	metaPath := filepath.Join(taskDir, "meta.json")
 	data, err := json.MarshalIndent(task, "", "  ")
 	if err != nil {
 		return 0, ErrStorageFailed("marshal task", err)
 	}
-	if err := os.WriteFile(metaPath, data, 0600); err != nil {
+	if err := os.WriteFile(metaPath, data, 0o600); err != nil {
 		return 0, ErrStorageFailed("write task", err)
 	}
 
-	// Save the event that triggered this update
 	eventData, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
 		return 0, ErrStorageFailed("marshal event", err)
 	}
 	eventPath := filepath.Join(taskDir, fmt.Sprintf("event_%d_%s.json", time.Now().UnixNano(), uuid.New().String()))
-	if err := os.WriteFile(eventPath, eventData, 0600); err != nil {
+	if err := os.WriteFile(eventPath, eventData, 0o600); err != nil {
 		return 0, ErrStorageFailed("write event", err)
 	}
 
-	// Generate new version - increment previous version
 	var newVersion a2a.TaskVersion
-	if prev == 0 {
+	if prevVersion == 0 {
 		newVersion = 1
 	} else {
-		newVersion = prev + 1
+		newVersion = prevVersion + 1
 	}
 
 	return newVersion, nil
@@ -118,16 +119,44 @@ func (s *Storage) Get(ctx context.Context, taskID a2a.TaskID) (*a2a.Task, a2a.Ta
 	return &task, 1, nil
 }
 
-// List implements a2asrv.TaskStore interface
+// listPageSizeDefault matches the upstream a2a contract's documented
+// default page size for ListTasks (between 1 and 100; default 50).
+const listPageSizeDefault = 50
+
+// listPageSizeMax mirrors the upstream contract's documented cap.
+const listPageSizeMax = 100
+
+// List implements a2asrv.TaskStore interface.
+// Honours req.PageSize (defaults to 50, clamped to [1, 100] per upstream
+// contract) by slicing the in-memory result. Cursor-based pagination
+// (PageToken / NextPageToken) is not supported: filesystem iteration
+// order is not stable across runs, so a token would be unsafe. Callers
+// receive at most PageSize tasks per call with NextPageToken always
+// empty; larger result sets must be filtered server-side via the
+// request's Status / LastUpdatedAfter / ContextID fields.
 func (s *Storage) List(ctx context.Context, req *a2a.ListTasksRequest) (*a2a.ListTasksResponse, error) {
+	pageSize := listPageSizeDefault
+	if req != nil && req.PageSize > 0 {
+		pageSize = req.PageSize
+	}
+	if pageSize > listPageSizeMax {
+		pageSize = listPageSizeMax
+	}
+
 	entries, err := os.ReadDir(s.config.TasksPath)
 	if err != nil {
 		return nil, ErrStorageFailed("read tasks directory", err)
 	}
 
-	tasks := make([]*a2a.Task, 0, len(entries))
+	tasks := make([]*a2a.Task, 0, pageSize)
+	totalDirs := 0
 	for _, entry := range entries {
 		if !entry.IsDir() {
+			continue
+		}
+		totalDirs++
+
+		if len(tasks) >= pageSize {
 			continue
 		}
 
@@ -145,6 +174,7 @@ func (s *Storage) List(ctx context.Context, req *a2a.ListTasksRequest) (*a2a.Lis
 
 	return &a2a.ListTasksResponse{
 		Tasks:         tasks,
+		TotalSize:     totalDirs,
 		NextPageToken: "",
 	}, nil
 }
@@ -156,7 +186,7 @@ func (s *Storage) SaveAgentCard(agentID string, card *a2a.AgentCard) error {
 	if err != nil {
 		return ErrStorageFailed("marshal agent card", err)
 	}
-	if err := os.WriteFile(cardPath, data, 0600); err != nil {
+	if err := os.WriteFile(cardPath, data, 0o600); err != nil {
 		return ErrStorageFailed("write agent card", err)
 	}
 	return nil
@@ -194,7 +224,7 @@ func (s *Storage) DeleteAgentCard(agentID string) error {
 func (s *Storage) CreateMessageFile(taskID a2a.TaskID, message *a2a.Message) error {
 	taskDir := filepath.Join(s.config.TasksPath, string(taskID))
 	messagesDir := filepath.Join(taskDir, "messages")
-	if err := os.MkdirAll(messagesDir, 0700); err != nil {
+	if err := os.MkdirAll(messagesDir, 0o700); err != nil {
 		return ErrStorageFailed("create messages directory", err)
 	}
 
@@ -203,7 +233,7 @@ func (s *Storage) CreateMessageFile(taskID a2a.TaskID, message *a2a.Message) err
 	if err != nil {
 		return ErrStorageFailed("marshal message", err)
 	}
-	if err := os.WriteFile(messagePath, data, 0600); err != nil {
+	if err := os.WriteFile(messagePath, data, 0o600); err != nil {
 		return ErrStorageFailed("write message", err)
 	}
 	return nil

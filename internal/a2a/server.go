@@ -223,6 +223,16 @@ func (s *Server) OnGetTask(ctx context.Context, query *a2a.TaskQueryParams) (*a2
 	return task, nil
 }
 
+// OnListTasks handles the 'tasks/list' protocol method by delegating to the
+// underlying storage. A nil request is normalised to a zero-value request for
+// transport implementations that omit empty bodies.
+func (s *Server) OnListTasks(ctx context.Context, req *a2a.ListTasksRequest) (*a2a.ListTasksResponse, error) {
+	if req == nil {
+		req = &a2a.ListTasksRequest{}
+	}
+	return s.storage.List(ctx, req)
+}
+
 func (s *Server) OnCancelTask(ctx context.Context, id *a2a.TaskIDParams) (*a2a.Task, error) {
 	taskID := a2a.TaskID(id.ID)
 

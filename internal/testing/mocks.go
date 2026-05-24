@@ -42,8 +42,9 @@ func NewMockTaskStore() *MockTaskStore {
 	}
 }
 
-// Save implements a2asrv.TaskStore interface
-func (m *MockTaskStore) Save(ctx context.Context, task *a2a.Task, event a2a.Event, prev a2a.TaskVersion) (a2a.TaskVersion, error) {
+// Save implements a2asrv.TaskStore interface. The prev *a2a.Task arg is
+// advisory per upstream; this mock applies only version arithmetic.
+func (m *MockTaskStore) Save(_ context.Context, task *a2a.Task, event a2a.Event, _ *a2a.Task, prevVersion a2a.TaskVersion) (a2a.TaskVersion, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -56,7 +57,7 @@ func (m *MockTaskStore) Save(ctx context.Context, task *a2a.Task, event a2a.Even
 	m.tasks[task.ID] = task
 	m.events[task.ID] = append(m.events[task.ID], event)
 
-	version := prev + 1
+	version := prevVersion + 1
 	if version == 0 {
 		version = 1
 	}
