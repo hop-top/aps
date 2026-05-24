@@ -1,6 +1,7 @@
 package voice
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -166,30 +167,13 @@ func (m *BackendManager) Start(profileCfg *BackendConfig) error {
 	}
 
 	cmd := exec.Command(binCfg.Bin, binCfg.Args...) //nolint:gosec
-	cmd.SysProcAttr = detachSysProcAttr()
-	// Detach stdio so the child outlives the CLI process; nil leaves
-	// stdio at the parent's defaults, which is fine for tests and for
-	// users running interactively. A future enhancement may redirect
-	// to a log file under XDG_STATE_DIR/aps/voice.log.
-	cmd.Stdin = nil
 
-	if err := cmd.Start(); err != nil {
+	spawned, err := ps.SpawnDetached(context.Background(), cmd, ps.SpawnOptions{PIDFile: pidPath})
+	if err != nil {
 		return fmt.Errorf("start voice backend %q: %w", t, err)
 	}
-	pid := cmd.Process.Pid
 
-	if err := writePIDFile(pidPath, pid); err != nil {
-		// Try to clean up the orphaned child rather than leaking it.
-		_ = cmd.Process.Kill()
-		return fmt.Errorf("write voice pid file: %w", err)
-	}
-
-	// Release goroutine so the kernel reaps the child when it exits;
-	// we are explicitly *not* keeping cmd around — lifecycle is
-	// driven by the PID file going forward.
-	go func() { _ = cmd.Wait() }()
-
-	log.Info("voice backend started", "type", t, "pid", pid, "pidfile", pidPath)
+	log.Info("voice backend started", "type", t, "pid", spawned.PID, "pidfile", pidPath)
 	return nil
 }
 
@@ -289,27 +273,4 @@ func (m *BackendManager) Status() Status {
 		PID:     pid,
 		PIDFile: pidPath,
 	}
-}
-
-// writePIDFile writes pid to path atomically (write-then-rename).
-func writePIDFile(path string, pid int) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*")
-	if err != nil {
-		return fmt.Errorf("create temp pid file: %w", err)
-	}
-	tmpName := tmp.Name()
-	defer func() {
-		_ = os.Remove(tmpName)
-	}()
-	if _, err := fmt.Fprintf(tmp, "%d\n", pid); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("write pid: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close temp pid file: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("rename pid file into place: %w", err)
-	}
-	return nil
 }
