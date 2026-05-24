@@ -46,7 +46,7 @@ var voiceServiceStopCmd = &cobra.Command{
 }
 
 var voiceServiceStatusCmd = &cobra.Command{
-	Use:   "status",
+	Use:   statusCmdName,
 	Short: "Show voice backend service status",
 	Run: func(cmd *cobra.Command, args []string) {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})

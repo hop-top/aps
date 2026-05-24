@@ -47,7 +47,7 @@ type statusRow struct {
 }
 
 var statusCmd = &cobra.Command{
-	Use:   "status",
+	Use:   statusCmdName,
 	Short: "Show aps configuration and runtime status",
 	Long: `Show a snapshot of the current aps configuration and runtime state.
 
@@ -65,9 +65,9 @@ workspace values render as "(none)" to distinguish unset from blank.`,
 
 func runStatus(w io.Writer) error {
 	rows := []statusRow{
-		{Key: "profile", Value: orNone(globals.Profile())},
-		{Key: "workspace", Value: orNone(globals.Workspace())},
-		{Key: "version", Value: version.Short()},
+		{Key: profileFlagName, Value: orNone(globals.Profile())},
+		{Key: workspaceFlagName, Value: orNone(globals.Workspace())},
+		{Key: versionLabel, Value: version.Short()},
 		{Key: "bus", Value: busState()},
 	}
 	return listing.RenderList(w, globals.Format(), rows)
