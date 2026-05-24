@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -124,7 +125,7 @@ func buildScriptEnv(
 	profileEmail string,
 	inputs map[string]string,
 ) []string {
-	prefix := resolveEnvPrefix(device, manifest)
+	prefix := resolveEnvPrefix(manifest)
 
 	var env []string
 
@@ -147,13 +148,13 @@ func buildScriptEnv(
 }
 
 // resolveEnvPrefix picks the env-var prefix for action inputs.
-// Manifest wins over device record; falls back to DefaultEnvPrefix.
-func resolveEnvPrefix(device *Adapter, manifest *AdapterManifest) string {
+// Reads from the manifest only; the Adapter struct also carries an
+// EnvPrefix field but it is a serialization passthrough for SaveAdapter
+// round-trips, not a runtime override. Falls back to DefaultEnvPrefix
+// when the manifest does not declare one.
+func resolveEnvPrefix(manifest *AdapterManifest) string {
 	if manifest != nil && manifest.EnvPrefix != "" {
 		return strings.ToUpper(manifest.EnvPrefix)
-	}
-	if device != nil && device.EnvPrefix != "" {
-		return strings.ToUpper(device.EnvPrefix)
 	}
 	return DefaultEnvPrefix
 }
@@ -171,5 +172,40 @@ func LoadManifest(path string) (*AdapterManifest, error) {
 	if err := yaml.Unmarshal(data, &manifest); err != nil {
 		return nil, err
 	}
+	if err := validateManifestEnvPrefix(manifest.EnvPrefix); err != nil {
+		return nil, fmt.Errorf("manifest %s: %w", path, err)
+	}
 	return &manifest, nil
+}
+
+// envPrefixPattern matches POSIX-conformant env-var name prefixes:
+// a leading uppercase letter or underscore followed by any number of
+// uppercase letters, digits, or underscores. Mirrors the constraint
+// the shell imposes on env-var names — a prefix that violates this
+// produces malformed env-var names like `MY PREFIX_FOO=...` that most
+// shells silently fail to bind.
+var envPrefixPattern = regexp.MustCompile(`^[A-Z_][A-Z0-9_]*$`)
+
+// envPrefixValidationDisableEnv is the operator-set escape hatch.
+// Setting it to "1" skips the validateManifestEnvPrefix check at
+// LoadManifest time. Use only for migration scenarios where a fixed
+// non-conformant prefix must be tolerated briefly; the runtime
+// behaviour with such a prefix is undefined.
+const envPrefixValidationDisableEnv = "APS_ADAPTER_DISABLE_PREFIX_VALIDATION"
+
+// validateManifestEnvPrefix checks that the prefix is a valid env-var
+// name component (after ToUpper) or empty (manifest opts into the
+// default). Skipped when envPrefixValidationDisableEnv is set to "1".
+func validateManifestEnvPrefix(prefix string) error {
+	if prefix == "" {
+		return nil
+	}
+	if os.Getenv(envPrefixValidationDisableEnv) == "1" {
+		return nil
+	}
+	upper := strings.ToUpper(prefix)
+	if !envPrefixPattern.MatchString(upper) {
+		return fmt.Errorf("env_prefix %q is not a valid env-var name component (must match %s); set %s=1 to bypass", prefix, envPrefixPattern.String(), envPrefixValidationDisableEnv)
+	}
+	return nil
 }

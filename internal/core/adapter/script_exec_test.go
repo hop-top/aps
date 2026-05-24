@@ -1,6 +1,8 @@
 package adapter
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -9,7 +11,6 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 	tests := []struct {
 		name           string
 		manifestPrefix string
-		devicePrefix   string
 		inputs         map[string]string
 		wantPrefix     string
 		wantKey        string
@@ -17,7 +18,6 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 		{
 			name:           "no prefix falls back to ADAPTER",
 			manifestPrefix: "",
-			devicePrefix:   "",
 			inputs:         map[string]string{"foo": "bar"},
 			wantPrefix:     "ADAPTER",
 			wantKey:        "ADAPTER_FOO=bar",
@@ -50,21 +50,13 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 			wantPrefix:     "CAL",
 			wantKey:        "CAL_X=y",
 		},
-		{
-			name:         "device prefix used when manifest empty",
-			devicePrefix: "DEV",
-			inputs:       map[string]string{"a": "b"},
-			wantPrefix:   "DEV",
-			wantKey:      "DEV_A=b",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			device := &Adapter{
-				Name:      "test",
-				EnvPrefix: tt.devicePrefix,
-				Config:    map[string]any{},
+				Name:   "test",
+				Config: map[string]any{},
 			}
 			manifest := &AdapterManifest{
 				Name:      "test",
@@ -84,8 +76,6 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 				t.Fatalf("env missing %q; got: %v", tt.wantKey, env)
 			}
 
-			// Negative: no input var should use a stale literal prefix
-			// other than the wanted one.
 			for _, e := range env {
 				if !strings.Contains(e, "=") {
 					continue
@@ -103,19 +93,79 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 }
 
 func TestResolveEnvPrefix_Precedence(t *testing.T) {
-	device := &Adapter{EnvPrefix: "DEV"}
-	manifest := &AdapterManifest{EnvPrefix: "MAN"}
-
-	if got := resolveEnvPrefix(device, manifest); got != "MAN" {
-		t.Fatalf("manifest should win; got %q", got)
+	if got := resolveEnvPrefix(&AdapterManifest{EnvPrefix: "MAN"}); got != "MAN" {
+		t.Fatalf("manifest prefix should be returned; got %q", got)
 	}
-	if got := resolveEnvPrefix(device, &AdapterManifest{}); got != "DEV" {
-		t.Fatalf("device fallback failed; got %q", got)
-	}
-	if got := resolveEnvPrefix(&Adapter{}, &AdapterManifest{}); got != DefaultEnvPrefix {
+	if got := resolveEnvPrefix(&AdapterManifest{}); got != DefaultEnvPrefix {
 		t.Fatalf("default fallback failed; got %q", got)
 	}
-	if got := resolveEnvPrefix(nil, nil); got != DefaultEnvPrefix {
+	if got := resolveEnvPrefix(nil); got != DefaultEnvPrefix {
 		t.Fatalf("nil-safe fallback failed; got %q", got)
+	}
+}
+
+func TestValidateManifestEnvPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		wantErr bool
+	}{
+		{"empty is valid", "", false},
+		{"single underscore valid", "_", false},
+		{"alpha only", "CAL", false},
+		{"alphanumeric", "CAL2", false},
+		{"underscore separator", "MY_PREFIX", false},
+		{"lowercase valid (uppercased later)", "cal", false},
+		{"mixed case valid", "MyPrefix", false},
+		{"leading digit invalid", "2CAL", true},
+		{"contains space invalid", "MY PREFIX", true},
+		{"contains hyphen invalid", "MY-PREFIX", true},
+		{"contains dot invalid", "MY.PREFIX", true},
+		{"trailing space invalid", "CAL ", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateManifestEnvPrefix(tt.prefix)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateManifestEnvPrefix(%q) err=%v, wantErr=%v", tt.prefix, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateManifestEnvPrefix_EscapeHatch(t *testing.T) {
+	t.Setenv(envPrefixValidationDisableEnv, "1")
+	if err := validateManifestEnvPrefix("MY PREFIX"); err != nil {
+		t.Fatalf("escape hatch should bypass validation; got %v", err)
+	}
+}
+
+func TestLoadManifest_RejectsInvalidEnvPrefix(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "manifest.yaml")
+	if err := os.WriteFile(path, []byte("name: test\ntype: messenger\nenv_prefix: \"MY PREFIX\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadManifest(path)
+	if err == nil {
+		t.Fatal("LoadManifest should reject invalid env_prefix")
+	}
+	if !strings.Contains(err.Error(), "env_prefix") {
+		t.Fatalf("error should mention env_prefix; got %v", err)
+	}
+}
+
+func TestLoadManifest_AcceptsValidEnvPrefix(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "manifest.yaml")
+	if err := os.WriteFile(path, []byte("name: test\ntype: messenger\nenv_prefix: CAL\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := LoadManifest(path)
+	if err != nil {
+		t.Fatalf("LoadManifest should accept valid prefix; got %v", err)
+	}
+	if manifest.EnvPrefix != "CAL" {
+		t.Fatalf("EnvPrefix not preserved; got %q", manifest.EnvPrefix)
 	}
 }
