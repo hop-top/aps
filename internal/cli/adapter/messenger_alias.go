@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
@@ -13,6 +14,11 @@ import (
 // NewMessengerCmd creates the "aps messenger" alias command.
 // It delegates to device subcommands that apply to messenger devices,
 // providing a convenient shorthand for messenger-focused workflows.
+//
+// T-0648 — messenger is annotated hierarchical because the embedded
+// `link` parent introduces depth-3 leaves (`messenger link add`, etc.),
+// which the signature validator wires through every intermediate
+// ancestor up to (but excluding) the root.
 func NewMessengerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "messenger",
@@ -23,6 +29,7 @@ func NewMessengerCmd() *cobra.Command {
 These commands are equivalent to their 'aps device' counterparts but
 pre-filtered for messenger-type devices.`,
 	}
+	kitcli.SetHierarchical(cmd)
 
 	// Core messenger operations
 	cmd.AddCommand(newMessengerListCmd())
@@ -69,6 +76,8 @@ func newMessengerListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&platformFilter, "platform", "", "Filter by messenger platform (telegram, slack, discord, ...)")
 	cmd.Flags().StringVar(&statusFilter, "status", "", "Filter by runtime status (running, stopped, failed, ...)")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

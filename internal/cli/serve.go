@@ -14,6 +14,7 @@ import (
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/aps/internal/logging"
+	kitcli "hop.top/kit/go/console/cli"
 	kitapi "hop.top/kit/go/transport/api"
 
 	"github.com/spf13/cobra"
@@ -46,6 +47,11 @@ func init() {
 	serveCmd.Flags().StringVar(&serveAddr, "addr", "127.0.0.1:8080", "Address to listen on")
 	serveCmd.Flags().StringVar(&serveAuthToken, "auth-token", "", "Bearer token for authentication (optional)")
 	serveCmd.Flags().StringVar(&serveLogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	// T-0648 — kit signature annotations. `serve` is a long-running
+	// HTTP server (Interactive). Each start binds a fresh listener, so
+	// re-invocation is not idempotent without external coordination.
+	kitcli.SetSideEffect(serveCmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(serveCmd, kitcli.IdempotencyNo)
 }
 
 // buildServerHandler wires the kit Router with Recovery + RequestID

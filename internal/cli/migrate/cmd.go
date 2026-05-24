@@ -11,6 +11,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/core/xdg"
 )
@@ -58,7 +59,6 @@ type messengerMigrate struct {
 }
 
 func newMessengersCmd() *cobra.Command {
-	var dryRun bool
 	var backup bool
 	var only string
 
@@ -66,13 +66,19 @@ func newMessengersCmd() *cobra.Command {
 		Use:   "messengers",
 		Short: "Migrate messengers to adapter framework",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --dry-run is auto-registered by kit/cli as a persistent
+			// global (bound to viper key kit.dry_run). Read from the
+			// inherited flag set instead of redeclaring locally
+			// (signature validator local-globals check, T-0648).
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			return runMessengersMigrate(dryRun, backup, only)
 		},
 	}
 
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Preview migration without making changes")
 	cmd.Flags().BoolVar(&backup, "backup", false, "Create backup before migration")
 	cmd.Flags().StringVar(&only, "only", "", "Migrate only specified messengers (comma-separated)")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

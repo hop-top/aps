@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/styles"
@@ -111,7 +113,7 @@ var actionRunCmd = &cobra.Command{
 
 		payloadFile, _ := cmd.Flags().GetString("payload-file")
 		payloadStdin, _ := cmd.Flags().GetBool("payload-stdin")
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		dryRun := globals.DryRun()
 
 		// Load action to check details
 		action, err := core.GetAction(profileID, actionID)
@@ -167,5 +169,16 @@ func init() {
 
 	actionRunCmd.Flags().String("payload-file", "", "File to send to action stdin")
 	actionRunCmd.Flags().Bool("payload-stdin", false, "Read stdin and forward to action") // effectively default if interactive, but explicit flag requested
-	actionRunCmd.Flags().BoolP("dry-run", "n", false, "Print action details without running")
+
+	// T-0648 — kit signature annotations. list/show are pure reads of
+	// profile-action metadata. `run` invokes an opaque user-supplied
+	// action script; treat as WriteLocal + Conditional (idempotency
+	// depends on the underlying action). --dry-run is inherited from
+	// the kit-registered root global (read via globals.DryRun()).
+	kitcli.SetSideEffect(actionListCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(actionListCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(actionShowCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(actionShowCmd, kitcli.IdempotencyYes)
+	kitcli.SetSideEffect(actionRunCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(actionRunCmd, kitcli.IdempotencyConditional)
 }

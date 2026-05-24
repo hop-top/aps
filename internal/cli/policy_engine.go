@@ -1,14 +1,15 @@
 package cli
 
 import (
-	_ "embed"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
+	"hop.top/aps/internal/cli/globals"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/storage"
 
@@ -201,7 +202,7 @@ var callingProfileResolver func() string
 func init() {
 	callingProfileResolver = func() string {
 		if root.Viper != nil {
-			if pid := root.Viper.GetString("profile"); pid != "" {
+			if pid := globals.Profile(); pid != "" {
 				return pid
 			}
 		}

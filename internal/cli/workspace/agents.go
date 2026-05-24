@@ -9,6 +9,7 @@ import (
 	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // agentMatchRow is the table row shape for `aps workspace agents`.
@@ -102,6 +103,10 @@ against a task description.`,
 	cmd.Flags().String("cap", "", "Capability name to match")
 	cmd.Flags().String("task", "", "Task description for fuzzy matching")
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of the capability registry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

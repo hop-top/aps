@@ -9,12 +9,11 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewRegisterCmd creates the directory register command.
 func NewRegisterCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register a profile with the AGNTCY Directory",
@@ -22,8 +21,8 @@ func NewRegisterCmd() *cobra.Command {
 
 Generates an OASF record from the profile and pushes it to the Directory.
 
-Example:
-  aps directory register --profile worker`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker directory register`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0411 — short-circuit when --offline is set; AGNTCY Directory
 			// registration is a network call. (Refactored from the inline
@@ -32,6 +31,11 @@ Example:
 				return fmt.Errorf("directory register: %w", globals.ErrOffline)
 			}
 
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -65,9 +69,12 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit/cli signature annotations. Push to remote directory
+	// (write-shared); register-if-not-exists is idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

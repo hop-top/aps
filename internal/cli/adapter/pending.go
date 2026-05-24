@@ -6,11 +6,13 @@ import (
 	"os"
 	"time"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/adapter/mobile"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -36,22 +38,21 @@ type pendingJSONRow struct {
 }
 
 func newPendingCmd() *cobra.Command {
-	var (
-		profileID  string
-		jsonOutput bool
-	)
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "pending",
 		Short: "List mobile devices pending approval",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPending(profileID, jsonOutput)
+			// T-0648 — read --profile from kit-managed global.
+			return runPending(globals.Profile(), jsonOutput)
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Filter by profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

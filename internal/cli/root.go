@@ -67,6 +67,11 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
+// profileFlagName is the canonical name of the --profile root global
+// flag. Centralised so subcommands, group-mapping tables, and the
+// flag's own registration all reference the same identifier.
+const profileFlagName = "profile"
+
 var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
@@ -97,7 +102,13 @@ var root = kitcli.New(kitcli.Config{
 		// in applyNoRedactToggle via root.ConfigArgs() and threads them
 		// into core.LoadConfig (T-0583). Do not redeclare here — pflag
 		// panics on duplicate flag names.
-		{Name: "profile", Usage: "profile id (defaults to active profile)"},
+		// T-0648 batch 8 — `-p` shorthand promoted to the global so
+		// subcommands that previously declared local `--profile,-p` flags
+		// can drop the duplicate without losing the `-p` UX. Subcommands
+		// migrate by removing the local registration and reading via
+		// root.Viper.GetString("profile") or the inherited persistent
+		// flag set.
+		{Name: profileFlagName, Short: "p", Usage: "profile id (defaults to active profile)"},
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
 		{Name: "offline", Usage: "disable all network calls"},
 		{Name: "instance", Usage: "backend instance to target (defaults to config)"},

@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func init() {
@@ -88,13 +90,14 @@ type cardamumCard struct {
 }
 
 func newContactListCmd() *cobra.Command {
-	var profile, addressbook, org string
+	var addressbook, org string
 	var hasEmail bool
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all contacts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			profile := globals.Profile()
 			inputs := map[string]string{}
 			if addressbook != "" {
 				inputs["addressbook"] = addressbook
@@ -121,11 +124,17 @@ func newContactListCmd() *cobra.Command {
 			return listing.RenderList(os.Stdout, format, rows)
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	// T-0648 batch 8 — local --profile dropped; the contact subcommand
+	// reads globals.Profile() (set by the inherited global
+	// persistent flag, including its -p shorthand).
 	cmd.Flags().StringVar(&addressbook, "addressbook", "", "Addressbook ID")
 	cmd.Flags().StringVar(&org, "org", "", "Filter to a single ORG value")
 	cmd.Flags().BoolVar(&hasEmail, "has-email", false,
 		"Filter on whether the contact has an email")
+	// `contact list` reads the configured contacts adapter and projects
+	// the rows; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
@@ -214,22 +223,25 @@ func vcardField(body, key string) string {
 }
 
 func newContactShowCmd() *cobra.Command {
-	var profile string
+	// T-0648 batch 8 — local --profile dropped; read the global via
+	// root.Viper (inherited persistent flag, including its -p shorthand).
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show contact detail",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("show",
-				map[string]string{"id": args[0]}, profile)
+				map[string]string{"id": args[0]},
+				globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
 func newContactAddCmd() *cobra.Command {
-	var profile, name, org, phone, note, addressbook string
+	var name, org, phone, note, addressbook string
 	cmd := &cobra.Command{
 		Use:   "add <email>",
 		Short: "Add a new contact",
@@ -251,20 +263,24 @@ func newContactAddCmd() *cobra.Command {
 			if addressbook != "" {
 				inputs["addressbook"] = addressbook
 			}
-			return contactExec("add", inputs, profile)
+			return contactExec("add", inputs, globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
 	cmd.Flags().StringVar(&name, "name", "", "Contact name")
 	cmd.Flags().StringVar(&org, "org", "", "Organization")
 	cmd.Flags().StringVar(&phone, "phone", "", "Phone number")
 	cmd.Flags().StringVar(&note, "note", "", "Note")
 	cmd.Flags().StringVar(&addressbook, "addressbook", "", "Addressbook ID")
+	// `contact add` mints a new contact each call (write-shared into the
+	// upstream addressbook, no caller-side dedupe).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 
 func newContactUpdateCmd() *cobra.Command {
-	var profile, name, email, org, phone, note string
+	var name, email, org, phone, note string
 	cmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update contact fields",
@@ -286,35 +302,41 @@ func newContactUpdateCmd() *cobra.Command {
 			if note != "" {
 				inputs["note"] = note
 			}
-			return contactExec("update", inputs, profile)
+			return contactExec("update", inputs, globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
 	cmd.Flags().StringVar(&name, "name", "", "Contact name")
 	cmd.Flags().StringVar(&email, "email", "", "Email address")
 	cmd.Flags().StringVar(&org, "org", "", "Organization")
 	cmd.Flags().StringVar(&phone, "phone", "", "Phone number")
 	cmd.Flags().StringVar(&note, "note", "", "Note")
+	// `contact update` overwrites the named fields on an existing card;
+	// repeating with the same payload converges.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
 func newContactFindCmd() *cobra.Command {
-	var profile string
+	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
 	cmd := &cobra.Command{
 		Use:   "find <query>",
 		Short: "Search contacts",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("find",
-				map[string]string{"query": args[0]}, profile)
+				map[string]string{"query": args[0]},
+				globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
 func newContactNoteCmd() *cobra.Command {
-	var profile string
+	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
 	cmd := &cobra.Command{
 		Use:   "note <id> <text>",
 		Short: "Append note to contact",
@@ -324,24 +346,33 @@ func newContactNoteCmd() *cobra.Command {
 				map[string]string{
 					"id":   args[0],
 					"text": strings.Join(args[1:], " "),
-				}, profile)
+				},
+				globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	// `contact note` appends each call; not naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 
 func newContactDeleteCmd() *cobra.Command {
-	var profile string
+	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete a contact",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("delete",
-				map[string]string{"id": args[0]}, profile)
+				map[string]string{"id": args[0]},
+				globals.Profile())
 		},
 	}
-	cmd.Flags().StringVarP(&profile, "profile", "p", "", "Profile ID")
+	// `contact delete` is delete-by-id (idempotent). Hold the
+	// write-shared tier (rather than destructive-shared) until the
+	// tree-wide T-0653/T-0657 step lands the kit confirm gate alongside
+	// the matching e2e --confirm=yes updates.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

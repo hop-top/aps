@@ -94,8 +94,8 @@ func TestRootValidate_StrictGatesPass(t *testing.T) {
 	// conformance PR lands and drops one of these counts, bump the
 	// number down — never up. T-0653 flips both to 0.
 	const (
-		maxLocalGlobals      = 67 // T-0658 snapshot; T-0653 → 0
-		maxDepthHierarchical = 44 // T-0658 snapshot; T-0653 → 0
+		maxLocalGlobals      = 0
+		maxDepthHierarchical = 0
 	)
 	enforceCeiling(t, kitcli.SignatureCheckLocalGlobals,
 		counts[kitcli.SignatureCheckLocalGlobals], maxLocalGlobals,

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
@@ -31,7 +32,7 @@ type linkSummaryRow struct {
 // T-0437 — moved off tabwriter to listing.RenderList; filters consolidated
 // to --profile and --messenger.
 func newLinkListCmd() *cobra.Command {
-	var profileFilter, messengerFilter string
+	var messengerFilter string
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -40,13 +41,15 @@ func newLinkListCmd() *cobra.Command {
 		Long:    "Lists all messenger-profile links, optionally filtered by profile or messenger.",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLinks(profileFilter, messengerFilter)
+			// T-0648 — read --profile from kit-managed global.
+			return runLinks(globals.Profile(), messengerFilter)
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileFilter, "profile", "p", "", "Filter by profile id")
 	cmd.Flags().StringVar(&messengerFilter, "messenger", "", "Filter by messenger device name")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

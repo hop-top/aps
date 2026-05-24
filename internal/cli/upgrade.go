@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/version"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/core/upgrade"
 	"hop.top/kit/go/core/upgrade/skill"
 	"hop.top/kit/go/core/xdg"
@@ -41,6 +42,10 @@ func newUpgradeCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&auto, "auto", false, "Install without prompting")
 	cmd.AddCommand(newUpgradePreambleCmd())
+	// T-0648 — `upgrade` writes the new binary into the install
+	// location; repeated calls converge once at latest.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
@@ -77,6 +82,11 @@ Agents read this to know how to self-upgrade aps before executing tasks.`,
 	cmd.Flags().BoolVar(&auto, "auto", false, "Emit auto-upgrade (SnoozeNever) variant")
 	cmd.Flags().BoolVar(&never, "never", false, "Emit check-only (SnoozeAlways) variant")
 	cmd.Flags().BoolVar(&install, "install", false, "Write preamble to ~/.config/aps/skills/")
+	// T-0648 — default path prints; --install writes the same content
+	// to ~/.config/aps/skills/upgrade-preamble.md (idempotent overwrite).
+	// Conservatively tag as WriteLocal to cover the --install path.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

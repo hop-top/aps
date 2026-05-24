@@ -1,6 +1,7 @@
 package acp
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -8,12 +9,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewToggleCmd() *cobra.Command {
 	var (
-		profileID string
 		enabled   string
 		transport string
 		host      string
@@ -29,10 +31,16 @@ Without --enabled flag, toggles the current state (enables if not configured).
 With --enabled=on, forces enable. With --enabled=off, forces disable.
 
 Examples:
-  aps acp toggle --profile worker                    # Toggle ACP
-  aps acp toggle --profile worker --enabled=on      # Force enable
-  aps acp toggle --profile worker --enabled=off     # Force disable`,
+  aps --profile worker acp toggle                    # Toggle ACP
+  aps --profile worker acp toggle --enabled=on       # Force enable
+  aps --profile worker acp toggle --enabled=off      # Force disable`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from root globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return errors.New("--profile is required")
+			}
+
 			// Load profile
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
@@ -75,12 +83,16 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&enabled, "enabled", "", "Enable (on), disable (off), or toggle (omit or blank)")
 	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport (stdio, ws, websocket)")
 	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Listen host for network transports")
 	cmd.Flags().StringVar(&port, "port", "8088", "Listen port for network transports")
+
+	// T-0648 — kit 0.4 signature annotations. Mutates the local profile
+	// YAML; idempotency hinges on --enabled (`on`/`off` is idempotent,
+	// omitted flag flips state).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 
 	return cmd
 }

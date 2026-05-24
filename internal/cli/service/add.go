@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
 )
@@ -21,20 +22,21 @@ The --type flag accepts canonical service types and adapter aliases. Adapter
 aliases are resolved through kit aliasing before APS persists the service.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.profile, _ = cmd.Flags().GetString("profile")
+			opts.dryRun, _ = cmd.Flags().GetBool("dry-run")
 			return runAdd(cmd, args[0], opts)
 		},
 	}
 
 	cmd.Flags().StringVar(&opts.typeInput, "type", "", "Service type or adapter alias")
 	cmd.Flags().StringVar(&opts.adapter, "adapter", "", "Concrete adapter when --type is canonical")
-	cmd.Flags().StringVar(&opts.profile, "profile", "", "Profile that owns the service")
 	cmd.Flags().StringArrayVar(&opts.env, "env", nil, "Environment binding KEY=VALUE, repeatable")
 	cmd.Flags().StringArrayVar(&opts.labels, "label", nil, "Metadata label KEY=VALUE, repeatable")
 	cmd.Flags().StringVar(&opts.description, "description", "", "Human-readable description")
 	cmd.Flags().StringVar(&opts.site, "site", "", "Ticket adapter site or base URL")
 	cmd.Flags().StringVar(&opts.project, "project", "", "Ticket adapter project key, ID, or path")
 	cmd.Flags().StringVar(&opts.jql, "jql", "", "Jira issue query")
-	cmd.Flags().StringVar(&opts.workspace, "workspace", "", "Linear workspace key or ID")
+	cmd.Flags().StringVar(&opts.workspace, "linear-workspace", "", "Linear workspace key or ID")
 	cmd.Flags().StringVar(&opts.team, "team", "", "Linear team key or ID")
 	cmd.Flags().StringVar(&opts.group, "group", "", "GitLab group path or ID")
 	cmd.Flags().StringVar(&opts.events, "events", "", "Comma-separated ticket events to receive")
@@ -60,7 +62,13 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.dedupTTL, "dedup-ttl", "", "Slack Events API duplicate event retention duration")
 	cmd.Flags().StringVar(&opts.defaultAction, "default-action", "", "Default profile action for routed messages or tickets")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
-	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate without writing")
+
+	// --dry-run and --profile are inherited from the persistent
+	// globals (kit/cli auto-registers --dry-run; --profile is in
+	// root.go Globals). Reading happens in RunE.
+
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), cmd.UsageString())

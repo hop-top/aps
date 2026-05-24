@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/core"
 	corechat "hop.top/aps/internal/core/chat"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewCommand() *cobra.Command {
@@ -25,6 +26,16 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&opts.Attach, "attach", "", "Attach to an existing chat session")
 	cmd.Flags().StringSliceVar(&opts.Invite, "invite", nil, "Invite additional profile IDs (comma-separated or repeatable)")
 	cmd.Flags().IntVar(&opts.MaxAutoTurns, "max-auto-turns", corechat.DefaultMaxAutoTurns, "Maximum autonomous turns before returning control to the human")
+
+	// T-0648 — kit 0.4 signature annotations. `aps chat` is the
+	// interactive assistant REPL; each call appends a turn to the
+	// underlying chat session, so the effect is observably non-
+	// idempotent (every invocation moves state). Classify the side
+	// effect as write-local because the cobra entry point initiates
+	// local session state (registry append, transcript write) — the
+	// LLM-call boundary lives inside the engine layer.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 

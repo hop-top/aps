@@ -6,6 +6,7 @@ import (
 	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newLogsCmd() *cobra.Command {
@@ -26,6 +27,8 @@ func newLogsCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow log output (stream)")
 	cmd.Flags().StringVar(&since, "since", "", "Show logs since duration (e.g., 1h, 30m)")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

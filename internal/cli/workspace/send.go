@@ -12,6 +12,7 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewSendCmd creates the "collab send" command.
@@ -101,6 +102,12 @@ Input can be provided as:
 	cmd.Flags().String("timeout", "", "Task timeout (e.g. 5m, 1h)")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — dispatches a task to another agent in the workspace; each
+	// invocation mints a new task ID, so not natively idempotent without
+	// a caller-provided key. Use --idempotency-key to deduplicate.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 
 	return cmd
 }

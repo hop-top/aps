@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newDeleteCmd() *cobra.Command {
@@ -44,5 +45,7 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Skip link warning")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

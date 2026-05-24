@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/events"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // newLinkDeleteCmd creates the `aps adapter link delete` subcommand.
@@ -16,9 +18,7 @@ import (
 // under the `link` noun parent). `rm`/`remove` kept as conventional
 // shorthands.
 func newLinkDeleteCmd() *cobra.Command {
-	var profileID string
 	var jsonOutput bool
-	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:     "delete <device>",
@@ -26,16 +26,20 @@ func newLinkDeleteCmd() *cobra.Command {
 		Short:   "Unlink a device from a profile",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runUnlink(args[0], profileID, jsonOutput, dryRun, clinote.FromCmd(cmd))
+			// T-0648 — read --profile and --dry-run from kit-managed globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
+			return runUnlink(args[0], profileID, jsonOutput, globals.DryRun(), clinote.FromCmd(cmd))
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to unlink (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be unlinked without unlinking")
-	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
+	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

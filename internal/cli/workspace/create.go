@@ -8,6 +8,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewCreateCmd creates the "workspace create" command.
@@ -30,7 +31,7 @@ exchange tasks, and resolve conflicts.`,
 			}
 
 			description, _ := cmd.Flags().GetString("description")
-			policy, _ := cmd.Flags().GetString("policy")
+			policy, _ := cmd.Flags().GetString("resolution-policy")
 
 			// Interactive prompts when flags not provided
 			if description == "" {
@@ -42,7 +43,7 @@ exchange tasks, and resolve conflicts.`,
 				}
 			}
 
-			if !cmd.Flags().Changed("policy") {
+			if !cmd.Flags().Changed("resolution-policy") {
 				if err := huh.NewSelect[string]().
 					Title("Conflict resolution policy").
 					Options(
@@ -94,9 +95,14 @@ exchange tasks, and resolve conflicts.`,
 	addProfileFlag(cmd)
 	_ = cmd.MarkFlagRequired("profile")
 	cmd.Flags().String("description", "", "Workspace description")
-	cmd.Flags().String("policy", "priority", "Conflict resolution policy")
+	cmd.Flags().String("resolution-policy", "priority", "Conflict resolution policy")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — mints a new workspace; each invocation creates state, so
+	// not natively idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

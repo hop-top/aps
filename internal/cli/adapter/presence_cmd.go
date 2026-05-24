@@ -6,19 +6,18 @@ import (
 	"os"
 	"time"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
 func newPresenceCmd() *cobra.Command {
-	var (
-		workspaceID string
-		jsonOutput  bool
-	)
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "presence [workspace-id]",
@@ -28,7 +27,9 @@ func newPresenceCmd() *cobra.Command {
 Displays device status, last heartbeat, and sync lag information.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			wsID := workspaceID
+			// T-0648 — read --workspace from kit-managed global; positional
+			// arg still takes precedence (preserved UX).
+			wsID := globals.Workspace()
 			if len(args) > 0 {
 				wsID = args[0]
 			}
@@ -39,10 +40,10 @@ Displays device status, last heartbeat, and sync lag information.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

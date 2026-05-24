@@ -4,32 +4,42 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"github.com/spf13/cobra"
 )
 
 func newShowCmd() *cobra.Command {
-	var (
-		workspaceID string
-		jsonOutput  bool
-	)
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show effective workspace policy",
 		Long: `Show the effective access policy for a workspace, including
-the mode and device lists.`,
+the mode and device lists.
+
+Workspace is supplied via the tool-level --workspace global:
+  aps --workspace <id> policy show`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --workspace from the tool-level global rather
+			// than redefining a leaf-local --workspace flag (shadows the
+			// kit/cli persistent global declared in root.go).
+			workspaceID := globals.Workspace()
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runPolicyShow(workspaceID, jsonOutput)
 		},
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID (required)")
-	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

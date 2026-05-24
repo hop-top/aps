@@ -2,6 +2,7 @@ package policy
 
 import (
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,9 @@ they can do. Modes:
 	cmd.AddCommand(newSetCmd())
 	cmd.AddCommand(newShowCmd())
 	cmd.AddCommand(newTrustCmd())
+
+	// T-0648 — intermediate node for depth-3 leaves under `policy trust`.
+	kitcli.SetHierarchical(cmd)
 
 	return cmd
 }

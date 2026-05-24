@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewArchiveCmd creates the "collab archive" command.
@@ -63,6 +64,11 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — transitions the workspace to archived/read-only in local
+	// state; archiving an archived workspace is a no-op.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

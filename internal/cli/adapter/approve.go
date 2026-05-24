@@ -6,16 +6,16 @@ import (
 	"os"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newApproveCmd() *cobra.Command {
 	var (
-		profileID  string
 		approveAll bool
 		jsonOutput bool
-		quiet      bool
 	)
 
 	cmd := &cobra.Command{
@@ -30,17 +30,24 @@ func newApproveCmd() *cobra.Command {
 			if deviceID == "" && !approveAll {
 				return fmt.Errorf("provide a device ID or use --all")
 			}
-			return runApprove(deviceID, profileID, approveAll, jsonOutput, quiet)
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
+			return runApprove(deviceID, profileID, approveAll, jsonOutput, globals.Quiet())
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile (required)")
-	cmd.MarkFlagRequired("profile")
+	// T-0648 — read --profile and --quiet from kit-managed globals
+	// (root.Viper) rather than redeclaring local flags. The locals
+	// shadowed the globals on the leaf, tripping the local-globals
+	// signature check.
 	cmd.Flags().BoolVar(&approveAll, "all", false, "Approve all pending devices")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

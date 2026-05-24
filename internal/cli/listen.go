@@ -25,7 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/runtime/bus"
 )
 
@@ -62,10 +64,15 @@ func init() {
 		"Comma-separated topic patterns to subscribe to (kit/bus glob: * = one segment, # = trailing)")
 	listenCmd.Flags().Int("exit-after-events", 0,
 		"Exit cleanly after N events received (0 = run until signal)")
+	// T-0648 — kit signature annotations. `listen` is a long-running
+	// session-bound daemon (Interactive). Each invocation starts a
+	// fresh subscription stream, so it is not idempotent.
+	kitcli.SetSideEffect(listenCmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(listenCmd, kitcli.IdempotencyNo)
 }
 
 func runListen(cmd *cobra.Command, _ []string) error {
-	profileID := root.Viper.GetString("profile")
+	profileID := globals.Profile()
 	if profileID == "" {
 		return fmt.Errorf("--profile is required")
 	}

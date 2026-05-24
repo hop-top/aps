@@ -87,10 +87,11 @@ func TestBuildToolSpec_HasWorkflows(t *testing.T) {
 }
 
 func TestToolspecCmd_JSONOutput(t *testing.T) {
+	root.Viper.Set("format", "json")
+	t.Cleanup(func() { root.Viper.Set("format", "") })
 	cmd := newToolspecCmd()
 	var out strings.Builder
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--format", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -104,10 +105,11 @@ func TestToolspecCmd_JSONOutput(t *testing.T) {
 }
 
 func TestToolspecCmd_YAMLOutput(t *testing.T) {
+	root.Viper.Set("format", "yaml")
+	t.Cleanup(func() { root.Viper.Set("format", "") })
 	cmd := newToolspecCmd()
 	var out strings.Builder
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--format", "yaml"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -118,10 +120,10 @@ func TestToolspecCmd_YAMLOutput(t *testing.T) {
 }
 
 func TestToolspecCmd_DefaultFormatIsJSON(t *testing.T) {
+	root.Viper.Set("format", "")
 	cmd := newToolspecCmd()
 	var out strings.Builder
 	cmd.SetOut(&out)
-	cmd.SetArgs(nil)
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}

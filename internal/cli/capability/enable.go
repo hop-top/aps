@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/runtime/domain"
 )
 
@@ -48,6 +49,8 @@ func newEnableCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
@@ -84,5 +87,7 @@ func newDisableCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

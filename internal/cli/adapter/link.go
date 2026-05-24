@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/aps/internal/events"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // newLinkAddCmd creates the `aps adapter link add` subcommand. T-0398
 // renamed from `link` (verb-only) to `add` (CRUD verb under the
 // `link` noun parent).
 func newLinkAddCmd() *cobra.Command {
-	var profileID string
 	var jsonOutput bool
-	var dryRun bool
 
 	// Messenger-specific flags
 	var mappings []string
@@ -32,11 +32,18 @@ func newLinkAddCmd() *cobra.Command {
 		Short: "Link a device to a profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — --profile and --dry-run are kit-managed globals;
+			// read them via globals accessors instead of declaring local
+			// duplicates that shadow them.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			opts := linkOpts{
 				deviceName:    args[0],
 				profileID:     profileID,
 				jsonOut:       jsonOutput,
-				dryRun:        dryRun,
+				dryRun:        globals.DryRun(),
 				mappings:      mappings,
 				addMapping:    addMapping,
 				removeMapping: removeMapping,
@@ -47,10 +54,7 @@ func newLinkAddCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to link (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be linked without linking")
 
 	// Messenger-specific flags
 	cmd.Flags().StringSliceVar(&mappings, "mapping", nil,
@@ -61,8 +65,10 @@ func newLinkAddCmd() *cobra.Command {
 		"Remove a mapping by channel ID from an existing link")
 	cmd.Flags().StringVar(&defaultAction, "default-action", "",
 		"Set default action for unmapped channels")
-	clinote.AddFlag(cmd) // T-1291 (long-form only here; -n taken by --dry-run)
+	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

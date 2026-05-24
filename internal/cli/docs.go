@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/core"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 var docsCmd = &cobra.Command{
@@ -29,5 +30,10 @@ var docsCmd = &cobra.Command{
 }
 
 func init() {
+	// T-0648 — kit signature annotations. `docs` writes the generated
+	// documentation tree under the resolved agents dir; rerunning
+	// produces the same artefacts (idempotent overwrite).
+	kitcli.SetSideEffect(docsCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(docsCmd, kitcli.IdempotencyYes)
 	rootCmd.AddCommand(docsCmd)
 }

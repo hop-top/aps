@@ -5,16 +5,17 @@ import (
 	"fmt"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core/multidevice"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newAttachCmd() *cobra.Command {
 	var (
-		workspaceID string
-		role        string
-		jsonOutput  bool
+		role       string
+		jsonOutput bool
 	)
 
 	cmd := &cobra.Command{
@@ -28,19 +29,25 @@ Roles control what the device can do:
   viewer       Read-only access (read, sync)`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			workspaceID := globals.Workspace()
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runAttach(args[0], workspaceID, role, jsonOutput)
 		},
 		ValidArgsFunction: completeDeviceNames,
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace to attach the device to (required)")
-	cmd.MarkFlagRequired("workspace")
+	// T-0648 — read --workspace from the kit-managed global (root.Viper)
+	// instead of redeclaring it locally; the local would shadow the
+	// global and trip the local-globals signature check.
 	cmd.Flags().StringVar(&role, "role", "viewer",
 		"Device role: owner, collaborator, viewer")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

@@ -11,6 +11,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewSyncCmd creates the workspace sync command.
@@ -40,6 +41,11 @@ Use this command when:
 		"Device ID to sync (defaults to current device)")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — reconciles workspace state across devices (mutates shared
+	// state through the kit bus); re-syncing yields the same final state.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

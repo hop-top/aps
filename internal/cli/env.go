@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/logging"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 var envCmd = &cobra.Command{
@@ -36,5 +37,10 @@ Usage: eval $(aps env)`,
 }
 
 func init() {
+	// T-0648 — kit signature annotations. `env` is pure read of
+	// capability config + log lines; rerunning produces identical
+	// shell-eval output.
+	kitcli.SetSideEffect(envCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(envCmd, kitcli.IdempotencyYes)
 	rootCmd.AddCommand(envCmd)
 }

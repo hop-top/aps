@@ -13,6 +13,7 @@ import (
 	"hop.top/aps/internal/cli/policygate"
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -56,6 +57,8 @@ func NewCtxCmd() *cobra.Command {
 Context variables are key-value pairs visible to all agents.
 Changes are tracked with version history and ACL enforcement.`,
 	}
+	// T-0648 — intermediate node hosting depth-3 leaves (set/get/list/delete/history).
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(newCtxSetCmd())
 	cmd.AddCommand(newCtxGetCmd())
@@ -148,6 +151,11 @@ invisible to other profiles' workspace ctx get/list (T-1309).`,
 	cmd.Flags().Bool("private", false,
 		"Scope variable to the current profile (default: shared workspace-wide)")
 
+	// T-0648 — signature annotations. set mutates local-state context store;
+	// re-running with the same key/value produces the same observable state.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+
 	return cmd
 }
 
@@ -200,6 +208,10 @@ func newCtxGetCmd() *cobra.Command {
 	addProfileFlag(cmd)
 	addJSONFlag(cmd)
 
+	// T-0648 — pure read; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+
 	return cmd
 }
 
@@ -217,6 +229,10 @@ the listing to keys starting with a given string.`,
 
 	cmd.Flags().String("key-prefix", "",
 		"Filter to keys with this prefix (set membership)")
+
+	// T-0648 — pure read; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
@@ -420,6 +436,11 @@ func newCtxDeleteCmd() *cobra.Command {
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
 
+	// T-0648 — delete is a local irreversible mutation on the workspace
+	// context store; deleting an absent key is a no-op (idempotent).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+
 	return cmd
 }
 
@@ -485,6 +506,10 @@ func newCtxHistoryCmd() *cobra.Command {
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
 	addLimitFlag(cmd)
+
+	// T-0648 — pure read of mutation history; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

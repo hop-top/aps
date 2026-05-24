@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewRemoveCmd creates the "collab remove" command.
@@ -75,6 +76,11 @@ can perform this action. Use --force to skip confirmation.`,
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — irreversibly drops an agent from local workspace state;
+	// removing an absent agent is a no-op (idempotent).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

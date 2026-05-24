@@ -6,6 +6,7 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewCapsCmd creates the "collab caps" command.
@@ -75,6 +76,10 @@ Optionally filter by a specific agent using --agent.`,
 	addWorkspaceFlag(cmd)
 	cmd.Flags().String("agent", "", "Filter by agent profile ID")
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of the capability registry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

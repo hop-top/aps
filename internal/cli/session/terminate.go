@@ -15,6 +15,7 @@ import (
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // tmuxKillTimeout bounds how long a tmux kill-session invocation can
@@ -54,6 +55,12 @@ func NewTerminateCmd() *cobra.Command {
 	cmd.Flags().Bool("force", false, "Force terminate without graceful shutdown")
 	cmd.Flags().Int("timeout", 10, "Graceful shutdown timeout in seconds")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit 0.4 signature annotations. Terminating a session
+	// kills its tmux server and process tree; idempotent on the
+	// registry status (terminated sessions stay inactive).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

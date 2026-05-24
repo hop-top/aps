@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // policySummaryRow is the per-rule row rendered by
@@ -75,6 +76,13 @@ Valid strategies:
 	cmd.Flags().String("key", "", "Resource key for override (use with --set)")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — without --set this is a read; with --set it mutates the
+	// workspace policy in local state. Conservatively annotated as a
+	// write so kit's confirmation/dry-run plumbing engages; setting the
+	// same strategy twice yields the same final state.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

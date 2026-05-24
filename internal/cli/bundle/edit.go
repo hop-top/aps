@@ -11,6 +11,7 @@ import (
 	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newEditCmd() *cobra.Command {
@@ -23,6 +24,10 @@ func newEditCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+	// Editor outcome is user-driven; idempotency depends on whether the
+	// user edits anything. Conditional captures this best.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	return cmd
 }
 

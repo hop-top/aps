@@ -6,13 +6,15 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
+
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/logging"
 )
 
 func newExecCmd() *cobra.Command {
-	var profile string
 	var from string
 	var inputs []string
 
@@ -49,8 +51,9 @@ Examples:
 			adapterName := args[0]
 			action := args[1]
 
+			// T-0648 — read --profile from kit-managed global.
 			profileEmail, err := resolveFromAddress(
-				from, profile,
+				from, globals.Profile(),
 			)
 			if err != nil {
 				return err
@@ -79,10 +82,6 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(
-		&profile, "profile", "p", "",
-		"Profile ID (resolves email from profile.yaml)",
-	)
 	cmd.Flags().StringVar(
 		&from, "from", "",
 		"Explicit From address (overrides profile lookup)",
@@ -92,6 +91,8 @@ Examples:
 		"Action input as key=value (repeatable)",
 	)
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 
