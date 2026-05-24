@@ -9,6 +9,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/cli/globals"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/progress"
 )
 
@@ -69,8 +70,18 @@ Example:
 
 	cmd.Flags().StringVarP(&targetProfile, "target", "t", "", "Target profile ID (required)")
 	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL for push notifications (required)")
-	cmd.MarkFlagRequired("target")
-	cmd.MarkFlagRequired("webhook")
+	if err := cmd.MarkFlagRequired("target"); err != nil {
+		panic(err)
+	}
+	if err := cmd.MarkFlagRequired("webhook"); err != nil {
+		panic(err)
+	}
+
+	// T-0648 — kit 0.4 signature annotations. Registers a remote
+	// webhook subscription; each invocation creates a fresh
+	// subscription server-side, so not naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

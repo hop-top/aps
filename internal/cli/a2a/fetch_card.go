@@ -12,14 +12,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/globals"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/progress"
 )
 
 func NewFetchCardCmd() *cobra.Command {
-	var (
-		url    string
-		format string
-	)
+	var url string
 
 	cmd := &cobra.Command{
 		Use:   "fetch",
@@ -43,7 +41,7 @@ Example:
 			r := progress.FromContext(ctx)
 			r.Emit(ctx, progress.Event{Phase: "fetch", Item: url})
 
-			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create request: %w", err)
 			}
@@ -76,11 +74,14 @@ Example:
 			okTrue := true
 			r.Emit(ctx, progress.Event{Phase: "parse", Item: url, OK: &okTrue})
 
-			switch format {
+			switch globals.Format() {
 			case "json":
 				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
-				return enc.Encode(&card)
+				if err := enc.Encode(&card); err != nil {
+					return fmt.Errorf("encode card: %w", err)
+				}
+				return nil
 			default:
 				fmt.Printf("Agent Card fetched from: %s\n", url)
 				fmt.Printf("URL: %s\n", card.URL)
@@ -94,8 +95,14 @@ Example:
 	}
 
 	cmd.Flags().StringVarP(&url, "url", "u", "", "Agent Card URL (required)")
-	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format (text, json)")
-	cmd.MarkFlagRequired("url")
+	if err := cmd.MarkFlagRequired("url"); err != nil {
+		panic(err)
+	}
+
+	// T-0648 — kit 0.4 signature annotations. Pure read: HTTP GET of
+	// the agent card; no server-side state mutation.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

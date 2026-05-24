@@ -13,6 +13,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // a2aTaskSummaryRow is the table row shape for `aps a2a tasks list`.
@@ -88,6 +89,10 @@ optional filtering by status.`,
 
 	cmd.Flags().StringVar(&status, "status", "",
 		"Filter by status (submitted, working, completed, failed, cancelled)")
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
