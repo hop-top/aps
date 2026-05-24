@@ -102,17 +102,10 @@ func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter,
 		}()
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-	if err := json.NewEncoder(w).Encode(map[string]string{
-		"message": backgroundRunStartedMsg,
-	}); err != nil {
-		// Body already written; nothing meaningful to do here.
-		return
-	}
+	a.sendJSON(w, http.StatusAccepted, map[string]string{
+		"message": "run started in background",
+	})
 }
-
-const backgroundRunStartedMsg = "run started in background"
 
 func (a *AgentProtocolAdapter) handleRunsWaitExisting(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
