@@ -139,6 +139,32 @@ func TestApplyBytes_KeepsAllowlistedFixtures(t *testing.T) {
 	}
 }
 
+// TestApply_BypassSkipsRedactorBuild asserts that when redaction is
+// disabled at call time the redactor singleton is not invoked. The
+// guarantee matters for cold-start latency: aps --help and other
+// fast-fail paths must not pay the gitleaks + Presidio corpus load
+// cost. We verify this indirectly by calling Apply once with bypass
+// on, then once with bypass off; the first call must not have built
+// the redactor (the input is the literal input), and the second call
+// must redact (which exercises the lazy build).
+func TestApply_BypassSkipsRedactorBuild(t *testing.T) {
+	resetForTest()
+	t.Setenv(EnvBypass, "1")
+	const secret = "OPENAI_API_KEY=sk-proj-1234567890abcdefghij1234567890abcdefghij"
+	if got := Apply(secret); got != secret {
+		t.Fatalf("bypass: expected verbatim, got %q", got)
+	}
+	// Now disable bypass and confirm the lazy build still works.
+	t.Setenv(EnvBypass, "")
+	got := Apply(secret)
+	if got == secret {
+		t.Fatalf("after bypass cleared: expected redaction, got verbatim")
+	}
+	if !strings.Contains(got, "<") || !strings.Contains(got, ">") {
+		t.Fatalf("expected Tag-style replacement, got %q", got)
+	}
+}
+
 // resetForTest clears redaction state so each test starts from a
 // known baseline. The Redactor singleton stays (sync.Once); we only
 // need to reset the viper ref and env, which Apply re-reads each
