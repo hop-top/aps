@@ -1,12 +1,54 @@
 package agentprotocol
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
+	apsjobs "hop.top/aps/internal/runtime/jobs"
 )
+
+// agentProtocolRunPayload is the wire form of an action.run job
+// enqueued by handleRunsCreateBackground. Kept private to the adapter
+// because only the matching handler in this file decodes it.
+type agentProtocolRunPayload struct {
+	ProfileID string `json:"profile_id"`
+	ActionID  string `json:"action_id"`
+	ThreadID  string `json:"thread_id,omitempty"`
+	Input     []byte `json:"input,omitempty"`
+}
+
+func init() {
+	// Register the handler at package load so the cli poller picks it
+	// up alongside the session-sweep handler. The cli/jobs.go init
+	// pulls the registered set via apsjobs.Handlers() before starting
+	// the queue pollers.
+	apsjobs.RegisterHandler(apsjobs.TypeActionRun, runActionJobHandler)
+}
+
+// runActionJobHandler is invoked by the kit poller for every
+// action.run job. It hits the same core.RunAction code path the
+// foreground `aps run` command uses, which is the existing source of
+// truth for action execution. Kit re-runs the handler on transient
+// failure up to MaxAttempts (with backoff); a returned error from this
+// function is the retry trigger.
+func runActionJobHandler(_ context.Context, j apsjobs.Job) error {
+	var p agentProtocolRunPayload
+	if err := json.Unmarshal(j.Payload, &p); err != nil {
+		return fmt.Errorf("action.run: decode payload: %w", err)
+	}
+	if p.ProfileID == "" || p.ActionID == "" {
+		return fmt.Errorf("action.run: profile_id and action_id required")
+	}
+	if err := core.RunAction(p.ProfileID, p.ActionID, p.Input); err != nil {
+		return fmt.Errorf("action.run: %w", err)
+	}
+	return nil
+}
 
 func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -32,8 +74,39 @@ func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter,
 		}
 	}
 
-	go func() {
-		_, _ = a.core.ExecuteRun(r.Context(), input, nil)
+	// Preferred path: enqueue a durable job. Falls back to the
+	// in-process goroutine when no service is wired (library / test
+	// embeddings, APS_JOBS_DISABLE=1) so the adapter remains usable
+	// outside the long-lived `aps serve` process.
+	if id, ok := apsjobs.Enqueue(r.Context(), apsjobs.EnqueueOpts{
+		Queue: apsjobs.QueueActions,
+		Type:  apsjobs.TypeActionRun,
+		Payload: agentProtocolRunPayload{
+			ProfileID: input.ProfileID,
+			ActionID:  input.ActionID,
+			ThreadID:  input.ThreadID,
+			Input:     input.Payload,
+		},
+		MaxAttempts: 3,
+	}); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "run started in background",
+			"job_id":  id,
+		})
+		return
+	}
+
+	// Fallback — preserves prior fire-and-forget semantics for the
+	// no-runtime case. Uses context.Background deliberately: r.Context
+	// is cancelled when this handler returns (well before the spawned
+	// goroutine finishes executing the action), so the request-scoped
+	// context would surface as spurious cancels in the action handler.
+	// The job-runner path above is the durable replacement; this
+	// branch only runs when APS_JOBS_DISABLE=1 or initJobs failed.
+	go func() { //nolint:gosec // intentional context.Background; see comment
+		_, _ = a.core.ExecuteRun(context.Background(), input, nil)
 	}()
 
 	w.Header().Set("Content-Type", "application/json")

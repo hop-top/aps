@@ -135,6 +135,19 @@ func GetRegistry() *SessionRegistry {
 	return registry
 }
 
+// reaperDisabled lets the CLI layer opt the in-process reaper out when
+// it has wired the kit/runtime/job-driven sweep instead. The reaper
+// goroutine and the job-poll sweep would otherwise race over the same
+// session map. The setter is package-level (mirroring SetEventPublisher)
+// and is read once at startReaper start time.
+var reaperDisabled bool
+
+// DisableInlineReaper turns the goroutine reaper into a no-op for any
+// future GetRegistry call. Idempotent. The CLI calls this before the
+// first registry access; library / test consumers leave it alone and
+// get the in-process ticker for free.
+func DisableInlineReaper() { reaperDisabled = true }
+
 // startReaper spawns a background goroutine that periodically calls
 // CleanupInactive on the registry, removing any session whose
 // LastSeenAt is older than DefaultTimeout.
@@ -144,7 +157,14 @@ func GetRegistry() *SessionRegistry {
 // of the process and is reaped by process exit. Tests that need to
 // exercise the reaper should pass their own cancellable context (and
 // a short tick interval) so they can stop the goroutine cleanly.
+//
+// When the CLI has wired the durabletask job runner via
+// DisableInlineReaper, this function returns without spawning the
+// goroutine; the kit poller drives the sweep instead.
 func startReaper(ctx context.Context, r *SessionRegistry, tick time.Duration) {
+	if reaperDisabled {
+		return
+	}
 	go func() {
 		logger := logging.GetLogger()
 		ticker := time.NewTicker(tick)
