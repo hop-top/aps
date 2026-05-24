@@ -7,7 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	idpkg "hop.top/aps/internal/agntcy/identity"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewBadgeCmd creates the badge command group with issue and verify subcommands.
@@ -21,23 +23,28 @@ func NewBadgeCmd() *cobra.Command {
 	cmd.AddCommand(newBadgeIssueCmd())
 	cmd.AddCommand(newBadgeVerifyCmd())
 
+	// T-0648 — intermediate node for depth-3 leaves below.
+	kitcli.SetHierarchical(cmd)
+
 	return cmd
 }
 
 func newBadgeIssueCmd() *cobra.Command {
-	var (
-		profileID  string
-		capability string
-	)
+	var capability string
 
 	cmd := &cobra.Command{
 		Use:   "issue",
 		Short: "Issue a badge for a capability",
 		Long: `Issue a signed Verifiable Credential attesting an agent's capability.
 
-Example:
-  aps identity badge issue --profile worker --capability invoice-processing`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker identity badge issue --capability invoice-processing`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -74,10 +81,13 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&capability, "capability", "", "Capability to attest (required)")
 	cmd.MarkFlagRequired("capability")
+
+	// T-0648 — kit/cli signature annotations. issue mints a new
+	// credential per call → not naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }
@@ -116,6 +126,10 @@ Example:
 			return nil
 		},
 	}
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

@@ -7,21 +7,26 @@ import (
 	"github.com/spf13/cobra"
 
 	idpkg "hop.top/aps/internal/agntcy/identity"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewShowCmd creates the identity show command.
 func NewShowCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show identity for a profile",
 		Long: `Display the DID and identity configuration for a profile.
 
-Example:
-  aps identity show --profile worker`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker identity show`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -54,8 +59,9 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
@@ -35,6 +36,10 @@ func newListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

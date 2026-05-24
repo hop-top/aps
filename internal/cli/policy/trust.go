@@ -6,7 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newTrustCmd() *cobra.Command {
@@ -19,12 +21,14 @@ func newTrustCmd() *cobra.Command {
 	cmd.AddCommand(newTrustSetCmd())
 	cmd.AddCommand(newTrustShowCmd())
 
+	// T-0648 — intermediate node for depth-3 leaves below.
+	kitcli.SetHierarchical(cmd)
+
 	return cmd
 }
 
 func newTrustSetCmd() *cobra.Command {
 	var (
-		profileID       string
 		requireIdentity bool
 		allowedIssuers  string
 	)
@@ -38,13 +42,17 @@ When require-identity is set, the A2A server will reject requests
 without a valid X-Agent-DID header. Optionally restrict to specific
 DIDs via --allowed-issuers.
 
-Examples:
-  aps policy trust set --profile worker --require-identity
-  aps policy trust set --profile worker --require-identity --allowed-issuers "did:key:z6Mk..."
-  aps policy trust set --profile worker --require-identity=false`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker policy trust set --require-identity
+  aps --profile worker policy trust set --require-identity --allowed-issuers "did:key:z6Mk..."
+  aps --profile worker policy trust set --require-identity=false`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			profile, err := core.LoadProfile(profileID)
-			if err != nil {
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
+			if _, err := core.LoadProfile(profileID); err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 			}
 
@@ -53,7 +61,7 @@ Examples:
 				return fmt.Errorf("failed to add trust capability: %w", err)
 			}
 
-			profile, err = core.LoadProfile(profileID)
+			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to reload profile: %w", err)
 			}
@@ -87,25 +95,30 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&requireIdentity, "require-identity", false, "Require X-Agent-DID header on inbound requests")
 	cmd.Flags().StringVar(&allowedIssuers, "allowed-issuers", "", "Comma-separated list of allowed DIDs")
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
 
 func newTrustShowCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show trust verification policy for a profile",
 		Long: `Display the current trust verification policy configuration.
 
-Example:
-  aps policy trust show --profile worker`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker policy trust show`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -131,8 +144,9 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
