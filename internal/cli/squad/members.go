@@ -40,6 +40,12 @@ func newAddMemberCmd() *cobra.Command {
 	// T-0648 — kit 0.4 signature annotations.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — add appends a single member entry to the squad; the
+	// result is fully determined by the two positional arguments.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "add appends a member entry to the squad; the resulting record is fully determined by the two positional arguments."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -67,6 +73,12 @@ func newRemoveMemberCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the squad/profile IDs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "remove drops a member entry from the squad; the destructive-token confirm flow already gates the apply path, and preview would only restate the two positional arguments."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

@@ -82,6 +82,12 @@ can perform this action. Use --force to skip confirmation.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the workspace/profile IDs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "remove drops the agent's membership entry from the workspace; the destructive-token confirm flow already gates the apply path, and preview would only restate the workspace and profile IDs."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

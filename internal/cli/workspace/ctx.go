@@ -155,6 +155,13 @@ invisible to other profiles' workspace ctx get/list (T-1309).`,
 	// re-running with the same key/value produces the same observable state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — set writes a single key=value pair to the context
+	// store; preview would only restate the key and value the user
+	// already supplied.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "set writes a single key=value pair to the workspace context store; the resulting record is fully determined by the positional arguments and --private flag."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
@@ -441,6 +448,12 @@ func newCtxDeleteCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the key being removed.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete removes a single key from the workspace context store; the destructive-token confirm flow already gates the apply path, and preview would only restate the key argument."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

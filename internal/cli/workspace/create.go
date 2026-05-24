@@ -103,6 +103,12 @@ exchange tasks, and resolve conflicts.`,
 	// not natively idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — create is atomic-by-design; the prospective workspace
+	// ID is the name argument the user already supplied.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "create is atomic-by-design; the prospective workspace ID is the name argument the user supplied, and preview would only restate it."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

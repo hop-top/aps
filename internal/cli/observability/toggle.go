@@ -79,6 +79,12 @@ Examples:
 	// hence idempotent yes.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — toggle writes observability config and capability flags
+	// to the profile YAML; preview would only restate the inputs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "toggle writes observability config (exporter, endpoint, sampling) onto the profile YAML; previewing would only echo the flag values the user already supplied."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

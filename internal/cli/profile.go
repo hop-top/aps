@@ -773,19 +773,62 @@ func init() {
 	kitcli.SetIdempotency(profileStatusCmd, kitcli.IdempotencyYes)
 	kitcli.SetSideEffect(profileCreateCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileCreateCmd, kitcli.IdempotencyNo)
+	// T-0656 — create is atomic-by-design; the prospective profile ID
+	// is the name argument the user already supplied.
+	kitcli.OptOutDryRun(profileCreateCmd)
+	if err := kitcli.SetDryRunRationale(profileCreateCmd, "create is atomic-by-design; the prospective profile ID is the name argument the user supplied, and preview would only restate it."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(profileEditCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileEditCmd, kitcli.IdempotencyYes)
+	// T-0656 — edit shells out to $EDITOR; there is no batch boundary
+	// on which to scope a preview before the user authors the diff.
+	kitcli.OptOutDryRun(profileEditCmd)
+	if err := kitcli.SetDryRunRationale(profileEditCmd, "edit opens the profile YAML in $EDITOR for a user-driven session; previewing would have to either suppress the editor or describe a diff that has not been authored yet."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(profileShareCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileShareCmd, kitcli.IdempotencyYes)
+	// T-0656 — share writes a share manifest at a canonical path
+	// derived from the profile ID.
+	kitcli.OptOutDryRun(profileShareCmd)
+	if err := kitcli.SetDryRunRationale(profileShareCmd, "share writes a share-manifest file under a canonical path derived from the profile ID; previewing would only restate the destination path."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(profileImportCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileImportCmd, kitcli.IdempotencyConditional)
+	// T-0656 — import copies a foreign profile directory in; preview
+	// would have to walk the source, which is the same disk read the
+	// real import performs.
+	kitcli.OptOutDryRun(profileImportCmd)
+	if err := kitcli.SetDryRunRationale(profileImportCmd, "import copies an external profile directory into the local store; previewing would have to walk and decode the source, performing the same disk read that the real import performs."); err != nil {
+		panic(err)
+	}
 	// T-0654 — profile delete removes the profile directory and all
 	// associated state irreversibly; delete-by-id is idempotent.
 	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(profileDeleteCmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the profile ID being removed.
+	kitcli.OptOutDryRun(profileDeleteCmd)
+	if err := kitcli.SetDryRunRationale(profileDeleteCmd, "delete removes the entire profile directory irreversibly; the destructive-token confirm flow already gates the apply path, and preview would only restate the profile ID."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(profileAddCapCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileAddCapCmd, kitcli.IdempotencyYes)
+	// T-0656 — add-cap appends a single entry to the profile manifest;
+	// preview would only restate the capability name.
+	kitcli.OptOutDryRun(profileAddCapCmd)
+	if err := kitcli.SetDryRunRationale(profileAddCapCmd, "add-cap appends a single capability entry to the profile manifest; the result is fully determined by the capability name argument."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(profileRemoveCapCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileRemoveCapCmd, kitcli.IdempotencyYes)
+	// T-0656 — remove-cap drops a single entry from the profile
+	// manifest; preview would only restate the capability name.
+	kitcli.OptOutDryRun(profileRemoveCapCmd)
+	if err := kitcli.SetDryRunRationale(profileRemoveCapCmd, "remove-cap drops a single capability entry from the profile manifest; the result is fully determined by the capability name argument."); err != nil {
+		panic(err)
+	}
 }

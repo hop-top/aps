@@ -88,6 +88,12 @@ Profile is supplied via the tool-level --profile global:
 	// credential per call → not naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — issue mints a fresh verifiable credential signed by the
+	// caller's DID; preview cannot show a signed blob without signing.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "issue mints a fresh verifiable credential and signs it with the caller's DID; previewing without signing would print an unverifiable blob that misrepresents the artefact."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

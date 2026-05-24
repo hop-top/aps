@@ -81,6 +81,12 @@ Examples:
 	// write. Re-running with the same --enabled state is a no-op.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — toggle flips the webhooks capability bit on the active
+	// profile; preview would only restate the --enabled argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "toggle is a one-line YAML flip on the active profile's webhooks capability; previewing would only restate the --enabled flag value."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

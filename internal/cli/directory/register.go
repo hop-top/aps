@@ -75,6 +75,12 @@ Profile is supplied via the tool-level --profile global:
 	// (write-shared); register-if-not-exists is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — register pushes the local OASF record to the upstream
+	// directory; preview would require the same wire round-trip.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "register pushes the locally-rendered OASF record to the upstream AGNTCY Directory; previewing would require the same wire round-trip that performs the publish."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

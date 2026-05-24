@@ -46,6 +46,13 @@ func newUpgradeCmd() *cobra.Command {
 	// location; repeated calls converge once at latest.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — upgrade downloads and replaces the running binary;
+	// preview would have to discover the latest release version, which
+	// is the same network call the real upgrade performs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "upgrade downloads the latest release and atomically replaces the running binary; previewing would require the same release-discovery network call, with no useful local state to inspect."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -87,6 +94,13 @@ Agents read this to know how to self-upgrade aps before executing tasks.`,
 	// Conservatively tag as WriteLocal to cover the --install path.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — preamble is a generator; without --install it already
+	// prints to stdout (the canonical preview), and --install writes a
+	// deterministic file at a fixed path.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "preamble without --install already prints the generated content to stdout (the canonical preview); --install writes the same bytes to a fixed path under ~/.config/aps/skills/."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

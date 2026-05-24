@@ -70,4 +70,10 @@ func init() {
 	// workspace link on the profile struct (local write, idempotent).
 	kitcli.SetSideEffect(profileSetWorkspaceCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileSetWorkspaceCmd, kitcli.IdempotencyYes)
+	// T-0656 — set overwrites a single workspace-link field on the
+	// profile struct; preview would only restate the workspace ID.
+	kitcli.OptOutDryRun(profileSetWorkspaceCmd)
+	if err := kitcli.SetDryRunRationale(profileSetWorkspaceCmd, "set overwrites the profile's workspace-link field with the workspace ID argument; previewing would only restate the argument."); err != nil {
+		panic(err)
+	}
 }

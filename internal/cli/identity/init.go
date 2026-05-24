@@ -87,6 +87,12 @@ Profile is supplied via the tool-level --profile global:
 	// T-0648 — kit/cli signature annotations.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — init generates and stores a fresh DID keypair; preview
+	// cannot show the resulting DID without performing the keygen.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "init generates a fresh DID keypair and writes it to the profile; previewing without the keygen would print a placeholder DID the user could not verify."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

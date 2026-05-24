@@ -64,6 +64,12 @@ Profile is supplied via the tool-level --profile global:
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the upstream
+	// deregistration call; preview would need the same wire round-trip.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete is a deregistration call to the upstream AGNTCY Directory; previewing would require the same network round-trip that performs the deregistration."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

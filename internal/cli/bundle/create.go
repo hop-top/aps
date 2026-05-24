@@ -37,6 +37,13 @@ func newCreateCmd() *cobra.Command {
 	// (idempotent on the same input). Mark Conditional to capture both.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
+	// T-0656 — create writes a fresh bundle file at the canonical user
+	// path; preview would only print the destination path that's a
+	// pure function of the name argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "create writes a new bundle file to a canonical path derived from the name argument; previewing would print a destination already implied by the input."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

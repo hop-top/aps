@@ -75,5 +75,12 @@ func init() {
 	// command, so the kit-level tag is conditional.
 	kitcli.SetSideEffect(runCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(runCmd, kitcli.IdempotencyConditional)
+	// T-0656 — run spawns an opaque subprocess under the named profile;
+	// the spawned process owns its own side effects and aps cannot
+	// preview a third-party binary's behavior.
+	kitcli.OptOutDryRun(runCmd)
+	if err := kitcli.SetDryRunRationale(runCmd, "run spawns an opaque subprocess in the named profile context; the spawned process owns its side effects and aps cannot preview a third-party binary without invoking it."); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(runCmd)
 }

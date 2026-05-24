@@ -117,6 +117,12 @@ Example:
 	// task-id is unset) a new task.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — every send mints fresh message/task IDs on the peer; a
+	// preview that didn't actually hit the wire would lie about the IDs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "send is a non-idempotent JSON-RPC call that mints fresh message and task IDs on the target peer; previewing without the wire call would invent IDs the peer never assigned."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

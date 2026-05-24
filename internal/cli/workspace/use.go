@@ -53,6 +53,12 @@ when no --workspace flag is provided.`,
 	// the same workspace twice yields the same final state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — use overwrites a single pointer field; preview would
+	// only restate the workspace argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "use overwrites the active-workspace pointer with the workspace argument; preview would only restate that argument."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

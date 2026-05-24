@@ -51,6 +51,12 @@ func newEnableCmd() *cobra.Command {
 	clinote.AddFlag(cmd) // T-1291
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — enable appends one capability to a profile's manifest;
+	// the result is fully determined by the two positional arguments.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "enable appends a single capability entry to the profile's manifest; the result is fully determined by the two positional arguments."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -89,5 +95,11 @@ func newDisableCmd() *cobra.Command {
 	clinote.AddFlag(cmd) // T-1291
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — disable drops one capability from a profile's manifest;
+	// the result is fully determined by the two positional arguments.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "disable drops a single capability entry from the profile's manifest; the result is fully determined by the two positional arguments."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

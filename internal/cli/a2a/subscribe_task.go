@@ -82,6 +82,12 @@ Example:
 	// subscription server-side, so not naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — subscription is registered server-side over JSON-RPC; we
+	// can't preview the remote registration without performing it.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "subscribe registers a fresh webhook subscription on the remote peer; previewing would have to invent a subscription ID the peer never allocated."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

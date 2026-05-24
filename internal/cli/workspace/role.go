@@ -93,6 +93,12 @@ If role is not provided, an interactive selector is shown.`,
 	// re-applying the same role yields the same observable state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — role updates one field on the membership record; the
+	// result is fully determined by the role argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "role updates a single field on the membership record; the resulting value is fully determined by the role argument the user already passed."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

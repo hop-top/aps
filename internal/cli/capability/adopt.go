@@ -35,5 +35,11 @@ func newAdoptCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — adopt copies the source bundle into the user capability
+	// dir; the destination path is a pure function of the --name flag.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "adopt copies the source bundle into the user capability directory under a path derived from --name; previewing would only restate that path."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

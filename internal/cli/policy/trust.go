@@ -101,6 +101,13 @@ Profile is supplied via the tool-level --profile global:
 	// T-0648 — kit/cli signature annotations.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — trust writes the require-identity / allowed-issuers
+	// fields onto the profile policy YAML; preview would only restate
+	// the input flags.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "trust writes the require-identity and allowed-issuers fields onto the profile policy YAML; previewing would only restate the flag values the user already supplied."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

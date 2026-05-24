@@ -51,5 +51,11 @@ func newDeleteCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the irreversible
+	// disk delete; preview would only restate the capability name.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete removes the on-disk capability directory and its symlinks; the destructive-token confirm flow already gates the apply path, and preview would only restate the capability name."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

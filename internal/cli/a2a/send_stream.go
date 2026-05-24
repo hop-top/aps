@@ -31,6 +31,11 @@ func NewSendStreamCmd() *cobra.Command {
 	// outbound network call; each invocation mints fresh state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — same shape as send: minting fresh IDs over JSON-RPC.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "send-stream opens a streaming JSON-RPC call that mints fresh message and task IDs on the peer; previewing would have to fake the stream that the wire call establishes."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

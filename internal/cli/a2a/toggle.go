@@ -95,6 +95,13 @@ Examples:
 	// omitted flag flips state).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
+	// T-0656 — toggle flips a single boolean and rewrites the profile
+	// YAML; preview would print the prospective new value, which is
+	// the same as the argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "toggle is a one-line YAML flip; previewing would print the prospective enabled bit, which is already implied by the --enabled argument."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

@@ -69,6 +69,12 @@ Use --show to display current permissions without making changes.`,
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — --show already exposes the read-only preview path; the
+	// write path takes the same flags and writes them through directly.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "set-permissions already ships a --show flag that reads current values without mutating; --dry-run would duplicate that read-only view without adding new signal."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

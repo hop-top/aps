@@ -97,6 +97,18 @@ var root = kitcli.New(kitcli.Config{
 	// when T-0657 flips DisableValidate back to false. See kit cli.go:218
 	// for the field definition and cli.go:1080 for the runtime gate.
 	EnforceGuidance: true,
+	// T-0656 — refuse write/destructive leaves that called
+	// kitcli.OptOutDryRun(cmd) without pairing a kit/dry-run-rationale
+	// annotation. Each opt-out in the aps tree carries an honest
+	// reason explaining why preview would be uninformative or
+	// impossible; the rationale is what the user reads when --dry-run
+	// is rejected on the leaf. Leaves that genuinely honor --dry-run
+	// (action run, adapter link/revoke/stop/unlink, migrate messengers,
+	// workspace conflicts resolve) need neither the opt-out nor the
+	// rationale. See kit cli.go:210 for the field, contract.go:118 for
+	// SetDryRunRationale, and the EnforceDryRunRationale gate at
+	// cli.go:1064.
+	EnforceDryRunRationale: true,
 	// T-0657 — paired with DisableValidate above. While DisableValidate
 	// is true (the production guardrail during the 12fcc annotation
 	// rollout) kit/cli short-circuits the pre-flight validator and this

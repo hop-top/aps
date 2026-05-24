@@ -33,6 +33,12 @@ func newRejectCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — reject is a single registry transition; preview would
+	// only echo back the device ID the user already passed.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "reject is an atomic registry transition that removes the pending device entry; previewing would only echo the device ID the user already passed."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

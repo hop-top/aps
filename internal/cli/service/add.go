@@ -69,6 +69,12 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — add registers a service entry on the profile; the
+	// resulting record is fully determined by the flag set.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "add writes a single service entry to the profile manifest; the resulting record is fully determined by the flag set the user already supplied."); err != nil {
+		panic(err)
+	}
 
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), cmd.UsageString())

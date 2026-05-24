@@ -51,6 +51,13 @@ Use --force to skip confirmation.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — detach drops any pending offline-queue entries for the
+	// device; preview would have to enumerate the queue, which is
+	// effectively the same disk read that detach itself performs.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "detach discards the device's offline-queue entries irreversibly; the destructive-token confirm flow already gates the apply path, and preview would only restate the device argument."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

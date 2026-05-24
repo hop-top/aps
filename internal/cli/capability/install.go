@@ -35,5 +35,11 @@ func newInstallCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — install copies the bundled capability into the user dir;
+	// the destination is a pure function of the --name flag.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "install copies the bundled capability into the user capability directory under a path derived from --name; previewing would only restate that path."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

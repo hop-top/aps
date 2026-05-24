@@ -28,6 +28,13 @@ func newEditCmd() *cobra.Command {
 	// user edits anything. Conditional captures this best.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
+	// T-0656 — edit shells out to $EDITOR for a user-driven session;
+	// preview would have to either suppress the editor (defeating the
+	// command) or describe a write that hasn't been authored yet.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "edit hands control to $EDITOR for a user-driven session; previewing would have to either suppress the editor (defeating the command) or describe a write that has not been authored yet."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

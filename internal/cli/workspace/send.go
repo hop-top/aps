@@ -108,6 +108,13 @@ Input can be provided as:
 	// a caller-provided key. Use --idempotency-key to deduplicate.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
+	// T-0656 — send dispatches a task to another agent over the kit
+	// bus; each invocation mints a fresh task ID server-side and
+	// previewing would invent IDs the peer never assigned.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "send dispatches a task to another agent over the kit bus; each invocation mints a fresh task ID on the peer, and previewing without the wire call would invent IDs the peer never assigned."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
