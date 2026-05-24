@@ -17,12 +17,12 @@ var commandGroups = map[string]string{
 	"chat":    "interact",
 
 	// ORGANIZE — taxonomy + scoping (the nouns aps owns).
-	profileFlagName: "organize",
-	"capability":    "organize",
-	"bundle":        "organize",
-	"squad":         "organize",
-	"workspace":     "organize",
-	"contact":       "organize",
+	"profile":    "organize",
+	"capability": "organize",
+	"bundle":     "organize",
+	"squad":      "organize",
+	"workspace":  "organize",
+	"contact":    "organize",
 
 	// PIPELINES — integration / dispatch machinery.
 	"a2a":       "pipelines",
