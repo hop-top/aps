@@ -25,11 +25,9 @@
 // workspace, auth, effective-config, kit-annotations) plus a
 // --show-sensitive flag — overkill for the current scope, and the
 // adopter contract explicitly permits a hand-rolled `Use: "status"`.
-
 package cli
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -72,10 +70,7 @@ func runStatus(w io.Writer) error {
 		{Key: "version", Value: version.Short()},
 		{Key: "bus", Value: busState()},
 	}
-	if err := listing.RenderList(w, globals.Format(), rows); err != nil {
-		return fmt.Errorf("render status: %w", err)
-	}
-	return nil
+	return listing.RenderList(w, globals.Format(), rows)
 }
 
 // orNone renders empty globals as a literal "(none)" so a missing
@@ -89,19 +84,17 @@ func orNone(v string) string {
 	return v
 }
 
-// busState reports the event-bus wiring as one of "connected" (token
-// present + adapter constructed), "disabled" (no token in env), or
-// "disconnected" (token present but adapter construction skipped). The
-// network adapter retries on its own so "connected" here means
-// "configured", not "currently linked to the hub" — a real liveness
-// probe would require a synchronous round-trip we don't want to add to
-// a read-only command.
+// busState reports the event-bus wiring as one of "configured" (token
+// present + adapter constructed) or "disabled" (no token in env). The
+// init path in bus.go creates eventBus and netAdapter together when
+// the token is set, so there is no observable "local bus only" state.
+// The network adapter retries on its own, so "configured" here means
+// "wired", not "currently linked to the hub" — a real liveness probe
+// would require a synchronous round-trip we don't want to add to a
+// read-only command.
 func busState() string {
 	if netAdapter != nil {
-		return "connected"
-	}
-	if eventBus != nil {
-		return "disconnected"
+		return "configured"
 	}
 	return "disabled"
 }
