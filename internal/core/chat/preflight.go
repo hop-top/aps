@@ -65,6 +65,33 @@ func ResolveProviderKey(ctx context.Context, profileID string, providerURIs []st
 	return ProviderKey{}, &UnauthorizedError{Expected: expected}
 }
 
+// ResolveProviderKeyFor resolves the credential for a specific provider URI.
+// Unlike ResolveProviderKey (which returns the first credential found across a
+// list of candidate URIs), this returns the credential bound to providerURI or
+// an UnauthorizedError if it is missing. Used when each provider in a primary
+// + fallback chain needs its own credential.
+func ResolveProviderKeyFor(ctx context.Context, profileID, providerURI string) (ProviderKey, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	store, err := core.OpenProfileSecretStore(profileID)
+	if err != nil {
+		return ProviderKey{}, fmt.Errorf("open profile secret store: %w", err)
+	}
+	value, err := llm.SecretFor(ctx, store, providerURI)
+	if err != nil {
+		if errors.Is(err, secret.ErrNotFound) {
+			return ProviderKey{}, &UnauthorizedError{Expected: []string{llm.EnvKeyFor(providerURI)}}
+		}
+		return ProviderKey{}, fmt.Errorf("resolve secret for %s: %w", providerURI, err)
+	}
+	return ProviderKey{
+		ProviderURI: providerURI,
+		EnvKey:      llm.EnvKeyFor(providerURI),
+		Value:       value,
+	}, nil
+}
+
 func expectedEnvKeys(providerURIs []string) []string {
 	seen := map[string]bool{}
 	var keys []string
