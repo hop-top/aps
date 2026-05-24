@@ -35,6 +35,9 @@ func init() {
 	// produces the same artefacts (idempotent overwrite).
 	kitcli.SetSideEffect(docsCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(docsCmd, kitcli.IdempotencyYes)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(docsCmd)
 	// T-0656 — docs walks the live cobra tree and writes a deterministic
 	// markdown tree; preview would have to render the same output and
 	// then throw it away.

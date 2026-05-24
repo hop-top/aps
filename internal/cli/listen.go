@@ -69,6 +69,9 @@ func init() {
 	// fresh subscription stream, so it is not idempotent.
 	kitcli.SetSideEffect(listenCmd, kitcli.SideEffectInteractive)
 	kitcli.SetIdempotency(listenCmd, kitcli.IdempotencyNo)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(listenCmd)
 }
 
 func runListen(cmd *cobra.Command, _ []string) error {

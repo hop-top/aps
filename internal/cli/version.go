@@ -39,5 +39,8 @@ func init() {
 	// only; pure read, deterministically identical across runs.
 	kitcli.SetSideEffect(versionCmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(versionCmd, kitcli.IdempotencyYes)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(versionCmd)
 	rootCmd.AddCommand(versionCmd)
 }
