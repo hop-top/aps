@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewLeaveCmd creates the "collab leave" command.
@@ -71,6 +72,11 @@ If no workspace is specified, the active workspace is used.`,
 	addForceFlag(cmd)
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — removes the current profile from a workspace; leaving an
+	// already-left workspace is a no-op (idempotent).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

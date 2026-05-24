@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/clinote"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewJoinCmd creates the "collab join" command.
@@ -54,6 +55,11 @@ You must specify your profile to identify which agent is joining.`,
 	_ = cmd.MarkFlagRequired("profile")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — registers an agent in a local workspace; re-joining as
+	// the same profile yields the same membership (idempotent).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

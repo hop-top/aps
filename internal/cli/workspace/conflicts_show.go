@@ -8,12 +8,11 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newConflictsShowCmd() *cobra.Command {
-	var (
-		jsonOutput bool
-	)
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "show <conflict-id>",
@@ -30,6 +29,10 @@ func newConflictsShowCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+
+	// T-0648 — pure read of one conflict's details; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

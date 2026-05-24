@@ -12,6 +12,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -71,6 +72,11 @@ Use --follow to tail the log in real time.`,
 	cmd.Flags().IntVarP(&limit, "limit", "n", 50,
 		"Maximum number of events to display")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+
+	// T-0648 — pure read of the activity event log (--follow tails but
+	// emits no mutations).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

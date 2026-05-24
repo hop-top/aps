@@ -9,6 +9,7 @@ import (
 	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // auditRow is the table row shape for `aps workspace audit`. T-0456 —
@@ -89,6 +90,10 @@ Filter with --since, --actor, --event, and --limit.`,
 	cmd.Flags().String("event", "", "Filter by event type (supports glob, e.g. task.*)")
 	addLimitFlag(cmd)
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of the audit trail.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

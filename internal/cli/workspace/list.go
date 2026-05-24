@@ -9,6 +9,7 @@ import (
 
 	"hop.top/aps/internal/cli/listing"
 	collab "hop.top/aps/internal/core/collaboration"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -73,6 +74,11 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().Bool("archived", false, "Filter to archived (true) or non-archived (false) workspaces")
 
 	addLimitFlag(cmd)
+
+	// T-0648 — pure read of the workspace registry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+
 	return cmd
 }
 

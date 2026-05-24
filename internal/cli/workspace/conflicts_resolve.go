@@ -9,13 +9,13 @@ import (
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newConflictsResolveCmd() *cobra.Command {
 	var (
 		strategy   string
 		choice     string
-		dryRun     bool
 		force      bool
 		jsonOutput bool
 	)
@@ -36,6 +36,9 @@ Use --dry-run to see what would happen without applying changes.`,
 			if workspaceID == "" {
 				return fmt.Errorf("--workspace is required")
 			}
+			// T-0648 — read --dry-run from the kit-managed persistent global
+			// rather than a local re-declaration that would shadow it.
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			return runConflictResolve(
 				args[0], workspaceID, strategy, choice,
 				dryRun, force, jsonOutput,
@@ -47,11 +50,14 @@ Use --dry-run to see what would happen without applying changes.`,
 		"Resolution strategy: lww, manual")
 	cmd.Flags().StringVar(&choice, "choice", "",
 		"Event ID to choose as winner (for manual strategy)")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false,
-		"Show what would happen without applying")
 	cmd.Flags().BoolVar(&force, "force", false,
 		"Skip confirmation prompt")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
+
+	// T-0648 — applies a resolution to local workspace state; resolving
+	// an already-resolved conflict is a no-op (idempotent).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
