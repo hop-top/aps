@@ -436,10 +436,11 @@ func newCtxDeleteCmd() *cobra.Command {
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — delete is a local irreversible mutation on the workspace
+	// T-0654 — delete is a local irreversible mutation on the workspace
 	// context store; deleting an absent key is a no-op (idempotent).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 
 	return cmd
 }

@@ -2,9 +2,22 @@ package e2e
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"os/exec"
 	"testing"
 )
+
+// destructiveToken mirrors kit's destructiveTokenSha (kit
+// go/console/cli/policy_runE.go): the first 12 hex chars of
+// sha256(cmd.CommandPath()). Tests pass the result via
+// --confirm-token=<sha> to satisfy the kit/destructive-token gate
+// (T-0654) on non-TTY exec. Keep this in sync with kit if the hash
+// shape ever changes.
+func destructiveToken(commandPath string) string {
+	h := sha256.Sum256([]byte(commandPath))
+	return hex.EncodeToString(h[:6])
+}
 
 // prepareAPS builds a sandboxed aps invocation: HOME and all XDG_*
 // directories point at homeDir, APS_DATA_PATH is stripped from the

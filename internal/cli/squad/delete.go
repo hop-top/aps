@@ -21,10 +21,11 @@ func newDeleteCmd() *cobra.Command {
 	}
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — kit 0.4 signature annotations. Squad deletion mutates
-	// the local squad store and is naturally idempotent (delete-by-id).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — squad delete is an irreversible local mutation on the
+	// squad store. Delete-by-id is idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }
 

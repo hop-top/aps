@@ -52,8 +52,12 @@ The device must re-pair via a new QR code to reconnect.`,
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — revoke invalidates a mobile device's access token; the
+	// loss is irreversible (device must re-pair via a new QR code).
+	// Re-revoking the same device is idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }
 

@@ -81,6 +81,14 @@ var root = kitcli.New(kitcli.Config{
 	// scoped to the aps-kit-12fcc-conformance track (T-0647..T-0662);
 	// flip this back to the default once that track lands.
 	DisableValidate: true,
+	// T-0654 — refuse destructive leaves that have not opted into the
+	// typed-token confirm flow (kit/destructive-token=required, set via
+	// kitcli.SetDestructiveToken). DisableValidate above short-circuits
+	// the runtime pre-flight; this flag still feeds the validator gate
+	// the TestRootValidate_StrictGatesPass regression net exercises, and
+	// arms the policy-gate confirm flow on every destructive leaf so the
+	// CLI refuses to run them on non-TTY without --confirm-token=<sha>.
+	EnforceDestructiveToken: true,
 	// T-0657 — paired with DisableValidate above. While DisableValidate
 	// is true (the production guardrail during the 12fcc annotation
 	// rollout) kit/cli short-circuits the pre-flight validator and this

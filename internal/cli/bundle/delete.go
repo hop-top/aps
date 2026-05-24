@@ -28,8 +28,11 @@ func newDeleteCmd() *cobra.Command {
 		"Skip confirmation prompt")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — bundle delete removes the user-bundle file on disk;
+	// irreversible local mutation. Delete-by-name is idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }
 

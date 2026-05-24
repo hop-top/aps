@@ -779,15 +779,11 @@ func init() {
 	kitcli.SetIdempotency(profileShareCmd, kitcli.IdempotencyYes)
 	kitcli.SetSideEffect(profileImportCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileImportCmd, kitcli.IdempotencyConditional)
-	// `profile delete` is morally destructive, but the kit confirm gate
-	// fires on destructive-like tags and the existing tree-wide e2e
-	// suite has not yet migrated to --confirm=yes; the rest of the
-	// T-0648 conformance staircase (T-0653/T-0657) introduces the
-	// destructive tier across the tree at one go alongside test
-	// updates. Hold the write-local tier for now; the `--yes` local
-	// flag still gates the irreversible step.
-	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — profile delete removes the profile directory and all
+	// associated state irreversibly; delete-by-id is idempotent.
+	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(profileDeleteCmd)
 	kitcli.SetSideEffect(profileAddCapCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileAddCapCmd, kitcli.IdempotencyYes)
 	kitcli.SetSideEffect(profileRemoveCapCmd, kitcli.SideEffectWriteLocal)

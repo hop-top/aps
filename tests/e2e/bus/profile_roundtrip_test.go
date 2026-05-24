@@ -150,8 +150,10 @@ func TestBusProfileDeleted_CrossProcess(t *testing.T) {
 		t.Fatalf("setup create failed: %v\n%s", err, out)
 	}
 
+	// T-0654 — profile delete carries kit/destructive-token=required.
 	out, err := runAPSChild(t, home, hub,
 		"profile", "delete", "noor-delete", "--yes",
+		"--confirm-token", destructiveTokenFor("aps profile delete"),
 	)
 	if err != nil {
 		t.Fatalf("aps profile delete failed: %v\noutput:\n%s", err, out)

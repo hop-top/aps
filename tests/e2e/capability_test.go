@@ -46,7 +46,11 @@ func TestCapabilityCommands(t *testing.T) {
 	assert.Contains(t, string(out), "export APS_MYTOOL_PATH=")
 
 	// 5. Delete
-	cmd = exec.Command(apsBinary, "capability", "delete", "mytool")
+	// T-0654 — `capability delete` is annotated kit/destructive-token=
+	// required; non-TTY invocations must pass --confirm-token=<sha>
+	// where sha is the first 12 hex of sha256("aps capability delete").
+	cmd = exec.Command(apsBinary, "capability", "delete", "mytool",
+		"--confirm-token", destructiveToken("aps capability delete"))
 	cmd.Env = env
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, "Delete failed: %s", string(out))
