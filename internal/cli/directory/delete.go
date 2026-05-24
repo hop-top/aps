@@ -62,7 +62,7 @@ Profile is supplied via the tool-level --profile global:
 	// record; the loss propagates beyond the caller's local scope, so
 	// classify as destructive-shared. Delete-by-name is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the upstream
 	// deregistration call; preview would need the same wire round-trip.

@@ -56,7 +56,7 @@ The device must re-pair via a new QR code to reconnect.`,
 	// loss is irreversible (device must re-pair via a new QR code).
 	// Re-revoking the same device is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }

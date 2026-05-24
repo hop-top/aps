@@ -50,6 +50,7 @@ type Config struct {
 	CapabilitySources []string              `yaml:"capability_sources,omitempty"`
 	Secrets           SecretsConfig         `yaml:"secrets,omitempty"`
 	Profile           ProfileDefaultsConfig `yaml:"profile,omitempty"`
+	Idempotency       IdempotencyConfig     `yaml:"idempotency,omitempty"`
 }
 
 // ProfileDefaultsConfig controls default behaviour when creating profiles.
@@ -120,6 +121,31 @@ func (m AutoMode) ShouldAutoAssign(interactive bool) bool {
 	default:
 		return false
 	}
+}
+
+// IdempotencyBackend names a backend supported by the kit/console/cli/
+// idemstore Store interface. The default ("sqlite") persists at
+// $XDG_STATE_HOME/aps/idemstore.db with a 24h TTL; "memory" is intended
+// for tests and short-lived processes; "" falls back to sqlite.
+type IdempotencyBackend string
+
+// Idempotency backend identifiers. Treat values as case-sensitive
+// per yaml. Adding a new value requires extending NewIdempotencyStore
+// in internal/cli/idempotency.go.
+const (
+	IdempotencyBackendSQLite IdempotencyBackend = "sqlite"
+	IdempotencyBackendMemory IdempotencyBackend = "memory"
+)
+
+// IdempotencyConfig selects the kit/console/cli/idemstore backend used
+// for --idempotency-key replay (§8.5). Backend "sqlite" (default)
+// records replay envelopes at $XDG_STATE_HOME/aps/idemstore.db with a
+// 24h TTL; "memory" disables persistence. TTL accepts any time.Duration
+// string (e.g. "30m", "12h"); zero falls back to idemstore.DefaultTTL.
+type IdempotencyConfig struct {
+	Backend IdempotencyBackend `yaml:"backend,omitempty"`
+	Path    string             `yaml:"path,omitempty"`
+	TTL     string             `yaml:"ttl,omitempty"`
 }
 
 // SecretsConfig selects the kit/storage/secret backend used for profile secrets.

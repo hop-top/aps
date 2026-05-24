@@ -306,7 +306,7 @@ find to look up an existing card before adding to avoid duplicates.`,
 	// `contact add` mints a new contact each call (write-shared into the
 	// upstream addressbook, no caller-side dedupe).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — add proxies to the bundled contact provider; the
 	// provider mints an ID on its side, so preview has nothing local to
 	// inspect without speaking the provider's wire protocol.
@@ -362,7 +362,7 @@ update.`,
 	// `contact update` overwrites the named fields on an existing card;
 	// repeating with the same payload converges.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — update proxies to the bundled contact provider; the
 	// preview would need a provider round-trip to read current values.
 	kitcli.OptOutDryRun(cmd)
@@ -421,7 +421,7 @@ preview would only restate the text the user already typed.`,
 	}
 	// `contact note` appends each call; not naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — note proxies to the bundled contact provider's note
 	// endpoint; preview cannot show an appended note without doing the
 	// append.
@@ -459,7 +459,7 @@ running.`,
 	// tree-wide T-0653/T-0657 step lands the kit confirm gate alongside
 	// the matching e2e --confirm=yes updates.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — delete proxies to the bundled contact provider; preview
 	// would only restate the contact ID the user already passed.
 	kitcli.OptOutDryRun(cmd)

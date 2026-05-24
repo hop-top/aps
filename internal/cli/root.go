@@ -64,6 +64,18 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	if _, err := initPolicyEngine(eventBus); err != nil {
 		return err
 	}
+	// Surface a captured idempotency-store open failure on mutating
+	// leaves only. Read-only paths (--help, completion, status, list,
+	// show) stay usable so an operator can investigate and recover
+	// without the store. Without this check, a malformed/unwritable
+	// idemstore.db silently degrades every `--idempotency-key` call to
+	// no replay protection — kit's wrapIdempotencyRunE returns the
+	// original RunE unchanged when Root.IdemStore is nil.
+	if kitcli.IsMutating(cmd) {
+		if err := idempotencyHealthErr(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -199,7 +211,24 @@ var root = kitcli.New(kitcli.Config{
 			{ID: "instance", Title: "INSTANCE"},
 		},
 	},
-})
+},
+	// Install the kit-managed --idempotency-key replay store. Backend
+	// selection comes from $XDG_CONFIG_HOME/aps/config.yaml's
+	// idempotency.backend ("sqlite" default; "memory" for tests). Each
+	// invocation that targets a conditional+write/destructive leaf
+	// either records its envelope under the supplied key (on miss) or
+	// short-circuits to the recorded result (on hit). See ~/.ops/docs/
+	// cli-conventions-with-kit.md §8.5.
+	withIdempotencyStore(),
+	// Install the kit-managed delegation policy loader. The loader
+	// resolves --policy=<name> against
+	// $XDG_CONFIG_HOME/aps/policies/<name>.yaml per kit's
+	// DefaultPolicyLoader. Until a policy is named, --confirm and
+	// --max-ops work standalone; kit's wrapPolicyRunE still gates every
+	// destructive leaf for the confirm matrix. See ~/.ops/docs/
+	// cli-conventions-with-kit.md §8.6.
+	kitcli.WithPolicy(kitcli.DefaultPolicyLoader("aps")),
+)
 
 // rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
 var rootCmd = root.Cmd

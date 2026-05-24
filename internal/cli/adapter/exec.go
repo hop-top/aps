@@ -92,7 +92,7 @@ Examples:
 	)
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — exec runs an arbitrary adapter action whose side effects
 	// are determined by the action's own implementation, not by aps;
 	// previewing would have to interpret a third-party action's intent.

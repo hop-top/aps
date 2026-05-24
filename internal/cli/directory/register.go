@@ -74,7 +74,7 @@ Profile is supplied via the tool-level --profile global:
 	// T-0648 — kit/cli signature annotations. Push to remote directory
 	// (write-shared); register-if-not-exists is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — register pushes the local OASF record to the upstream
 	// directory; preview would require the same wire round-trip.
 	kitcli.OptOutDryRun(cmd)

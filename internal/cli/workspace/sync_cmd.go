@@ -45,7 +45,7 @@ Use this command when:
 	// T-0648 — reconciles workspace state across devices (mutates shared
 	// state through the kit bus); re-syncing yields the same final state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — sync reconciles workspace state across devices via the
 	// kit bus; preview would require the same round-trip that performs
 	// the reconciliation. Use `aps workspace conflicts resolve

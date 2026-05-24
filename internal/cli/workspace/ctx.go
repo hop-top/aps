@@ -474,7 +474,7 @@ returns a not-found error rather than silently succeeding.`,
 	// T-0654 — delete is a local irreversible mutation on the workspace
 	// context store; deleting an absent key is a no-op (idempotent).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the key being removed.

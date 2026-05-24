@@ -911,7 +911,7 @@ func init() {
 	// T-0654 — profile delete removes the profile directory and all
 	// associated state irreversibly; delete-by-id is idempotent.
 	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(profileDeleteCmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the profile ID being removed.

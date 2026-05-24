@@ -94,7 +94,7 @@ Idempotent on already-absent membership.`,
 	// T-0654 — removing a squad member is an irreversible mutation on
 	// the local squad store. Remove-by-id is naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the squad/profile IDs.

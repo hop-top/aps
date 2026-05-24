@@ -116,7 +116,7 @@ Example:
 	// the target peer; each send mints a new message ID and (when
 	// task-id is unset) a new task.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — every send mints fresh message/task IDs on the peer; a
 	// preview that didn't actually hit the wire would lie about the IDs.
 	kitcli.OptOutDryRun(cmd)

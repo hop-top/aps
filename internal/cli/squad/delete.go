@@ -34,7 +34,7 @@ reason that flows to the event bus alongside the mutation.`,
 	// T-0654 — squad delete is an irreversible local mutation on the
 	// squad store. Delete-by-id is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the squad ID being removed.
