@@ -29,6 +29,13 @@ func newStartCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — start spawns the adapter's long-running daemon; preview
+	// would have to bisect the spawn-and-wait path that's the whole
+	// operation.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "start spawns the adapter's long-running daemon; previewing would have to bisect the spawn-and-wait path that is the operation itself."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

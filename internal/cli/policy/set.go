@@ -68,6 +68,12 @@ Workspace is supplied via the tool-level --workspace global:
 	// T-0648 — kit/cli signature annotations.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — set applies add/remove diffs to the allow/deny lists in
+	// the profile policy YAML; preview would only echo the flag values.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "set applies add/remove diffs to the allow/deny lists in the profile policy YAML; previewing would only echo the flag values the user already supplied."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

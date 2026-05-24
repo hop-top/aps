@@ -38,6 +38,12 @@ func newCreateCmd() *cobra.Command {
 	// T-0648 — kit 0.4 signature annotations.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — create writes a single squad entry; the result is fully
+	// determined by the --type/--domain/--description/--members flags.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "create writes a single squad entry to the local squad store; the resulting record is fully determined by the type, domain, and members flags."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

@@ -48,6 +48,12 @@ func newApproveCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — approve is an atomic registry transition; preview would
+	// only echo back the device ID that is the command's argument.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "approve is an atomic registry transition that flips the pending device entry to approved; previewing would only echo the device ID the user already passed."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

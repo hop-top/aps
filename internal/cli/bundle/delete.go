@@ -33,6 +33,12 @@ func newDeleteCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the user-bundle path being removed.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete removes the user-bundle file on disk; the destructive-token confirm flow already requires explicit acknowledgement, and preview would only restate the bundle name."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

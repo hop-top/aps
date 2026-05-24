@@ -93,6 +93,13 @@ Examples:
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — exec runs an arbitrary adapter action whose side effects
+	// are determined by the action's own implementation, not by aps;
+	// previewing would have to interpret a third-party action's intent.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "exec runs an arbitrary adapter action whose side effects are determined by the action implementation; aps cannot preview a third-party action's behavior without invoking it."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

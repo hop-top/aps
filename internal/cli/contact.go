@@ -276,6 +276,13 @@ func newContactAddCmd() *cobra.Command {
 	// upstream addressbook, no caller-side dedupe).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — add proxies to the bundled contact provider; the
+	// provider mints an ID on its side, so preview has nothing local to
+	// inspect without speaking the provider's wire protocol.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "add proxies to a bundled contact provider that mints a fresh ID on its side; previewing without the provider call would invent IDs the provider never assigned."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -315,6 +322,12 @@ func newContactUpdateCmd() *cobra.Command {
 	// repeating with the same payload converges.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — update proxies to the bundled contact provider; the
+	// preview would need a provider round-trip to read current values.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "update proxies to a bundled contact provider; previewing the diff would require the same provider round-trip that performs the update."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -353,6 +366,13 @@ func newContactNoteCmd() *cobra.Command {
 	// `contact note` appends each call; not naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — note proxies to the bundled contact provider's note
+	// endpoint; preview cannot show an appended note without doing the
+	// append.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "note appends a fresh entry via the bundled contact provider; previewing would only restate the text the user already typed."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
@@ -374,5 +394,11 @@ func newContactDeleteCmd() *cobra.Command {
 	// the matching e2e --confirm=yes updates.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — delete proxies to the bundled contact provider; preview
+	// would only restate the contact ID the user already passed.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete proxies to the bundled contact provider's delete endpoint; previewing would only restate the contact ID the user already passed."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

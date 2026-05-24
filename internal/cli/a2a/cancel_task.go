@@ -71,6 +71,12 @@ func NewCancelTaskCmd() *cobra.Command {
 	// no-ops, so idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — preview would require speaking JSON-RPC to the remote
+	// peer to discover task state; the wire call is the operation.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "cancel is a remote JSON-RPC call to the target peer; previewing would require the same network round-trip that performs the cancellation."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

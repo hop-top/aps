@@ -48,6 +48,13 @@ func newTestMessengerCmd() *cobra.Command {
 	// branches are idempotent; an actual delivery is not).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
+	// T-0656 — without --send the pipeline already runs as a read-only
+	// probe (it's the command's own native dry-run); --dry-run on top
+	// would duplicate that surface for the --send variant only.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "test-messenger without --send is itself a read-only delivery probe; --dry-run would shadow that built-in preview rather than add new signal."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

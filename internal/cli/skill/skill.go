@@ -284,6 +284,13 @@ func newInstallCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&global, "global", false, "Install to global skills directory")
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0656 — install copies the skill directory into the user or
+	// global skills dir; the destination is a pure function of --global
+	// and the skill's manifest name.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "install copies the skill directory into the user or global skills dir; the destination path is fully determined by --global and the skill manifest name."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

@@ -45,5 +45,11 @@ func newLinkCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — link creates a symlink to the --target path; preview
+	// would only restate the source and target paths from the flags.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "link creates one filesystem symlink whose source and target are fully determined by --name and --target; previewing would only echo the inputs."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

@@ -48,6 +48,12 @@ Roles control what the device can do:
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — attach binds a device to a workspace; the inputs to the
+	// preview are identical to the inputs to the apply path.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "attach is a single registry write that binds the device to the workspace with the given role; the would-be record is fully determined by the command-line arguments."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

@@ -46,6 +46,14 @@ Use this command when:
 	// state through the kit bus); re-syncing yields the same final state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — sync reconciles workspace state across devices via the
+	// kit bus; preview would require the same round-trip that performs
+	// the reconciliation. Use `aps workspace conflicts resolve
+	// --dry-run` for the closer preview surface.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "sync reconciles shared workspace state across devices over the kit bus; previewing would require the same network round-trip that performs the reconciliation."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

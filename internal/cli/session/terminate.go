@@ -62,6 +62,12 @@ func NewTerminateCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — terminate sends SIGTERM and waits for the tmux server
+	// to exit; preview would have to fake the OS signal path.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "terminate sends SIGTERM to the tmux server and waits for cleanup; previewing would have to fake the OS signal path that defines the operation."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

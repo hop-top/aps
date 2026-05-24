@@ -83,6 +83,12 @@ Valid strategies:
 	// same strategy twice yields the same final state.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — without --set this command is already a read; with
+	// --set the result is fully determined by the flag value.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "policy without --set is already a read-only show; with --set the resulting policy is fully determined by the flag value and would be restated in preview."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

@@ -77,6 +77,12 @@ If no workspace is specified, the active workspace is used.`,
 	// already-left workspace is a no-op (idempotent).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — leave drops the caller's membership entry; the result
+	// is fully determined by --workspace and --profile.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "leave drops the caller's membership entry from the workspace; the result is fully determined by --workspace and --profile."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

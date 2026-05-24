@@ -89,6 +89,20 @@ var root = kitcli.New(kitcli.Config{
 	// arms the policy-gate confirm flow on every destructive leaf so the
 	// CLI refuses to run them on non-TTY without --confirm-token=<sha>.
 	EnforceDestructiveToken: true,
+	// T-0656 — refuse write/destructive leaves that called
+	// kitcli.OptOutDryRun(cmd) without pairing a kit/dry-run-rationale
+	// annotation (kitcli.SetDryRunRationale, 1-200 chars). Each opt-out
+	// in the aps tree carries an honest reason explaining why preview
+	// would be uninformative or impossible; the rationale is what the
+	// user reads when --dry-run is rejected on the leaf. Leaves that
+	// genuinely honor --dry-run (action, adapter link/revoke/stop/
+	// unlink, migrate messengers, workspace conflicts resolve) need
+	// neither the opt-out nor the rationale. See kit cli.go:210 for
+	// the field, kit contract.go:118 for the helper, and the
+	// EnforceDryRunRationale gate at kit cli.go:1064. The validator
+	// gate only fires on the opted-out path, so this flag is a safety
+	// net rather than a tree-wide ratchet today.
+	EnforceDryRunRationale: true,
 	// T-0657 — paired with DisableValidate above. While DisableValidate
 	// is true (the production guardrail during the 12fcc annotation
 	// rollout) kit/cli short-circuits the pre-flight validator and this

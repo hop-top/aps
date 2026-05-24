@@ -60,6 +60,12 @@ You must specify your profile to identify which agent is joining.`,
 	// the same profile yields the same membership (idempotent).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — join appends a single membership entry; the result is
+	// fully determined by --workspace and --profile.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "join appends a single membership entry to the workspace; the resulting record is fully determined by --workspace and --profile."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

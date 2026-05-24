@@ -26,6 +26,12 @@ func newDeleteCmd() *cobra.Command {
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	kitcli.SetDestructiveToken(cmd)
+	// T-0656 — destructive-token confirm already gates the apply path;
+	// preview would only restate the squad ID being removed.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "delete removes the squad entry from the local squad store; the destructive-token confirm flow already gates the apply path, and preview would only restate the squad ID."); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 

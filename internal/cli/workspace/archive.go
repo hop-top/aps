@@ -69,6 +69,12 @@ and cannot accept new agents or tasks. Use --force to skip confirmation.`,
 	// state; archiving an archived workspace is a no-op.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — archive flips a single state bit on the workspace
+	// record; preview would only restate the workspace ID.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "archive flips the workspace state bit to read-only; the operation is a one-field write whose result is fully determined by the workspace ID."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

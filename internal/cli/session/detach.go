@@ -41,6 +41,12 @@ func NewDetachCmd() *cobra.Command {
 	// idempotent (an already-detached session stays detached).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — detach disconnects the tmux client from the session;
+	// preview would only restate the session ID being detached.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "detach disconnects the tmux client from the named session; the session itself keeps running and previewing would only restate the session ID."); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

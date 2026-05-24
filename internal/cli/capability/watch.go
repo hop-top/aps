@@ -63,5 +63,12 @@ func newWatchCmd() *cobra.Command {
 
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0656 — watch installs a long-running filesystem watcher that
+	// rewrites symlinks on change; there is no batch boundary on which
+	// to scope a preview.
+	kitcli.OptOutDryRun(cmd)
+	if err := kitcli.SetDryRunRationale(cmd, "watch installs a long-running filesystem watcher that rewrites symlinks on every change event; there is no batch boundary on which a preview could be scoped."); err != nil {
+		panic(err)
+	}
 	return cmd
 }

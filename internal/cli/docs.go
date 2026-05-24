@@ -35,5 +35,12 @@ func init() {
 	// produces the same artefacts (idempotent overwrite).
 	kitcli.SetSideEffect(docsCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(docsCmd, kitcli.IdempotencyYes)
+	// T-0656 — docs walks the live cobra tree and writes a deterministic
+	// markdown tree; preview would have to render the same output and
+	// then throw it away.
+	kitcli.OptOutDryRun(docsCmd)
+	if err := kitcli.SetDryRunRationale(docsCmd, "docs renders a deterministic markdown tree from the live cobra command tree; previewing would have to compute the same output and discard it instead of writing it."); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(docsCmd)
 }

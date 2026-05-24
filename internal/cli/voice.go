@@ -99,10 +99,30 @@ func init() {
 	// not idempotent without a key).
 	kitcli.SetSideEffect(voiceServiceStartCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(voiceServiceStartCmd, kitcli.IdempotencyYes)
+	// T-0656 — service start spawns the long-running voice backend
+	// daemon; there is no batch boundary on which a preview could be
+	// scoped.
+	kitcli.OptOutDryRun(voiceServiceStartCmd)
+	if err := kitcli.SetDryRunRationale(voiceServiceStartCmd, "service start spawns the long-running voice backend daemon; previewing would have to bisect the spawn-and-wait path that is the operation itself."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(voiceServiceStopCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(voiceServiceStopCmd, kitcli.IdempotencyYes)
+	// T-0656 — service stop sends SIGTERM and waits for cleanup;
+	// previewing would have to fake the OS signal path.
+	kitcli.OptOutDryRun(voiceServiceStopCmd)
+	if err := kitcli.SetDryRunRationale(voiceServiceStopCmd, "service stop sends SIGTERM to the voice backend daemon and waits for cleanup; previewing would have to fake the OS signal path that defines the operation."); err != nil {
+		panic(err)
+	}
 	kitcli.SetSideEffect(voiceServiceStatusCmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(voiceServiceStatusCmd, kitcli.IdempotencyYes)
 	kitcli.SetSideEffect(voiceStartCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(voiceStartCmd, kitcli.IdempotencyNo)
+	// T-0656 — start opens a fresh interactive voice session against
+	// the backend; there is no batch boundary on which a preview could
+	// be scoped.
+	kitcli.OptOutDryRun(voiceStartCmd)
+	if err := kitcli.SetDryRunRationale(voiceStartCmd, "start opens a fresh interactive voice session against the backend daemon; previewing would have to fake the audio-stream handshake that defines the session."); err != nil {
+		panic(err)
+	}
 }
