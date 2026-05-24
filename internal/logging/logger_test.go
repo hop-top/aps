@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"charm.land/log/v2"
@@ -163,6 +164,44 @@ func TestSetViper(t *testing.T) {
 	}
 	if logger == original {
 		t.Error("expected SetViper to create a new logger instance")
+	}
+}
+
+// TestSetSlogDefault verifies SetSlogDefault installs a kit-backed
+// charm.land/log/v2.Logger as the process slog.Default (T-0647).
+func TestSetSlogDefault(t *testing.T) {
+	prev := slog.Default()
+	defer slog.SetDefault(prev)
+
+	v := viper.New()
+	SetSlogDefault(v)
+
+	h := slog.Default().Handler()
+	if h == nil {
+		t.Fatal("slog.Default().Handler() = nil after SetSlogDefault")
+	}
+	if _, ok := h.(*log.Logger); !ok {
+		t.Errorf("slog.Default().Handler() type = %T, want *charm.land/log/v2.Logger", h)
+	}
+}
+
+// TestSetViperInstallsSlogDefault verifies SetViper also wires the
+// kit handler as slog.Default (T-0647 ensures stdlib slog calls route
+// through the same sink as the global logger).
+func TestSetViperInstallsSlogDefault(t *testing.T) {
+	prev := slog.Default()
+	original := GetLogger()
+	defer func() {
+		slog.SetDefault(prev)
+		SetLogger(original)
+	}()
+
+	v := viper.New()
+	SetViper(v)
+
+	h := slog.Default().Handler()
+	if _, ok := h.(*log.Logger); !ok {
+		t.Errorf("slog.Default().Handler() type = %T, want *charm.land/log/v2.Logger", h)
 	}
 }
 

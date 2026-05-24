@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"log/slog"
 	"os"
 
 	"charm.land/log/v2"
@@ -77,9 +78,32 @@ func SetLogger(logger *Logger) {
 // the canonical choke point for the L1-L16 surfaces in
 // docs/cli/redact-inventory.md. The viper instance is also recorded
 // for the runtime --no-redact toggle (SetViperForRedact).
+//
+// SetViper also installs the same kit handler as the process-wide
+// slog.Default (T-0647), so any stdlib slog.Info/Warn/Error/Debug call
+// in aps or its dependencies routes through kit's themed handler and
+// the same redacted writer.
 func SetViper(v *viper.Viper) {
 	SetViperForRedact(v)
 	l := kitlog.New(v)
 	l.SetOutput(NewWriter(os.Stderr))
 	globalLogger = &Logger{logger: l}
+	SetSlogDefault(v)
+}
+
+// SetSlogDefault installs a kit-backed slog.Handler as the process
+// default (T-0647). The handler honours the same viper keys as the
+// charm/kit logger (quiet, no-color) and writes through the redaction
+// wrapper so stdlib slog calls share the canonical sink.
+//
+// Called from SetViper, but exposed so callers that bypass SetViper
+// (tests, embed-style consumers) can wire the slog default explicitly.
+// Binds viper to the redaction toggle too so the --no-redact /
+// APS_DEBUG_NO_REDACT runtime switch works when SetSlogDefault is
+// the only entry point used.
+func SetSlogDefault(v *viper.Viper) {
+	SetViperForRedact(v)
+	h := kitlog.New(v)
+	h.SetOutput(NewWriter(os.Stderr))
+	slog.SetDefault(slog.New(h))
 }
