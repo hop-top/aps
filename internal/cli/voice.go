@@ -22,6 +22,17 @@ var voiceServiceCmd = &cobra.Command{
 var voiceServiceStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the voice backend service",
+	Long: `Start the long-running voice backend daemon that hosts aps
+voice sessions. The daemon owns the audio-capture pipeline and
+the realtime STT/TTS provider connections; aps voice start
+(per-session command) talks to this daemon.
+
+Idempotent: starting an already-running backend is a no-op
+(NewBackendManager().Start returns nil when the process is already
+up). --dry-run is opted out because previewing the spawn would
+have to bisect the spawn-and-wait path that defines the
+operation. Pair with aps voice service stop to terminate and aps
+voice service status to inspect.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})
 		if err := mgr.Start(nil); err != nil {
@@ -35,6 +46,14 @@ var voiceServiceStartCmd = &cobra.Command{
 var voiceServiceStopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop the voice backend service",
+	Long: `Stop the voice backend daemon by sending SIGTERM and waiting
+for graceful cleanup. Any active aps voice sessions are torn down
+when the daemon exits; new aps voice start calls will fail until
+aps voice service start is run again.
+
+Idempotent: stopping an already-stopped backend is a no-op.
+--dry-run is opted out because previewing would have to fake the
+OS signal path that defines the operation.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})
 		if err := mgr.Stop(); err != nil {
@@ -48,6 +67,11 @@ var voiceServiceStopCmd = &cobra.Command{
 var voiceServiceStatusCmd = &cobra.Command{
 	Use:   statusCmdName,
 	Short: "Show voice backend service status",
+	Long: `Print the voice backend daemon's running state: "running"
+if the manager reports the process is up, "stopped" otherwise.
+Used as a quick liveness probe before invoking aps voice start.
+
+Read-only: no daemon state mutation. Idempotent.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		mgr := voice.NewBackendManager(voice.GlobalBackendConfig{})
 		if mgr.IsRunning() {
@@ -61,6 +85,17 @@ var voiceServiceStatusCmd = &cobra.Command{
 var voiceStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start a voice session",
+	Long: `Register a fresh voice session against the running voice
+backend daemon and print the assigned session id. The session
+binds to the named profile (via the inherited --profile global,
+required) and the channel selected by --channel (web | tui |
+telegram | twilio; default web).
+
+Mints a new session record per call (not idempotent). The backend
+daemon must already be running (see aps voice service start);
+otherwise this call fails with a backend-unreachable error.
+--dry-run is opted out because previewing would have to fake the
+audio-stream handshake that defines the session.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// --profile is a kit-shipped root-persistent global; read the
 		// inherited flag rather than redeclaring locally (T-0648 batch 8

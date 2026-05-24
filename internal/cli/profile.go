@@ -46,6 +46,20 @@ var profileCmd = &cobra.Command{
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available profiles",
+	Long: `List every agent profile discovered under
+$APS_DATA_PATH/profiles/, projected into a row shape that includes
+id, display name, roles, capabilities, workspace link, email,
+has-secrets, has-identity, color, and avatar.
+
+Filters compose with AND semantics: --capability, --role, --squad,
+--tone match against the corresponding slice/string field;
+--workspace (kit-shipped persistent global) filters by linked
+workspace name; --has-identity / --has-secrets are boolean flags
+that scope to profiles that do (or do not) have the given module
+attached. Output respects the global --format flag (table|json|
+yaml).
+
+Read-only: no profile state is mutated. Idempotent.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profiles, err := core.ListProfilesFull()
 		if err != nil {
@@ -146,7 +160,24 @@ func profileToSummaryRow(p core.Profile) profileSummaryRow {
 var profileCreateCmd = &cobra.Command{
 	Use:   "create [id]",
 	Short: "Create a new profile",
-	Args:  cobra.ExactArgs(1),
+	Long: `Create a new agent profile under
+$APS_DATA_PATH/profiles/<id>/. The id argument doubles as the
+directory name; display name, email, avatar URL, and color hex
+default to interactive prompts when omitted and stdin is a TTY.
+Pass --force to overwrite an existing profile directory.
+
+The --auto-avatar / --auto-color flags generate deterministic
+values from the profile id (avatar via the configured provider,
+default dicebear; color from a fixed palette hash). Provider knobs
+(--avatar-provider, --avatar-style, --avatar-size, --avatar-format)
+override per-call config. ProfileDefaults config drives the auto
+behavior when the flags are unset.
+
+Mutating: writes the profile.yaml record and (optionally) seeds the
+git config block. Emits a ProfileCreated bus event with the --note
+metadata attached. Not idempotent — each call creates a fresh
+record (use --force to replace).`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		displayName, _ := cmd.Flags().GetString("display-name")
@@ -347,7 +378,16 @@ from the profile id and overwrite the existing value when set.`,
 var profileShowCmd = &cobra.Command{
 	Use:   "show [id]",
 	Short: "Show profile details",
-	Args:  cobra.ExactArgs(1),
+	Long: `Show the full profile record as YAML: identity fields,
+workspace link, capability list (annotated as builtin or external
+with description), and the status of optional modules
+(secrets present/missing, redacted secret keys). Capability
+descriptions are looked up from the builtin registry or the
+external capability path.
+
+Read-only: loads $APS_DATA_PATH/profiles/<id>/profile.yaml and
+prints a human-friendly render. Idempotent.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		profile, err := core.LoadProfile(id)
@@ -420,7 +460,16 @@ var profileCapabilityCmd = &cobra.Command{
 var profileAddCapCmd = &cobra.Command{
 	Use:   "add <profile> <capability>",
 	Short: "Add a capability to a profile",
-	Args:  cobra.ExactArgs(2),
+	Long: `Attach a capability to a profile's capability list. The
+capability argument must resolve in either the builtin registry or
+the external capabilities tree under
+$APS_DATA_PATH/capabilities/; unknown names are rejected before
+any state changes.
+
+Mutating: writes profile.yaml and emits a ProfileUpdated bus event
+with the --note metadata attached. Idempotent at the field level
+(re-adding an already-attached capability is a no-op).`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID, capName := args[0], args[1]
 		if !capability.Exists(capName) {
@@ -442,7 +491,15 @@ var profileAddCapCmd = &cobra.Command{
 var profileRemoveCapCmd = &cobra.Command{
 	Use:   "remove <profile> <capability>",
 	Short: "Remove a capability from a profile",
-	Args:  cobra.ExactArgs(2),
+	Long: `Detach a capability from a profile's capability list. The
+capability files on disk are not removed — only the link on the
+profile record is dropped, so other profiles with the same
+capability are unaffected.
+
+Mutating: writes profile.yaml and emits a ProfileUpdated bus event
+with the --note metadata attached. Idempotent: removing a
+capability that isn't on the profile is a no-op.`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID, capName := args[0], args[1]
 		// T-1291 — attach --note before mutating profile capabilities.
@@ -464,7 +521,19 @@ var profileRemoveCapCmd = &cobra.Command{
 var profileStatusCmd = &cobra.Command{
 	Use:   "status [id]",
 	Short: "Show bundle resolution status for a profile",
-	Args:  cobra.ExactArgs(1),
+	Long: `Show per-bundle binary resolution for a profile: which required
+binaries are active, missing/skipped, or blocked. Bundles are
+inferred from the profile's capability list via
+core.ExtractBundleNames.
+
+With the inherited --verbose global, also emits each bundle's
+resolved scope (operations, file_patterns, networks) and the set
+of env-var keys the bundle would inject when activated. Warnings
+from the resolver (e.g. version conflicts) surface inline.
+
+Read-only: loads profile.yaml and runs the bundle resolver; no
+disk writes. Idempotent up to filesystem drift between calls.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		// --verbose is a kit-shipped root-persistent global; read the
@@ -591,7 +660,19 @@ func joinStrings(ss []string, sep string) string {
 var profileShareCmd = &cobra.Command{
 	Use:   "share [id]",
 	Short: "Export a shareable profile bundle",
-	Args:  cobra.ExactArgs(1),
+	Long: `Export a profile as a portable bundle file that another aps
+install can ingest via aps profile import. The default output path
+is "<id>.aps-profile.yaml" in the current working directory;
+--out overrides the destination.
+
+The bundle includes the profile.yaml plus any side-car files
+(secrets are NOT included — the importer must re-supply them per
+the profile_share_created tracking event). A profile_share_created
+event is emitted on success with the bundle version recorded.
+
+Mutating (filesystem write): creates the bundle file. Pair with
+aps profile import on the receiving install.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		outPath, _ := cmd.Flags().GetString("out")
@@ -620,7 +701,19 @@ var profileShareCmd = &cobra.Command{
 var profileImportCmd = &cobra.Command{
 	Use:   "import [bundle]",
 	Short: "Import a shared profile bundle",
-	Args:  cobra.ExactArgs(1),
+	Long: `Import a profile bundle previously produced by aps profile
+share. The bundle argument is the path to the .aps-profile.yaml
+file. By default the new profile keeps the source id; pass --id
+to rename it (e.g. when the local install already has a profile
+with the source id). --force overwrites an existing profile
+directory with the same target id.
+
+Mutating: creates $APS_DATA_PATH/profiles/<target-id>/ and emits
+both a ProfileCreated bus event and a profile_share_imported
+tracking event. The --note metadata is attached to the
+ProfileCreated payload. Secrets are NOT imported (they are not
+part of the bundle); set them separately after import.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		bundlePath := args[0]
 		id, _ := cmd.Flags().GetString("id")
@@ -654,7 +747,18 @@ var profileDeleteCmd = &cobra.Command{
 	Use:     "delete <id>",
 	Aliases: []string{"rm", "remove"},
 	Short:   "Delete a profile",
-	Args:    cobra.ExactArgs(1),
+	Long: `Delete a profile directory under $APS_DATA_PATH/profiles/<id>/
+along with its profile.yaml, secrets, and any side-car files.
+Interactive confirmation prompts unless --yes is set or stdin is
+not a TTY.
+
+Destructive: irreversible without a prior aps profile share
+export. Blocked when the profile has active sessions in the
+session store; --force overrides that guard and removes the
+profile anyway, leaving the orphaned sessions to fail on next
+lookup. A ProfileDeleted bus event fires with the --note
+metadata attached.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		force, _ := cmd.Flags().GetBool("force")

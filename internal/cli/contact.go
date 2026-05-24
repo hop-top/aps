@@ -96,6 +96,20 @@ func newContactListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all contacts",
+		Long: `List every contact reachable through the configured contacts
+adapter (e.g. cardamum/CardDAV) under the active profile. The
+adapter is invoked once per call and the resulting cards are
+projected into a uniform row shape: ID, Name (FN), Email, Org,
+Phone, Addressbook.
+
+Filters: --addressbook scopes to a single addressbook ID; --org
+filters by ORG value; --has-email keeps cards that have at least
+one EMAIL property. Output respects the local --format flag
+(table|json|yaml). The --profile global selects which profile's
+adapter configuration is used.
+
+Read-only: queries the upstream addressbook; no contact state is
+mutated.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			profile := globals.Profile()
 			inputs := map[string]string{}
@@ -228,7 +242,14 @@ func newContactShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show contact detail",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show the full vCard body for a single contact identified by id
+via the configured contacts adapter. Output is the raw adapter
+response (typically vCard text) rather than the projected row shape
+used by aps contact list. The --profile global selects which
+profile's adapter configuration handles the request.
+
+Read-only: queries the upstream addressbook; idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("show",
 				map[string]string{"id": args[0]},
@@ -245,7 +266,17 @@ func newContactAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <email>",
 		Short: "Add a new contact",
-		Args:  cobra.ExactArgs(1),
+		Long: `Add a new contact to the configured contacts adapter under the
+active profile. The email argument is required; optional fields
+(--name, --org, --phone, --note, --addressbook) populate the
+corresponding vCard properties on the new card.
+
+The contact id is minted by the upstream provider (e.g. cardamum
+returns a freshly-issued UID), so --dry-run is opted out — aps
+cannot preview an ID the provider has not yet assigned. Each
+invocation creates a fresh card; not idempotent. Use aps contact
+find to look up an existing card before adding to avoid duplicates.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			inputs := map[string]string{"email": args[0]}
 			if name != "" {
@@ -291,7 +322,17 @@ func newContactUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update contact fields",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update one or more vCard fields on an existing contact via the
+configured contacts adapter. The id argument identifies the card;
+only flags that are explicitly passed are applied (--name, --email,
+--org, --phone, --note). Unset flags leave the existing value
+unchanged.
+
+Idempotent at the field level: repeating the call with the same
+payload converges. --dry-run is opted out because previewing the
+diff would require the same provider round-trip that performs the
+update.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			inputs := map[string]string{"id": args[0]}
 			if name != "" {
@@ -336,7 +377,14 @@ func newContactFindCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "find <query>",
 		Short: "Search contacts",
-		Args:  cobra.ExactArgs(1),
+		Long: `Search contacts via the configured contacts adapter. The query
+argument is forwarded verbatim to the adapter, which decides what
+fields to match (name, email, org, etc.). Output is the raw adapter
+response.
+
+The --profile global selects which profile's adapter configuration
+handles the search. Read-only: idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("find",
 				map[string]string{"query": args[0]},
@@ -353,7 +401,15 @@ func newContactNoteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "note <id> <text>",
 		Short: "Append note to contact",
-		Args:  cobra.ExactArgs(2),
+		Long: `Append a note to an existing contact identified by id via the
+configured contacts adapter. The remaining positional arguments are
+joined with single spaces into the note text. Each call appends a
+fresh entry — not idempotent.
+
+The note is stored in the upstream addressbook's NOTE field (or
+adapter-specific equivalent). --dry-run is opted out because the
+preview would only restate the text the user already typed.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("note",
 				map[string]string{
@@ -381,7 +437,17 @@ func newContactDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete a contact",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete a contact from the configured contacts adapter by id. The
+operation forwards to the upstream addressbook's delete endpoint;
+the local effect on aps state is none, but the upstream card is
+removed.
+
+Delete-by-id is idempotent at the wire level: repeating the call
+with a missing id is a no-op on the provider side. --dry-run is
+opted out because the preview would only restate the id argument.
+Pair with aps contact find to confirm the target id before
+running.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("delete",
 				map[string]string{"id": args[0]},

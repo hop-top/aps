@@ -34,7 +34,16 @@ func newStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status <service-id>",
 		Short: "Show operator status for a service",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show operator-facing status for a service: id, type, adapter,
+profile, lifecycle hint, reachable webhook URL (from --base-url),
+runtime receives/replies, delivery health summary, last inbound
+and outbound event metadata, the retry policy, and any
+configuration validation issues.
+
+The --base-url flag overrides the default http://127.0.0.1:8080
+public base used to render reachable URLs. Read-only: no service
+or upstream state is touched. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			service, err := core.LoadService(args[0])
 			if err != nil {
@@ -59,7 +68,20 @@ func newTestCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test <service-id>",
 		Short: "Validate service configuration and optionally probe its webhook",
-		Args:  cobra.ExactArgs(1),
+		Long: `Validate the persisted service configuration via
+core.ValidateServiceConfig — surfacing any issues or warnings —
+and report the reachable webhook URL derived from --base-url. The
+command exits non-zero if the config is invalid.
+
+With --probe, additionally POST a synthetic adapter-shaped
+payload (signed for telegram/slack/sms/whatsapp where signing
+secrets are configured) at the webhook URL and print the response
+status and body. --timeout bounds the probe round-trip; the
+default is 5s.
+
+Read-only on aps state; --probe makes a live outbound HTTP call
+each invocation so the kit-level idempotency tag is Conditional.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			service, err := core.LoadService(args[0])
 			if err != nil {
@@ -145,7 +167,15 @@ func newStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop <service-id>",
 		Short: "Show how to stop a foreground service server",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print guidance for stopping the foreground HTTP server that
+hosts the named service. The aps service lifecycle is external:
+the server runs only while aps service start (or aps serve) is
+in the foreground, so stop prints the canonical "interrupt the
+process" instruction rather than sending any signal itself.
+
+Read-only: loads the service record to confirm the id exists,
+then prints the lifecycle hint. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if _, err := core.LoadService(args[0]); err != nil {
 				return err

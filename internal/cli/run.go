@@ -16,7 +16,22 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run [profile] -- [command] [args...]",
 	Short: "Run a command in a profile context",
-	Args:  cobra.MinimumNArgs(1), // At least profile
+	Long: `Spawn an external command under the named profile's resolved
+environment (secrets, bundle env vars, profile-scoped settings).
+The "--" separator is required; everything before it is parsed by
+aps, everything after is the user command and its arguments.
+
+A structured progress envelope (exec start + exit) is emitted on
+stdout per kit's JSONL progress contract so agents that read the
+stream observe a uniform lifecycle without aps touching the child
+process's stdio. The child's exit code is propagated as the aps
+exit code on failure.
+
+Mutating: spawns an opaque subprocess whose side effects aps cannot
+enumerate; idempotency is conditional on the spawned command.
+--dry-run is opted out because previewing a third-party binary
+without invoking it is impossible.`,
+	Args: cobra.MinimumNArgs(1), // At least profile
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 

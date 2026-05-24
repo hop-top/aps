@@ -13,6 +13,18 @@ import (
 var docsCmd = &cobra.Command{
 	Use:   "docs",
 	Short: "Generate documentation",
+	Long: `Generate a markdown documentation tree under
+<agents-dir>/docs/ describing every aps command, flag, and
+subcommand. The agents dir resolves via core.GetAgentsDir (default:
+$APS_DATA_PATH/agents).
+
+The output is a deterministic projection of the live cobra command
+tree, so rerunning overwrites existing files with identical content
+when the binary hasn't changed. --dry-run is opted out because the
+preview would have to render the same output and discard it instead
+of writing it.
+
+Idempotent overwrite: safe to rerun. No network calls.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		agentsDir, err := core.GetAgentsDir()
 		if err != nil {
