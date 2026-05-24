@@ -84,49 +84,38 @@ var root = kitcli.New(kitcli.Config{
 	Name:    "aps",
 	Version: version.Short(),
 	Short:   "Agent Profile System CLI",
-	// kit 0.4 defaults EnforceValidate=true, which rejects all 169 aps
-	// leaves lacking kit/side-effect annotations. Annotation rollout is
-	// scoped to the aps-kit-12fcc-conformance track (T-0647..T-0662);
-	// flip this back to the default once that track lands.
-	DisableValidate: true,
+	// T-0662 — DisableValidate dropped. Layer-A pre-flight (kit/side-effect
+	// + kit/idempotent on every runnable leaf, plus the configurable
+	// Enforce* gates below) now runs at boot. T-0682 (Short/Long batches
+	// A-D) closed the last 88 leaves, and T-0655's zz_guidance_annotations
+	// init pass back-fills kit/examples + kit/next-steps. The aps-kit-12fcc-
+	// conformance track's TestRootValidate_StrictGatesPass + the kit-shipped
+	// kitconformance.AssertCLI helper are the regression nets that keep this
+	// configuration true on every diff.
+	//
 	// T-0654 — refuse destructive leaves that have not opted into the
 	// typed-token confirm flow (kit/destructive-token=required, set via
-	// kitcli.SetDestructiveToken). DisableValidate above short-circuits
-	// the runtime pre-flight; this flag still feeds the validator gate
-	// the TestRootValidate_StrictGatesPass regression net exercises, and
-	// arms the policy-gate confirm flow on every destructive leaf so the
-	// CLI refuses to run them on non-TTY without --confirm-token=<sha>.
+	// kitcli.SetDestructiveToken). Now actively enforced at boot.
 	EnforceDestructiveToken: true,
 	// T-0655 — refuse runnable leaves that lack kit/examples, and non-read
 	// leaves that lack kit/next-steps. Every aps leaf is annotated via
 	// zz_guidance_annotations.go's init-time pass (174 leaves, 97 of
-	// which carry next-steps). Same pre-flight semantics as
-	// EnforceDestructiveToken: gated by DisableValidate today, armed for
-	// when T-0657 flips DisableValidate back to false. See kit cli.go:218
-	// for the field definition and cli.go:1080 for the runtime gate.
+	// which carry next-steps). See kit cli.go:218 for the field definition
+	// and cli.go:1080 for the runtime gate.
 	EnforceGuidance: true,
 	// T-0656 — refuse write/destructive leaves that called
 	// kitcli.OptOutDryRun(cmd) without pairing a kit/dry-run-rationale
 	// annotation. Each opt-out in the aps tree carries an honest
 	// reason explaining why preview would be uninformative or
 	// impossible; the rationale is what the user reads when --dry-run
-	// is rejected on the leaf. Leaves that genuinely honor --dry-run
-	// (action run, adapter link/revoke/stop/unlink, migrate messengers,
-	// workspace conflicts resolve) need neither the opt-out nor the
-	// rationale. See kit cli.go:210 for the field, contract.go:118 for
-	// SetDryRunRationale, and the EnforceDryRunRationale gate at
-	// cli.go:1064.
+	// is rejected on the leaf. See kit cli.go:210 for the field,
+	// contract.go:118 for SetDryRunRationale, and the
+	// EnforceDryRunRationale gate at cli.go:1064.
 	EnforceDryRunRationale: true,
-	// T-0657 — paired with DisableValidate above. While DisableValidate
-	// is true (the production guardrail during the 12fcc annotation
-	// rollout) kit/cli short-circuits the pre-flight validator and this
-	// mode is unreachable in production. We set it ahead of time so that
-	// when T-0648/T-0653 progressively tighten strictness and eventually
-	// flip DisableValidate back to false, validation failures bubble out
-	// of Execute() as typed *kitcli.ValidationError values that tests
-	// can errors.As against — instead of kit's default behavior of
-	// writing to stderr and calling os.Exit(2). See kit cli.go:105 for
-	// the constant definition.
+	// T-0657 — surface validation failures as typed *kitcli.ValidationError
+	// values out of Execute() so tests can errors.As against them, instead
+	// of kit's default behavior of writing to stderr and calling
+	// os.Exit(2). See kit cli.go:105 for the constant definition.
 	ValidationFailureMode: kitcli.ValidationFailureError,
 	// T-0653 — flip the signature validator from silent (zero value) to
 	// reject. The four signature checks (kit/signature/reserved-name,
@@ -150,6 +139,15 @@ var root = kitcli.New(kitcli.Config{
 	// is within bounds. See kit cli.go:234 for the field and
 	// cli.go:950-968 for the validator gate.
 	MaxHierarchyDepth: 4,
+	// T-0662 — kit defaults MaxTopLevelVerbs=10 (see kit shape.go), which
+	// is one short of aps's 11 runnable depth-1 verbs (alias, chat, docs,
+	// env, listen, run, serve, status, toolspec, upgrade, version). Most
+	// are MANAGEMENT-grouped (hidden by default; visible via
+	// --help-management) but kit's counter is presence-based, not
+	// visibility-based. Raise to 16 to match aps's documented MAX_VERBS
+	// budget — same rationale used for MaxHierarchyDepth above (aps is a
+	// meta-tool with a wider surface than the average single-purpose CLI).
+	MaxTopLevelVerbs: 16,
 	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.

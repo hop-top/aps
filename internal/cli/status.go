@@ -107,5 +107,8 @@ func init() {
 	// mid-run).
 	kitcli.SetSideEffect(statusCmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(statusCmd, kitcli.IdempotencyYes)
+	// T-0662 — depth-1 runnable verb; kit's signature shape validator
+	// (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(statusCmd)
 	rootCmd.AddCommand(statusCmd)
 }
