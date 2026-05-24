@@ -4,7 +4,11 @@
 #        CONTACT_PHONE, CONTACT_NOTE, CONTACT_ADDRESSBOOK
 set -euo pipefail
 
-CARDAMUM="${CARDAMUM_BIN:-$HOME/.cargo/bin/cardamum}"
+# shellcheck source=../../../_lib.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
+aps_init_backend "add"
+: "${BIN:?aps_init_backend did not set BIN}"
+
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
 ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 EMAIL="${CONTACT_EMAIL:?missing CONTACT_EMAIL}"
@@ -32,5 +36,5 @@ NOTE:$NOTE"
 VCARD="$VCARD
 END:VCARD"
 
-echo "$VCARD" | "$CARDAMUM" cards create "$ABOOK" \
+echo "$VCARD" | "$BIN" cards create "$ABOOK" \
   $ACCT_FLAG 2>/dev/null

@@ -4,7 +4,11 @@
 #        CONTACT_ORG, CONTACT_PHONE, CONTACT_NOTE
 set -euo pipefail
 
-CARDAMUM="${CARDAMUM_BIN:-$HOME/.cargo/bin/cardamum}"
+# shellcheck source=../../../_lib.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
+aps_init_backend "update"
+: "${BIN:?aps_init_backend did not set BIN}"
+
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
 ABOOK="${CONTACTS_ADDRESSBOOK:-default}"
 ID="${CONTACT_ID:?missing CONTACT_ID}"
@@ -13,7 +17,7 @@ ACCT_FLAG=""
 [ -n "$ACCOUNT" ] && ACCT_FLAG="-a $ACCOUNT"
 
 # Read current card, apply updates, write back
-CURRENT=$("$CARDAMUM" cards read "$ABOOK" "$ID" \
+CURRENT=$("$BIN" cards read "$ABOOK" "$ID" \
   $ACCT_FLAG 2>/dev/null)
 
 # Apply field updates via sed
@@ -28,5 +32,5 @@ CURRENT=$("$CARDAMUM" cards read "$ABOOK" "$ID" \
 [ -n "${CONTACT_NOTE:-}" ] && \
   CURRENT=$(echo "$CURRENT" | sed "s/^NOTE:.*/NOTE:$CONTACT_NOTE/")
 
-echo "$CURRENT" | "$CARDAMUM" cards update "$ABOOK" "$ID" \
+echo "$CURRENT" | "$BIN" cards update "$ABOOK" "$ID" \
   $ACCT_FLAG 2>/dev/null

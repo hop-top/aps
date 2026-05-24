@@ -3,7 +3,11 @@
 # Input: CONTACT_ID, CONTACT_TEXT
 set -euo pipefail
 
-CARDAMUM="${CARDAMUM_BIN:-$HOME/.cargo/bin/cardamum}"
+# shellcheck source=../../../_lib.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
+aps_init_backend "note"
+: "${BIN:?aps_init_backend did not set BIN}"
+
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
 ABOOK="${CONTACTS_ADDRESSBOOK:-default}"
 ID="${CONTACT_ID:?missing CONTACT_ID}"
@@ -13,7 +17,7 @@ ACCT_FLAG=""
 [ -n "$ACCOUNT" ] && ACCT_FLAG="-a $ACCOUNT"
 
 # Read current, append to NOTE field
-CURRENT=$("$CARDAMUM" cards read "$ABOOK" "$ID" \
+CURRENT=$("$BIN" cards read "$ABOOK" "$ID" \
   $ACCT_FLAG 2>/dev/null)
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -26,5 +30,5 @@ else
     sed "s/^END:VCARD/NOTE:[$TIMESTAMP] $TEXT\nEND:VCARD/")
 fi
 
-echo "$CURRENT" | "$CARDAMUM" cards update "$ABOOK" "$ID" \
+echo "$CURRENT" | "$BIN" cards update "$ABOOK" "$ID" \
   $ACCT_FLAG 2>/dev/null
