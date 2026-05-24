@@ -15,6 +15,10 @@ func newTestRegistry(t *testing.T) *mobile.Registry {
 	dir := t.TempDir()
 	reg, err := mobile.NewRegistry(dir)
 	require.NoError(t, err)
+	// Windows holds an exclusive lock on the sqlite file (+ WAL/SHM)
+	// until the handle is closed; t.TempDir's auto-rmdir fails the
+	// test otherwise.
+	t.Cleanup(func() { _ = reg.Close() })
 	return reg
 }
 
@@ -267,14 +271,18 @@ func TestRegistryCountActive(t *testing.T) {
 func TestRegistryPersistence(t *testing.T) {
 	dir := t.TempDir()
 
-	// Write with first registry
+	// Write with first registry. Close before opening reg2 so the
+	// second handle doesn't trip the Windows file-lock contention and
+	// so the t.TempDir cleanup at test end has no live handles.
 	reg1, err := mobile.NewRegistry(dir)
 	require.NoError(t, err)
 	reg1.RegisterAdapter(newTestAdapter("persist-1", "profile-a"))
+	require.NoError(t, reg1.Close())
 
 	// Read with second registry (same dir)
 	reg2, err := mobile.NewRegistry(dir)
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = reg2.Close() })
 
 	got, err := reg2.GetAdapter("persist-1")
 	require.NoError(t, err)
