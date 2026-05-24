@@ -58,11 +58,12 @@ Profile is supplied via the tool-level --profile global:
 
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — kit/cli signature annotations. Deregistration is
-	// destructive (removes shared upstream record); delete-by-name is
-	// idempotent.
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — Deregistration removes a shared upstream AGNTCY Directory
+	// record; the loss propagates beyond the caller's local scope, so
+	// classify as destructive-shared. Delete-by-name is idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 
 	return cmd
 }

@@ -56,11 +56,12 @@ func NewTerminateCmd() *cobra.Command {
 	cmd.Flags().Int("timeout", 10, "Graceful shutdown timeout in seconds")
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — kit 0.4 signature annotations. Terminating a session
-	// kills its tmux server and process tree; idempotent on the
-	// registry status (terminated sessions stay inactive).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — terminate kills the tmux server and process tree;
+	// in-flight work is lost. Idempotent on the registry status
+	// (terminated sessions stay inactive).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 
 	return cmd
 }

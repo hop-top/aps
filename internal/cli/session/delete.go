@@ -78,10 +78,12 @@ func NewDeleteCmd() *cobra.Command {
 	cmd.Flags().Bool("force", false, "Force delete without confirmation")
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — kit 0.4 signature annotations. Session delete tears
-	// down tmux + the registry entry; idempotent on missing target.
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — session delete tears down tmux + the registry entry; the
+	// removal is irreversible at the user level. Idempotent on missing
+	// target.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 
 	return cmd
 }

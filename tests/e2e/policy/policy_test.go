@@ -15,6 +15,8 @@ package policy_e2e
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -27,6 +29,14 @@ import (
 
 	collab "hop.top/aps/internal/core/collaboration"
 )
+
+// destructiveToken mirrors kit's destructiveTokenSha (kit
+// go/console/cli/policy_runE.go) for the kit/destructive-token gate
+// (T-0654): the first 12 hex chars of sha256(cmd.CommandPath()).
+func destructiveToken(commandPath string) string {
+	h := sha256.Sum256([]byte(commandPath))
+	return hex.EncodeToString(h[:6])
+}
 
 var apsBinary string
 
@@ -200,7 +210,12 @@ func TestSessionDelete_DenyWithoutNote(t *testing.T) {
 	policyFile := filepath.Join(home, "policies.yaml")
 	writeBundledPolicies(t, policyFile)
 
-	_, stderr, err := runAPS(t, home, policyFile, "session", "delete", "s-x", "--force")
+	// T-0654 — `session delete` is destructive-local with
+	// kit/destructive-token=required; pass --confirm-token so the
+	// kit-policy gate proceeds and the aps in-process policy subscriber
+	// gets to assert the note rule.
+	_, stderr, err := runAPS(t, home, policyFile, "session", "delete", "s-x",
+		"--force", "--confirm-token", destructiveToken("aps session delete"))
 	if err == nil {
 		t.Fatalf("expected non-zero exit; stderr=%q", stderr)
 	}
@@ -224,7 +239,8 @@ func TestSessionDelete_AllowWithNote(t *testing.T) {
 	writeBundledPolicies(t, policyFile)
 
 	stdout, stderr, err := runAPS(t, home, policyFile,
-		"session", "delete", "s-x", "--force", "--note", "fixture cleanup")
+		"session", "delete", "s-x", "--force", "--note", "fixture cleanup",
+		"--confirm-token", destructiveToken("aps session delete"))
 	if err != nil {
 		t.Fatalf("delete with --note failed: %v\nstderr: %s", err, stderr)
 	}
@@ -249,6 +265,7 @@ func TestWorkspaceCtxDelete_DenyWithoutNote(t *testing.T) {
 		"workspace", "ctx", "delete", "feature.alpha",
 		"--workspace", wsID,
 		"--force",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err == nil {
 		t.Fatalf("expected non-zero exit; stderr=%q", stderr)
@@ -289,6 +306,7 @@ func TestWorkspaceCtxDelete_AllowWithNote(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "obsoleted by feature flag retirement",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err != nil {
 		t.Fatalf("delete with --note failed: %v\nstderr: %s", err, stderr)
@@ -381,6 +399,7 @@ func TestWorkspaceCtxDelete_OwnerAllowed(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "obsoleted",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err != nil {
 		t.Fatalf("owner delete denied: %v\nstderr: %s", err, stderr)
@@ -413,6 +432,7 @@ func TestWorkspaceCtxDelete_ContributorDenied(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "trying to clean up",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err == nil {
 		t.Fatalf("contributor delete should have been denied; stderr=%q", stderr)
@@ -452,6 +472,7 @@ func TestWorkspaceCtxDelete_NoMembershipDenied(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "outsider",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err == nil {
 		t.Fatalf("non-member delete should have been denied; stderr=%q", stderr)
@@ -491,6 +512,7 @@ func TestWorkspaceCtxDelete_EnvFallbackForUnknownWorkspace(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "kicking the env fallback",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	override := map[string]bool{
 		"HOME":             true,
@@ -596,6 +618,7 @@ func TestWorkspaceCtxDelete_T1302_OwnerSharedAllowed(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "obsoleted",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err != nil {
 		t.Fatalf("owner shared delete denied: %v\nstderr: %s", err, stderr)
@@ -633,6 +656,7 @@ func TestWorkspaceCtxDelete_T1302_ContributorSharedDenied(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "trying to clean up",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err == nil {
 		t.Fatalf("contributor shared delete should have been denied; stderr=%q", stderr)
@@ -676,6 +700,7 @@ func TestWorkspaceCtxDelete_T1302_OwnerPrivateAllowed(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "rotated",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err != nil {
 		t.Fatalf("owner private delete denied: %v\nstderr: %s", err, stderr)
@@ -715,6 +740,7 @@ func TestWorkspaceCtxDelete_T1302_ContributorPrivateAllowed(t *testing.T) {
 		"--workspace", wsID,
 		"--force",
 		"--note", "discarded",
+		"--confirm-token", destructiveToken("aps workspace ctx delete"),
 	)
 	if err != nil {
 		t.Fatalf("contributor private delete denied: %v\nstderr: %s", err, stderr)

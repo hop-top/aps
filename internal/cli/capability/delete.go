@@ -45,7 +45,11 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Skip link warning")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — capability delete is an irreversible local mutation
+	// (removes the on-disk capability + its symlinks); delete-by-name
+	// is naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }

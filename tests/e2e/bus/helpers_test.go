@@ -19,6 +19,7 @@ package bus
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
@@ -36,6 +37,14 @@ import (
 
 	kitbus "hop.top/kit/go/runtime/bus"
 )
+
+// destructiveTokenFor mirrors kit's destructiveTokenSha for the
+// kit/destructive-token=required gate (T-0654). The token is the
+// first 12 hex chars of sha256(cmd.CommandPath()).
+func destructiveTokenFor(commandPath string) string {
+	h := sha256.Sum256([]byte(commandPath))
+	return hex.EncodeToString(h[:6])
+}
 
 // apsBinary is the absolute path to the compiled aps binary used by all
 // child-process publishers in this package. Built once in TestMain.

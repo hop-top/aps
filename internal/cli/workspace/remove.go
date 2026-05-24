@@ -77,10 +77,11 @@ can perform this action. Use --force to skip confirmation.`,
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
 
-	// T-0648 — irreversibly drops an agent from local workspace state;
+	// T-0654 — irreversibly drops an agent from local workspace state;
 	// removing an absent agent is a no-op (idempotent).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 
 	return cmd
 }

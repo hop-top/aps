@@ -27,7 +27,9 @@ func TestProfileDelete(t *testing.T) {
 	assert.Contains(t, stdout, "doomed")
 
 	// Delete it non-interactively.
-	stdout, stderr, err := runAPS(t, home, "profile", "delete", "doomed", "--yes")
+	// T-0654 — profile delete is kit/destructive-token=required.
+	stdout, stderr, err := runAPS(t, home, "profile", "delete", "doomed",
+		"--yes", "--confirm-token", destructiveToken("aps profile delete"))
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.Contains(t, stdout, "Profile 'doomed' deleted.")
 
@@ -49,7 +51,8 @@ func TestProfileDeleteMissing(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
-	_, stderr, err := runAPS(t, home, "profile", "delete", "ghost", "--yes")
+	_, stderr, err := runAPS(t, home, "profile", "delete", "ghost",
+		"--yes", "--confirm-token", destructiveToken("aps profile delete"))
 	require.Error(t, err)
 	assert.True(t,
 		strings.Contains(stderr, "loading profile") ||

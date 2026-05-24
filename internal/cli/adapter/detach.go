@@ -45,8 +45,12 @@ Use --force to skip confirmation.`,
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	// T-0654 — detach discards any pending offline queue entries for
+	// the device (irreversible local mutation per the Long text);
+	// repeated detach on an already-detached device is a no-op.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetDestructiveToken(cmd)
 	return cmd
 }
 
