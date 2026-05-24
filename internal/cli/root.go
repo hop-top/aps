@@ -76,6 +76,17 @@ var root = kitcli.New(kitcli.Config{
 	// scoped to the aps-kit-12fcc-conformance track (T-0647..T-0662);
 	// flip this back to the default once that track lands.
 	DisableValidate: true,
+	// T-0657 — paired with DisableValidate above. While DisableValidate
+	// is true (the production guardrail during the 12fcc annotation
+	// rollout) kit/cli short-circuits the pre-flight validator and this
+	// mode is unreachable in production. We set it ahead of time so that
+	// when T-0648/T-0653 progressively tighten strictness and eventually
+	// flip DisableValidate back to false, validation failures bubble out
+	// of Execute() as typed *kitcli.ValidationError values that tests
+	// can errors.As against — instead of kit's default behavior of
+	// writing to stderr and calling os.Exit(2). See kit cli.go:105 for
+	// the constant definition.
+	ValidationFailureMode: kitcli.ValidationFailureError,
 	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.
