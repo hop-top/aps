@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // tmuxKillTimeout bounds how long a tmux kill-session invocation can
@@ -94,6 +95,13 @@ audit reason that flows to the SessionStopped event payload.`,
 func terminateSession(ctx context.Context, sess *session.SessionInfo, force bool, timeout int) error {
 	fmt.Printf("Terminating session %s...\n", sess.ID)
 
+	r := progress.FromContext(ctx)
+	phase := "terminate"
+	if force {
+		phase = "kill"
+	}
+	r.Emit(ctx, progress.Event{Phase: phase, Item: sess.ID})
+
 	var errs []error
 	if force {
 		errs = forceTeardown(sess)
@@ -108,10 +116,14 @@ func terminateSession(ctx context.Context, sess *session.SessionInfo, force bool
 	}
 
 	if len(errs) > 0 {
+		okFalse := false
+		r.Emit(ctx, progress.Event{Phase: phase, Item: sess.ID, OK: &okFalse})
 		fmt.Printf("Session %s terminated with warnings\n", sess.ID)
 		return errors.Join(errs...)
 	}
 
+	okTrue := true
+	r.Emit(ctx, progress.Event{Phase: phase, Item: sess.ID, OK: &okTrue})
 	fmt.Printf("Session %s terminated\n", sess.ID)
 	return nil
 }

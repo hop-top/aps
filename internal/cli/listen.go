@@ -28,6 +28,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 	"hop.top/kit/go/runtime/bus"
 )
 
@@ -157,6 +158,8 @@ func listen(
 		}
 	}
 
+	r := progress.FromContext(ctx)
+	r.Emit(ctx, progress.Event{Phase: "subscribe", Item: profileID})
 	unsubs := make([]bus.Unsubscribe, 0, len(patterns))
 	for _, p := range patterns {
 		unsubs = append(unsubs, eventBus.SubscribeAsync(p, handler))
@@ -166,6 +169,8 @@ func listen(
 			u()
 		}
 	}()
+	okTrue := true
+	r.Emit(ctx, progress.Event{Phase: "subscribe", Item: profileID, OK: &okTrue})
 
 	fmt.Fprintf(os.Stderr, "aps listen: profile=%s topics=%s\n",
 		profileID, strings.Join(patterns, ","))

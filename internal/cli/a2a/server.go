@@ -16,7 +16,10 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
+
+const phaseListen = "listen"
 
 func NewServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,7 +35,9 @@ The server will listen on the address configured in the profile's A2A settings
 Example:
   aps --profile worker a2a server`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithCancel(context.Background())
+			// Inherit from cmd.Context() so kit/cli's progress.Reporter
+			// (and any other context-bound values) flow into the daemon.
+			ctx, cancel := context.WithCancel(cmd.Context())
 			defer cancel()
 
 			// T-0648 — read --profile from root globals; no local shadow.
@@ -86,9 +91,15 @@ Example:
 				return fmt.Errorf("failed to create A2A server: %w", err)
 			}
 
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID})
 			if err := server.Start(ctx, config); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to start A2A server: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okTrue})
 
 			addr := profile.A2A.ListenAddr
 			if addr == "" {

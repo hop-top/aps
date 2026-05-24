@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // NewShowCmd creates the directory show command.
@@ -36,16 +37,29 @@ Profile is supplied via the tool-level --profile global:
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 			}
 
+			ctx := cmd.Context()
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID})
+
 			client, err := discovery.NewClient(profile.Directory)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
+			okConnect := true
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID, OK: &okConnect})
 
-			record, err := client.Show(cmd.Context(), profileID)
+			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: profileID})
+			record, err := client.Show(ctx, profileID)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to get record: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: profileID, OK: &okTrue})
 
 			formatted, err := discovery.FormatRecord(record)
 			if err != nil {

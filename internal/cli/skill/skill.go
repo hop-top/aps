@@ -19,6 +19,7 @@ import (
 	"hop.top/aps/internal/skills"
 	"hop.top/aps/internal/styles"
 	"hop.top/kit/go/console/output"
+	"hop.top/kit/go/console/progress"
 )
 
 // skillSummaryRow is the table row shape for `aps skill list` (T-0440).
@@ -280,10 +281,16 @@ func newInstallCmd() *cobra.Command {
 				return fmt.Errorf("failed to create target directory: %w", err)
 			}
 
-			// Copy skill directory
+			ctx := cmd.Context()
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: "install", Item: skill.Name})
 			if err := copyDir(sourcePath, targetPath); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: "install", Item: skill.Name, OK: &okFalse})
 				return fmt.Errorf("failed to copy skill: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: "install", Item: skill.Name, OK: &okTrue})
 
 			fmt.Printf("✓ Installed skill '%s' to %s\n", skill.Name, targetPath)
 			return nil
@@ -398,14 +405,20 @@ func runSkillScript(ctx context.Context, profileID string, args []string, dashId
 		_ = telemetry.TrackInvocation(skillName, profileID, "", "cli", "process")
 	}
 
+	r := progress.FromContext(ctx)
+	r.Emit(ctx, progress.Event{Phase: "exec", Item: scriptName})
 	err = execSkillScript(ctx, skill, scriptName, scriptPath, commandArgs[1:], profileID, stdin, stdout, stderr)
 	durationMs := time.Since(start).Milliseconds()
 	if err != nil {
+		okFalse := false
+		r.Emit(ctx, progress.Event{Phase: "exit", Item: scriptName, OK: &okFalse})
 		if telemetry != nil {
 			_ = telemetry.TrackFailure(skillName, profileID, "", scriptName, durationMs, sanitizedSkillScriptError(err))
 		}
 		return skillScriptRunError(skillName, scriptName, err)
 	}
+	okTrue := true
+	r.Emit(ctx, progress.Event{Phase: "exit", Item: scriptName, OK: &okTrue})
 
 	if telemetry != nil {
 		_ = telemetry.TrackCompletion(skillName, profileID, "", scriptName, durationMs, nil)

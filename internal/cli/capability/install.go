@@ -8,7 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
+
+const installPhase = "install"
 
 func newInstallCmd() *cobra.Command {
 	var name string
@@ -32,9 +35,16 @@ because the destination path is a pure function of the --name flag.`,
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
+			ctx := cmd.Context()
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: installPhase, Item: name})
 			if err := capability.Install(name, args[0]); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: installPhase, Item: name, OK: &okFalse})
 				return err
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: installPhase, Item: name, OK: &okTrue})
 			fmt.Println(successStyle.Render("Installed") + " " +
 				boldStyle.Render(name))
 			return nil

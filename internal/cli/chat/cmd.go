@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/core"
 	corechat "hop.top/aps/internal/core/chat"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 func NewCommand() *cobra.Command {
@@ -107,7 +108,10 @@ func runOnce(cmd *cobra.Command, engine CoreEngine, sess *chatSession, opts Opti
 	if err := sess.append(roleUser, prompt); err != nil {
 		return err
 	}
-	resp, err := engine.Turn(cmd.Context(), TurnRequest{
+	ctx := cmd.Context()
+	r := progress.FromContext(ctx)
+	r.Emit(ctx, progress.Event{Phase: "turn", Item: sess.profileID})
+	resp, err := engine.Turn(ctx, TurnRequest{
 		SessionID: sess.id,
 		ProfileID: sess.profileID,
 		Prompt:    prompt,
@@ -116,8 +120,12 @@ func runOnce(cmd *cobra.Command, engine CoreEngine, sess *chatSession, opts Opti
 		History:   sess.messages,
 	})
 	if err != nil {
+		okFalse := false
+		r.Emit(ctx, progress.Event{Phase: "turn", Item: sess.profileID, OK: &okFalse})
 		return err
 	}
+	okTrue := true
+	r.Emit(ctx, progress.Event{Phase: "turn", Item: sess.profileID, OK: &okTrue})
 	if err := sess.append(resp.Message.Role, resp.Message.Content); err != nil {
 		return err
 	}
