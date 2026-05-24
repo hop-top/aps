@@ -55,9 +55,6 @@ func (b *DefaultHTTPBridge) GetHTTPHandler() http.Handler {
 // handleHTTPRequest processes incoming HTTP requests and translates them
 // to the protocol's native format
 func (b *DefaultHTTPBridge) handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
-	// Set response header
-	w.Header().Set("Content-Type", "application/json")
-
 	// For now, return a simple bridge response
 	// In a real implementation, this would:
 	// 1. Parse the HTTP request into the protocol's format
@@ -71,8 +68,7 @@ func (b *DefaultHTTPBridge) handleHTTPRequest(w http.ResponseWriter, r *http.Req
 		"message":  "HTTP bridge is active",
 	}
 
-	w.WriteHeader(http.StatusOK)
-	writeBridgeJSON(w, response)
+	writeBridgeJSON(w, http.StatusOK, response)
 }
 
 // JSONRPCHTTPBridge wraps a JSON-RPC protocol (like ACP) and exposes it via HTTP
@@ -135,8 +131,6 @@ type JSONRPCError struct {
 
 // handleJSONRPC translates HTTP requests to JSON-RPC and forwards them
 func (b *JSONRPCHTTPBridge) handleJSONRPC(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	// Parse incoming request
 	var req JSONRPCRequest
 	body, err := io.ReadAll(r.Body)
@@ -173,15 +167,11 @@ func (b *JSONRPCHTTPBridge) handleJSONRPC(w http.ResponseWriter, r *http.Request
 		},
 	}
 
-	w.WriteHeader(http.StatusOK)
-	writeBridgeJSON(w, response)
+	writeBridgeJSON(w, http.StatusOK, response)
 }
 
 // writeJSONRPCError writes a JSON-RPC error response
 func writeJSONRPCError(w http.ResponseWriter, httpStatus, code int, message string, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(httpStatus)
-
 	errResponse := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"error": map[string]interface{}{
@@ -194,14 +184,18 @@ func writeJSONRPCError(w http.ResponseWriter, httpStatus, code int, message stri
 		errResponse["error"].(map[string]interface{})["data"] = data
 	}
 
-	writeBridgeJSON(w, errResponse)
+	writeBridgeJSON(w, httpStatus, errResponse)
 }
 
-// writeBridgeJSON serializes a response body and writes it through
-// logging.ApplyBytes so that any secrets that landed in the response
-// payload (forwarded protocol metadata, error data) are tagged before
-// egress to the HTTP caller.
-func writeBridgeJSON(w http.ResponseWriter, data interface{}) {
+// writeBridgeJSON sets Content-Type, writes status, and serializes the
+// response body through logging.ApplyBytes so any secrets in the
+// response payload (forwarded protocol metadata, error data) are
+// tagged before egress. Matches the contract of sibling wrappers
+// (respondJSON, sendJSON, writeJSON) so callers do not have to set
+// headers separately.
+func writeBridgeJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	body, err := json.Marshal(data)
 	if err != nil {
 		_ = json.NewEncoder(logging.NewWriter(w)).Encode(data)
