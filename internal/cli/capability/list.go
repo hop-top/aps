@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // capabilitySummaryRow is the row shape for `aps capability list`.
@@ -53,6 +54,8 @@ func newListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&enabledOn, "enabled-on", "",
 		"Show only capabilities linked to the given profile id")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 const scaffoldTemplate = `name: %s
@@ -32,6 +33,10 @@ func newCreateCmd() *cobra.Command {
 		"Overwrite existing bundle file")
 	clinote.AddFlag(cmd) // T-1291
 
+	// `create` mints new state; with --force it overwrites in-place
+	// (idempotent on the same input). Mark Conditional to capture both.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	return cmd
 }
 

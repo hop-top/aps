@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/cli/prompt"
@@ -27,6 +28,8 @@ func newDeleteCmd() *cobra.Command {
 		"Skip confirmation prompt")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

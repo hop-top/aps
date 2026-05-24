@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // patternSummaryRow is the row shape for `aps capability patterns list`.
@@ -25,6 +26,7 @@ func newPatternsCmd() *cobra.Command {
 		Use:   "patterns",
 		Short: "Smart patterns + builtin capabilities",
 	}
+	kitcli.SetHierarchical(cmd)
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -34,6 +36,8 @@ func newPatternsCmd() *cobra.Command {
 			return runPatterns(format)
 		},
 	}
+	kitcli.SetSideEffect(listCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(listCmd, kitcli.IdempotencyYes)
 	cmd.AddCommand(listCmd)
 
 	return cmd
