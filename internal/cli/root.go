@@ -92,6 +92,20 @@ var root = kitcli.New(kitcli.Config{
 	// writing to stderr and calling os.Exit(2). See kit cli.go:105 for
 	// the constant definition.
 	ValidationFailureMode: kitcli.ValidationFailureError,
+	// T-0653 — flip the signature validator from silent (zero value) to
+	// reject. The four signature checks (kit/signature/reserved-name,
+	// kit/signature/passthrough, kit/signature/local-globals,
+	// kit/signature/depth-hierarchical) are all at 0 across the aps
+	// tree after T-0648's umbrella conformance pass, so reject is now
+	// the documented production target per the aps-kit-12fcc-conformance
+	// plan. Note this is INDEPENDENT of DisableValidate above: kit gates
+	// SignatureStrictness on its own conditional (see kit cli.go:784),
+	// separate from the EnforceValidate / Layer-A annotation pre-flight
+	// that DisableValidate=true still short-circuits. The Layer-A flip
+	// lands in T-0657 once the kit/side-effect + kit/idempotent
+	// annotations are guaranteed across the tree. See kit cli.go:144
+	// for the SignatureStrictnessReject constant definition.
+	SignatureStrictness: kitcli.SignatureStrictnessReject,
 	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.
