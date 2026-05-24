@@ -208,6 +208,14 @@ var root = kitcli.New(kitcli.Config{
 	// short-circuits to the recorded result (on hit). See ~/.ops/docs/
 	// cli-conventions-with-kit.md §8.5.
 	withIdempotencyStore(),
+	// Install the kit-managed delegation policy loader. The loader
+	// resolves --policy=<name> against
+	// $XDG_CONFIG_HOME/aps/policies/<name>.yaml per kit's
+	// DefaultPolicyLoader. Until a policy is named, --confirm and
+	// --max-ops work standalone; kit's wrapPolicyRunE still gates every
+	// destructive leaf for the confirm matrix. See ~/.ops/docs/
+	// cli-conventions-with-kit.md §8.6.
+	kitcli.WithPolicy(kitcli.DefaultPolicyLoader("aps")),
 )
 
 // rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
