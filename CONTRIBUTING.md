@@ -39,13 +39,19 @@ not present in the build context), break Dependabot rebases
 (the resolver cannot graph a local path), and break every
 contributor whose checkout layout does not match the author's.
 
+An unpublished upstream plus a local `replace` silently lets
+the repo drift hundreds of commits ahead of anything CI can
+reach; the build stays green on the author's machine and is
+broken everywhere else.
+
 For local development against an unreleased dependency:
 
 - Keep `replace` lines in an untracked `go.mod.local` overlay,
   or
 - Use `go work` with a `go.work` file (also untracked)
 
-Neither belongs in git. `.gitignore` already excludes both.
+Neither belongs in git. `go.mod.local`, `go.work`, and
+`go.work.sum` are listed in `.gitignore`.
 
 **Exception**: a short-lived migration window when `aps` and
 a co-versioned dependency (typically `hop.top/kit`) need to
