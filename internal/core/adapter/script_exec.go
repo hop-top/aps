@@ -47,7 +47,7 @@ func (m *Manager) ExecAction(
 		return "", err
 	}
 
-	env := buildScriptEnv(device, profileEmail, inputs)
+	env := buildScriptEnv(device, manifest, profileEmail, inputs)
 
 	cmd := exec.CommandContext(ctx, scriptPath)
 	cmd.Env = append(os.Environ(), env...)
@@ -120,9 +120,12 @@ func resolveActionScript(
 
 func buildScriptEnv(
 	device *Adapter,
+	manifest *AdapterManifest,
 	profileEmail string,
 	inputs map[string]string,
 ) []string {
+	prefix := resolveEnvPrefix(device, manifest)
+
 	var env []string
 
 	env = append(env,
@@ -134,13 +137,25 @@ func buildScriptEnv(
 	}
 
 	for k, v := range inputs {
-		envKey := "EMAIL_" + strings.ToUpper(
+		envKey := prefix + "_" + strings.ToUpper(
 			strings.ReplaceAll(k, "-", "_"),
 		)
 		env = append(env, envKey+"="+v)
 	}
 
 	return env
+}
+
+// resolveEnvPrefix picks the env-var prefix for action inputs.
+// Manifest wins over device record; falls back to DefaultEnvPrefix.
+func resolveEnvPrefix(device *Adapter, manifest *AdapterManifest) string {
+	if manifest != nil && manifest.EnvPrefix != "" {
+		return strings.ToUpper(manifest.EnvPrefix)
+	}
+	if device != nil && device.EnvPrefix != "" {
+		return strings.ToUpper(device.EnvPrefix)
+	}
+	return DefaultEnvPrefix
 }
 
 // LoadManifest reads and parses a manifest.yaml file.
