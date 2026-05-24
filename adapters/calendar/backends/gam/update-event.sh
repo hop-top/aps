@@ -12,7 +12,10 @@
 # are sent in the patch.
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "update-event"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 CALENDAR="${CAL_CALENDAR:-primary}"
 EVENT_ID="${CAL_EVENT_ID:?missing CAL_EVENT_ID}"
@@ -41,13 +44,8 @@ fi
 if [ -n "${CAL_ATTENDEES:-}" ]; then
   IFS=',' read -ra ATTS <<< "$CAL_ATTENDEES"
   for a in "${ATTS[@]}"; do
-    trimmed="${a#"${a%%[![:space:]]*}"}"
-    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
-    if [[ "$trimmed" =~ \<([^>]+)\> ]]; then
-      trimmed="${BASH_REMATCH[1]}"
-    fi
-    ARGS+=(attendee "$trimmed")
+    ARGS+=(attendee "$(aps_trim_attendee "$a")")
   done
 fi
 
-"$GAM" calendar "$CALENDAR" "${ARGS[@]}"
+"$BIN" calendar "$CALENDAR" "${ARGS[@]}"

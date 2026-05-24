@@ -10,6 +10,10 @@
 # (admin-scoped) or respond via the Google Calendar web UI.
 set -euo pipefail
 
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "respond-event"
+
 EVENT_ID="${CAL_EVENT_ID:?missing CAL_EVENT_ID}"
 RESPONSE="${CAL_RESPONSE:?missing CAL_RESPONSE}"
 

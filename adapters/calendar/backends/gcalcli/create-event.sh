@@ -6,7 +6,10 @@
 #              CAL_LOCATION, CAL_RECURRENCE, CAL_DESCRIPTION
 set -euo pipefail
 
-GCALCLI="${GCALCLI_BIN:-gcalcli}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "create-event"
+
 CALENDAR="${CAL_CALENDAR:-primary}"
 SUMMARY="${CAL_SUMMARY:?missing CAL_SUMMARY}"
 START="${CAL_START:?missing CAL_START}"
@@ -27,15 +30,8 @@ ARGS=(add --title "$SUMMARY" --when "$START" --duration_end "$END")
 if [ -n "${CAL_ATTENDEES:-}" ]; then
   IFS=',' read -ra ATTS <<< "$CAL_ATTENDEES"
   for a in "${ATTS[@]}"; do
-    # Trim leading/trailing whitespace. If the entry is display-name
-    # form `Jane Doe <jane@x.com>`, extract just the bracketed email.
-    trimmed="${a#"${a%%[![:space:]]*}"}"
-    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
-    if [[ "$trimmed" =~ \<([^>]+)\> ]]; then
-      trimmed="${BASH_REMATCH[1]}"
-    fi
-    ARGS+=(--email "$trimmed")
+    ARGS+=(--email "$(aps_trim_attendee "$a")")
   done
 fi
 
-"$GCALCLI" "${CAL_FLAG[@]}" "${ARGS[@]}"
+"$BIN" "${CAL_FLAG[@]}" "${ARGS[@]}"

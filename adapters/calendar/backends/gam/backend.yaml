@@ -1,0 +1,6 @@
+api_version: v1
+kind: backend
+name: gam
+binary: gam
+bin_env_var: GAM_BIN
+install_hint: "from https://github.com/GAM-team/GAM"

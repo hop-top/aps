@@ -11,7 +11,10 @@
 # This is intentionally different from gcalcli, which is per-user.
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "free-busy"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 EMAILS="${CAL_EMAILS:?missing CAL_EMAILS}"
 START="${CAL_START:?missing CAL_START}"
@@ -22,10 +25,9 @@ END="${CAL_END:?missing CAL_END}"
 IFS=',' read -ra EMAIL_LIST <<< "$EMAILS"
 failures=0
 for email in "${EMAIL_LIST[@]}"; do
-  trimmed="${email#"${email%%[![:space:]]*}"}"
-  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+  trimmed="$(aps_trim_attendee "$email")"
   echo "=== $trimmed ==="
-  if ! "$GAM" user "$USER" show calendar "$trimmed" freebusy timemin "$START" timemax "$END"; then
+  if ! "$BIN" user "$USER" show calendar "$trimmed" freebusy timemin "$START" timemax "$END"; then
     echo "free-busy: gam failed for $trimmed (no admin access, network error, or DWD scope missing)" >&2
     failures=$((failures + 1))
   fi

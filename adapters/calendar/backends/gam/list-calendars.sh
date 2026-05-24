@@ -13,7 +13,10 @@
 # through jq downstream.
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "list-calendars"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 
-"$GAM" user "$USER" show calendars formatjson
+"$BIN" user "$USER" show calendars formatjson

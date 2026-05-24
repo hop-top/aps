@@ -12,7 +12,10 @@
 # script if you need silent inserts.
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "create-event"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 CALENDAR="${CAL_CALENDAR:-primary}"
 SUMMARY="${CAL_SUMMARY:?missing CAL_SUMMARY}"
@@ -40,13 +43,8 @@ fi
 if [ -n "${CAL_ATTENDEES:-}" ]; then
   IFS=',' read -ra ATTS <<< "$CAL_ATTENDEES"
   for a in "${ATTS[@]}"; do
-    trimmed="${a#"${a%%[![:space:]]*}"}"
-    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
-    if [[ "$trimmed" =~ \<([^>]+)\> ]]; then
-      trimmed="${BASH_REMATCH[1]}"
-    fi
-    ARGS+=(attendee "$trimmed")
+    ARGS+=(attendee "$(aps_trim_attendee "$a")")
   done
 fi
 
-"$GAM" calendar "$CALENDAR" "${ARGS[@]}"
+"$BIN" calendar "$CALENDAR" "${ARGS[@]}"

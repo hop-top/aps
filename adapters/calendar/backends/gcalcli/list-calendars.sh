@@ -4,6 +4,8 @@
 # Input (env): none
 set -euo pipefail
 
-GCALCLI="${GCALCLI_BIN:-gcalcli}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "list-calendars"
 
-"$GCALCLI" list
+"$BIN" list

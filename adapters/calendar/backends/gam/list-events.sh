@@ -14,7 +14,10 @@
 # through jq downstream.
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "list-events"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 CALENDAR="${CAL_CALENDAR:-primary}"
 START="${CAL_START:?missing CAL_START}"
@@ -24,5 +27,5 @@ if [ "$CALENDAR" = "primary" ]; then
   CALENDAR="$USER"
 fi
 
-"$GAM" calendar "$CALENDAR" showevents \
+"$BIN" calendar "$CALENDAR" showevents \
   timemin "$START" timemax "$END" formatjson

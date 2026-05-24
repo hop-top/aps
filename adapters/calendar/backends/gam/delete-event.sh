@@ -7,7 +7,10 @@
 # CAL_EVENT_ID must be the Google event id (from list-events).
 set -euo pipefail
 
-GAM="${GAM_BIN:-gam}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "delete-event"
+
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 CALENDAR="${CAL_CALENDAR:-primary}"
 EVENT_ID="${CAL_EVENT_ID:?missing CAL_EVENT_ID}"
@@ -20,4 +23,4 @@ fi
 ARGS=(deleteevent "$EVENT_ID" doit)
 [ "$SEND" = "false" ] && ARGS+=(notifyattendees false)
 
-"$GAM" calendar "$CALENDAR" "${ARGS[@]}"
+"$BIN" calendar "$CALENDAR" "${ARGS[@]}"

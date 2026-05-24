@@ -12,7 +12,10 @@
 # CalDAV backend for cross-domain free/busy.
 set -euo pipefail
 
-GCALCLI="${GCALCLI_BIN:-gcalcli}"
+# shellcheck source=../../../_lib.sh
+. "$(dirname "$0")/../../../_lib.sh"
+aps_init_backend "free-busy"
+
 EMAILS="${CAL_EMAILS:?missing CAL_EMAILS}"
 START="${CAL_START:?missing CAL_START}"
 END="${CAL_END:?missing CAL_END}"
@@ -20,18 +23,17 @@ END="${CAL_END:?missing CAL_END}"
 IFS=',' read -ra EMAIL_LIST <<< "$EMAILS"
 failures=0
 for email in "${EMAIL_LIST[@]}"; do
-  trimmed="${email#"${email%%[![:space:]]*}"}"
-  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+  trimmed="$(aps_trim_attendee "$email")"
   echo "=== $trimmed ==="
-  if ! "$GCALCLI" --calendar "$trimmed" agenda "$START" "$END" --details all; then
+  if ! "$BIN" --calendar "$trimmed" agenda "$START" "$END" --details all; then
     echo "free-busy: gcalcli failed for $trimmed (no access, network error, or auth expired)" >&2
     failures=$((failures + 1))
   fi
 done
 
 # Partial-failure signal: 0 = all queries succeeded, 2 = at least one
-# attendee was unreachable. Callers parsing stdout should re-check
-# stderr for the failing addresses.
+# attendee was unreachable, 1 = all unreachable. Callers parsing
+# stdout should re-check stderr for the failing addresses.
 if [ "$failures" -gt 0 ]; then
   if [ "$failures" -eq "${#EMAIL_LIST[@]}" ]; then
     exit 1
