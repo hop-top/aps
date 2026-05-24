@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"hop.top/aps/internal/cli/globals"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	msgtypes "hop.top/aps/internal/core/messenger"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newTestMessengerCmd() *cobra.Command {
-	var profileID string
 	var message string
 	var channelID string
 	var send bool
@@ -25,18 +26,28 @@ func newTestMessengerCmd() *cobra.Command {
 		Long:  "Tests the full messenger pipeline: normalize, route, execute, denormalize, send.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from kit-managed global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			return runTestMessenger(args[0], profileID, message, channelID, send, timeout, jsonOutput)
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to test against (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&message, "message", "test query", "Test message content")
 	cmd.Flags().StringVar(&channelID, "channel", "", "Channel ID (defaults to first mapped channel)")
 	cmd.Flags().BoolVar(&send, "send", false, "Actually deliver the test message")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Pipeline timeout")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
+	// T-0648 — without --send the command is a read-only pipeline probe;
+	// with --send it delivers a real message to the messenger (shared
+	// write). Pick the more restrictive side-effect class and tag
+	// idempotency as conditional on --send (the route resolve + dry-run
+	// branches are idempotent; an actual delivery is not).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	return cmd
 }
 

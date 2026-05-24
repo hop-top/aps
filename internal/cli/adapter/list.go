@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
@@ -25,20 +26,24 @@ type adapterSummaryRow struct {
 }
 
 func newListCmd() *cobra.Command {
-	var typeFilter, statusFilter, workspaceFilter string
+	var typeFilter, statusFilter string
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List adapter devices",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(typeFilter, statusFilter, workspaceFilter)
+			// T-0648 — read --workspace from kit-managed global; the local
+			// `--workspace` flag would shadow the persistent one declared
+			// on root.
+			return runList(typeFilter, statusFilter, globals.Workspace())
 		},
 	}
 
 	cmd.Flags().StringVar(&typeFilter, "type", "", "Filter by adapter type (messenger, protocol, mobile, ...)")
 	cmd.Flags().StringVar(&statusFilter, "status", "", "Filter by runtime status (running, stopped, failed, ...)")
-	cmd.Flags().StringVar(&workspaceFilter, "workspace", "", "Filter by workspace (profile id for scope=profile, 'global' for scope=global)")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

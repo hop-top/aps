@@ -8,8 +8,10 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	coreadapter "hop.top/aps/internal/core/adapter"
 )
 
@@ -18,7 +20,6 @@ var defaultManager = coreadapter.NewManager()
 func newCreateCmd() *cobra.Command {
 	var deviceType string
 	var strategy string
-	var profileID string
 	var jsonOutput bool
 
 	cmd := &cobra.Command{
@@ -53,16 +54,19 @@ func newCreateCmd() *cobra.Command {
 					return err
 				}
 			}
-			return runCreate(args[0], deviceType, strategy, profileID, jsonOutput)
+			// T-0648 — read --profile from kit-managed global (root.Viper)
+			// instead of redeclaring locally.
+			return runCreate(args[0], deviceType, strategy, globals.Profile(), jsonOutput)
 		},
 	}
 
 	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, mobile, desktop, sense, actuator)")
 	cmd.Flags().StringVar(&strategy, "strategy", "", "Loading strategy (subprocess, script, builtin)")
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Create as profile-scoped device")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 

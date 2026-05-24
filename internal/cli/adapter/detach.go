@@ -5,17 +5,18 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core/multidevice"
 )
 
 func newDetachCmd() *cobra.Command {
 	var (
-		workspaceID string
-		force       bool
-		jsonOutput  bool
+		force      bool
+		jsonOutput bool
 	)
 
 	cmd := &cobra.Command{
@@ -28,18 +29,24 @@ workspace and any pending offline queue entries will be discarded.
 Use --force to skip confirmation.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			workspaceID := globals.Workspace()
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runDetach(args[0], workspaceID, force, jsonOutput)
 		},
 		ValidArgsFunction: completeDeviceNames,
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace to detach the device from (required)")
-	cmd.MarkFlagRequired("workspace")
+	// T-0648 — read --workspace from the kit-managed global rather than
+	// redeclaring it locally (the local shadowed the global and tripped
+	// the local-globals signature check).
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

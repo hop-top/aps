@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/prompt"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/adapter/mobile"
@@ -16,12 +18,9 @@ import (
 
 func newRevokeCmd() *cobra.Command {
 	var (
-		profileID  string
 		force      bool
-		dryRun     bool
 		revokeAll  bool
 		jsonOutput bool
-		quiet      bool
 	)
 
 	cmd := &cobra.Command{
@@ -39,19 +38,22 @@ The device must re-pair via a new QR code to reconnect.`,
 			if deviceID == "" && !revokeAll {
 				return fmt.Errorf("provide a device ID or use --all")
 			}
-			return runRevoke(deviceID, profileID, force, dryRun, revokeAll, jsonOutput, quiet)
+			// T-0648 — read --profile, --dry-run, --quiet from kit-managed globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
+			return runRevoke(deviceID, profileID, force, globals.DryRun(), revokeAll, jsonOutput, globals.Quiet())
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would happen")
 	cmd.Flags().BoolVar(&revokeAll, "all", false, "Revoke all devices")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
-	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
+	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
