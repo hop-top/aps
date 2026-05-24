@@ -8,10 +8,11 @@ import (
 	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newValidateCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "validate <file>",
 		Short: "Validate a bundle YAML file and report issues",
 		Args:  cobra.ExactArgs(1),
@@ -19,6 +20,9 @@ func newValidateCmd() *cobra.Command {
 			return runValidate(args[0])
 		},
 	}
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 func runValidate(filePath string) error {

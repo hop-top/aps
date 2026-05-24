@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newWatchCmd() *cobra.Command {
@@ -60,5 +61,7 @@ func newWatchCmd() *cobra.Command {
 		"Smart tool name (e.g. windsurf)")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

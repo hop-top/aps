@@ -1,6 +1,9 @@
 package capability
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
+)
 
 // NewCapabilityCmd creates the capability command group
 func NewCapabilityCmd() *cobra.Command {
@@ -9,6 +12,9 @@ func NewCapabilityCmd() *cobra.Command {
 		Aliases: []string{"cap"},
 		Short:   "Manage capabilities (tools, configs, dotfiles)",
 	}
+	// kit/hierarchical=true so `aps capability patterns list` (depth-3
+	// leaf) satisfies the signature validator depth-hierarchical check.
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newShowCmd())

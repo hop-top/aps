@@ -9,6 +9,7 @@ import (
 	corebundle "hop.top/aps/internal/core/bundle"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // bundleSummaryRow is the table/json/yaml row for `aps bundle list`.
@@ -46,6 +47,8 @@ func newListCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&userOnly, "user", false,
 		"Show only user bundles (incl. overrides)")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

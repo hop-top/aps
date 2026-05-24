@@ -8,10 +8,11 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newShowCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "show <name>",
 		Short: "Show capability details",
 		Args:  cobra.ExactArgs(1),
@@ -19,6 +20,9 @@ func newShowCmd() *cobra.Command {
 			return runShow(args[0])
 		},
 	}
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 func runShow(name string) error {

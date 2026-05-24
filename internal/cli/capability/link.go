@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newLinkCmd() *cobra.Command {
@@ -42,5 +43,7 @@ func newLinkCmd() *cobra.Command {
 	cmd.Flags().StringVar(&target, "target", "", "Target path for symlink")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
