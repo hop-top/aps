@@ -42,5 +42,8 @@ func init() {
 	// shell-eval output.
 	kitcli.SetSideEffect(envCmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(envCmd, kitcli.IdempotencyYes)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(envCmd)
 	rootCmd.AddCommand(envCmd)
 }

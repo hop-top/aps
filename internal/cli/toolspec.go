@@ -228,6 +228,9 @@ drive aps without parsing --help.`,
 	}
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(cmd)
 	return cmd
 }
 

@@ -52,6 +52,9 @@ func init() {
 	// re-invocation is not idempotent without external coordination.
 	kitcli.SetSideEffect(serveCmd, kitcli.SideEffectInteractive)
 	kitcli.SetIdempotency(serveCmd, kitcli.IdempotencyNo)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(serveCmd)
 }
 
 // buildServerHandler wires the kit Router with Recovery + RequestID
