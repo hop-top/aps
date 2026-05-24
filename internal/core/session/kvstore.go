@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"hop.top/aps/internal/core"
 	"hop.top/kit/go/storage/kv"
@@ -46,9 +47,12 @@ func openSessionStore(dir string) (kv.Store, error) {
 }
 
 // migrateLegacyJSONLocked imports any pre-existing registry.json into
-// the kv store, then removes the legacy file. Safe to call multiple
-// times: missing file or empty file are no-ops; rows already present
-// in kv are not overwritten so a partial migration can be resumed.
+// the kv store, then renames the legacy file to a timestamped backup
+// (registry.json.migrated-<unix>) instead of deleting it. Safe to call
+// multiple times: missing file or empty file are no-ops; rows already
+// present in kv are not overwritten so a partial migration can be
+// resumed; the rename preserves the original data should the operator
+// need to recover from a corrupted kv store.
 func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir string) error {
 	legacyPath := filepath.Join(dir, legacyRegistryFile)
 	// #nosec G304 -- path is constructed from core.GetDataDir(), not user input
@@ -60,8 +64,7 @@ func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir strin
 		return fmt.Errorf("read legacy registry: %w", err)
 	}
 	if len(data) == 0 {
-		_ = os.Remove(legacyPath)
-		return nil
+		return archiveLegacy(legacyPath)
 	}
 	var legacy map[string]*SessionInfo
 	if err := json.Unmarshal(data, &legacy); err != nil {
@@ -84,8 +87,16 @@ func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir strin
 			return fmt.Errorf("kv put during legacy migration: %w", err)
 		}
 	}
-	if err := os.Remove(legacyPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("remove legacy registry: %w", err)
+	return archiveLegacy(legacyPath)
+}
+
+// archiveLegacy renames a legacy JSON file to a timestamped backup
+// (<path>.migrated-<unix>). Missing source is a no-op so concurrent
+// migrations don't fight over the rename.
+func archiveLegacy(path string) error {
+	dest := fmt.Sprintf("%s.migrated-%d", path, time.Now().Unix())
+	if err := os.Rename(path, dest); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("archive legacy file: %w", err)
 	}
 	return nil
 }

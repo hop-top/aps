@@ -72,7 +72,11 @@ const (
 	ReaperTickInterval = 5 * time.Minute
 )
 
+// SessionStatus is the lifecycle state of a registered session.
 type SessionStatus string
+
+// SessionTier categorises a session by its operator-facing service
+// level (basic, standard, premium).
 type SessionTier string
 
 const (
@@ -117,8 +121,10 @@ type SessionRegistry struct {
 	mu        sync.Mutex
 }
 
-var registry *SessionRegistry
-var once sync.Once
+var (
+	registry *SessionRegistry
+	once     sync.Once
+)
 
 // NewForTesting returns a fresh SessionRegistry that does not share
 // state with the package singleton. The kv store is lazily opened on
@@ -545,25 +551,4 @@ func (r *SessionRegistry) ListByType(t SessionType) []*SessionInfo {
 		}
 	}
 	return out
-}
-
-// setLastSeenForTest backdates a session's LastSeenAt in the store.
-// Exposed via the same package for tests that need to age sessions
-// for the reaper without sleeping. NOT part of the public API.
-func (r *SessionRegistry) setLastSeenForTest(id string, ts time.Time) error {
-	if err := r.ensureStore(); err != nil {
-		return err
-	}
-	ctx := context.Background()
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	info, err := r.kvGetSession(ctx, id)
-	if err != nil {
-		return err
-	}
-	if info == nil {
-		return fmt.Errorf("session %s not found", id)
-	}
-	info.LastSeenAt = ts
-	return r.kvPutSessionLocked(ctx, info)
 }

@@ -82,8 +82,11 @@ func (r *Registry) Close() error {
 }
 
 // migrateLegacyJSON imports any pre-existing mobile-registry.json into
-// the kv store, then removes the legacy file. Rows already present in
-// kv (e.g. from a retried partial migration) are not overwritten.
+// the kv store, then renames the legacy file to a timestamped backup
+// (mobile-registry.json.migrated-<unix>) instead of deleting it. Rows
+// already present in kv (e.g. from a retried partial migration) are
+// not overwritten; the rename preserves the original data should the
+// operator need to recover from a corrupted kv store.
 func (r *Registry) migrateLegacyJSON(ctx context.Context, dir string) error {
 	legacyPath := filepath.Join(dir, legacyRegistryFile)
 	// #nosec G304 -- dir is supplied by the operator-provided data dir, not user input
@@ -95,8 +98,7 @@ func (r *Registry) migrateLegacyJSON(ctx context.Context, dir string) error {
 		return fmt.Errorf("read legacy mobile registry: %w", err)
 	}
 	if len(raw) == 0 {
-		_ = os.Remove(legacyPath)
-		return nil
+		return archiveLegacy(legacyPath)
 	}
 	var legacy MobileAdapterRegistryData
 	if err := json.Unmarshal(raw, &legacy); err != nil {
@@ -119,8 +121,16 @@ func (r *Registry) migrateLegacyJSON(ctx context.Context, dir string) error {
 			return err
 		}
 	}
-	if err := os.Remove(legacyPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("remove legacy mobile registry: %w", err)
+	return archiveLegacy(legacyPath)
+}
+
+// archiveLegacy renames a legacy JSON file to a timestamped backup
+// (<path>.migrated-<unix>). Missing source is a no-op so concurrent
+// migrations don't fight over the rename.
+func archiveLegacy(path string) error {
+	dest := fmt.Sprintf("%s.migrated-%d", path, time.Now().Unix())
+	if err := os.Rename(path, dest); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("archive legacy mobile registry: %w", err)
 	}
 	return nil
 }
