@@ -1,13 +1,8 @@
 package tui
 
 import (
-	"fmt"
-	"os"
-
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/capability"
-
-	tea "charm.land/bubbletea/v2"
 )
 
 type State int
@@ -51,18 +46,6 @@ func InitialModel() Model {
 		profiles: profiles,
 		width:    80,
 		height:   24,
-	}
-}
-
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
-func Run() {
-	p := tea.NewProgram(InitialModel())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
 	}
 }
 

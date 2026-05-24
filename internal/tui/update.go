@@ -1,41 +1,80 @@
 package tui
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
 
 	"hop.top/aps/internal/core"
 
 	tea "charm.land/bubbletea/v2"
+	kitcli "hop.top/kit/go/console/cli"
+	kittui "hop.top/kit/go/console/tui"
 )
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+// Run mounts the TUI on top of kit/console/tui.AppShell. The shell owns
+// the bubbletea program loop, the WindowSize / quit / help keybindings,
+// and the themed header / footer chrome; this package supplies the
+// per-screen content rendering and the state machine via the Model
+// type which implements kit's AppRenderer interface.
+func Run(ctx context.Context, root *kitcli.Root) error {
+	// Drop esc from the canonical quit keymap so it remains free for
+	// per-screen "back" navigation. ctrl+c and q still quit globally.
+	km := kittui.DefaultKeyMap()
+	km.Quit = []string{"q", "ctrl+c"}
+
+	shell := kittui.NewAppShellFromRoot(InitialModel(), root, kittui.WithKeyMap(km))
+	if _, err := shell.Run(ctx); err != nil {
+		return fmt.Errorf("appshell run: %w", err)
+	}
+	return nil
+}
+
+// Init satisfies kit's Initer interface — invoked once when AppShell
+// boots. No initial commands needed; data is loaded eagerly in
+// InitialModel.
+func (m Model) Init() tea.Cmd { return nil }
+
+// Resize satisfies kit's Resizer interface — AppShell forwards the
+// post-chrome width and height (terminal size minus header / footer).
+func (m Model) Resize(width, height int) kittui.AppRenderer {
+	m.width = width
+	m.height = height
+	return m
+}
+
+// Update satisfies kit's Updater interface. The shell strips its
+// canonical keys (ctrl+c, q, ?, h) before dispatch; per-screen handlers
+// here own everything else, including esc.
+func (m Model) Update(msg tea.Msg) (kittui.AppRenderer, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
+		var (
+			next kittui.AppRenderer
+			cmd  tea.Cmd
+		)
 		switch m.state {
 		case StateProfileList:
-			return m.updateProfileList(msg)
+			next = m.updateProfileList(msg)
 		case StateProfileDetail:
-			return m.updateProfileDetail(msg)
+			next = m.updateProfileDetail(msg)
 		case StateCapabilityList:
-			return m.updateCapabilityList(msg)
+			next = m.updateCapabilityList(msg)
 		case StateActionList:
-			return m.updateActionList(msg)
+			next, cmd = m.updateActionList(msg)
+		default:
+			next = m
 		}
-
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		return next, cmd
 	case errMsg:
 		m.err = msg.err
 	}
 	return m, nil
 }
 
-func (m Model) updateProfileList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateProfileList(msg tea.KeyPressMsg) kittui.AppRenderer {
 	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
 	case "up", "k":
 		if m.selectedProfile > 0 {
 			m.selectedProfile--
@@ -50,12 +89,12 @@ func (m Model) updateProfileList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				m.err = err
-				return m, nil
+				return m
 			}
 			actions, err := core.LoadActions(profileID)
 			if err != nil {
 				m.err = err
-				return m, nil
+				return m
 			}
 			m.profileDetail = profile
 			m.actions = actions
@@ -63,13 +102,11 @@ func (m Model) updateProfileList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.state = StateProfileDetail
 		}
 	}
-	return m, nil
+	return m
 }
 
-func (m Model) updateProfileDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateProfileDetail(msg tea.KeyPressMsg) kittui.AppRenderer {
 	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
 	case "c":
 		m.state = StateCapabilityList
 		m.selectedCap = 0
@@ -80,13 +117,11 @@ func (m Model) updateProfileDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.state = StateProfileList
 		m.profileDetail = nil
 	}
-	return m, nil
+	return m
 }
 
-func (m Model) updateCapabilityList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateCapabilityList(msg tea.KeyPressMsg) kittui.AppRenderer {
 	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
 	case "up", "k":
 		if m.selectedCap > 0 {
 			m.selectedCap--
@@ -114,13 +149,11 @@ func (m Model) updateCapabilityList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		m.state = StateProfileDetail
 	}
-	return m, nil
+	return m
 }
 
-func (m Model) updateActionList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateActionList(msg tea.KeyPressMsg) (kittui.AppRenderer, tea.Cmd) {
 	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
 	case "up", "k":
 		if m.selectedAction > 0 {
 			m.selectedAction--
@@ -156,3 +189,10 @@ func (m Model) updateActionList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 type errMsg struct{ err error }
+
+var (
+	_ kittui.AppRenderer = Model{}
+	_ kittui.Initer      = Model{}
+	_ kittui.Updater     = Model{}
+	_ kittui.Resizer     = Model{}
+)
