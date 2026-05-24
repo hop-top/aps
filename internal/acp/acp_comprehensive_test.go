@@ -221,6 +221,11 @@ func TestServer_ErrorHandling_InternalError(t *testing.T) {
 }
 
 // Test 9: Message loop with EOF handling
+//
+// The loop must return when the transport reports EOF, but the
+// server's lifecycle status is only flipped to "stopped" when the
+// owning context is cancelled (i.e. Stop() was called). A bare EOF
+// on a still-live server keeps it in "running" — see T-0677.
 func TestServer_MessageLoop_EOFHandling(t *testing.T) {
 	core := newMockAPSCore()
 	server, _ := NewServer("test-profile", core)
@@ -241,9 +246,14 @@ func TestServer_MessageLoop_EOFHandling(t *testing.T) {
 		ID:      1,
 	})
 
-	// Message loop will return on EOF
+	// Message loop returns on EOF without altering server status.
 	server.messageLoop()
+	assert.Equal(t, "running", server.Status())
 
+	// Once the context is cancelled and the loop re-runs (or Stop is
+	// called) the status moves to "stopped".
+	cancel()
+	server.messageLoop()
 	assert.Equal(t, "stopped", server.Status())
 }
 

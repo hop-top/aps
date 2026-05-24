@@ -201,9 +201,18 @@ func (s *Server) createTransport(config interface{}) (Transport, error) {
 // messageLoop handles incoming JSON-RPC messages
 func (s *Server) messageLoop() {
 	defer func() {
-		s.mu.Lock()
-		s.status = "stopped"
-		s.mu.Unlock()
+		// Only flip to "stopped" when the server's own context was
+		// cancelled (Stop() was called or the parent ctx is done).
+		// A bare EOF on the transport (e.g. stdin closed in a test
+		// harness) must not silently stop a server that's still alive
+		// from the caller's perspective — see T-0677.
+		select {
+		case <-s.ctx.Done():
+			s.mu.Lock()
+			s.status = "stopped"
+			s.mu.Unlock()
+		default:
+		}
 	}()
 
 	s.serveTransport(s.ctx, s.transport)

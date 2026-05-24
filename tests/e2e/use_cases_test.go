@@ -43,8 +43,13 @@ func TestUseCase1_EditorIntegrationWithPermissionControl(t *testing.T) {
 	require.NoError(t, err)
 	defer acpServer.Stop()
 
-	// Verify ACP is running
-	assert.Equal(t, "running", acpServer.Status())
+	// Verify ACP is running. Start sets the status synchronously but
+	// the message-loop goroutine can race with the assertion on Linux
+	// — poll so we don't flake on schedulers that happen to run the
+	// loop before this goroutine resumes (see T-0677).
+	require.Eventually(t, func() bool {
+		return acpServer.Status() == "running"
+	}, 2*time.Second, 10*time.Millisecond, "ACP server did not reach running state")
 	assert.Equal(t, "acp", acpServer.Name())
 
 	t.Log("✓ ACP server started for editor integration")
