@@ -29,7 +29,6 @@ type MockTaskStore struct {
 	errorOnSave   bool
 	errorOnGet    bool
 	errorOnList   bool
-	lastSavePrev  *a2a.Task
 }
 
 // NewMockTaskStore creates a new mock task store
@@ -43,15 +42,13 @@ func NewMockTaskStore() *MockTaskStore {
 	}
 }
 
-// Save implements a2asrv.TaskStore interface.
-// The prev *a2a.Task argument is captured for assertion inspection; the mock
-// does not gate writes on it (use versions for collision tests).
-func (m *MockTaskStore) Save(_ context.Context, task *a2a.Task, event a2a.Event, prev *a2a.Task, prevVersion a2a.TaskVersion) (a2a.TaskVersion, error) {
+// Save implements a2asrv.TaskStore interface. The prev *a2a.Task arg is
+// advisory per upstream; this mock applies only version arithmetic.
+func (m *MockTaskStore) Save(_ context.Context, task *a2a.Task, event a2a.Event, _ *a2a.Task, prevVersion a2a.TaskVersion) (a2a.TaskVersion, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.savedCalls++
-	m.lastSavePrev = prev
 
 	if m.errorOnSave {
 		return 0, fmt.Errorf("mock save error")
@@ -67,13 +64,6 @@ func (m *MockTaskStore) Save(_ context.Context, task *a2a.Task, event a2a.Event,
 	m.versions[task.ID] = version
 
 	return version, nil
-}
-
-// GetLastSavePrev returns the prev *a2a.Task argument passed to the most recent Save call.
-func (m *MockTaskStore) GetLastSavePrev() *a2a.Task {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.lastSavePrev
 }
 
 // Get implements a2asrv.TaskStore interface

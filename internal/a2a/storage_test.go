@@ -546,3 +546,47 @@ func TestStorage_List_RoundTrip(t *testing.T) {
 		assert.Truef(t, ok, "unexpected task id %s in List response", task.ID)
 	}
 }
+
+// TestStorage_List_PageSize verifies List honours req.PageSize, clamps to
+// the upstream-documented [1, 100] window, and reports TotalSize for the
+// full set even when the page is smaller.
+func TestStorage_List_PageSize(t *testing.T) {
+	tmpDir := t.TempDir()
+	config := &StorageConfig{BasePath: tmpDir}
+	storage, err := NewStorage(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	event := a2a.NewStatusUpdateEvent(&a2asrv.RequestContext{}, a2a.TaskStateSubmitted, nil)
+
+	const total = 7
+	for i := 0; i < total; i++ {
+		task := &a2a.Task{
+			ID:     a2a.NewTaskID(),
+			Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+		}
+		_, err := storage.Save(ctx, task, event, nil, 0)
+		require.NoError(t, err)
+	}
+
+	cases := []struct {
+		name      string
+		pageSize  int
+		wantTasks int
+	}{
+		{"explicit page smaller than total", 3, 3},
+		{"explicit page equals total", 7, 7},
+		{"explicit page larger than total", 20, 7},
+		{"zero falls back to default 50", 0, 7},
+		{"page over upstream max clamps to 100 then returns all", 999, 7},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := storage.List(ctx, &a2a.ListTasksRequest{PageSize: tc.pageSize})
+			require.NoError(t, err)
+			assert.Len(t, resp.Tasks, tc.wantTasks)
+			assert.Equal(t, total, resp.TotalSize, "TotalSize must report full set")
+			assert.Empty(t, resp.NextPageToken, "cursor pagination not supported")
+		})
+	}
+}
