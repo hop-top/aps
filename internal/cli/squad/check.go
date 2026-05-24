@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/cli/listing"
 	coresquad "hop.top/aps/internal/core/squad"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -23,13 +24,17 @@ type checkRow struct {
 }
 
 func newCheckCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Validate squad topology against the 8-item design checklist",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCheck()
 		},
 	}
+	// T-0648 — read-only topology validation; safely repeatable.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 func runCheck() error {

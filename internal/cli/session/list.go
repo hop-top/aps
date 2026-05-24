@@ -8,6 +8,7 @@ import (
 
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/session"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -74,6 +75,10 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().String("status", "", "Filter sessions by status (active, inactive, errored)")
 	cmd.Flags().String("tier", "", "Filter sessions by tier (basic, standard, premium)")
 	cmd.Flags().String("type", "", "Filter sessions by type (standard, voice); default = all")
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

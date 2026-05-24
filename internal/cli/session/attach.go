@@ -11,6 +11,7 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/session"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewAttachCmd() *cobra.Command {
@@ -52,6 +53,12 @@ func NewAttachCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&mode, "mode", "m", "control", "Attachment mode (view|control)")
 	cmd.Flags().BoolVarP(&latest, "latest", "l", false, "Attach to the most recent session")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit 0.4 signature annotations. attach is session-bound
+	// (TTY-attached tmux); idempotency depends on mode (view vs control)
+	// and the current state of the target session.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 
 	return cmd
 }

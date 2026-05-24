@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/logging"
 	"hop.top/aps/internal/styles"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -57,6 +58,10 @@ func NewInspectCmd() *cobra.Command {
 
 	cmd.Flags().Bool("pretty", false, "Pretty-print JSON output")
 	cmd.Flags().Bool("json", false, "Output in JSON format")
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

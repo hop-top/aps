@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/cli/clinote"
 	"hop.top/aps/internal/core/session"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewDetachCmd() *cobra.Command {
@@ -34,6 +35,12 @@ func NewDetachCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&all, "all", "a", false, "Detach from all sessions")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit 0.4 signature annotations. Detaching a tmux client
+	// is reversible (the session itself keeps running) and naturally
+	// idempotent (an already-detached session stays detached).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

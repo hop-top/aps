@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/cli/clinote"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newDeleteCmd() *cobra.Command {
@@ -19,6 +20,11 @@ func newDeleteCmd() *cobra.Command {
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit 0.4 signature annotations. Squad deletion mutates
+	// the local squad store and is naturally idempotent (delete-by-id).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

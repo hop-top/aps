@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newShowCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show squad details",
 		Args:  cobra.ExactArgs(1),
@@ -17,6 +18,10 @@ func newShowCmd() *cobra.Command {
 			return runShow(args[0])
 		},
 	}
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 func runShow(id string) error {
