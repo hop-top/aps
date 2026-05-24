@@ -5,6 +5,9 @@ bin/
 !Dockerfile.test
 vendor/
 *.out
+go.mod.local
+go.work
+go.work.sum
 
 # General
 .DS_Store
