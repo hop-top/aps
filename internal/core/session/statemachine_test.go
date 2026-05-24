@@ -28,7 +28,7 @@ func TestSessionStateMachine_AllowedTransitions(t *testing.T) {
 		{"", SessionErrored, true},
 	}
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	for _, c := range cases {
 		err := r.checkTransition(c.from, c.to)
 		gotOK := err == nil
@@ -43,7 +43,7 @@ func TestSessionStateMachine_AllowedTransitions(t *testing.T) {
 
 func TestUpdateStatus_RejectsInvalidTransition(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1", ProfileID: "p1", Status: SessionErrored}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestUpdateStatus_RejectsInvalidTransition(t *testing.T) {
 
 func TestUpdateStatus_AllowsValidTransition(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s2", ProfileID: "p2", Status: SessionActive}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	"hop.top/aps/internal/events"
 )
@@ -42,7 +43,7 @@ func TestRegister_EmitsSessionStarted(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 	f := installFakePublisher(t)
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{
 		ID:        "s-start",
 		ProfileID: "noor",
@@ -72,7 +73,7 @@ func TestRegister_EmitsSessionStarted(t *testing.T) {
 func TestUnregister_EmitsSessionStopped(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s-stop", ProfileID: "rami"}); err != nil {
 		t.Fatalf("setup Register: %v", err)
 	}
@@ -98,7 +99,7 @@ func TestUnregister_MissingSession_NoEvent(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 	f := installFakePublisher(t)
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Unregister("nope"); err != nil {
 		t.Fatalf("Unregister missing should be no-op: %v", err)
 	}
@@ -110,7 +111,7 @@ func TestUnregister_MissingSession_NoEvent(t *testing.T) {
 func TestUpdateStatus_Inactive_EmitsSessionStopped(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s-inact", ProfileID: "kai", Status: SessionActive}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
@@ -132,7 +133,7 @@ func TestUpdateStatus_Inactive_EmitsSessionStopped(t *testing.T) {
 func TestUpdateStatus_Errored_EmitsSessionStopped(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s-err", ProfileID: "amir", Status: SessionActive}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
@@ -154,7 +155,7 @@ func TestUpdateStatus_Errored_EmitsSessionStopped(t *testing.T) {
 func TestUpdateStatus_StillActive_NoEvent(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s-stay", ProfileID: "x", Status: SessionInactive}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
@@ -172,7 +173,7 @@ func TestUpdateStatus_StillActive_NoEvent(t *testing.T) {
 func TestCleanupInactive_EmitsSessionStoppedPerExpired(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "old1", ProfileID: "p1", Status: SessionActive}); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
@@ -180,11 +181,13 @@ func TestCleanupInactive_EmitsSessionStoppedPerExpired(t *testing.T) {
 		t.Fatalf("setup: %v", err)
 	}
 	// Force LastSeenAt far in the past on both.
-	r.mu.Lock()
-	for _, s := range r.sessions {
-		s.LastSeenAt = s.LastSeenAt.Add(-1000 * 1e9 * 60) // 1000 minutes back
+	past := time.Now().Add(-1000 * time.Minute)
+	if err := r.setLastSeenForTest("old1", past); err != nil {
+		t.Fatalf("backdate old1: %v", err)
 	}
-	r.mu.Unlock()
+	if err := r.setLastSeenForTest("old2", past); err != nil {
+		t.Fatalf("backdate old2: %v", err)
+	}
 
 	f := installFakePublisher(t)
 
@@ -215,7 +218,7 @@ func TestRegister_NilPublisher_NoPanic(t *testing.T) {
 	SetEventPublisher(nil)
 	t.Cleanup(func() { SetEventPublisher(prev) })
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "nilpub"}); err != nil {
 		t.Fatalf("Register with nil publisher: %v", err)
 	}

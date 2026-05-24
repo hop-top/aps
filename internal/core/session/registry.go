@@ -3,24 +3,26 @@
 // Write-through contract: all mutator methods (Register, Unregister,
 // UpdateStatus, UpdateHeartbeat, UpdateSessionMetadata, CleanupInactive)
 // persist the registry to disk before returning. Persistence failures
-// are surfaced as errors and the in-memory mutation is rolled back so
-// the in-memory state always matches what is on disk after any
+// are surfaced as errors and the in-memory representation is rolled
+// back so subsequent reads always see what is on disk after any
 // successful mutator return.
+//
+// State is durably stored in a sqlite-backed kit/storage/kv table at
+// <dataDir>/sessions/registry.db. Legacy registry.json files written
+// by earlier aps releases are migrated into kv on first open and then
+// removed.
 package session
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/logging"
 	"hop.top/kit/go/runtime/domain"
+	"hop.top/kit/go/storage/kv"
 )
 
 // statusRules defines valid SessionStatus transitions enforced by
@@ -54,10 +56,10 @@ const (
 	// per-user state when no explicit data path is configured.
 	APSHomeDir = ".aps"
 	// SessionsDir is the subdirectory under the APS data dir holding
-	// session-related artifacts including the registry file.
+	// session-related artifacts including the registry kv database.
 	SessionsDir = "sessions"
-	// RegistryFile is the JSON file inside SessionsDir that persists
-	// the session registry between process invocations.
+	// RegistryFile is the legacy JSON file produced by pre-kv aps
+	// releases. Kept exported so the migration helper can locate it.
 	RegistryFile = "registry.json"
 
 	// DefaultTimeout is how long a session may be inactive (no heartbeat
@@ -103,32 +105,34 @@ type SessionInfo struct {
 	WorkspaceID string            `json:"workspace_id,omitempty"`
 }
 
+// SessionRegistry is the runtime view of all known sessions, backed
+// by a sqlite kv store. The embedded mutex guards compound operations
+// that must observe a consistent slice of the store (register-if-
+// absent, the CleanupInactive sweep, the metadata-merge read-modify-
+// write); single-key reads delegate to the kv backend's own locking.
 type SessionRegistry struct {
-	sessions map[string]*SessionInfo
-	mu       sync.RWMutex
+	store     kv.Store
+	storeOnce sync.Once
+	storeErr  error
+	mu        sync.Mutex
 }
 
 var registry *SessionRegistry
 var once sync.Once
 
-// NewForTesting returns a fresh, empty SessionRegistry that does not
-// share state with the package singleton. It is intended for tests
-// that need isolated registry state per test. The caller is
-// responsible for persistence (the registry will still call
-// saveToDiskLocked on mutations — set APS_DATA_PATH to a tmp dir).
+// NewForTesting returns a fresh SessionRegistry that does not share
+// state with the package singleton. The kv store is lazily opened on
+// first use and honours APS_DATA_PATH so tests that set
+// `t.Setenv("APS_DATA_PATH", t.TempDir())` get isolated state.
 func NewForTesting() *SessionRegistry {
-	return &SessionRegistry{
-		sessions: make(map[string]*SessionInfo),
-	}
+	return &SessionRegistry{}
 }
 
 func GetRegistry() *SessionRegistry {
 	once.Do(func() {
-		registry = &SessionRegistry{
-			sessions: make(map[string]*SessionInfo),
-		}
-		if err := registry.LoadFromDisk(); err != nil {
-			fmt.Printf("Warning: failed to load session registry: %v\n", err)
+		registry = &SessionRegistry{}
+		if err := registry.ensureStore(); err != nil {
+			fmt.Printf("Warning: failed to open session registry: %v\n", err)
 		}
 		startReaper(context.Background(), registry, ReaperTickInterval)
 	})
@@ -138,7 +142,7 @@ func GetRegistry() *SessionRegistry {
 // reaperDisabled lets the CLI layer opt the in-process reaper out when
 // it has wired the kit/runtime/job-driven sweep instead. The reaper
 // goroutine and the job-poll sweep would otherwise race over the same
-// session map. The setter is package-level (mirroring SetEventPublisher)
+// session set. The setter is package-level (mirroring SetEventPublisher)
 // and is read once at startReaper start time.
 var reaperDisabled bool
 
@@ -198,19 +202,23 @@ func (r *SessionRegistry) Register(session *SessionInfo) error {
 // audit note attached via policy.ContextAttrsKey by the CLI layer
 // (T-1291) and surfaces it in the SessionStarted bus payload.
 func (r *SessionRegistry) RegisterWithContext(ctx context.Context, session *SessionInfo) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.sessions[session.ID]; exists {
+	existing, err := r.kvGetSession(ctx, session.ID)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
 		return fmt.Errorf("session %s already exists", session.ID)
 	}
 
 	session.CreatedAt = time.Now()
 	session.LastSeenAt = time.Now()
-	r.sessions[session.ID] = session
-
-	if err := r.saveToDiskLocked(); err != nil {
-		delete(r.sessions, session.ID)
+	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 
@@ -233,20 +241,21 @@ func (r *SessionRegistry) Unregister(sessionID string) error {
 // attached via policy.ContextAttrsKey by the CLI layer (T-1291) and
 // surfaces it in the SessionStopped bus payload.
 func (r *SessionRegistry) UnregisterWithContext(ctx context.Context, sessionID string) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	prev, existed := r.sessions[sessionID]
-	delete(r.sessions, sessionID)
-
-	if err := r.saveToDiskLocked(); err != nil {
-		if existed {
-			r.sessions[sessionID] = prev
-		}
+	prev, err := r.kvGetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if err := r.kvDeleteSession(ctx, sessionID); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 
-	if existed {
+	if prev != nil {
 		publish(ctx, string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
 			SessionID: sessionID,
 			ProfileID: prev.ProfileID,
@@ -258,41 +267,45 @@ func (r *SessionRegistry) UnregisterWithContext(ctx context.Context, sessionID s
 }
 
 func (r *SessionRegistry) Get(sessionID string) (*SessionInfo, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	session, exists := r.sessions[sessionID]
-	if !exists {
+	if err := r.ensureStore(); err != nil {
+		return nil, err
+	}
+	info, err := r.kvGetSession(context.Background(), sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if info == nil {
 		return nil, fmt.Errorf("session %s not found", sessionID)
 	}
-
-	return session, nil
+	return info, nil
 }
 
 func (r *SessionRegistry) List() []*SessionInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	sessions := make([]*SessionInfo, 0, len(r.sessions))
-	for _, session := range r.sessions {
-		sessions = append(sessions, session)
+	if err := r.ensureStore(); err != nil {
+		return nil
 	}
-
+	sessions, err := r.kvListSessions(context.Background())
+	if err != nil {
+		return nil
+	}
 	return sessions
 }
 
 func (r *SessionRegistry) ListByProfile(profileID string) []*SessionInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	sessions := make([]*SessionInfo, 0)
-	for _, session := range r.sessions {
-		if session.ProfileID == profileID {
-			sessions = append(sessions, session)
+	if err := r.ensureStore(); err != nil {
+		return nil
+	}
+	all, err := r.kvListSessions(context.Background())
+	if err != nil {
+		return nil
+	}
+	out := make([]*SessionInfo, 0, len(all))
+	for _, s := range all {
+		if s.ProfileID == profileID {
+			out = append(out, s)
 		}
 	}
-
-	return sessions
+	return out
 }
 
 // checkTransition validates a SessionStatus transition against the
@@ -310,60 +323,25 @@ func (r *SessionRegistry) checkTransition(from, to SessionStatus) error {
 }
 
 func (r *SessionRegistry) UpdateStatus(sessionID string, status SessionStatus) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	session, exists := r.sessions[sessionID]
-	if !exists {
-		return fmt.Errorf("session %s not found", sessionID)
-	}
-
-	if err := r.checkTransition(session.Status, status); err != nil {
-		return fmt.Errorf("session %s: %w", sessionID, err)
-	}
-
-	prevStatus := session.Status
-	prevSeen := session.LastSeenAt
-	session.Status = status
-	session.LastSeenAt = time.Now()
-
-	if err := r.saveToDiskLocked(); err != nil {
-		session.Status = prevStatus
-		session.LastSeenAt = prevSeen
-		return fmt.Errorf("failed to persist session registry: %w", err)
-	}
-
-	// Emit a stop event when transitioning into a terminal state. Active
-	// transitions (e.g. resume) are not stops. Skip when status hasn't
-	// actually changed (idempotent UpdateStatus calls are silent).
-	if prevStatus != status && (status == SessionInactive || status == SessionErrored) {
-		reason := "inactive"
-		if status == SessionErrored {
-			reason = "errored"
-		}
-		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
-			SessionID: sessionID,
-			ProfileID: session.ProfileID,
-			Reason:    reason,
-		})
-	}
-	return nil
+	return r.UpdateStatusWithContext(context.Background(), sessionID, status)
 }
 
 // UpdateStatusWithContext is the ctx-aware variant of UpdateStatus
 // (T-1291). When the transition lands in a terminal state, the audit
 // note attached to ctx via policy.ContextAttrsKey is surfaced in the
 // SessionStopped payload.
-//
-// We re-implement the body rather than calling UpdateStatus + a
-// follow-up event because publishing a second SessionStopped after the
-// fact would deliver a duplicate to subscribers.
 func (r *SessionRegistry) UpdateStatusWithContext(ctx context.Context, sessionID string, status SessionStatus) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	session, exists := r.sessions[sessionID]
-	if !exists {
+	session, err := r.kvGetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session == nil {
 		return fmt.Errorf("session %s not found", sessionID)
 	}
 
@@ -372,13 +350,10 @@ func (r *SessionRegistry) UpdateStatusWithContext(ctx context.Context, sessionID
 	}
 
 	prevStatus := session.Status
-	prevSeen := session.LastSeenAt
 	session.Status = status
 	session.LastSeenAt = time.Now()
 
-	if err := r.saveToDiskLocked(); err != nil {
-		session.Status = prevStatus
-		session.LastSeenAt = prevSeen
+	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 
@@ -398,19 +373,24 @@ func (r *SessionRegistry) UpdateStatusWithContext(ctx context.Context, sessionID
 }
 
 func (r *SessionRegistry) UpdateHeartbeat(sessionID string) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
+	ctx := context.Background()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	session, exists := r.sessions[sessionID]
-	if !exists {
+	session, err := r.kvGetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session == nil {
 		return fmt.Errorf("session %s not found", sessionID)
 	}
 
-	prevSeen := session.LastSeenAt
 	session.LastSeenAt = time.Now()
 
-	if err := r.saveToDiskLocked(); err != nil {
-		session.LastSeenAt = prevSeen
+	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 	return nil
@@ -418,23 +398,22 @@ func (r *SessionRegistry) UpdateHeartbeat(sessionID string) error {
 
 // UpdateSessionMetadata merges the provided metadata into the session's
 // Environment map and refreshes LastSeenAt. Persists to disk. Returns
-// an error if the session does not exist or persistence fails, in
-// which case the in-memory state is rolled back to its prior value.
+// an error if the session does not exist or persistence fails.
 func (r *SessionRegistry) UpdateSessionMetadata(sessionID string, metadata map[string]string) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
+	ctx := context.Background()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	session, exists := r.sessions[sessionID]
-	if !exists {
+	session, err := r.kvGetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session == nil {
 		return fmt.Errorf("session %s not found", sessionID)
 	}
-
-	// Capture for rollback.
-	prevEnv := make(map[string]string, len(session.Environment))
-	for k, v := range session.Environment {
-		prevEnv[k] = v
-	}
-	prevSeen := session.LastSeenAt
 
 	if session.Environment == nil {
 		session.Environment = make(map[string]string)
@@ -444,9 +423,7 @@ func (r *SessionRegistry) UpdateSessionMetadata(sessionID string, metadata map[s
 	}
 	session.LastSeenAt = time.Now()
 
-	if err := r.saveToDiskLocked(); err != nil {
-		session.Environment = prevEnv
-		session.LastSeenAt = prevSeen
+	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
 	return nil
@@ -454,148 +431,99 @@ func (r *SessionRegistry) UpdateSessionMetadata(sessionID string, metadata map[s
 
 // CleanupInactive removes any session whose LastSeenAt is older than
 // the supplied timeout, persists the result to disk, and returns the
-// IDs of the removed sessions. On persistence failure, all removals
-// are rolled back and an error is returned alongside a nil expired
-// slice so the caller cannot accidentally consume an inconsistent
-// view.
+// IDs of the removed sessions.
 //
 // Sessions in the SessionErrored state are deliberately skipped: per
 // the T3 design (docs/dev/agent-lifecycle.md), errored sessions remain
 // in the registry indefinitely so operators can inspect them. They
 // must be removed explicitly via Unregister.
-//
-// TODO: add a save-failure rollback test once a fault-injecting
-// filesystem is available (see the TODO above the rollback tests).
 func (r *SessionRegistry) CleanupInactive(timeout time.Duration) ([]string, error) {
+	if err := r.ensureStore(); err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var expired []string
-	removed := make(map[string]*SessionInfo)
-	now := time.Now()
+	sessions, err := r.kvListSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	for id, session := range r.sessions {
-		if session.Status == SessionErrored {
+	now := time.Now()
+	var expired []string
+	expiredInfos := make([]*SessionInfo, 0)
+	for _, s := range sessions {
+		if s.Status == SessionErrored {
 			continue
 		}
-		if now.Sub(session.LastSeenAt) > timeout {
-			expired = append(expired, id)
-			removed[id] = session
-			delete(r.sessions, id)
+		if now.Sub(s.LastSeenAt) > timeout {
+			if err := r.kvDeleteSession(ctx, s.ID); err != nil {
+				return nil, fmt.Errorf("failed to persist session registry: %w", err)
+			}
+			expired = append(expired, s.ID)
+			expiredInfos = append(expiredInfos, s)
 		}
 	}
 
-	if err := r.saveToDiskLocked(); err != nil {
-		for id, session := range removed {
-			r.sessions[id] = session
-		}
-		return nil, fmt.Errorf("failed to persist session registry: %w", err)
-	}
-
-	for id, sess := range removed {
-		publish(context.Background(), string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
-			SessionID: id,
-			ProfileID: sess.ProfileID,
+	for _, s := range expiredInfos {
+		publish(ctx, string(events.TopicSessionStopped), "", events.SessionStoppedPayload{
+			SessionID: s.ID,
+			ProfileID: s.ProfileID,
 			Reason:    "expired",
 		})
 	}
 	return expired, nil
 }
 
-// SaveToDisk persists the session registry to disk. It acquires a read
-// lock and delegates to saveToDiskLocked.
+// SaveToDisk is a no-op retained for backwards compatibility — the kv
+// store persists every mutation synchronously, so explicit saves are
+// unnecessary.
 func (r *SessionRegistry) SaveToDisk() error {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.saveToDiskLocked()
+	return r.ensureStore()
 }
 
-// saveToDiskLocked writes the registry to disk WITHOUT acquiring r.mu.
-// The caller MUST already hold r.mu (read or write). This exists so that
-// mutator methods can persist while still holding their write lock,
-// avoiding the deadlock that would occur if they called the public
-// SaveToDisk (sync.RWMutex is not reentrant).
-func (r *SessionRegistry) saveToDiskLocked() error {
-	dataDir, err := core.GetDataDir()
-	if err != nil {
-		return fmt.Errorf("failed to get data directory: %w", err)
-	}
-
-	sessionsDir := filepath.Join(dataDir, SessionsDir)
-
-	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create sessions directory: %w", err)
-	}
-
-	registryPath := filepath.Join(sessionsDir, RegistryFile)
-	data, err := json.MarshalIndent(r.sessions, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal registry: %w", err)
-	}
-
-	if err := os.WriteFile(registryPath, data, 0600); err != nil {
-		return fmt.Errorf("failed to write registry file: %w", err)
-	}
-
-	return nil
-}
-
-// LoadFromDisk loads the session registry from disk
+// LoadFromDisk is a no-op retained for backwards compatibility — the
+// kv store is opened lazily and reflects the on-disk state on every
+// read.
 func (r *SessionRegistry) LoadFromDisk() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	dataDir, err := core.GetDataDir()
-	if err != nil {
-		return fmt.Errorf("failed to get data directory: %w", err)
-	}
-
-	registryPath := filepath.Join(dataDir, SessionsDir, RegistryFile)
-
-	data, err := os.ReadFile(registryPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			r.sessions = make(map[string]*SessionInfo)
-			return nil
-		}
-		return fmt.Errorf("failed to read registry file: %w", err)
-	}
-
-	if err := json.Unmarshal(data, &r.sessions); err != nil {
-		return fmt.Errorf("failed to unmarshal registry: %w", err)
-	}
-
-	return nil
+	return r.ensureStore()
 }
 
-// ListByStatus filters sessions by status
+// ListByStatus filters sessions by status.
 func (r *SessionRegistry) ListByStatus(status SessionStatus) []*SessionInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	sessions := make([]*SessionInfo, 0)
-	for _, session := range r.sessions {
-		if session.Status == status {
-			sessions = append(sessions, session)
+	if err := r.ensureStore(); err != nil {
+		return nil
+	}
+	all, err := r.kvListSessions(context.Background())
+	if err != nil {
+		return nil
+	}
+	out := make([]*SessionInfo, 0, len(all))
+	for _, s := range all {
+		if s.Status == status {
+			out = append(out, s)
 		}
 	}
-
-	return sessions
+	return out
 }
 
-// ListByTier filters sessions by tier
+// ListByTier filters sessions by tier.
 func (r *SessionRegistry) ListByTier(tier SessionTier) []*SessionInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	sessions := make([]*SessionInfo, 0)
-	for _, session := range r.sessions {
-		if session.Tier == tier {
-			sessions = append(sessions, session)
+	if err := r.ensureStore(); err != nil {
+		return nil
+	}
+	all, err := r.kvListSessions(context.Background())
+	if err != nil {
+		return nil
+	}
+	out := make([]*SessionInfo, 0, len(all))
+	for _, s := range all {
+		if s.Tier == tier {
+			out = append(out, s)
 		}
 	}
-
-	return sessions
+	return out
 }
 
 // ListByType filters sessions by SessionType. The empty SessionType
@@ -603,15 +531,39 @@ func (r *SessionRegistry) ListByTier(tier SessionTier) []*SessionInfo {
 // i.e. sessions persisted before the Type field existed are treated
 // as standard.
 func (r *SessionRegistry) ListByType(t SessionType) []*SessionInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	sessions := make([]*SessionInfo, 0)
-	for _, session := range r.sessions {
-		if session.Type == t {
-			sessions = append(sessions, session)
+	if err := r.ensureStore(); err != nil {
+		return nil
+	}
+	all, err := r.kvListSessions(context.Background())
+	if err != nil {
+		return nil
+	}
+	out := make([]*SessionInfo, 0, len(all))
+	for _, s := range all {
+		if s.Type == t {
+			out = append(out, s)
 		}
 	}
+	return out
+}
 
-	return sessions
+// setLastSeenForTest backdates a session's LastSeenAt in the store.
+// Exposed via the same package for tests that need to age sessions
+// for the reaper without sleeping. NOT part of the public API.
+func (r *SessionRegistry) setLastSeenForTest(id string, ts time.Time) error {
+	if err := r.ensureStore(); err != nil {
+		return err
+	}
+	ctx := context.Background()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	info, err := r.kvGetSession(ctx, id)
+	if err != nil {
+		return err
+	}
+	if info == nil {
+		return fmt.Errorf("session %s not found", id)
+	}
+	info.LastSeenAt = ts
+	return r.kvPutSessionLocked(ctx, info)
 }

@@ -10,20 +10,35 @@ import (
 
 // freshRegistry returns an empty SessionRegistry independent of the
 // GetRegistry singleton (which caches via sync.Once and would mask
-// per-test data dirs set via t.Setenv).
-func freshRegistry() *SessionRegistry {
-	return &SessionRegistry{sessions: make(map[string]*SessionInfo)}
+// per-test data dirs set via t.Setenv). The returned registry is
+// closed automatically via t.Cleanup so the underlying sqlite handle
+// (and any WAL/SHM siblings) are released before the test exits.
+func freshRegistry(tb testing.TB) *SessionRegistry {
+	tb.Helper()
+	r := &SessionRegistry{}
+	tb.Cleanup(func() { _ = r.Close() })
+	return r
+}
+
+// newForTestingT wraps NewForTesting with a t.Cleanup-managed Close so
+// integration tests that simulate multi-process restarts via several
+// registry instances don't leak sqlite handles across tests.
+func newForTestingT(tb testing.TB) *SessionRegistry {
+	tb.Helper()
+	r := NewForTesting()
+	tb.Cleanup(func() { _ = r.Close() })
+	return r
 }
 
 func TestRegister_PersistsToDisk(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1", ProfileID: "p1"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -35,7 +50,7 @@ func TestRegister_PersistsToDisk(t *testing.T) {
 func TestUnregister_PersistsToDisk(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -43,7 +58,7 @@ func TestUnregister_PersistsToDisk(t *testing.T) {
 		t.Fatalf("Unregister failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -55,7 +70,7 @@ func TestUnregister_PersistsToDisk(t *testing.T) {
 func TestUpdateStatus_PersistsToDisk(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1", Status: SessionActive}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -63,7 +78,7 @@ func TestUpdateStatus_PersistsToDisk(t *testing.T) {
 		t.Fatalf("UpdateStatus failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -79,7 +94,7 @@ func TestUpdateStatus_PersistsToDisk(t *testing.T) {
 func TestUpdateHeartbeat_PersistsToDisk(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -96,7 +111,7 @@ func TestUpdateHeartbeat_PersistsToDisk(t *testing.T) {
 		t.Fatalf("UpdateHeartbeat failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -113,7 +128,7 @@ func TestUpdateHeartbeat_PersistsToDisk(t *testing.T) {
 func TestUpdateStatus_ErroredPersists(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1", Status: SessionActive}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -121,7 +136,7 @@ func TestUpdateStatus_ErroredPersists(t *testing.T) {
 		t.Fatalf("UpdateStatus(SessionErrored) failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -144,7 +159,7 @@ func TestUpdateStatus_ErroredPersists(t *testing.T) {
 func TestUpdateSessionMetadata_PersistsAndRefreshes(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{
 		ID:          "s1",
 		Environment: map[string]string{"mode": "default"},
@@ -165,7 +180,7 @@ func TestUpdateSessionMetadata_PersistsAndRefreshes(t *testing.T) {
 		t.Fatalf("UpdateSessionMetadata failed: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -187,13 +202,13 @@ func TestUpdateSessionMetadata_PersistsAndRefreshes(t *testing.T) {
 func TestUpdateSessionMetadata_MissingSession(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	err := r.UpdateSessionMetadata("does-not-exist", map[string]string{"k": "v"})
 	if err == nil {
 		t.Fatalf("expected error for missing session, got nil")
 	}
-	if len(r.sessions) != 0 {
-		t.Fatalf("registry should remain empty, got %d entries", len(r.sessions))
+	if got := r.List(); len(got) != 0 {
+		t.Fatalf("registry should remain empty, got %d entries", len(got))
 	}
 }
 
@@ -203,25 +218,21 @@ func TestUpdateSessionMetadata_MissingSession(t *testing.T) {
 func TestUnregister_MissingSessionIsNoOp(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := &SessionRegistry{
-		sessions: make(map[string]*SessionInfo),
-	}
+	r := freshRegistry(t)
 
 	if err := r.Unregister("does-not-exist"); err != nil {
 		t.Fatalf("Unregister of missing session should return nil, got: %v", err)
 	}
 
-	if len(r.sessions) != 0 {
-		t.Fatalf("registry should remain empty, got %d entries", len(r.sessions))
+	if got := r.List(); len(got) != 0 {
+		t.Fatalf("registry should remain empty, got %d entries", len(got))
 	}
 }
 
 func TestUnregister_ExistingSessionRemoves(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := &SessionRegistry{
-		sessions: make(map[string]*SessionInfo),
-	}
+	r := freshRegistry(t)
 
 	if err := r.Register(&SessionInfo{ID: "abc"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
@@ -231,7 +242,7 @@ func TestUnregister_ExistingSessionRemoves(t *testing.T) {
 		t.Fatalf("Unregister of existing session failed: %v", err)
 	}
 
-	if _, exists := r.sessions["abc"]; exists {
+	if _, err := r.Get("abc"); err == nil {
 		t.Fatalf("session abc should have been removed")
 	}
 }
@@ -239,7 +250,7 @@ func TestUnregister_ExistingSessionRemoves(t *testing.T) {
 func TestUnregister_IdempotentOnDoubleCall(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := &SessionRegistry{sessions: make(map[string]*SessionInfo)}
+	r := freshRegistry(t)
 
 	if err := r.Register(&SessionInfo{ID: "abc"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
@@ -257,7 +268,7 @@ func TestUnregister_IdempotentOnDoubleCall(t *testing.T) {
 func TestCleanupInactive_PersistsToDisk(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "s1"}); err != nil {
 		t.Fatalf("Register s1 failed: %v", err)
 	}
@@ -267,8 +278,12 @@ func TestCleanupInactive_PersistsToDisk(t *testing.T) {
 
 	// Force LastSeenAt far into the past so the timeout fires.
 	past := time.Now().Add(-1 * time.Hour)
-	r.sessions["s1"].LastSeenAt = past
-	r.sessions["s2"].LastSeenAt = past
+	if err := r.setLastSeenForTest("s1", past); err != nil {
+		t.Fatalf("backdate s1: %v", err)
+	}
+	if err := r.setLastSeenForTest("s2", past); err != nil {
+		t.Fatalf("backdate s2: %v", err)
+	}
 
 	expired, err := r.CleanupInactive(1 * time.Nanosecond)
 	if err != nil {
@@ -278,7 +293,7 @@ func TestCleanupInactive_PersistsToDisk(t *testing.T) {
 		t.Fatalf("expected 2 expired sessions, got %d (%v)", len(expired), expired)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -293,7 +308,7 @@ func TestCleanupInactive_PersistsToDisk(t *testing.T) {
 func TestReaper_ReapsInactiveSessions(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := NewForTesting()
+	r := newForTestingT(t)
 
 	// Seed a recent session.
 	if err := r.Register(&SessionInfo{ID: "fresh"}); err != nil {
@@ -304,9 +319,9 @@ func TestReaper_ReapsInactiveSessions(t *testing.T) {
 	if err := r.Register(&SessionInfo{ID: "stale"}); err != nil {
 		t.Fatalf("Register stale failed: %v", err)
 	}
-	r.mu.Lock()
-	r.sessions["stale"].LastSeenAt = time.Now().Add(-2 * DefaultTimeout)
-	r.mu.Unlock()
+	if err := r.setLastSeenForTest("stale", time.Now().Add(-2*DefaultTimeout)); err != nil {
+		t.Fatalf("backdate stale: %v", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -342,12 +357,12 @@ func TestIntegration_SessionLifecycleAcrossRestart(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
 	// Step 1: register on a fresh registry, prove it lands on disk.
-	r1 := NewForTesting()
+	r1 := newForTestingT(t)
 	if err := r1.Register(&SessionInfo{ID: "s1", ProfileID: "p1"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
 
-	r2 := NewForTesting()
+	r2 := newForTestingT(t)
 	if err := r2.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk r2 failed: %v", err)
 	}
@@ -361,11 +376,13 @@ func TestIntegration_SessionLifecycleAcrossRestart(t *testing.T) {
 	if err := r1.UpdateHeartbeat("s1"); err != nil {
 		t.Fatalf("UpdateHeartbeat failed: %v", err)
 	}
-	r1.mu.RLock()
-	expectedSeen := r1.sessions["s1"].LastSeenAt
-	r1.mu.RUnlock()
+	current, err := r1.Get("s1")
+	if err != nil {
+		t.Fatalf("Get s1 from r1 after heartbeat: %v", err)
+	}
+	expectedSeen := current.LastSeenAt
 
-	r3 := NewForTesting()
+	r3 := newForTestingT(t)
 	if err := r3.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk r3 failed: %v", err)
 	}
@@ -379,9 +396,9 @@ func TestIntegration_SessionLifecycleAcrossRestart(t *testing.T) {
 	}
 
 	// Step 3: backdate s1 LastSeenAt and reap.
-	r1.mu.Lock()
-	r1.sessions["s1"].LastSeenAt = time.Now().Add(-31 * time.Minute)
-	r1.mu.Unlock()
+	if err := r1.setLastSeenForTest("s1", time.Now().Add(-31*time.Minute)); err != nil {
+		t.Fatalf("backdate s1: %v", err)
+	}
 
 	expired, err := r1.CleanupInactive(30 * time.Minute)
 	if err != nil {
@@ -393,7 +410,7 @@ func TestIntegration_SessionLifecycleAcrossRestart(t *testing.T) {
 
 	// Step 4: a fresh registry must NOT see s1 — proves CleanupInactive
 	// auto-persists removals.
-	r4 := NewForTesting()
+	r4 := newForTestingT(t)
 	if err := r4.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk r4 failed: %v", err)
 	}
@@ -409,7 +426,7 @@ func TestIntegration_SessionLifecycleAcrossRestart(t *testing.T) {
 func TestIntegration_ErroredStatePersistsAcrossRestart(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r1 := NewForTesting()
+	r1 := newForTestingT(t)
 	if err := r1.Register(&SessionInfo{ID: "s1", ProfileID: "p1", Status: SessionActive}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -417,7 +434,7 @@ func TestIntegration_ErroredStatePersistsAcrossRestart(t *testing.T) {
 		t.Fatalf("UpdateStatus(SessionErrored) failed: %v", err)
 	}
 
-	r2 := NewForTesting()
+	r2 := newForTestingT(t)
 	if err := r2.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -440,7 +457,7 @@ func TestIntegration_ErroredStatePersistsAcrossRestart(t *testing.T) {
 func TestIntegration_ConcurrentUnregisterIsIdempotentAndPersistent(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := NewForTesting()
+	r := newForTestingT(t)
 	if err := r.Register(&SessionInfo{ID: "s1", ProfileID: "p1"}); err != nil {
 		t.Fatalf("Register failed: %v", err)
 	}
@@ -463,14 +480,11 @@ func TestIntegration_ConcurrentUnregisterIsIdempotentAndPersistent(t *testing.T)
 		t.Errorf("concurrent Unregister returned error: %v", err)
 	}
 
-	r.mu.RLock()
-	n := len(r.sessions)
-	r.mu.RUnlock()
-	if n != 0 {
-		t.Fatalf("expected empty registry, got %d entries", n)
+	if got := r.List(); len(got) != 0 {
+		t.Fatalf("expected empty registry, got %d entries", len(got))
 	}
 
-	reloaded := NewForTesting()
+	reloaded := newForTestingT(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -482,10 +496,17 @@ func TestIntegration_ConcurrentUnregisterIsIdempotentAndPersistent(t *testing.T)
 func TestReaper_StopsOnContextCancel(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
+	// Open the kv store BEFORE sampling the baseline so any background
+	// goroutines spawned by modernc.org/sqlite at open time don't get
+	// charged against the reaper leak budget.
+	r := newForTestingT(t)
+	if err := r.SaveToDisk(); err != nil {
+		t.Fatalf("ensureStore via SaveToDisk: %v", err)
+	}
+
 	baseline := runtime.NumGoroutine()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	r := NewForTesting()
 	startReaper(ctx, r, 1*time.Millisecond)
 
 	// Give the goroutine a moment to start.
@@ -515,7 +536,7 @@ func TestReaper_StopsOnContextCancel(t *testing.T) {
 // when their LastSeenAt timestamp is older than the reaper timeout.
 func TestCleanupInactive_SkipsErroredSessions(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
-	r := NewForTesting()
+	r := newForTestingT(t)
 
 	// Register two sessions with stale LastSeenAt, one errored and one not.
 	past := time.Now().Add(-1 * time.Hour)
@@ -529,10 +550,12 @@ func TestCleanupInactive_SkipsErroredSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Backdate both.
-	r.mu.Lock()
-	r.sessions["stale-active"].LastSeenAt = past
-	r.sessions["stale-errored"].LastSeenAt = past
-	r.mu.Unlock()
+	if err := r.setLastSeenForTest("stale-active", past); err != nil {
+		t.Fatalf("backdate stale-active: %v", err)
+	}
+	if err := r.setLastSeenForTest("stale-errored", past); err != nil {
+		t.Fatalf("backdate stale-errored: %v", err)
+	}
 
 	expired, err := r.CleanupInactive(30 * time.Minute)
 	if err != nil {
@@ -552,7 +575,7 @@ func TestCleanupInactive_SkipsErroredSessions(t *testing.T) {
 func TestSessionType_DefaultsToStandardAndPersists(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
 
-	r := freshRegistry()
+	r := freshRegistry(t)
 	if err := r.Register(&SessionInfo{ID: "std", ProfileID: "p1"}); err != nil {
 		t.Fatalf("Register std: %v", err)
 	}
@@ -560,7 +583,7 @@ func TestSessionType_DefaultsToStandardAndPersists(t *testing.T) {
 		t.Fatalf("Register voice: %v", err)
 	}
 
-	reloaded := freshRegistry()
+	reloaded := freshRegistry(t)
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk: %v", err)
 	}
@@ -583,7 +606,7 @@ func TestSessionType_DefaultsToStandardAndPersists(t *testing.T) {
 // TestListByType filters sessions by SessionType.
 func TestListByType(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", t.TempDir())
-	r := NewForTesting()
+	r := newForTestingT(t)
 
 	if err := r.Register(&SessionInfo{ID: "a", ProfileID: "p1"}); err != nil {
 		t.Fatal(err)
