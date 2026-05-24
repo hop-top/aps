@@ -4,41 +4,32 @@ import (
 	"fmt"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	kittui "hop.top/kit/go/console/tui"
 
 	"hop.top/aps/internal/styles"
 )
 
-// View composes screens via hop.top/kit/go/console/tui primitives:
-// kittui.List manages the visible slice for every list screen,
-// kittui.NewModel-equivalent layout (header/footer/main) is supplied by
-// the kitFrame field on Model. This file no longer hand-rolls scrolling
-// or row layout — only state-specific content composition remains.
-func (m Model) View() tea.View {
+// Render satisfies kit's AppRenderer interface. AppShell calls it once
+// per frame with the main-region size (terminal size minus header /
+// footer). Per-screen composition stays here; chrome (header / footer /
+// quit keymap) is owned by the shell.
+func (m Model) Render(width, height int) string {
 	if m.err != nil {
-		v := tea.NewView(fmt.Sprintf("Error: %v\nPress q to quit.", m.err))
-		v.AltScreen = true
-		return v
+		return fmt.Sprintf("Error: %v\nPress q to quit.", m.err)
 	}
-
-	var content string
 	switch m.state {
 	case StateProfileList:
-		content = renderListScreen("Select Profile",
-			profileItemsView(m), "(q to quit)")
+		return renderListScreen("Select Profile",
+			profileItemsView(m, width, height), "(q to quit)")
 	case StateProfileDetail:
-		content = renderProfileDetail(m)
+		return renderProfileDetail(m)
 	case StateCapabilityList:
-		content = renderCapabilityScreen(m)
+		return renderCapabilityScreen(m, width, height)
 	case StateActionList:
-		content = renderListScreen("Select Action",
-			actionItemsView(m), "(esc to back, q to quit)")
+		return renderListScreen("Select Action",
+			actionItemsView(m, width, height), "(esc to back, q to quit)")
 	}
-
-	v := tea.NewView(content)
-	v.AltScreen = true
-	return v
+	return ""
 }
 
 // renderListScreen composes a titled list screen using a pre-rendered
@@ -53,25 +44,25 @@ func renderListScreen(title, listView, footer string) string {
 	return s.String()
 }
 
-func profileItemsView(m Model) string {
+func profileItemsView(m Model, width, height int) string {
 	items := make([]kittui.Item, 0, len(m.profiles))
 	for i, p := range m.profiles {
 		items = append(items, profileListItem{id: p, selected: i == m.selectedProfile})
 	}
-	list := kittui.NewList(maxListHeight(len(items), m.height)).SetItems(items)
-	return list.View(m.width)
+	list := kittui.NewList(maxListHeight(len(items), height)).SetItems(items)
+	return list.View(width)
 }
 
-func actionItemsView(m Model) string {
+func actionItemsView(m Model, width, height int) string {
 	items := make([]kittui.Item, 0, len(m.actions))
 	for i, a := range m.actions {
 		items = append(items, actionListItem{action: a, selected: i == m.selectedAction})
 	}
-	list := kittui.NewList(maxListHeight(len(items), m.height)).SetItems(items)
-	return list.View(m.width)
+	list := kittui.NewList(maxListHeight(len(items), height)).SetItems(items)
+	return list.View(width)
 }
 
-func renderCapabilityScreen(m Model) string {
+func renderCapabilityScreen(m Model, width, height int) string {
 	var s strings.Builder
 	profileName := ""
 	if m.profileDetail != nil {
@@ -85,8 +76,8 @@ func renderCapabilityScreen(m Model) string {
 	for i, c := range m.capabilities {
 		items = append(items, capabilityListItem{cap: c, selected: i == m.selectedCap})
 	}
-	list := kittui.NewList(maxListHeight(len(items), m.height)).SetItems(items)
-	s.WriteString(list.View(m.width))
+	list := kittui.NewList(maxListHeight(len(items), height)).SetItems(items)
+	s.WriteString(list.View(width))
 
 	enabled, disabled := 0, 0
 	for _, c := range m.capabilities {
@@ -145,16 +136,16 @@ func renderProfileDetail(m Model) string {
 }
 
 // maxListHeight clamps the list visible height so it never exceeds the
-// terminal or the item count. With width/height unset (e.g. unit tests)
+// main region or the item count. With height unset (e.g. unit tests)
 // it falls back to a sane default.
-func maxListHeight(n, termHeight int) int {
+func maxListHeight(n, mainHeight int) int {
 	if n < 1 {
 		return 1
 	}
-	if termHeight <= 0 {
+	if mainHeight <= 0 {
 		return n
 	}
-	avail := termHeight - 6 // title + footer + margins
+	avail := mainHeight - 4 // title + spacers + footer hint
 	if avail < 1 {
 		avail = 1
 	}

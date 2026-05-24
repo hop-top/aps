@@ -274,7 +274,10 @@ ID followed by a command to run that command under the selected profile.`
 	rootCmd.Run = func(cmd *cobra.Command, args []string) {
 		// If no args, launch TUI
 		if len(args) == 0 {
-			tui.Run()
+			if err := tui.Run(cmd.Context(), root); err != nil {
+				fmt.Fprintf(os.Stderr, "tui: %v\n", err)
+				os.Exit(1)
+			}
 			return
 		}
 
