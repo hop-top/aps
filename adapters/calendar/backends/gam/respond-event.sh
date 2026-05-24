@@ -19,7 +19,8 @@ case "$RESPONSE" in
   *)
     echo "respond-event: invalid response '$RESPONSE'" \
       "(expected accepted|declined|tentative)" >&2
-    exit 2
+    # EX_USAGE per BSD sysexits — caller passed an invalid argument.
+    exit 64
     ;;
 esac
 

@@ -20,10 +20,20 @@ END="${CAL_END:?missing CAL_END}"
 # gam's calendar info verb returns free/busy windows for a user
 # given a time range. Iterate attendees.
 IFS=',' read -ra EMAIL_LIST <<< "$EMAILS"
+failures=0
 for email in "${EMAIL_LIST[@]}"; do
-  trimmed="${email// /}"
+  trimmed="${email#"${email%%[![:space:]]*}"}"
+  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
   echo "=== $trimmed ==="
-  "$GAM" user "$USER" show calendar "$trimmed" \
-    freebusy timemin "$START" timemax "$END" || \
-    echo "(no admin access or no events for $trimmed)"
+  if ! "$GAM" user "$USER" show calendar "$trimmed" freebusy timemin "$START" timemax "$END"; then
+    echo "free-busy: gam failed for $trimmed (no admin access, network error, or DWD scope missing)" >&2
+    failures=$((failures + 1))
+  fi
 done
+
+if [ "$failures" -gt 0 ]; then
+  if [ "$failures" -eq "${#EMAIL_LIST[@]}" ]; then
+    exit 1
+  fi
+  exit 2
+fi

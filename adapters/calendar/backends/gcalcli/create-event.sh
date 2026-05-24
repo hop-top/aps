@@ -27,7 +27,14 @@ ARGS=(add --title "$SUMMARY" --when "$START" --duration_end "$END")
 if [ -n "${CAL_ATTENDEES:-}" ]; then
   IFS=',' read -ra ATTS <<< "$CAL_ATTENDEES"
   for a in "${ATTS[@]}"; do
-    ARGS+=(--email "${a// /}")
+    # Trim leading/trailing whitespace. If the entry is display-name
+    # form `Jane Doe <jane@x.com>`, extract just the bracketed email.
+    trimmed="${a#"${a%%[![:space:]]*}"}"
+    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+    if [[ "$trimmed" =~ \<([^>]+)\> ]]; then
+      trimmed="${BASH_REMATCH[1]}"
+    fi
+    ARGS+=(--email "$trimmed")
   done
 fi
 

@@ -18,10 +18,13 @@ case "$RESPONSE" in
   *)
     echo "respond-event: invalid response '$RESPONSE'" \
       "(expected accepted|declined|tentative)" >&2
-    exit 2
+    # EX_USAGE per BSD sysexits — caller passed an invalid argument.
+    exit 64
     ;;
 esac
 
 echo "respond-event: not supported by gcalcli; switch backend to" \
   "gam or use the Google Calendar web UI (event $EVENT_ID)" >&2
+# Exit 2 = "backend cannot perform this action"; distinct from 64
+# (bad input) and 127 (gcalcli not installed).
 exit 2

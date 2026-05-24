@@ -8,6 +8,10 @@
 # otherwise CAL_CALENDAR is taken as a calendar id (e.g.
 # "team-x@group.calendar.google.com") that the gam admin project
 # has access to.
+#
+# Output: `formatjson` emits newline-delimited JSON. gam's default
+# human-formatted text would silently produce garbage when piped
+# through jq downstream.
 set -euo pipefail
 
 GAM="${GAM_BIN:-gam}"
@@ -21,4 +25,4 @@ if [ "$CALENDAR" = "primary" ]; then
 fi
 
 "$GAM" calendar "$CALENDAR" showevents \
-  timemin "$START" timemax "$END"
+  timemin "$START" timemax "$END" formatjson

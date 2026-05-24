@@ -18,10 +18,23 @@ START="${CAL_START:?missing CAL_START}"
 END="${CAL_END:?missing CAL_END}"
 
 IFS=',' read -ra EMAIL_LIST <<< "$EMAILS"
+failures=0
 for email in "${EMAIL_LIST[@]}"; do
-  trimmed="${email// /}"
+  trimmed="${email#"${email%%[![:space:]]*}"}"
+  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
   echo "=== $trimmed ==="
-  "$GCALCLI" --calendar "$trimmed" agenda "$START" "$END" \
-    --details all || \
-    echo "(no access or no events for $trimmed)"
+  if ! "$GCALCLI" --calendar "$trimmed" agenda "$START" "$END" --details all; then
+    echo "free-busy: gcalcli failed for $trimmed (no access, network error, or auth expired)" >&2
+    failures=$((failures + 1))
+  fi
 done
+
+# Partial-failure signal: 0 = all queries succeeded, 2 = at least one
+# attendee was unreachable. Callers parsing stdout should re-check
+# stderr for the failing addresses.
+if [ "$failures" -gt 0 ]; then
+  if [ "$failures" -eq "${#EMAIL_LIST[@]}" ]; then
+    exit 1
+  fi
+  exit 2
+fi

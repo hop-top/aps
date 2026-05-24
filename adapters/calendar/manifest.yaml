@@ -3,6 +3,7 @@ kind: adapter
 name: calendar
 type: scheduler
 strategy: script
+env_prefix: CAL
 description: >
   Calendar adapter for agent profiles. Dispatches list/free-busy/
   create/update/delete/respond actions to a pluggable backend

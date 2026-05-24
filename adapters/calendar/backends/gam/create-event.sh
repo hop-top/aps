@@ -40,7 +40,12 @@ fi
 if [ -n "${CAL_ATTENDEES:-}" ]; then
   IFS=',' read -ra ATTS <<< "$CAL_ATTENDEES"
   for a in "${ATTS[@]}"; do
-    ARGS+=(attendee "${a// /}")
+    trimmed="${a#"${a%%[![:space:]]*}"}"
+    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+    if [[ "$trimmed" =~ \<([^>]+)\> ]]; then
+      trimmed="${BASH_REMATCH[1]}"
+    fi
+    ARGS+=(attendee "$trimmed")
   done
 fi
 

@@ -7,9 +7,13 @@
 # workspace OAuth client, so it lists calendars the gam project has
 # domain-wide delegation to read for the target user — not just
 # calendars the user themselves subscribes to.
+#
+# Output: `formatjson` emits newline-delimited JSON. gam's default
+# human-formatted text would silently produce garbage when piped
+# through jq downstream.
 set -euo pipefail
 
 GAM="${GAM_BIN:-gam}"
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 
-"$GAM" user "$USER" show calendars
+"$GAM" user "$USER" show calendars formatjson
