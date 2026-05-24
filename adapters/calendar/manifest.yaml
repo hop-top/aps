@@ -1,0 +1,136 @@
+api_version: v1
+kind: adapter
+name: calendar
+type: scheduler
+strategy: script
+env_prefix: CAL
+description: >
+  Calendar adapter for agent profiles. Dispatches list/free-busy/
+  create/update/delete/respond actions to a pluggable backend
+  (gcalcli for per-user Google Calendar, gam for Google Workspace
+  admin operations).
+
+  Install gcalcli via `pip install gcalcli` and authorize per-profile;
+  install gam from https://github.com/GAM-team/GAM and configure with
+  domain admin credentials. The selected backend is invoked with
+  profile-scoped env (APS_EMAIL_FROM, APS_EMAIL_ACCOUNT).
+config:
+  backend: gcalcli
+  account: primary
+  actions:
+    - name: list-calendars
+      description: List calendars the profile can access
+      script: backends/{{backend}}/list-calendars.sh
+      input: []
+    - name: list-events
+      description: List events in a time range
+      script: backends/{{backend}}/list-events.sh
+      input:
+        - name: calendar
+          required: false
+          default: primary
+        - name: start
+          required: true
+          description: ISO 8601 start (e.g. 2026-05-22T00:00:00Z)
+        - name: end
+          required: true
+          description: ISO 8601 end
+    - name: free-busy
+      description: Query free/busy windows for one or more attendees
+      script: backends/{{backend}}/free-busy.sh
+      input:
+        - name: emails
+          required: true
+          description: Comma-separated attendee emails
+        - name: start
+          required: true
+          description: ISO 8601 start
+        - name: end
+          required: true
+          description: ISO 8601 end
+    - name: create-event
+      description: Create a calendar event
+      script: backends/{{backend}}/create-event.sh
+      input:
+        - name: calendar
+          required: false
+          default: primary
+        - name: summary
+          required: true
+          description: Event title
+        - name: start
+          required: true
+          description: ISO 8601 start (date-only when all_day=true)
+        - name: end
+          required: true
+          description: ISO 8601 end
+        - name: all_day
+          required: false
+          description: "true|false; treat start/end as dates"
+        - name: transparency
+          required: false
+          description: "opaque (busy) | transparent (free)"
+        - name: attendees
+          required: false
+          description: Comma-separated attendee emails
+        - name: location
+          required: false
+        - name: recurrence
+          required: false
+          description: RFC 5545 RRULE string
+        - name: description
+          required: false
+    - name: update-event
+      description: Update an existing event (only passed fields change)
+      script: backends/{{backend}}/update-event.sh
+      input:
+        - name: calendar
+          required: false
+          default: primary
+        - name: event_id
+          required: true
+        - name: summary
+          required: false
+        - name: start
+          required: false
+        - name: end
+          required: false
+        - name: all_day
+          required: false
+        - name: transparency
+          required: false
+        - name: attendees
+          required: false
+        - name: location
+          required: false
+        - name: recurrence
+          required: false
+        - name: description
+          required: false
+    - name: delete-event
+      description: Delete an event by id
+      script: backends/{{backend}}/delete-event.sh
+      input:
+        - name: calendar
+          required: false
+          default: primary
+        - name: event_id
+          required: true
+        - name: send_notifications
+          required: false
+          default: "true"
+          description: "true|false; notify attendees of cancellation"
+    - name: respond-event
+      description: Respond to an invitation (accept/decline/tentative)
+      script: backends/{{backend}}/respond-event.sh
+      input:
+        - name: calendar
+          required: false
+          default: primary
+        - name: event_id
+          required: true
+        - name: response
+          required: true
+          description: "accepted | declined | tentative"
+        - name: comment
+          required: false

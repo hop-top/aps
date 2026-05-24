@@ -10,6 +10,7 @@ APS categorizes adapters into functional types. These types determine default be
 | Type | Key | Description |
 | :--- | :--- | :--- |
 | **Messenger** | `messenger` | Messaging platforms (Telegram, Discord, Slack, etc.). |
+| **Scheduler** | `scheduler` | Calendar / time-block surfaces (Google Calendar, CalDAV). |
 | **Protocol** | `protocol` | Agent communication protocols (A2A, ACP, Webhooks). |
 | **Actuator** | `actuator` | Output/Action triggers (Hardware, Timers, local CLIs). |
 | **Sense** | `sense` | Input/Sensor data (Camera, Microphone, Web scrapers). |
