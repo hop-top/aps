@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
 )
@@ -11,7 +12,6 @@ import (
 // NewToggleCmd creates the observability toggle command.
 func NewToggleCmd() *cobra.Command {
 	var (
-		profileID    string
 		enabled      string
 		exporter     string
 		endpoint     string
@@ -33,6 +33,14 @@ Examples:
   aps o11y toggle --profile worker --exporter=otlp --endpoint=localhost:4317
   aps otel toggle --profile worker --exporter=stdout --sampling-rate=0.5`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --profile is a persistent global (declared in root.go
+			// Globals). Read it from the inherited flag set instead of
+			// redeclaring as a local (signature validator local-globals
+			// check, T-0648).
+			profileID, _ := cmd.Flags().GetString("profile")
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -62,12 +70,15 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&enabled, "enabled", "", "Enable (on), disable (off), or toggle (omit)")
 	cmd.Flags().StringVar(&exporter, "exporter", "stdout", "Exporter type (otlp, stdout, none)")
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OTLP collector endpoint (e.g. localhost:4317)")
 	cmd.Flags().Float64Var(&samplingRate, "sampling-rate", 1.0, "Trace sampling rate (0.0–1.0)")
+	// Toggling sets capability + observability config on the profile —
+	// local write. Re-running with the same --enabled state is a no-op,
+	// hence idempotent yes.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

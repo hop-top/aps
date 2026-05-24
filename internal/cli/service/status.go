@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/core"
@@ -44,6 +45,8 @@ func newStatusCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&opts.baseURL, "base-url", opts.baseURL, "Public base URL used to report reachable webhook URLs")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
@@ -84,6 +87,12 @@ func newTestCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.baseURL, "base-url", opts.baseURL, "Public base URL to probe")
 	cmd.Flags().BoolVar(&opts.probe, "probe", false, "POST a synthetic message payload to the webhook URL")
 	cmd.Flags().DurationVar(&opts.timeout, "timeout", opts.timeout, "Webhook probe timeout")
+	// Validates a service config; with --probe POSTs an outbound HTTP
+	// request, but the local effect on aps state is read-only. Classify
+	// as Read + Conditional (idempotent re-runs without --probe; with
+	// --probe each call hits the upstream webhook).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	return cmd
 }
 
@@ -126,11 +135,14 @@ interrupted.`,
 	}
 	cmd.Flags().StringVar(&opts.addr, "addr", opts.addr, "Address to listen on")
 	cmd.Flags().StringVar(&opts.baseURL, "base-url", opts.baseURL, "Public base URL used to report reachable webhook URLs")
+	// Long-running daemon — interactive band per kit's 6-tier ladder.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 
 func newStopCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "stop <service-id>",
 		Short: "Show how to stop a foreground service server",
 		Args:  cobra.ExactArgs(1),
@@ -143,6 +155,10 @@ func newStopCmd() *cobra.Command {
 			return nil
 		},
 	}
+	// `stop` here only prints guidance — no state mutation.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 type statusOptions struct {
