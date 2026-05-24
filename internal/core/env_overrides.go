@@ -57,7 +57,7 @@ func parseEnvFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("--env-file %q: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var out []string
 	scanner := bufio.NewScanner(f)

@@ -283,11 +283,12 @@ func runCommandWithProcessIsolation(profile *Profile, command string, args []str
 
 // dedupEnvLastWins collapses duplicate KEY entries in a KEY=VALUE slice,
 // preserving the last occurrence per key and maintaining the relative order
-// of those last occurrences.
+// of those last occurrences. Entries lacking '=' or with an empty key are
+// passed through untouched.
 func dedupEnvLastWins(env []string) []string {
 	lastIdx := make(map[string]int, len(env))
 	for i, e := range env {
-		k, _, ok := splitEnvKV(e)
+		k, ok := envKey(e)
 		if !ok {
 			continue
 		}
@@ -295,7 +296,7 @@ func dedupEnvLastWins(env []string) []string {
 	}
 	out := make([]string, 0, len(lastIdx))
 	for i, e := range env {
-		k, _, ok := splitEnvKV(e)
+		k, ok := envKey(e)
 		if !ok {
 			out = append(out, e)
 			continue
@@ -307,12 +308,12 @@ func dedupEnvLastWins(env []string) []string {
 	return out
 }
 
-func splitEnvKV(e string) (key, val string, ok bool) {
+func envKey(e string) (string, bool) {
 	idx := strings.IndexByte(e, '=')
 	if idx <= 0 {
-		return "", "", false
+		return "", false
 	}
-	return e[:idx], e[idx+1:], true
+	return e[:idx], true
 }
 
 // RunAction executes a defined action using configured isolation

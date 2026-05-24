@@ -4,6 +4,25 @@ All notable changes to `aps` are documented in this file.
 
 ## Unreleased
 
+### Added — per-invocation env overrides for `aps run` (track: `aps-run-env-flag`, T-0576..T-0580)
+
+- `--env KEY=VAL` (repeatable) and `--env-file PATH` (repeatable) flags
+  on `aps run` for per-invocation environment overrides.
+- Precedence (lowest → highest, last wins on duplicate keys): parent
+  `os.Environ()` → profile-injected vars → `--env-file` entries (flag
+  order) → `--env` entries (flag order).
+- Validation: `--env` requires `KEY=VAL` with a shell-safe key;
+  `--env-file` is fatal on missing path; malformed dotenv lines fail
+  with the file + line number.
+- Dotenv parser accepts blank lines, `#` comments, optional `export`
+  prefix, and matching single/double quotes around values. No shell
+  escape expansion.
+- Redaction guarantee: override values flow through the existing child
+  stdout/stderr redacting boundary (story 058), so an `OPENAI_API_KEY`
+  passed via `--env` never reaches aps-side logs even though the child
+  process legitimately receives the unredacted value. See
+  [docs/stories/064-run-env-overrides.md](docs/stories/064-run-env-overrides.md).
+
 ### Added — aps-chat messenger bridge (track: `aps-chat`, T-0586/T-0424/T-0425)
 
 **Added**
