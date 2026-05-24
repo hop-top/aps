@@ -31,6 +31,16 @@ func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List adapter devices",
+		Long: `Print one row per adapter device known to aps across both
+global and profile scopes, with name, type, runtime status, owning
+workspace (profile id or "global"), paired-device count, and
+last-seen timestamp. Output respects the root --format flag
+(table | json | yaml). Local --type and --status filters select
+by adapter type and runtime state respectively; --workspace
+inherits from the root global and filters by profile id (or the
+literal "global" for global-scope adapters).
+
+Read-only: no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --workspace from kit-managed global; the local
 			// `--workspace` flag would shadow the persistent one declared

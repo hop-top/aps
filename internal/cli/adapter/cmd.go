@@ -10,6 +10,18 @@ func NewAdapterCmd() *cobra.Command {
 		Use:     "adapter",
 		Aliases: []string{"adapters"},
 		Short:   "Manage adapters (messengers, protocols, mobile, desktop)",
+		Long: `Manage aps adapter devices — the external transports
+(messengers, protocols, mobile, desktop, sense, actuator) the
+runtime can talk to. Records live under $APS_DATA_PATH at either
+global or profile scope; subcommands cover the full lifecycle:
+create / start / stop / status / logs / list, the link parent
+(add | list | delete) for profile binding, mobile pairing
+(pair | approve | reject | revoke | pending), workspace device
+management (attach | detach | presence | permissions), and
+messenger-specific helpers (channels | test).
+
+aps messenger is a type-scoped shorthand for the messenger subset
+of this tree.`,
 	}
 	// T-0648 — adapter is an intermediate grouping node with depth-3
 	// leaves underneath (link/messenger/permissions subtrees); kit's

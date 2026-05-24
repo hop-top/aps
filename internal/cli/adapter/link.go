@@ -30,7 +30,25 @@ func newLinkAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <device>",
 		Short: "Link a device to a profile",
-		Args:  cobra.ExactArgs(1),
+		Long: `Attach an existing adapter device to a profile so the
+device participates in that profile's runtime. The link is
+recorded on the device record and (for messengers) augmented with
+channel-action mappings that route inbound messages to skills.
+The companion list/delete subcommands are aps adapter link list
+and aps adapter link delete.
+
+For messenger devices, --mapping channel=action populates the
+routing table (repeatable); --add-mapping and --remove-mapping
+mutate a single mapping on an existing link; --default-action sets
+the fallback for unmapped channels. Non-messenger devices ignore
+the mapping flags. --json emits the structured outcome.
+--profile and --dry-run inherit from the root globals; --profile
+is required.
+
+Mutates the local registry. Idempotent: re-linking an already-
+linked device is a no-op; messenger mapping flags act on the
+existing link when one is already present.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — --profile and --dry-run are kit-managed globals;
 			// read them via globals accessors instead of declaring local

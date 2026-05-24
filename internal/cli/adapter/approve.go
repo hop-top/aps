@@ -21,7 +21,22 @@ func newApproveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "approve <device-id>",
 		Short: "Approve a pending mobile device",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Flip a pending mobile device entry to "approved" in the
+profile's adapter registry. The device must have previously
+registered via the pairing flow (aps adapter pair) and currently
+sit in the pending state — list candidates with aps adapter
+pending.
+
+Pass a single <device-id> to approve one entry, or use --all to
+approve every pending device under the active profile. The --json
+flag emits a structured result; --quiet (inherited from root)
+suppresses the success line. --profile is inherited from the root
+global and is required.
+
+Mutates the local registry only. Idempotent: re-approving an
+already-approved device is a no-op. Dry-run is opted out because
+preview would only echo the device ID the user already passed.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := ""
 			if len(args) > 0 {

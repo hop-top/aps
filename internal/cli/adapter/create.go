@@ -26,7 +26,25 @@ func newCreateCmd() *cobra.Command {
 		Use:     "create <name>",
 		Aliases: []string{"new"},
 		Short:   "Create a new device",
-		Args:    cobra.ExactArgs(1),
+		Long: `Create a new aps adapter device entry under the active
+profile (or globally when no profile is set). The record lives in
+$APS_DATA_PATH/profiles/<profile>/adapters/<name>/ (or the global
+equivalent) and registers an external transport — messenger,
+protocol, mobile, desktop, sense, or actuator — that aps can talk
+to. The record holds the device's type, loading strategy
+(subprocess / script / builtin), and a manifest scaffold; it does
+NOT start the device — pair that with aps adapter start <name>.
+
+If --type is omitted the command launches an interactive huh prompt
+listing the implemented types; --strategy defaults to the type's
+canonical strategy when omitted. --json emits a structured result.
+--profile is inherited from the root global; no explicit flag is
+needed when the active profile is already set.
+
+Mints a new local record. Each invocation creates a fresh entry
+(not idempotent); dry-run is opted out because the prospective ID
+is exactly the <name> argument.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Interactive type selection when not provided via flag
 			if deviceType == "" {
