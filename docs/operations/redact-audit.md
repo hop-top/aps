@@ -57,18 +57,19 @@ Canonical wrapping helpers route through `logging.ApplyBytes`:
 | `writeError` | `internal/adapters/messenger/handler.go:970` |
 | `sendError` | `internal/adapters/agentprotocol/adapter.go:569` (Apply on message) |
 
-Unwrapped `json.NewEncoder(w).Encode(...)` callsites found:
+Unwrapped `json.NewEncoder(w).Encode(...)` callsites found (all
+RESOLVED in the redact follow-up — see "Deferred follow-up" below):
 
 | Site | Category | Disposition |
 |---|---|---|
-| `internal/core/webhook.go:95` | "no event mapping" 400 path | DEFERRED — file is owned by aps-job-runner-T-0471 worktree |
-| `internal/core/webhook.go:192` | fallback after `json.Marshal` failure inside the wrapper | DEFERRED (same owner; also fallback-on-error path, low blast radius) |
-| `internal/core/protocol/http_bridge.go:73, 175, 195` | bridge metadata + JSONRPC echo/error | DEFERRED — see follow-up task |
-| `internal/adapters/agentprotocol/adapter.go:419` | static "item stored successfully" message | DEFERRED — adapters/ owned by aps-job-runner-T-0471 |
-| `internal/adapters/agentprotocol/adapter.go:595` | fallback after `json.Marshal` failure inside `sendJSON` | DEFERRED (same owner; fallback path) |
-| `internal/adapters/agentprotocol/runs_advanced.go:41, 88` | "run started" + "not implemented" static messages | DEFERRED (same owner) |
-| `internal/adapters/messenger/handler.go:953, 980` | fallback after `json.Marshal` failure | DEFERRED (adapters/) |
-| `internal/adapters/messenger/handler.go:989` (`writeText`) | challenge handshakes (WhatsApp / Slack verification echo) | DEFERRED (adapters/, short alphanumeric echo, low leak risk) |
+| `internal/core/webhook.go:95` | "no event mapping" 400 path | RESOLVED — routed through `respondJSON` |
+| `internal/core/webhook.go:192` | fallback after `json.Marshal` failure inside the wrapper | RESOLVED — fallback now routes through `logging.NewWriter(w)` |
+| `internal/core/protocol/http_bridge.go:73, 175, 195` | bridge metadata + JSONRPC echo/error | RESOLVED — all three sites routed through new `writeBridgeJSON` helper |
+| `internal/adapters/agentprotocol/adapter.go:419` | static "item stored successfully" message | RESOLVED — routed through `a.sendJSON` |
+| `internal/adapters/agentprotocol/adapter.go:595` | fallback after `json.Marshal` failure inside `sendJSON` | RESOLVED — fallback routes through `logging.NewWriter(w)` |
+| `internal/adapters/agentprotocol/runs_advanced.go:41, 88` | "run started" + "not implemented" static messages | RESOLVED — both routed through `a.sendJSON` |
+| `internal/adapters/messenger/handler.go:953, 980` | fallback after `json.Marshal` failure | RESOLVED — fallbacks route through `logging.NewWriter(w)` |
+| `internal/adapters/messenger/handler.go:989` (`writeText`) | challenge handshakes (WhatsApp / Slack verification echo) | RESOLVED — wrapped via `logging.ApplyBytes` (text/plain; gosec G705 false positive nolint'd inline) |
 
 ### D. Persisted log files — VERIFIED COMPLETE for adapter subprocess, telemetry fixed in this PR
 
@@ -81,16 +82,17 @@ Unwrapped `json.NewEncoder(w).Encode(...)` callsites found:
 | Child process stdout/stderr in `aps run` | `internal/core/execution.go:30-35` |
 | Skills telemetry JSONL | `internal/skills/telemetry.go:148-149` (fixed in this PR) |
 
-Other on-disk writers reviewed:
+Other on-disk writers reviewed (all RESOLVED in the redact
+follow-up — see "Deferred follow-up" below):
 
 | Site | Category | Disposition |
 |---|---|---|
-| `internal/core/metrics.go:49` | usage events; `RecordUsage` currently has no production callers | DEFERRED — no live leak path |
-| `internal/core/messenger/audit.go:137` | capability-changes audit JSONL | DEFERRED (messenger; adapters/ owner) |
-| `internal/core/messenger/logging.go:198` | per-workspace message logs | DEFERRED (messenger; adapters/ owner) |
-| `internal/core/multidevice/offline_queue.go:75` | offline queue persistence | DEFERRED — sync events carry IDs not secrets |
-| `internal/core/multidevice/event_store.go:124` | multidevice event store | DEFERRED — same as above |
-| `internal/core/multidevice/manager.go:137` | multidevice manager state | DEFERRED — same |
+| `internal/core/metrics.go:49` | usage events; `TrackEvent` currently has no production callers | RESOLVED — wrapped via `logging.NewWriter(file)` before first caller |
+| `internal/core/messenger/audit.go:137` | capability-changes audit JSONL | RESOLVED — wrapped via `logging.NewWriter(f)` |
+| `internal/core/messenger/logging.go:198` | per-workspace message logs (`appendToFile`) | RESOLVED — wrapped via `logging.NewWriter(f)` |
+| `internal/core/multidevice/offline_queue.go:75` | offline queue persistence | RESOLVED — wrapped via `logging.NewWriter(f)` |
+| `internal/core/multidevice/event_store.go:124` | multidevice event store | RESOLVED — wrapped via `logging.NewWriter(f)` |
+| `internal/core/multidevice/manager.go:137` | multidevice manager state (`AuditLogger.Log`) | RESOLVED — wrapped via `logging.NewWriter(f)` |
 
 ## Bypass paths
 
@@ -139,13 +141,23 @@ Unit coverage: `internal/logging/redact_test.go::TestEnabled_EnvBypass`,
 ## Deferred follow-up
 
 All deferred gaps consolidated into one follow-up task on the
-`aps-redact-logs` track. The fixes are mechanical (route through an
+`aps-redact-logs` track. The fixes were mechanical (route through an
 existing wrapper or wrap the `os.OpenFile` target with
-`logging.NewWriter`); deferred only to avoid worktree collisions
+`logging.NewWriter`); deferred initially to avoid worktree collisions
 with `aps-job-runner-T-0471` (which owns `internal/core/webhook.go`,
 listener daemons, and `adapters/*`) and `aps-run-env-flag-T-0576`
 (which owns `cmd/`, `internal/core/execution.go`, and
 `internal/core/redact/`).
 
-See the follow-up tlc task on the `aps-redact-logs` track for the
-full callsite list and disposition.
+Resolution status: all 13 deferred sites wrapped. Inline disposition
+notes added to the tables in sections C and D above. One exemption
+required a `//nolint:gosec` annotation:
+
+- `internal/adapters/messenger/handler.go::writeText` — gosec G705
+  flagged the post-wrap `w.Write` as potential XSS because taint
+  analysis tracks the request-derived `body` string through the
+  redactor without recognising it as a sink-side sanitiser. Response
+  is `Content-Type: text/plain; charset=utf-8` so browser-side HTML
+  rendering does not apply; the redactor remains the operative
+  guarantee. Suppression scoped to the single line with a rationale
+  comment.

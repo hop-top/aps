@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/logging"
 )
 
 // AuditLogger records capability and configuration changes for messengers
@@ -145,7 +147,11 @@ func (a *AuditLogger) writeAuditEntry(entry map[string]any) error {
 	}
 	defer f.Close()
 
-	if _, err := f.Write(line); err != nil {
+	// Wrap the file in the redacting writer so audit entries that
+	// reference attacker-influenced fields (channel IDs, mapping
+	// targets) cannot persist raw secrets if a future entry adds a
+	// templated value.
+	if _, err := logging.NewWriter(f).Write(line); err != nil {
 		return &MessengerError{
 			Name:    "audit",
 			Message: "failed to write audit entry",

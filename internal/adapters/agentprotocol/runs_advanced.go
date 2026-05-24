@@ -148,8 +148,7 @@ func (a *AgentProtocolAdapter) handleRunsDelete(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(map[string]string{
+	a.sendJSON(w, http.StatusNotImplemented, map[string]string{
 		"message": "run deletion not yet implemented",
 	})
 }

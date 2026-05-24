@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/logging"
 )
 
 // WorkspaceMessageLogger writes structured JSONL logs for messenger activity.
@@ -194,6 +196,8 @@ func (l *WorkspaceMessageLogger) logDir() (string, error) {
 }
 
 // appendToFile opens a file in append mode (creating it if needed) and writes data.
+// The on-disk writer is wrapped via logging.NewWriter so message previews and
+// sender/channel metadata that may carry secrets are redacted at persistence.
 func appendToFile(path string, data []byte) error {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -201,6 +205,6 @@ func appendToFile(path string, data []byte) error {
 	}
 	defer f.Close()
 
-	_, err = f.Write(data)
+	_, err = logging.NewWriter(f).Write(data)
 	return err
 }

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"hop.top/aps/internal/logging"
 )
 
 // OfflineQueue stores workspace events locally when a device is offline.
@@ -83,7 +85,9 @@ func (q *OfflineQueue) Enqueue(event *WorkspaceEvent) error {
 		return fmt.Errorf("marshaling event: %w", err)
 	}
 
-	if _, err := f.Write(append(data, '\n')); err != nil {
+	// Wrap the file in the redacting writer so future payload fields
+	// that may carry secrets do not persist in the clear.
+	if _, err := logging.NewWriter(f).Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("writing to offline queue: %w", err)
 	}
 

@@ -950,7 +950,9 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.WriteHeader(status)
 	body, err := json.Marshal(data)
 	if err != nil {
-		json.NewEncoder(w).Encode(data)
+		// Fallback path: route the encoder through the redacting writer
+		// so a marshal failure cannot bypass the redaction guarantee.
+		_ = json.NewEncoder(logging.NewWriter(w)).Encode(data)
 		return
 	}
 	_, _ = w.Write(logging.ApplyBytes(body))
@@ -977,7 +979,11 @@ func writeError(w http.ResponseWriter, status int, message string) {
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]any{"error": http.StatusText(status), "code": status})
+		// Fallback path: route the encoder through the redacting writer
+		// so a marshal failure cannot bypass the redaction guarantee.
+		_ = json.NewEncoder(logging.NewWriter(w)).Encode(
+			map[string]any{"error": http.StatusText(status), "code": status},
+		)
 		return
 	}
 	_, _ = w.Write(logging.ApplyBytes(body))
@@ -986,7 +992,13 @@ func writeError(w http.ResponseWriter, status int, message string) {
 func writeText(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(status)
-	_, _ = w.Write([]byte(body))
+	// Used for WhatsApp / Slack URL-verification challenge echo. The
+	// challenge value comes from request query/body so we route it
+	// through the redactor to keep this surface consistent with the
+	// other writers in this file. Response is text/plain (no HTML
+	// rendering) so the gosec G705 XSS heuristic is a false positive.
+	//nolint:gosec // G705: text/plain response, redactor sanitizes input
+	_, _ = w.Write(logging.ApplyBytes([]byte(body)))
 }
 
 func (h *Handler) serviceValidator() *msgtypes.ServiceValidator {
