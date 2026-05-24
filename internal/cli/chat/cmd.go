@@ -36,6 +36,9 @@ func NewCommand() *cobra.Command {
 	// LLM-call boundary lives inside the engine layer.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(cmd)
 	// T-0656 — chat is an interactive REPL that streams LLM turns;
 	// there is no batch boundary on which a preview could be scoped.
 	kitcli.OptOutDryRun(cmd)

@@ -46,6 +46,9 @@ func newUpgradeCmd() *cobra.Command {
 	// location; repeated calls converge once at latest.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(cmd)
 	// T-0656 — upgrade downloads and replaces the running binary;
 	// preview would have to discover the latest release version, which
 	// is the same network call the real upgrade performs.

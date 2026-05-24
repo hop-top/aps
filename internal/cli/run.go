@@ -75,6 +75,9 @@ func init() {
 	// command, so the kit-level tag is conditional.
 	kitcli.SetSideEffect(runCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(runCmd, kitcli.IdempotencyConditional)
+	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
+	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
+	kitcli.SetTopLevelVerb(runCmd)
 	// T-0656 — run spawns an opaque subprocess under the named profile;
 	// the spawned process owns its own side effects and aps cannot
 	// preview a third-party binary's behavior.
