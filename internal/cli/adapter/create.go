@@ -78,7 +78,7 @@ is exactly the <name> argument.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, mobile, desktop, sense, actuator)")
+	cmd.Flags().StringVar(&deviceType, "type", "", "Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)")
 	cmd.Flags().StringVar(&strategy, "strategy", "", "Loading strategy (subprocess, script, builtin)")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
