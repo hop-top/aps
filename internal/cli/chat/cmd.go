@@ -15,7 +15,32 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "chat <profile-id>",
 		Short: "Chat with a profile-backed assistant",
-		Args:  cobra.ExactArgs(1),
+		Long: `Open an interactive chat session against the assistant
+configured by the given aps profile. The single-profile mode is
+the default: aps chat <profile-id> loads the profile, instantiates
+its configured engine, and drops the caller into a streaming TUI
+that appends each turn to a SessionTypeChat session in the local
+registry. The session ID, transcript, and metadata persist across
+exits, so the same conversation can be resumed later.
+
+Multi-profile mode activates when --invite is passed: the named
+profiles join as additional participants and a round-robin turn
+policy selects the active speaker. --invite accepts a
+comma-separated list or repeats. --once <prompt> bypasses the TUI
+entirely — the prompt is appended as one user turn, the assistant
+response is printed to stdout, and the command exits, making
+chat scriptable from non-interactive callers. --attach <id> resumes
+an existing chat session instead of minting a fresh one;
+--no-stream disables token streaming; --model overrides the
+profile's configured chat model; --max-auto-turns caps autonomous
+turns before returning control to the human.
+
+Each invocation appends a turn to the underlying SessionTypeChat
+session — write-local and non-idempotent. --dry-run is opted out
+because the operation is an interactive REPL whose effects (LLM
+turns, transcript appends) are user-driven and unbounded;
+previewing would have to fake the human input that drives them.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Run(cmd, args[0], opts)
 		},

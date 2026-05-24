@@ -18,7 +18,18 @@ func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <name>",
 		Short: "Delete a user-defined bundle (refuses on built-ins)",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove the user bundle file at aps/bundles/<name>.yaml under
+the user config directory. The command refuses to touch built-in
+bundles — if the named bundle is a built-in with no user override,
+it suggests aps bundle edit to create an override first. The user
+is prompted for confirmation unless --force is passed.
+
+Destructive: the user bundle YAML file is removed irreversibly.
+The destructive-token confirmation flow gates the apply path, and
+--dry-run is opted out because preview would only restate the
+bundle name. Idempotent on already-absent records — re-running on
+a missing user bundle reports the bundle as not found.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDelete(args[0], force)
 		},

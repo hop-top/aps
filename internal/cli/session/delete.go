@@ -18,7 +18,26 @@ func NewDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <session-id>",
 		Short: "Delete a session",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove a session entry from the registry and tear down the
+backing tmux server. Tmux teardown failures (server already gone,
+benign races) are logged as warnings but do not abort the
+registry unregister — the session is going away regardless. The
+user is prompted for confirmation unless --force is passed.
+
+Before the registry write, the command publishes a synchronous
+policy pre-persisted event on the kit policy bus with Op=delete
+and kind=session; any sync subscriber (the runtime policy engine
+wired in PersistentPreRunE) can veto by returning a policy denial.
+When the session is bound to a workspace, the workspace ID is
+stuffed into request_attrs so the principal resolver can surface
+the calling profile's workspace role as principal.role.
+
+Destructive: the session record is removed irreversibly. The
+destructive-token confirmation flow gates the apply path, and
+--dry-run is opted out because preview would only restate the
+session ID. Idempotent on already-absent records. Use --note to
+attach an audit reason that flows to the SessionStopped event.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sessionID := args[0]
 

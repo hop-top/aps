@@ -31,6 +31,17 @@ func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List built-in and user bundles",
+		Long: `List every capability bundle aps can resolve — built-in
+bundles shipped with the binary plus user-authored bundles under
+the user config directory (aps/bundles/<name>.yaml). Each row
+reports the bundle name, source ("built-in", "user", or "user
+(overrides built-in)"), member capability count, tags, and the
+bundle description.
+
+The output respects the global --format flag (table|json|yaml) and
+the local filter flags: --tag selects by tag value, --builtin or
+--user scope the source (mutually exclusive). Read-only: no state
+mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if builtinOnly && userOnly {
 				return fmt.Errorf("--builtin and --user are mutually exclusive")

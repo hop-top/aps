@@ -16,7 +16,20 @@ func NewDetachCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "detach [session-id]",
 		Short: "Detach from a running session",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Disconnect attached tmux clients from a session without
+terminating it. The target session is identified by [session-id]
+or, with --all, every active session in the registry is detached
+in one pass. The session itself keeps running on the backing tmux
+server and can be re-attached later via aps session attach.
+
+Local mutation against the tmux server only — no registry state
+changes. Idempotent: an already-detached session stays detached
+and the command reports the detach count.
+
+--dry-run is opted out because preview would only restate the
+session ID being detached. Pair with aps session attach to
+reconnect, or aps session terminate to stop the session entirely.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			registry := session.GetRegistry()
 

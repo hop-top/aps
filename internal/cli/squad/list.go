@@ -28,6 +28,16 @@ func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all squads",
+		Long: `List every squad in the local squad store. Each row reports
+the squad ID, name, team-topology type (stream-aligned, enabling,
+complicated-subsystem, platform), domain boundary, member count,
+and a truncated member-ID list (first three IDs plus "+N" when the
+squad has more).
+
+The output respects the global --format flag (table|json|yaml) and
+the local filter flags: --member selects squads containing a given
+profile ID, and --role selects by team-topology type. Read-only:
+no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			memberFilter, _ := cmd.Flags().GetString("member")
 			// --role filters by team-topology squad type (stream-aligned,

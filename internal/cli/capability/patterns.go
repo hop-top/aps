@@ -31,6 +31,14 @@ func newPatternsCmd() *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List smart patterns",
+		Long: `List the smart-pattern registry — well-known external tools
+(e.g. windsurf, claude) and the conventional file path each tool
+expects in a user repository. aps capability link and aps capability
+watch consult this registry when --target/--tool is used so callers
+can opt into a known mapping instead of spelling out paths by hand.
+
+Read-only: no state mutation. Idempotent. Output respects the
+global --format flag (table|json|yaml).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			format, _ := cmd.Flags().GetString("format")
 			return runPatterns(format)

@@ -17,7 +17,18 @@ func newEnableCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable <profile> <capability>",
 		Short: "Enable a capability on a profile",
-		Args:  cobra.ExactArgs(2),
+		Long: `Add <capability> to the capabilities list of the named profile at
+$APS_DATA_PATH/profiles/<profile>/. The capability must already
+exist as a builtin or be installed under $APS_DATA_PATH/capabilities/;
+the profile must exist as well. Already-enabled pairings are a no-op
+that prints a dim notice and leaves the manifest untouched.
+
+Local write to the profile manifest only; pair with aps capability
+disable to undo. Idempotent on the pair. --dry-run is opted out
+because the result is fully determined by the two positional
+arguments. Use --note to attach an audit reason that flows to the
+event bus alongside the mutation.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileID, capName := args[0], args[1]
 
@@ -64,7 +75,19 @@ func newDisableCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "disable <profile> <capability>",
 		Short: "Disable a capability on a profile",
-		Args:  cobra.ExactArgs(2),
+		Long: `Drop <capability> from the capabilities list of the named
+profile at $APS_DATA_PATH/profiles/<profile>/. Removes only the
+profile-level linkage — the underlying capability record under
+$APS_DATA_PATH/capabilities/<name>/ is left intact and remains
+available to other profiles. Not-enabled pairings are a no-op
+that prints a dim notice.
+
+Local write to the profile manifest only; pair with aps capability
+enable to restore. Idempotent on the pair. --dry-run is opted out
+because the result is fully determined by the two positional
+arguments. Use --note to attach an audit reason that flows to the
+event bus alongside the mutation.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileID, capName := args[0], args[1]
 

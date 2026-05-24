@@ -18,7 +18,20 @@ func newEditCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "edit <name>",
 		Short: "Open a bundle in $EDITOR; copies built-in to user dir first",
-		Args:  cobra.ExactArgs(1),
+		Long: `Open the named bundle in $EDITOR (or vi when $EDITOR is unset).
+If no user override exists at aps/bundles/<name>.yaml under the
+user config directory, the built-in bundle of the same name is
+copied there first so the edit lands in the user-owned override
+rather than the kit-shipped source. A "Note: built-in bundle …
+copied to …" line surfaces when that copy happens.
+
+The command shells out to the editor and waits for it to exit;
+whether the file changed is up to the user, so the effect is
+idempotency-conditional. --dry-run is opted out because the
+operation is fundamentally an interactive editor session — preview
+would either suppress the editor or describe a write the user
+hasn't authored yet.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runEdit(args[0])
 		},
