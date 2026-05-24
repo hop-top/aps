@@ -31,7 +31,26 @@ func NewTerminateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate <session-id>",
 		Short: "Terminate a session gracefully",
-		Args:  cobra.ExactArgs(1),
+		Long: `Tear down a running session and its tmux server. The default
+graceful path asks tmux to kill the session (which sends SIGHUP to
+the inner shell), waits up to --timeout seconds (default 10) for
+the inner PID to exit, and escalates to SIGKILL if the deadline
+elapses. With --force the inner PID is SIGKILLed immediately and
+tmux is killed without waiting.
+
+Registry status is updated to inactive even when tmux teardown
+returns warnings, so the session entry never strands in an
+ambiguous in-between state. Pair with aps session delete to remove
+the registry entry afterwards, or skip terminate entirely and call
+aps session delete which tears down and unregisters in one step.
+
+Destructive: in-flight work in the session is lost. The
+destructive-token confirmation flow gates the apply path, and
+--dry-run is opted out because preview would have to fake the OS
+signal path that defines the operation. Idempotent on the registry
+status — terminated sessions stay inactive. Use --note to attach an
+audit reason that flows to the SessionStopped event payload.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sessionID := args[0]
 

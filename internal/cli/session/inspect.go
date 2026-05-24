@@ -35,7 +35,19 @@ func NewInspectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "inspect <session-id>",
 		Short: "Inspect a session's details",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print the full record for a single session — ID, owning
+profile, profile directory, command, PID, status, tier, created/
+last-seen timestamps, tmux socket path, and the propagated
+environment map. The environment block runs through the aps
+logging redactor before render, so OPENAI_API_KEY, GITHUB_TOKEN,
+and other tokens propagated by the session builder are masked in
+both the table and JSON outputs.
+
+The default output is a styled property/value table; --json
+switches to a JSON dump of the full SessionInfo struct and
+--pretty indents that JSON. Read-only: no state mutation.
+Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sessionID := args[0]
 

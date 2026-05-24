@@ -16,7 +16,18 @@ func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install <source> --name <name>",
 		Short: "Install a capability from a source directory or URL",
-		Args:  cobra.ExactArgs(1),
+		Long: `Copy a capability bundle from the <source> argument into the
+user capability tree at $APS_DATA_PATH/capabilities/<name>/. The
+source may be a local directory or a URL the underlying installer
+recognises; the destination directory name comes from --name. After
+copy, the capability is discoverable by aps capability list with
+source=external and can be linked into a profile via aps capability
+enable <profile> <name>.
+
+Mints a new local record. Each invocation copies into the destination
+under --name (not idempotent); preview via --dry-run is opted out
+because the destination path is a pure function of the --name flag.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if name == "" {
 				return fmt.Errorf("--name is required")

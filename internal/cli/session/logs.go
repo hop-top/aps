@@ -15,7 +15,20 @@ func NewLogsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs <session-id>",
 		Short: "Show session logs (tmux capture)",
-		Args:  cobra.ExactArgs(1),
+		Long: `Capture the tmux scrollback buffer for a session and write it
+to stdout. The session must have a tmux socket recorded in the
+registry; the command shells out to tmux capture-pane against
+that socket. --tail "all" dumps the entire buffer, --tail <N>
+limits to the last N lines, and the default captures the visible
+pane plus escape sequences. --timestamps prepends tmux timestamp
+metadata, and --follow re-attaches pipe-pane so new output
+streams as it lands.
+
+Read-only: no state mutation on the session or the buffer.
+Idempotent on the same buffer state. Pair with aps session attach
+when you want an interactive terminal rather than a one-shot
+capture.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sessionID := args[0]
 

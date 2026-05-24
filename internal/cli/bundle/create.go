@@ -23,7 +23,18 @@ func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Scaffold a new bundle file in the user bundle directory",
-		Args:  cobra.ExactArgs(1),
+		Long: `Scaffold a new bundle YAML file at aps/bundles/<name>.yaml
+under the user config directory. The scaffold is a minimal stub
+with name, empty description, version "1.0", and an empty
+capabilities list — ready to be hand-edited or passed to aps
+bundle edit. The directory is created on demand.
+
+By default the command refuses to overwrite an existing file at
+that path; pass --force to replace it. Pair with aps bundle edit
+to open the new file in $EDITOR, or aps bundle validate to check
+the YAML once populated. --dry-run is opted out because the
+destination is a pure function of the name argument.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCreate(args[0], force)
 		},

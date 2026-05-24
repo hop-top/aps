@@ -14,7 +14,17 @@ func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete a squad",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove the named squad from the local squad store. The squad
+ID is the slug shown by aps squad list, not the human-readable
+name. Member profile records are not touched — deleting a squad
+only drops the squad entry and any topology it carried.
+
+Destructive: the squad record is removed irreversibly. The
+destructive-token confirmation flow gates the apply path, and
+--dry-run is opted out because preview would only restate the
+squad ID. Idempotent on the pair. Use --note to attach an audit
+reason that flows to the event bus alongside the mutation.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDelete(args[0])
 		},

@@ -16,7 +16,18 @@ func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <name>",
 		Short: "Delete a capability",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove the on-disk capability directory at
+$APS_DATA_PATH/capabilities/<name>/ along with any symlinks it
+holds. Builtins cannot be deleted — use aps capability disable on a
+profile to drop the linkage. If the capability has active links to
+external targets the command refuses unless --force is passed, since
+deleting an active source leaves dangling symlinks at the targets.
+
+Destructive: the on-disk directory and its symlinks are removed
+irreversibly. The destructive-token confirmation flow gates the
+apply path, and --dry-run is opted out because preview would only
+restate the capability name. Idempotent on already-absent records.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 

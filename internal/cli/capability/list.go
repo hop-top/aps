@@ -36,6 +36,18 @@ func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all capabilities (builtin + external)",
+		Long: `List every capability discoverable by aps — both kit-shipped
+builtins and external capabilities installed under the user's
+$APS_DATA_PATH/capabilities/ tree. Each row reports the capability
+name, source ("builtin" or "external"), type, on-disk path, tags,
+and a description sourced from the capability manifest.
+
+The output respects the global --format flag (table|json|yaml) and
+the local filter flags: --tag selects by tag value, --builtin or
+--external scope the source (mutually exclusive), and --enabled-on
+=<profile> limits to capabilities linked to that profile.
+
+Read-only: no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if builtinOnly && externalOnly {
 				return fmt.Errorf("--builtin and --external are mutually exclusive")

@@ -15,7 +15,18 @@ func newValidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate <file>",
 		Short: "Validate a bundle YAML file and report issues",
-		Args:  cobra.ExactArgs(1),
+		Long: `Validate a bundle YAML file at the given path. Parses the file
+into the bundle struct (reporting YAML syntax errors with file
+context), then runs the registry validator against it — required
+fields, valid capability references, well-formed inheritance, and
+any other invariants the registry enforces. Errors are surfaced
+with the file path prefixed for grepability.
+
+Read-only: no state mutation. Idempotent. The <file> argument is a
+literal filesystem path and is not resolved through the bundle
+name registry — pass aps/bundles/<name>.yaml under the user config
+directory when validating a user bundle.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runValidate(args[0])
 		},

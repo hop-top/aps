@@ -21,7 +21,20 @@ func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create a new squad",
-		Args:  cobra.ExactArgs(1),
+		Long: `Create a new squad entry in the local squad store. The ID is
+derived from the <name> argument by lower-casing and replacing
+spaces with dashes. --type and --domain are required: --type must
+be one of the four team-topology values (stream-aligned, enabling,
+complicated-subsystem, platform), and --domain names the squad's
+domain boundary. --description and --members are optional; the
+members slice takes a comma-separated list of profile IDs.
+
+Mints a new local record. Not idempotent — re-running with the
+same name on an existing squad fails. --dry-run is opted out
+because the resulting record is fully determined by the flags.
+Use --note to attach an audit reason that flows to the event bus
+alongside the mutation.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCreate(args[0], squadType, domain, description, members)
 		},

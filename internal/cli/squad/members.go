@@ -31,7 +31,19 @@ func newAddMemberCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <squad-id> <profile-id>",
 		Short: "Add a member to a squad",
-		Args:  cobra.ExactArgs(2),
+		Long: `Append a profile to a squad's member list. Both arguments are
+positional: <squad-id> is the squad slug (see aps squad list) and
+<profile-id> is the profile ID. The squad must exist; the profile
+ID is recorded verbatim and is not cross-validated against the
+profile store at this layer.
+
+Local write to the squad record only — pair with aps squad members
+remove to undo. Not idempotent at the manager level (re-running
+returns an error on duplicate membership). --dry-run is opted out
+because the result is fully determined by the two positional
+arguments. Use --note to attach an audit reason that flows to the
+event bus alongside the mutation.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAddMember(args[0], args[1])
 		},
@@ -62,7 +74,18 @@ func newRemoveMemberCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove <squad-id> <profile-id>",
 		Short: "Remove a member from a squad",
-		Args:  cobra.ExactArgs(2),
+		Long: `Drop a profile from a squad's member list. Both arguments are
+positional: <squad-id> is the squad slug (see aps squad list) and
+<profile-id> is the profile ID to remove. The profile record
+itself is untouched — only the squad's membership entry is
+dropped.
+
+Destructive at the squad level: the membership entry is removed
+irreversibly from the squad store. The destructive-token
+confirmation flow gates the apply path, and --dry-run is opted out
+because preview would only restate the two positional arguments.
+Idempotent on already-absent membership.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runRemoveMember(args[0], args[1])
 		},

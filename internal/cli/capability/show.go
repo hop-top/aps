@@ -15,7 +15,15 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <name>",
 		Short: "Show capability details",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print the full record for a single capability — name, kind
+(builtin vs external), type, on-disk path, description, source URL,
+install timestamp, and the set of active links the capability holds.
+Builtins resolve from the kit-shipped registry; externals load from
+$APS_DATA_PATH/capabilities/<name>/. The trailing block lists every
+profile that has the capability linked via aps capability enable.
+
+Read-only: no state mutation. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runShow(args[0])
 		},

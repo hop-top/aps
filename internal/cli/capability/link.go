@@ -16,7 +16,18 @@ func newLinkCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "link <name> [--target <path>]",
 		Short: "Symlink a capability to a target path",
-		Args:  cobra.ExactArgs(1),
+		Long: `Create a symlink at --target pointing back at the capability
+stored under $APS_DATA_PATH/capabilities/<name>/. When --target is
+omitted, the command consults the smart-pattern registry (see aps
+capability patterns list) and, if <name> matches a known tool,
+links into that tool's conventional location.
+
+Local write of a single filesystem symlink. Idempotent on the
+source/target pair. --dry-run is opted out because the source and
+target paths are fully determined by --name and --target; preview
+would only echo the inputs. Use --note to attach an audit reason
+that flows to the event bus alongside the mutation.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 

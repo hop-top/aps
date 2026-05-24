@@ -21,7 +21,25 @@ func NewAttachCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "attach <session-id>",
 		Short: "Attach to a running session",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Attach the current terminal to the tmux server backing a
+running session. The session is looked up by ID (or --latest, which
+picks the most recently created active session) and must be in
+status=active. The command shells out to tmux against the session's
+recorded socket; when the session runs in a platform sandbox
+(platform_type=macos-darwin or linux-namespace), the attach path
+tunnels through ssh into the sandbox user using the admin private
+key at $APS_DATA_PATH/keys/admin_priv.
+
+Interactive lifecycle: --mode=view attaches read-only (-r), --mode
+=control (the default) attaches read/write. The standard tmux
+detach binding (Ctrl-B then D) returns control to the caller.
+
+Idempotency is conditional on mode and current state — repeating
+attach against an already-attached session opens an additional
+client; switching mode while attached requires detach first. Pair
+with aps session detach to disconnect without terminating, or aps
+session terminate to stop the session entirely.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			registry := session.GetRegistry()
 

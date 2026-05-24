@@ -17,6 +17,18 @@ func newWatchCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "watch <path> --name <name> | --tool <tool>",
 		Short: "Watch an external file (symlink into APS)",
+		Long: `Install a filesystem watcher that mirrors an externally-managed
+file or directory into the aps capability tree. The watcher
+symlinks the source into $APS_DATA_PATH/capabilities/<name>/ and
+keeps the link in sync as the source changes. The source path comes
+from <path> argument or --tool <tool>; --tool consults the
+smart-pattern registry so well-known tools resolve to their
+conventional default paths in the current working directory.
+
+Long-running local mutation: the watcher persists until the process
+exits, rewriting symlinks on every change event. --dry-run is opted
+out because there is no batch boundary on which to scope a preview.
+Use --note to attach an audit reason that flows to the event bus.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var target string
 			if len(args) > 0 {

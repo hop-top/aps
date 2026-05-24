@@ -13,7 +13,14 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show squad details",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print the full record for a single squad — ID, name,
+team-topology type, domain boundary, description, the complete
+member ID list (no truncation, unlike aps squad list), and the
+created/updated timestamps. The squad is looked up by ID; unknown
+IDs return an error from the underlying squad manager.
+
+Read-only: no state mutation. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runShow(args[0])
 		},

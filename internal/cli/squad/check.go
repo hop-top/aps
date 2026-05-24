@@ -27,6 +27,17 @@ func newCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Validate squad topology against the 8-item design checklist",
+		Long: `Validate the current squad topology against the design
+checklist defined in the core squad package — invariants drawn
+from team-topology theory (e.g. stream-aligned squad density,
+platform-squad coverage, enabling-squad scope). Each check
+contributes a row to the output with CHECK name, PASS/FAIL
+status, and a DETAIL string. The command exits non-zero when any
+check fails so it can gate CI.
+
+Read-only: no state mutation. Idempotent. The output respects the
+table renderer and works on a TTY (styled table) and non-TTY
+(plain tabwriter) alike.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCheck()
 		},

@@ -34,6 +34,18 @@ func NewListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List active sessions",
+		Long: `List every session known to the local session registry. Each
+row reports the session ID, owning profile, status (active,
+inactive, errored), workspace ID, type (standard, voice), tier
+(basic, standard, premium), creation timestamp, and last-seen
+timestamp.
+
+The output respects the global --format flag (table|json|yaml) and
+the global --profile and --workspace persistent flags (which filter
+to the named profile/workspace). Local filters: --status, --tier,
+--type. Empty session Type values (legacy registry entries written
+before the field existed) render as "standard" so the TYPE column
+stays populated. Read-only: no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileFilter, _ := cmd.Flags().GetString("profile")
 			statusFilter, _ := cmd.Flags().GetString("status")
