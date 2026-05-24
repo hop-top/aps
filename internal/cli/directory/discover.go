@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // resolveInstance is overridable for tests; defaults to core.Resolve.
@@ -72,16 +73,25 @@ Example:
 				Endpoint: resolved,
 			}
 
+			ctx := cmd.Context()
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: resolved})
+
 			client, err := discovery.NewClient(cfg)
 			if err != nil {
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
 
-			results, err := client.Discover(cmd.Context(), capability)
+			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: capability})
+			results, err := client.Discover(ctx, capability)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: capability, OK: &okFalse})
 				return fmt.Errorf("failed to discover agents: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: capability, OK: &okTrue})
 
 			if len(results) == 0 {
 				fmt.Println("No agents found matching the query.")

@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // NewDeleteCmd creates the directory delete command. Pairs with the
@@ -39,16 +40,24 @@ Profile is supplied via the tool-level --profile global:
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 			}
 
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID})
+
 			client, err := discovery.NewClient(profile.Directory)
 			if err != nil {
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
 
-			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			r.Emit(ctx, progress.Event{Phase: phaseDelete, Item: profileID})
 			if err := client.Deregister(ctx, profileID); err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseDelete, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to delete record: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: phaseDelete, Item: profileID, OK: &okTrue})
 
 			fmt.Printf("Deleted profile %s from AGNTCY Directory\n", profileID)
 

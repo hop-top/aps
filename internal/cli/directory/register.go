@@ -10,6 +10,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // NewRegisterCmd creates the directory register command.
@@ -45,17 +46,25 @@ Profile is supplied via the tool-level --profile global:
 				return fmt.Errorf("agntcy-directory capability not enabled for profile %s; enable it first", profileID)
 			}
 
+			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			r := progress.FromContext(ctx)
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID})
+
 			client, err := discovery.NewClient(profile.Directory)
 			if err != nil {
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
 
-			ctx := clinote.WithContext(cmd.Context(), clinote.FromCmd(cmd)) // T-1291
+			r.Emit(ctx, progress.Event{Phase: phasePublish, Item: profileID})
 			record, err := client.Register(ctx, profile)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phasePublish, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to register: %w", err)
 			}
+			okTrue := true
+			r.Emit(ctx, progress.Event{Phase: phasePublish, Item: profileID, OK: &okTrue})
 
 			formatted, err := discovery.FormatRecord(record)
 			if err != nil {
