@@ -13,6 +13,7 @@ import (
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/aps/internal/logging"
 	kitcli "hop.top/kit/go/console/cli"
+	"hop.top/kit/go/console/progress"
 )
 
 // NewServerCmd creates the `aps acp server` command
@@ -30,7 +31,7 @@ Example:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profileID := args[0]
-			return runACPServer(profileID)
+			return runACPServer(cmd.Context(), profileID)
 		},
 	}
 
@@ -43,7 +44,7 @@ Example:
 }
 
 // runACPServer starts an ACP server for the specified profile
-func runACPServer(profileID string) error {
+func runACPServer(parent context.Context, profileID string) error {
 	// Load profile (validate it exists)
 	profile, err := core.LoadProfile(profileID)
 	if err != nil {
@@ -75,8 +76,9 @@ func runACPServer(profileID string) error {
 		return fmt.Errorf("failed to create ACP server: %w", err)
 	}
 
-	// Create context for server lifecycle
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create context for server lifecycle. Inherit from parent so the
+	// progress.Reporter wired by kit/cli flows through the daemon.
+	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 
 	// Handle signals for graceful shutdown
@@ -96,10 +98,15 @@ func runACPServer(profileID string) error {
 		listenAddr = fmt.Sprintf("%s:%d", profile.ACP.ListenAddr, profile.ACP.Port)
 	}
 
-	// Start server
+	r := progress.FromContext(ctx)
+	r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID})
 	if err := acpServer.Start(ctx, &acp.TransportConfig{Transport: transport, ListenAddr: listenAddr}); err != nil {
+		okFalse := false
+		r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okFalse})
 		return fmt.Errorf("failed to start ACP server: %w", err)
 	}
+	okTrue := true
+	r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okTrue})
 
 	logging.GetLogger().Info("acp server started", "profile", profileID, "protocol", 1, "transport", transport, "address", acpServer.GetAddress())
 
