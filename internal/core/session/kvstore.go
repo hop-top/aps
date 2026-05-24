@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"hop.top/aps/internal/core"
@@ -32,15 +31,11 @@ const legacyRegistryFile = RegistryFile
 
 func sessionKey(id string) string { return sessionKeyPrefix + id }
 
-func idFromSessionKey(key string) string {
-	return strings.TrimPrefix(key, sessionKeyPrefix)
-}
-
 // openSessionStore opens (and migrates) the sqlite-backed kv store
 // rooted at the supplied directory. The dir is created if missing.
 // Callers are responsible for closing the returned store via Close.
 func openSessionStore(dir string) (kv.Store, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, fmt.Errorf("create sessions dir: %w", err)
 	}
 	store, err := sqlite.New(filepath.Join(dir, sessionDBFile))
@@ -56,6 +51,7 @@ func openSessionStore(dir string) (kv.Store, error) {
 // in kv are not overwritten so a partial migration can be resumed.
 func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir string) error {
 	legacyPath := filepath.Join(dir, legacyRegistryFile)
+	// #nosec G304 -- path is constructed from core.GetDataDir(), not user input
 	data, err := os.ReadFile(legacyPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -197,5 +193,8 @@ func (r *SessionRegistry) Close() error {
 	// Reset the once so a subsequent ensureStore() can reopen.
 	r.storeOnce = sync.Once{}
 	r.storeErr = nil
-	return err
+	if err != nil {
+		return fmt.Errorf("kv close: %w", err)
+	}
+	return nil
 }

@@ -51,7 +51,7 @@ type Registry struct {
 // at the supplied directory. Any legacy mobile-registry.json file in
 // the same directory is migrated into kv on first open and removed.
 func NewRegistry(registryDir string) (*Registry, error) {
-	if err := os.MkdirAll(registryDir, 0o755); err != nil {
+	if err := os.MkdirAll(registryDir, 0o750); err != nil {
 		return nil, fmt.Errorf("failed to create registry directory: %w", err)
 	}
 	store, err := sqlite.New(filepath.Join(registryDir, adapterDBFile))
@@ -75,7 +75,10 @@ func (r *Registry) Close() error {
 	}
 	err := r.store.Close()
 	r.store = nil
-	return err
+	if err != nil {
+		return fmt.Errorf("kv close: %w", err)
+	}
+	return nil
 }
 
 // migrateLegacyJSON imports any pre-existing mobile-registry.json into
@@ -83,6 +86,7 @@ func (r *Registry) Close() error {
 // kv (e.g. from a retried partial migration) are not overwritten.
 func (r *Registry) migrateLegacyJSON(ctx context.Context, dir string) error {
 	legacyPath := filepath.Join(dir, legacyRegistryFile)
+	// #nosec G304 -- dir is supplied by the operator-provided data dir, not user input
 	raw, err := os.ReadFile(legacyPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
