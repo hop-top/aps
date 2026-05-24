@@ -1,0 +1,6 @@
+api_version: v1
+kind: backend
+name: cardamum
+binary: cardamum
+bin_env_var: CARDAMUM_BIN
+install_hint: "cargo install cardamum"
