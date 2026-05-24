@@ -98,7 +98,11 @@ func SetViper(v *viper.Viper) {
 //
 // Called from SetViper, but exposed so callers that bypass SetViper
 // (tests, embed-style consumers) can wire the slog default explicitly.
+// Binds viper to the redaction toggle too so the --no-redact /
+// APS_DEBUG_NO_REDACT runtime switch works when SetSlogDefault is
+// the only entry point used.
 func SetSlogDefault(v *viper.Viper) {
+	SetViperForRedact(v)
 	h := kitlog.New(v)
 	h.SetOutput(NewWriter(os.Stderr))
 	slog.SetDefault(slog.New(h))
