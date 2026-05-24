@@ -56,7 +56,7 @@ isolation:
 	err = os.WriteFile(secretsPath, []byte("TEST_VAR=test_value"), 0600)
 	require.NoError(t, err)
 
-	err = core.RunCommand(profileID, "echo", []string{"hello"})
+	err = core.RunCommand(profileID, "echo", []string{"hello"}, nil)
 	assert.NoError(t, err)
 }
 
@@ -79,7 +79,7 @@ display_name: Default Profile
 	err = os.WriteFile(secretsPath, []byte("TEST_VAR=default"), 0600)
 	require.NoError(t, err)
 
-	err = core.RunCommand(profileID, "echo", []string{"test"})
+	err = core.RunCommand(profileID, "echo", []string{"test"}, nil)
 	assert.NoError(t, err)
 }
 
@@ -104,7 +104,7 @@ isolation:
 	err = os.WriteFile(secretsPath, []byte(""), 0600)
 	require.NoError(t, err)
 
-	err = core.RunCommand(profileID, "echo", []string{"test"})
+	err = core.RunCommand(profileID, "echo", []string{"test"}, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not yet implemented")
 }
@@ -132,7 +132,7 @@ isolation:
 	err = os.WriteFile(secretsPath, []byte(""), 0600)
 	require.NoError(t, err)
 
-	err = core.RunCommand(profileID, "echo", []string{"test"})
+	err = core.RunCommand(profileID, "echo", []string{"test"}, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not yet implemented")
 }
@@ -158,7 +158,7 @@ isolation:
 	err = os.WriteFile(secretsPath, []byte(""), 0600)
 	require.NoError(t, err)
 
-	err = core.RunCommand(profileID, "echo", []string{"test"})
+	err = core.RunCommand(profileID, "echo", []string{"test"}, nil)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid isolation level") ||
 		strings.Contains(err.Error(), "failed to load profile"))

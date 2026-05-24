@@ -13,6 +13,11 @@ import (
 	"hop.top/kit/go/console/progress"
 )
 
+var (
+	runEnvOverrides []string
+	runEnvFiles     []string
+)
+
 var runCmd = &cobra.Command{
 	Use:   "run [profile] -- [command] [args...]",
 	Short: "Run a command in a profile context",
@@ -55,6 +60,15 @@ without invoking it is impossible.`,
 		commandName := commandArgs[0]
 		commandRest := commandArgs[1:]
 
+		overrides, err := core.BuildOverrideEnv(runEnvFiles, runEnvOverrides)
+		if err != nil {
+			return &output.Error{
+				Code:     output.CodeGeneric,
+				Message:  err.Error(),
+				ExitCode: 2,
+			}
+		}
+
 		// T-0463 — structured progress per cli-conventions-with-kit.md
 		// §6.5. The user-supplied subprocess is opaque; aps emits an
 		// envelope (exec start + exit ok/fail) so agents reading the
@@ -64,7 +78,7 @@ without invoking it is impossible.`,
 		r := progress.FromContext(ctx)
 		r.Emit(ctx, progress.Event{Phase: "exec", Item: commandName})
 
-		if err := core.RunCommand(profileID, commandName, commandRest); err != nil {
+		if err := core.RunCommand(profileID, commandName, commandRest, overrides); err != nil {
 			okFalse := false
 			r.Emit(ctx, progress.Event{Phase: "exit", Item: commandName, OK: &okFalse})
 			var exitErr *exec.ExitError
@@ -100,5 +114,7 @@ func init() {
 	if err := kitcli.SetDryRunRationale(runCmd, "run spawns an opaque subprocess in the named profile context; the spawned process owns its side effects and aps cannot preview a third-party binary without invoking it."); err != nil {
 		panic(err)
 	}
+	runCmd.Flags().StringArrayVar(&runEnvOverrides, "env", nil, "Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys")
+	runCmd.Flags().StringSliceVar(&runEnvFiles, "env-file", nil, "Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys")
 	rootCmd.AddCommand(runCmd)
 }

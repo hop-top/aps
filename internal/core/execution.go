@@ -233,8 +233,11 @@ func actionBinaryArgs(action *Action) (binary string, argv []string) {
 	}
 }
 
-// RunCommand executes a command within a profile's context using configured isolation
-func RunCommand(profileID string, command string, args []string) error {
+// RunCommand executes a command within a profile's context using configured isolation.
+// overrides is appended after the profile-injected env (so it wins on duplicate keys)
+// and is expected to already be in precedence order: --env-file entries first, --env
+// entries last (see BuildOverrideEnv).
+func RunCommand(profileID string, command string, args []string, overrides []string) error {
 	profile, err := LoadProfile(profileID)
 	if err != nil {
 		return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -248,7 +251,7 @@ func RunCommand(profileID string, command string, args []string) error {
 
 	switch requestedLevel {
 	case IsolationProcess:
-		return runCommandWithProcessIsolation(profile, command, args)
+		return runCommandWithProcessIsolation(profile, command, args, overrides)
 	case IsolationPlatform:
 		return fmt.Errorf("platform isolation not yet implemented")
 	case IsolationContainer:
@@ -260,11 +263,14 @@ func RunCommand(profileID string, command string, args []string) error {
 
 // runCommandWithProcessIsolation executes a command using process-level isolation.
 // Builds env via buildEnvVars (fails fast on error); uses exec.Command for interactive stdio.
-func runCommandWithProcessIsolation(profile *Profile, command string, args []string) error {
+func runCommandWithProcessIsolation(profile *Profile, command string, args []string, overrides []string) error {
 	env, err := buildEnvVars(profile)
 	if err != nil {
 		return fmt.Errorf("failed to setup environment: %w", err)
 	}
+
+	env = append(env, overrides...)
+	env = dedupEnvLastWins(env)
 
 	cmd := exec.CommandContext(context.Background(), command, args...) //nolint:gosec // command from profile config
 	cmd.Stdin = os.Stdin
@@ -273,6 +279,40 @@ func runCommandWithProcessIsolation(profile *Profile, command string, args []str
 	cmd.Env = env
 
 	return cmd.Run()
+}
+
+// dedupEnvLastWins collapses duplicate KEY entries in a KEY=VALUE slice,
+// preserving the last occurrence per key and maintaining the relative order
+// of those last occurrences.
+func dedupEnvLastWins(env []string) []string {
+	lastIdx := make(map[string]int, len(env))
+	for i, e := range env {
+		k, _, ok := splitEnvKV(e)
+		if !ok {
+			continue
+		}
+		lastIdx[k] = i
+	}
+	out := make([]string, 0, len(lastIdx))
+	for i, e := range env {
+		k, _, ok := splitEnvKV(e)
+		if !ok {
+			out = append(out, e)
+			continue
+		}
+		if lastIdx[k] == i {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func splitEnvKV(e string) (key, val string, ok bool) {
+	idx := strings.IndexByte(e, '=')
+	if idx <= 0 {
+		return "", "", false
+	}
+	return e[:idx], e[idx+1:], true
 }
 
 // RunAction executes a defined action using configured isolation

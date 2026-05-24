@@ -488,7 +488,7 @@ func TestRunCommandWithProcessIsolation(t *testing.T) {
 	loadedProfile, err := LoadProfile("run-test")
 	require.NoError(t, err)
 
-	err = runCommandWithProcessIsolation(loadedProfile, "true", []string{})
+	err = runCommandWithProcessIsolation(loadedProfile, "true", []string{}, nil)
 	require.NoError(t, err)
 }
 
