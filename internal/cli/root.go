@@ -134,6 +134,14 @@ var root = kitcli.New(kitcli.Config{
 	// annotations are guaranteed across the tree. See kit cli.go:144
 	// for the SignatureStrictnessReject constant definition.
 	SignatureStrictness: kitcli.SignatureStrictnessReject,
+	// T-0680 — kit defaults MaxHierarchyDepth=3 (see kit shape.go:14),
+	// which rejects the `aps adapter messenger link {add,delete,list}`
+	// subtree (depth-4 leaves: aps[0] → adapter[1] → messenger[2] →
+	// link[3] → add|delete|list[4]). Raise the cap to 4 to admit the
+	// existing link subtree; kit hard-clamps at 5 (shape.go:18), so 4
+	// is within bounds. See kit cli.go:234 for the field and
+	// cli.go:950-968 for the validator gate.
+	MaxHierarchyDepth: 4,
 	// T-0376 — declare tool-level globals: --config, --profile, --workspace.
 	// Subcommands read via root.Viper.GetString("<key>") rather than
 	// declaring local duplicates.
