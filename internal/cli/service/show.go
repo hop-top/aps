@@ -14,7 +14,15 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <service-id>",
 		Short: "Show a persisted service",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show the full configuration for a persisted service: id, type,
+backing adapter, owning profile, optional description, and the
+adapter-specific option map sorted by key. Runtime metadata from
+core.DescribeServiceRuntime (receives, executes, replies,
+maturity) is also printed.
+
+Read-only: loads the service record from the service store and
+prints it. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			service, err := core.LoadService(args[0])
 			if err != nil {
@@ -56,7 +64,14 @@ func newRoutesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "routes <service-id>",
 		Short: "Show reachable routes for a persisted service",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show the HTTP routes that aps serve (or aps service start)
+would mount for the named service. Routes are derived by
+core.DescribeServiceRuntime from the service's adapter type and
+configuration; "routes: none" prints when the adapter exposes no
+endpoints.
+
+Read-only: no service state mutation. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			service, err := core.LoadService(args[0])
 			if err != nil {

@@ -32,7 +32,17 @@ var actionCmd = &cobra.Command{
 var actionListCmd = &cobra.Command{
 	Use:   "list [profile]",
 	Short: "List available actions for a profile",
-	Args:  cobra.ExactArgs(1),
+	Long: `List every action defined under the named profile's actions/
+directory. Actions are profile-scoped scripts that aps can invoke by
+id (sh, py, or js runtime, inferred from the entrypoint extension).
+
+Output respects the global --format flag (table|json|yaml). The local
+--type flag filters by inferred runtime (sh, py, js). Empty title
+fields render as "(no description)" in the table; structured formats
+leave them empty.
+
+Read-only: no profile state is mutated. Idempotent across runs.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actions, err := core.LoadActions(profileID)
@@ -84,7 +94,14 @@ var actionListCmd = &cobra.Command{
 var actionShowCmd = &cobra.Command{
 	Use:   "show [profile] [action]",
 	Short: "Show details of a specific action",
-	Args:  cobra.ExactArgs(2),
+	Long: `Show the resolved metadata for a single action under the named
+profile: id, title, inferred runtime type, on-disk path, and whether
+the action declares stdin input. Useful before invoking aps action
+run to confirm what will execute.
+
+Read-only: loads the action record from the profile's actions/
+directory and prints it. Idempotent.`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actionID := args[1]
@@ -106,7 +123,20 @@ var actionShowCmd = &cobra.Command{
 var actionRunCmd = &cobra.Command{
 	Use:   "run [profile] [action]",
 	Short: "Run an action",
-	Args:  cobra.ExactArgs(2),
+	Long: `Execute the named action script under the named profile. The
+action runtime (sh/py/js) is inferred from its entrypoint extension;
+aps invokes the corresponding interpreter and streams the action's
+stdout/stderr.
+
+Payload sources are mutually exclusive: --payload-file reads the
+named file into the action's stdin; --payload-stdin streams the
+current process stdin through. Without either flag aps inherits
+stdin directly. The inherited --dry-run global previews the
+resolved action path without executing.
+
+Mutating: invokes an opaque user-supplied script whose side effects
+aps cannot enumerate. Idempotency is conditional on the action.`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profileID := args[0]
 		actionID := args[1]

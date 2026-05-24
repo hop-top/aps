@@ -37,7 +37,20 @@ type trustHistoryRow struct {
 var profileTrustCmd = &cobra.Command{
 	Use:   "trust <profile-id>",
 	Short: "Show trust scores and history for a profile",
-	Args:  cobra.ExactArgs(1),
+	Long: `Show the trust ledger for a profile: per-domain trust scores
+and (with --history) the timestamped entries that produced them.
+The trust ledger lives on the profile record and accumulates as
+the profile completes evaluated tasks.
+
+Filters: --domain scopes the score block (and history, when
+shown) to a single trust domain; without it, every entry in
+core.TrustDomains is rendered. --json switches to a structured
+emission shaped {roles, scores, history?}; otherwise the styled
+table renderer is used.
+
+Read-only: loads profile.yaml and projects the trust ledger.
+Idempotent.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		domain, _ := cmd.Flags().GetString("domain")

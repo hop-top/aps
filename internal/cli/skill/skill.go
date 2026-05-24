@@ -136,7 +136,16 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <skill-name>",
 		Short: "Show detailed skill information",
-		Args:  cobra.ExactArgs(1),
+		Long: `Show the full SKILL.md metadata for a single discovered skill:
+name, description, license, compatibility tag, arbitrary metadata
+fields, on-disk location, the resolving skill source, the list of
+scripts under scripts/, the list of references, and a preview of
+the instructional body (first 500 chars).
+
+Skill discovery uses the same registry as aps skill list — the
+--profile global selects which profile's configured skill sources
+are scanned. Read-only: no skill content is modified. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			skillName := args[0]
 
@@ -511,6 +520,16 @@ func newStatsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stats",
 		Short: "Show skill usage statistics",
+		Long: `Show recorded skill invocation telemetry for the active
+profile: total invocations, completions, and failures across all
+skills, then a per-skill breakdown (invocations, completions,
+failures, success rate, average duration in ms). The telemetry
+store is populated by aps skill run as it tracks invocation,
+completion, and failure events.
+
+The --profile global selects which profile's telemetry to read.
+Prints "No skill usage recorded yet." when the store is empty.
+Read-only: idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// --profile is a persistent global (T-0648).
 			profileID := globals.Profile()
