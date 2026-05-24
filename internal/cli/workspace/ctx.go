@@ -170,7 +170,19 @@ func newCtxGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <key>",
 		Short: "Get a context variable",
-		Args:  cobra.ExactArgs(1),
+		Long: `Read a single context variable from the active or selected
+workspace and print its value to stdout.
+
+The lookup honours the T-1309 visibility filter: when --profile (or
+the inherited APS_PROFILE global) is set, private variables owned
+by other profiles are hidden and the key reads as not found.
+Passing no profile falls through to the raw view used by tooling
+and tests. --workspace inherits from the active workspace (T-0376);
+--json swaps the bare-value output for the full ContextVariable
+record. Companion: aps workspace ctx set, ctx list, ctx history.
+
+Read-only; idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
@@ -358,7 +370,23 @@ func newCtxDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <key>",
 		Short: "Delete a context variable",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove a key from the workspace's shared context store and
+persist the truncated snapshot. The delete is mediated by the
+T-1292 policy gate: the kit pre_persisted topic is published with
+Op=delete and kind=workspace_context before the in-memory mutation
+fans out, and CEL rules can veto via context.request_attrs (the
+variable's visibility and the calling workspace_id are stuffed in
+for the principal/role resolver to read).
+
+--workspace inherits from the active workspace, --profile names
+the deleting agent, and --note (T-1291) attaches a free-form
+rationale that flows into the policy context. Marked
+SideEffectDestructiveLocal: a destructive-token confirm gates the
+apply path (--force bypasses) and --dry-run is opted out because
+preview would only restate the key argument. Deleting a key that
+is absent (or private and owned by another profile, per T-1309)
+returns a not-found error rather than silently succeeding.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
@@ -462,7 +490,18 @@ func newCtxHistoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "history <key>",
 		Short: "Show mutation history for a variable",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print the ordered mutation log for a single context variable
+in the active or selected workspace. Each entry records the
+version, mutating agent, old value, new value, and timestamp;
+values are truncated to 30 characters in the table view (use
+--json for the full payload).
+
+--limit N returns the most recent N entries (keeps the tail of
+the slice); --workspace inherits from the active workspace
+global. The default styled-table output trims to a TTY-aware
+column set, and --json emits the raw []ContextMutation slice.
+Read-only; idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
