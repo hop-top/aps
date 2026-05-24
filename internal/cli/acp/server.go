@@ -16,6 +16,8 @@ import (
 	"hop.top/kit/go/console/progress"
 )
 
+const phaseListen = "listen"
+
 // NewServerCmd creates the `aps acp server` command
 func NewServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -99,14 +101,14 @@ func runACPServer(parent context.Context, profileID string) error {
 	}
 
 	r := progress.FromContext(ctx)
-	r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID})
+	r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID})
 	if err := acpServer.Start(ctx, &acp.TransportConfig{Transport: transport, ListenAddr: listenAddr}); err != nil {
 		okFalse := false
-		r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okFalse})
+		r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okFalse})
 		return fmt.Errorf("failed to start ACP server: %w", err)
 	}
 	okTrue := true
-	r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okTrue})
+	r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okTrue})
 
 	logging.GetLogger().Info("acp server started", "profile", profileID, "protocol", 1, "transport", transport, "address", acpServer.GetAddress())
 

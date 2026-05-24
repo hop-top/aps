@@ -1,3 +1,4 @@
+// Package skill — kit/console/progress emission tests.
 package skill
 
 import (

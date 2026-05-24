@@ -31,6 +31,8 @@ var (
 	TestServeLogLevel  = &serveLogLevel
 )
 
+const phaseListen = "listen"
+
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start protocol server",
@@ -129,16 +131,16 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	ctx := cmd.Context()
 	r := progress.FromContext(ctx)
-	r.Emit(ctx, progress.Event{Phase: "listen", Item: serveAddr})
+	r.Emit(ctx, progress.Event{Phase: phaseListen, Item: serveAddr})
 
 	listener, err := net.Listen("tcp", serveAddr)
 	if err != nil {
 		okFalse := false
-		r.Emit(ctx, progress.Event{Phase: "listen", Item: serveAddr, OK: &okFalse})
+		r.Emit(ctx, progress.Event{Phase: phaseListen, Item: serveAddr, OK: &okFalse})
 		return fmt.Errorf("listening on %s: %w", serveAddr, err)
 	}
 	okTrue := true
-	r.Emit(ctx, progress.Event{Phase: "listen", Item: serveAddr, OK: &okTrue})
+	r.Emit(ctx, progress.Event{Phase: phaseListen, Item: serveAddr, OK: &okTrue})
 
 	logging.GetLogger().Info("protocol server starting",
 		"addr", serveAddr, "health", fmt.Sprintf("http://%s/health", serveAddr))

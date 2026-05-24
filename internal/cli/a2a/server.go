@@ -19,6 +19,8 @@ import (
 	"hop.top/kit/go/console/progress"
 )
 
+const phaseListen = "listen"
+
 func NewServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -90,14 +92,14 @@ Example:
 			}
 
 			r := progress.FromContext(ctx)
-			r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID})
+			r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID})
 			if err := server.Start(ctx, config); err != nil {
 				okFalse := false
-				r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okFalse})
+				r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to start A2A server: %w", err)
 			}
 			okTrue := true
-			r.Emit(ctx, progress.Event{Phase: "listen", Item: profileID, OK: &okTrue})
+			r.Emit(ctx, progress.Event{Phase: phaseListen, Item: profileID, OK: &okTrue})
 
 			addr := profile.A2A.ListenAddr
 			if addr == "" {
