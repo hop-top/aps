@@ -25,7 +25,7 @@ import (
 )
 
 func TestAddCmd_DryRunShowsAliasResolution(t *testing.T) {
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -48,7 +48,7 @@ func TestAddCmd_DryRunShowsAliasResolution(t *testing.T) {
 func TestAddCmd_PersistsCanonicalConfig(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -63,7 +63,7 @@ func TestAddCmd_PersistsCanonicalConfig(t *testing.T) {
 	assert.Contains(t, out.String(), "type: ticket")
 	assert.Contains(t, out.String(), "adapter: github")
 
-	show := NewServiceCmd()
+	show := newTestServiceCmd()
 	var showOut bytes.Buffer
 	show.SetOut(&showOut)
 	show.SetErr(&showOut)
@@ -134,7 +134,7 @@ func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
 		},
 	}))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -155,7 +155,7 @@ func TestServiceStatus_MessageServiceReportsOperatorFields(t *testing.T) {
 func TestAddCmd_TelegramPersistsWebhookSecretTokenOption(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -170,7 +170,7 @@ func TestAddCmd_TelegramPersistsWebhookSecretTokenOption(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, out.String(), "config_valid: true")
 
-	show := NewServiceCmd()
+	show := newTestServiceCmd()
 	var showOut bytes.Buffer
 	show.SetOut(&showOut)
 	show.SetErr(&showOut)
@@ -188,7 +188,7 @@ func TestServiceTest_InvalidMessageConfigFailsBeforeProbe(t *testing.T) {
 		Profile: "assistant",
 	}))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -325,7 +325,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 			t.Setenv("WHATSAPP_APP_SECRET", "whatsapp-secret")
 			require.NoError(t, core.SaveService(tt.service))
 
-			show := NewServiceCmd()
+			show := newTestServiceCmd()
 			var showOut bytes.Buffer
 			show.SetOut(&showOut)
 			show.SetErr(&showOut)
@@ -340,7 +340,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 			http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir(), assertRequest: tt.assertProbe}}
 			t.Cleanup(func() { http.DefaultClient = previousClient })
 
-			testCmd := NewServiceCmd()
+			testCmd := newTestServiceCmd()
 			var testOut bytes.Buffer
 			testCmd.SetOut(&testOut)
 			testCmd.SetErr(&testOut)
@@ -357,7 +357,7 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 func TestServiceRoutes_MessageService(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
-	add := NewServiceCmd()
+	add := newTestServiceCmd()
 	add.SetArgs([]string{
 		"add", "support-bot",
 		"--type", "telegram",
@@ -365,7 +365,7 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 	})
 	require.NoError(t, add.Execute())
 
-	show := NewServiceCmd()
+	show := newTestServiceCmd()
 	var showOut bytes.Buffer
 	show.SetOut(&showOut)
 	show.SetErr(&showOut)
@@ -375,7 +375,7 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 	assert.Contains(t, showOut.String(), "executes: normalized message execution handoff")
 	assert.Contains(t, showOut.String(), "maturity: ready")
 
-	routes := NewServiceCmd()
+	routes := newTestServiceCmd()
 	var routesOut bytes.Buffer
 	routes.SetOut(&routesOut)
 	routes.SetErr(&routesOut)
@@ -437,7 +437,7 @@ func testHMACSHA256Hex(secret string, body []byte) string {
 func TestServiceShow_ACPAdvertisesStdioOnlyRuntime(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	cmd.SetArgs([]string{
 		"add", "dev-acp",
 		"--type", "client",
@@ -446,7 +446,7 @@ func TestServiceShow_ACPAdvertisesStdioOnlyRuntime(t *testing.T) {
 	})
 	require.NoError(t, cmd.Execute())
 
-	show := NewServiceCmd()
+	show := newTestServiceCmd()
 	var out bytes.Buffer
 	show.SetOut(&out)
 	show.SetErr(&out)
@@ -576,11 +576,11 @@ func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			add := NewServiceCmd()
+			add := newTestServiceCmd()
 			add.SetArgs(tt.args)
 			require.NoError(t, add.Execute())
 
-			show := NewServiceCmd()
+			show := newTestServiceCmd()
 			var out bytes.Buffer
 			show.SetOut(&out)
 			show.SetErr(&out)
@@ -597,7 +597,7 @@ func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
 func TestAddCmd_PersistsTicketAdapterOptions(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
 
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -616,7 +616,7 @@ func TestAddCmd_PersistsTicketAdapterOptions(t *testing.T) {
 	assert.Contains(t, out.String(), "type: ticket")
 	assert.Contains(t, out.String(), "adapter: jira")
 
-	show := NewServiceCmd()
+	show := newTestServiceCmd()
 	var showOut bytes.Buffer
 	show.SetOut(&showOut)
 	show.SetErr(&showOut)
@@ -632,7 +632,7 @@ func TestAddCmd_PersistsTicketAdapterOptions(t *testing.T) {
 }
 
 func TestAddCmd_HelpShowsResolvedAlias(t *testing.T) {
-	cmd := NewServiceCmd()
+	cmd := newTestServiceCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -749,14 +749,14 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := NewServiceCmd()
+			cmd := newTestServiceCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			cmd.SetErr(&out)
 			cmd.SetArgs(tt.args)
 			require.NoError(t, cmd.Execute())
 
-			show := NewServiceCmd()
+			show := newTestServiceCmd()
 			var showOut bytes.Buffer
 			show.SetOut(&showOut)
 			show.SetErr(&showOut)

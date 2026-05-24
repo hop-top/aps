@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
@@ -100,6 +101,8 @@ func newListCmd() *cobra.Command {
 
 	cmd.Flags().String("source", "",
 		"Filter by source label (Profile, Global, User, Claude Code, Cursor, Zed, VS Code, Windsurf)")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
@@ -130,14 +133,16 @@ func buildSkillRows(registry *skills.Registry, profileID string) []skillSummaryR
 
 // newShowCmd creates the 'skill show' command
 func newShowCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "show <skill-name>",
 		Short: "Show detailed skill information",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			skillName := args[0]
+
+			// --profile is a persistent global (root.go Globals);
+			// inherited rather than redeclared locally (T-0648).
+			profileID := globals.Profile()
 
 			// Load config
 			cfg := skills.DefaultConfig()
@@ -212,7 +217,8 @@ func newShowCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
@@ -220,7 +226,6 @@ func newShowCmd() *cobra.Command {
 // newInstallCmd creates the 'skill install' command
 func newInstallCmd() *cobra.Command {
 	var global bool
-	var profileID string
 
 	cmd := &cobra.Command{
 		Use:   "install <path>",
@@ -229,6 +234,8 @@ func newInstallCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sourcePath := args[0]
+			// --profile is a persistent global (T-0648).
+			profileID := globals.Profile()
 
 			// Validate source
 			if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
@@ -275,7 +282,8 @@ func newInstallCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&global, "global", false, "Install to global skills directory")
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID to install skill for")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }
@@ -302,25 +310,30 @@ func newValidateCmd() *cobra.Command {
 			return nil
 		},
 	}
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
 
 // newRunCmd creates the 'skill run' command
 func newRunCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "run <skill-name> -- <script> [args...]",
 		Short: "Run a skill script",
 		Long:  `Execute a script from a skill.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --profile is a persistent global (T-0648).
+			profileID := globals.Profile()
 			return runSkillScript(cmd.Context(), profileID, args, cmd.ArgsLenAtDash(), cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID")
+	// Skill scripts run external commands — interactive-band per kit's
+	// 6-tier ladder (covers exec-and-stream).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }
@@ -488,12 +501,12 @@ func newSkillTelemetry(cfg *skills.Config) *skills.Telemetry {
 
 // newStatsCmd creates the 'skill stats' command
 func newStatsCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "stats",
 		Short: "Show skill usage statistics",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --profile is a persistent global (T-0648).
+			profileID := globals.Profile()
 			// Load telemetry
 			cfg := skills.DefaultConfig()
 			telemetry, err := skills.NewTelemetry(&cfg.Telemetry)
@@ -534,20 +547,21 @@ func newStatsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
 
 // newSuggestCmd creates the 'skill suggest' command
 func newSuggestCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "suggest",
 		Short: "Suggest IDE skill paths to configure",
 		Long:  `Detect IDE/TDE skill directories and suggest adding them to configuration.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --profile is a persistent global (T-0648).
+			profileID := globals.Profile()
 			paths := skills.NewSkillPaths(profileID)
 			suggestions := paths.SuggestIDEPaths()
 
@@ -573,7 +587,8 @@ func newSuggestCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID")
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

@@ -5,12 +5,13 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
 )
 
 func newShowCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "show <service-id>",
 		Short: "Show a persisted service",
 		Args:  cobra.ExactArgs(1),
@@ -46,10 +47,13 @@ func newShowCmd() *cobra.Command {
 			return nil
 		},
 	}
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }
 
 func newRoutesCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "routes <service-id>",
 		Short: "Show reachable routes for a persisted service",
 		Args:  cobra.ExactArgs(1),
@@ -69,4 +73,7 @@ func newRoutesCmd() *cobra.Command {
 			return nil
 		},
 	}
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	return cmd
 }

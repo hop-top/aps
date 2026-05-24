@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
 )
@@ -15,12 +16,9 @@ func NewServerCmd() *cobra.Command {
 	var (
 		addr      string
 		secret    string
-		dryRun    bool
 		eventMaps []string
 		allowList []string
 	)
-
-	var profileID string
 
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -38,6 +36,12 @@ Examples:
   aps webhook server --profile worker --secret my-secret
   aps webhook server --secret my-secret --event-map github=profile:action`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --profile and --dry-run are persistent globals (declared
+			// in root.go Globals; kit/cli auto-registers --dry-run).
+			// Read from the inherited flag set instead of redeclaring
+			// locally (signature validator local-globals check, T-0648).
+			profileID, _ := cmd.Flags().GetString("profile")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			// Auto-enable webhooks if profile provided and not already configured
 			if profileID != "" {
 				profile, err := core.LoadProfile(profileID)
@@ -84,8 +88,11 @@ Examples:
 	cmd.Flags().StringVar(&secret, "secret", "", "Shared secret for HMAC validation")
 	cmd.Flags().StringSliceVar(&eventMaps, "event-map", nil, "Map event to action (event=profile:action)")
 	cmd.Flags().StringSliceVar(&allowList, "allow-event", nil, "Allowed event types")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Log events without executing")
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (optional, auto-enables webhooks if not configured)")
+	// Long-running daemon — kit's 6-tier ladder reserves interactive
+	// for session-bound / serve commands. Each invocation starts a
+	// fresh listener, so not idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }
