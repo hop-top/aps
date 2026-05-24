@@ -4,6 +4,11 @@
 # Input (env): EMAIL_TO, EMAIL_SUBJECT, EMAIL_BODY, EMAIL_CC
 set -euo pipefail
 
+# shellcheck source=../../../_lib.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
+aps_init_backend "send"
+: "${BIN:?aps_init_backend did not set BIN}"
+
 FROM="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 TO="${EMAIL_TO:?missing EMAIL_TO}"
 SUBJECT="${EMAIL_SUBJECT:?missing EMAIL_SUBJECT}"
@@ -16,7 +21,7 @@ ACCOUNT_FLAG=""
 CC_HEADER=""
 [ -n "${EMAIL_CC:-}" ] && CC_HEADER="Cc: $EMAIL_CC"
 
-himalaya template send $ACCOUNT_FLAG <<EOF
+"$BIN" template send $ACCOUNT_FLAG <<EOF
 From: $FROM
 To: $TO
 ${CC_HEADER:+$CC_HEADER
