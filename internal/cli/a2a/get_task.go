@@ -3,6 +3,7 @@ package a2a
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,16 +12,14 @@ import (
 	"github.com/spf13/cobra"
 
 	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/logging"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewGetTaskCmd() *cobra.Command {
-	var (
-		profileID     string
-		historyLength int
-		format        string
-	)
+	var historyLength int
 
 	cmd := &cobra.Command{
 		Use:   "show <task-id>",
@@ -30,6 +29,15 @@ func NewGetTaskCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			taskID := a2a.TaskID(args[0])
+
+			// T-0648 — read --profile / --format from the tool-level
+			// globals registered on root.Viper (see internal/cli/root.go)
+			// rather than shadowing them with local flags.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return errors.New("--profile is required")
+			}
+			format := globals.Format()
 
 			profile, err := loadProfile(profileID)
 			if err != nil {
@@ -52,7 +60,7 @@ func NewGetTaskCmd() *cobra.Command {
 
 			task, _, err := storage.Get(ctx, taskID)
 			if err != nil {
-				if err == a2a.ErrTaskNotFound {
+				if errors.Is(err, a2a.ErrTaskNotFound) {
 					return fmt.Errorf("task not found: %s", taskID)
 				}
 				return fmt.Errorf("failed to get task: %w", err)
@@ -67,17 +75,21 @@ func NewGetTaskCmd() *cobra.Command {
 			case "json":
 				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
-				return enc.Encode(task)
+				if err := enc.Encode(task); err != nil {
+					return fmt.Errorf("encode task: %w", err)
+				}
+				return nil
 			default:
 				return printTaskDetails(task)
 			}
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
 	cmd.Flags().IntVar(&historyLength, "history", 0, "Limit message history length")
-	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format (text, json)")
-	cmd.MarkFlagRequired("profile")
+
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

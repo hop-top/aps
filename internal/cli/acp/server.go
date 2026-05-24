@@ -12,11 +12,12 @@ import (
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/aps/internal/logging"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewServerCmd creates the `aps acp server` command
 func NewServerCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "server [profile]",
 		Short: "Start an ACP server for a profile",
 		Long: `Start an ACP (Agent Client Protocol) server for a profile.
@@ -32,6 +33,13 @@ Example:
 			return runACPServer(profileID)
 		},
 	}
+
+	// T-0648 — kit 0.4 signature annotations. Long-running listener
+	// (stdio or WebSocket); interactive class, not idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
+
+	return cmd
 }
 
 // runACPServer starts an ACP server for the specified profile

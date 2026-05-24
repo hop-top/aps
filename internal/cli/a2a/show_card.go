@@ -2,25 +2,30 @@ package a2a
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	a2apkg "hop.top/aps/internal/a2a"
+	"hop.top/aps/internal/cli/globals"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewShowCardCmd() *cobra.Command {
-	var (
-		profileID string
-		format    string
-	)
-
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show the Agent Card for a profile",
 		Long:  `Display the A2A Agent Card for a specified profile.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile / --format from the tool-level
+			// globals; no local shadow.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return errors.New("--profile is required")
+			}
+
 			profile, err := loadProfile(profileID)
 			if err != nil {
 				return err
@@ -31,11 +36,14 @@ func NewShowCardCmd() *cobra.Command {
 				return fmt.Errorf("failed to generate agent card: %w", err)
 			}
 
-			switch format {
+			switch globals.Format() {
 			case "json":
 				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
-				return enc.Encode(card)
+				if err := enc.Encode(card); err != nil {
+					return fmt.Errorf("encode card: %w", err)
+				}
+				return nil
 			default:
 				fmt.Printf("Agent Card for Profile: %s\n", profile.ID)
 				fmt.Printf("Display Name: %s\n", profile.DisplayName)
@@ -56,9 +64,9 @@ func NewShowCardCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format (text, json)")
-	cmd.MarkFlagRequired("profile")
+	// T-0648 — kit 0.4 signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

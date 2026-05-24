@@ -11,6 +11,7 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/cli/globals"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/progress"
 )
 
@@ -19,7 +20,6 @@ func NewSendTaskCmd() *cobra.Command {
 		targetProfile string
 		message       string
 		taskID        string
-		format        string
 	)
 
 	cmd := &cobra.Command{
@@ -80,11 +80,16 @@ Example:
 			okTrue := true
 			r.Emit(ctx, progress.Event{Phase: "ack", Item: targetProfile, OK: &okTrue})
 
-			switch format {
+			// T-0648 — read --format from root globals; "text" is the
+			// in-package fallback when no value is set.
+			switch globals.Format() {
 			case "json":
 				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
-				return enc.Encode(task)
+				if err := enc.Encode(task); err != nil {
+					return fmt.Errorf("encode task: %w", err)
+				}
+				return nil
 			default:
 				fmt.Printf("Task created/updated: %s\n", task.ID)
 				fmt.Printf("Status: %s\n", task.Status.State)
@@ -100,9 +105,18 @@ Example:
 	cmd.Flags().StringVarP(&targetProfile, "target", "t", "", "Target profile ID (required)")
 	cmd.Flags().StringVarP(&message, "message", "m", "", "Message text (required)")
 	cmd.Flags().StringVar(&taskID, "task-id", "", "Existing task ID (optional, creates new if not specified)")
-	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format (text, json)")
-	cmd.MarkFlagRequired("target")
-	cmd.MarkFlagRequired("message")
+	if err := cmd.MarkFlagRequired("target"); err != nil {
+		panic(err)
+	}
+	if err := cmd.MarkFlagRequired("message"); err != nil {
+		panic(err)
+	}
+
+	// T-0648 — kit 0.4 signature annotations. Outbound JSON-RPC call to
+	// the target peer; each send mints a new message ID and (when
+	// task-id is unset) a new task.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

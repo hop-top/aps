@@ -2,6 +2,7 @@ package a2a
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,12 +13,12 @@ import (
 
 	a2apkg "hop.top/aps/internal/a2a"
 	"hop.top/aps/internal/agntcy/observability"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewServerCmd() *cobra.Command {
-	var profileID string
-
 	cmd := &cobra.Command{
 		Use:   "server",
 		Short: "Start an A2A server for a profile",
@@ -29,10 +30,16 @@ The server will listen on the address configured in the profile's A2A settings
   - Agent Card at /.well-known/agent-card
 
 Example:
-  aps a2a server --profile worker`,
+  aps --profile worker a2a server`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			// T-0648 — read --profile from root globals; no local shadow.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return errors.New("--profile is required")
+			}
 
 			// Load profile (without requiring A2A capability yet)
 			profile, err := core.LoadProfile(profileID)
@@ -108,8 +115,10 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
+	// T-0648 — kit 0.4 signature annotations. Long-running listener:
+	// interactive class, not naturally idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

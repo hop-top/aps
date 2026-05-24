@@ -1,23 +1,25 @@
 package a2a
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func NewToggleCmd() *cobra.Command {
 	var (
-		profileID string
-		enabled   string
-		protocol  string
-		host      string
-		port      string
-		url       string
+		enabled  string
+		protocol string
+		host     string
+		port     string
+		url      string
 	)
 
 	cmd := &cobra.Command{
@@ -29,11 +31,17 @@ Without --enabled flag, toggles the current state (enables if not configured).
 With --enabled=on, forces enable. With --enabled=off, forces disable.
 
 Examples:
-  aps a2a toggle --profile worker                    # Toggle A2A
-  aps a2a toggle --profile worker --enabled=on      # Force enable
-  aps a2a toggle --profile worker --enabled=off     # Force disable
-  aps a2a toggle --profile worker --protocol=grpc --port=9000`,
+  aps --profile worker a2a toggle                    # Toggle A2A
+  aps --profile worker a2a toggle --enabled=on       # Force enable
+  aps --profile worker a2a toggle --enabled=off      # Force disable
+  aps --profile worker a2a toggle --protocol=grpc --port=9000`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from root globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return errors.New("--profile is required")
+			}
+
 			// Load profile
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
@@ -76,13 +84,17 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&enabled, "enabled", "", "Enable (on), disable (off), or toggle (omit or blank)")
 	cmd.Flags().StringVar(&protocol, "protocol", "jsonrpc", "Protocol binding (jsonrpc, grpc, http)")
 	cmd.Flags().StringVar(&host, "host", "127.0.0.1", "Listen host")
 	cmd.Flags().StringVar(&port, "port", "8081", "Listen port")
 	cmd.Flags().StringVar(&url, "url", "", "Public endpoint URL (defaults to http://{host}:{port})")
+
+	// T-0648 — kit 0.4 signature annotations. Mutates the local profile
+	// YAML; idempotency hinges on --enabled (`on`/`off` is idempotent,
+	// omitted flag flips state).
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 
 	return cmd
 }

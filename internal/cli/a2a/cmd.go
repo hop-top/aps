@@ -2,6 +2,7 @@ package a2a
 
 import (
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewA2ACmd creates the a2a command group
@@ -18,6 +19,11 @@ The a2a command group provides operations for:
 - Managing agent cards
 - Discovering other agents`,
 	}
+
+	// T-0648 — mark as intermediate grouping node so depth>=3 leaves
+	// under `a2a tasks ...` / `a2a card ...` pass the
+	// kit/hierarchical signature check.
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(NewTasksCmd())
 	cmd.AddCommand(NewCardCmd())
