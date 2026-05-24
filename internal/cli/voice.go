@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/voice"
 	kitcli "hop.top/kit/go/console/cli"
 )
@@ -64,7 +65,7 @@ var voiceStartCmd = &cobra.Command{
 		// --profile is a kit-shipped root-persistent global; read the
 		// inherited flag rather than redeclaring locally (T-0648 batch 8
 		// local-globals dedup).
-		profileID := root.Viper.GetString("profile")
+		profileID := globals.Profile()
 		channel, _ := cmd.Flags().GetString("channel")
 		if profileID == "" {
 			return fmt.Errorf("--profile is required")

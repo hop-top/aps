@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	coreadapter "hop.top/aps/internal/core/adapter"
@@ -96,7 +97,7 @@ func newContactListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all contacts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			profile := root.Viper.GetString("profile")
+			profile := globals.Profile()
 			inputs := map[string]string{}
 			if addressbook != "" {
 				inputs["addressbook"] = addressbook
@@ -124,7 +125,7 @@ func newContactListCmd() *cobra.Command {
 		},
 	}
 	// T-0648 batch 8 — local --profile dropped; the contact subcommand
-	// reads root.Viper.GetString("profile") (set by the inherited global
+	// reads globals.Profile() (set by the inherited global
 	// persistent flag, including its -p shorthand).
 	cmd.Flags().StringVar(&addressbook, "addressbook", "", "Addressbook ID")
 	cmd.Flags().StringVar(&org, "org", "", "Filter to a single ORG value")
@@ -231,7 +232,7 @@ func newContactShowCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("show",
 				map[string]string{"id": args[0]},
-				root.Viper.GetString("profile"))
+				globals.Profile())
 		},
 	}
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
@@ -262,7 +263,7 @@ func newContactAddCmd() *cobra.Command {
 			if addressbook != "" {
 				inputs["addressbook"] = addressbook
 			}
-			return contactExec("add", inputs, root.Viper.GetString("profile"))
+			return contactExec("add", inputs, globals.Profile())
 		},
 	}
 	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
@@ -301,7 +302,7 @@ func newContactUpdateCmd() *cobra.Command {
 			if note != "" {
 				inputs["note"] = note
 			}
-			return contactExec("update", inputs, root.Viper.GetString("profile"))
+			return contactExec("update", inputs, globals.Profile())
 		},
 	}
 	// T-0648 batch 8 — local --profile dropped; read via root.Viper.
@@ -326,7 +327,7 @@ func newContactFindCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("find",
 				map[string]string{"query": args[0]},
-				root.Viper.GetString("profile"))
+				globals.Profile())
 		},
 	}
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
@@ -346,7 +347,7 @@ func newContactNoteCmd() *cobra.Command {
 					"id":   args[0],
 					"text": strings.Join(args[1:], " "),
 				},
-				root.Viper.GetString("profile"))
+				globals.Profile())
 		},
 	}
 	// `contact note` appends each call; not naturally idempotent.
@@ -364,7 +365,7 @@ func newContactDeleteCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			return contactExec("delete",
 				map[string]string{"id": args[0]},
-				root.Viper.GetString("profile"))
+				globals.Profile())
 		},
 	}
 	// `contact delete` is delete-by-id (idempotent). Hold the

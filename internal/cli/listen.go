@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/runtime/bus"
@@ -71,7 +72,7 @@ func init() {
 }
 
 func runListen(cmd *cobra.Command, _ []string) error {
-	profileID := root.Viper.GetString("profile")
+	profileID := globals.Profile()
 	if profileID == "" {
 		return fmt.Errorf("--profile is required")
 	}

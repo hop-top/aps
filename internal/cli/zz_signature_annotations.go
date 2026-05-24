@@ -33,6 +33,14 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 )
 
+// builtinCmd* name cobra-generated subcommands that we routinely
+// skip in walks (completion, help). Centralised here so goconst
+// doesn't fire when other top-level files match against them.
+const (
+	builtinCmdCompletion = "completion"
+	builtinCmdHelp       = "help"
+)
+
 func init() {
 	markIntermediatesHierarchical(rootCmd)
 }
@@ -73,10 +81,10 @@ func isBuiltinCmd(cmd *cobra.Command) bool {
 		return false
 	}
 	switch cmd.Name() {
-	case "completion", "help", "__complete", "__completeNoDesc":
+	case builtinCmdCompletion, builtinCmdHelp, "__complete", "__completeNoDesc":
 		return true
 	}
-	if p := cmd.Parent(); p != nil && p.Name() == "completion" {
+	if p := cmd.Parent(); p != nil && p.Name() == builtinCmdCompletion {
 		return true
 	}
 	if cmd.Annotations != nil && cmd.Annotations["kit/exempt-validation"] == "true" {

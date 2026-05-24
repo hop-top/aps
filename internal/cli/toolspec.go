@@ -52,7 +52,7 @@ func collectCommands(c *cobra.Command) []toolspec.Command {
 			continue
 		}
 		switch sub.Name() {
-		case "help", "completion":
+		case builtinCmdHelp, builtinCmdCompletion:
 			continue
 		}
 		out = append(out, commandFromCobra(sub))
