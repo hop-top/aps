@@ -5,7 +5,8 @@
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
-. "$(dirname "$0")/../../../_lib.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
 aps_init_backend "list-calendars"
+: "${BIN:?aps_init_backend did not set BIN}"
 
 "$BIN" list

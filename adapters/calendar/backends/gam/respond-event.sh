@@ -9,8 +9,9 @@
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
-. "$(dirname "$0")/../../../_lib.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
 aps_init_backend "respond-event"
+: "${BIN:?aps_init_backend did not set BIN}"
 
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 CALENDAR="${CAL_CALENDAR:-primary}"
@@ -34,8 +35,21 @@ fi
 # Pre-check that USER is on the event's attendee list. gam's
 # updateevent silently creates a new attendee entry if the email
 # isn't already present, which is rarely what "respond" implies.
-# Detect by listing the event's attendees and grepping for USER.
-attendees=$("$BIN" calendar "$CALENDAR" info event "$EVENT_ID" 2>/dev/null \
+# Capture-then-check so a gam failure (no DWD scope, event doesn't
+# exist, network error) surfaces with the real error instead of
+# being swallowed into a misleading "not an attendee" diagnosis.
+event_info=""
+if ! event_info="$("$BIN" calendar "$CALENDAR" info event "$EVENT_ID" 2>&1)"; then
+  echo "respond-event: gam info event failed for '$EVENT_ID' on calendar '$CALENDAR':" >&2
+  printf '%s\n' "$event_info" >&2
+  exit 1
+fi
+
+# gam emits attendee data on lines like `Attendees:` (header) followed
+# by per-attendee blocks with `email:` (lowercase) keys. The header
+# match is loose (Attendees / Attendee, case-insensitive) so minor
+# format drift between gam releases doesn't silently break the check.
+attendees=$(printf '%s\n' "$event_info" \
   | grep -iE '^[[:space:]]*Attendees?:|^[[:space:]]*email:' || true)
 
 if ! printf '%s\n' "$attendees" | grep -qiF "$USER"; then

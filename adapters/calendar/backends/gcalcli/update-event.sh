@@ -15,8 +15,9 @@
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
-. "$(dirname "$0")/../../../_lib.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
 aps_init_backend "update-event"
+: "${BIN:?aps_init_backend did not set BIN}"
 
 EVENT_ID="${CAL_EVENT_ID:?missing CAL_EVENT_ID}"
 

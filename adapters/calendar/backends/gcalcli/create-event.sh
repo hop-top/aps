@@ -7,8 +7,9 @@
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
-. "$(dirname "$0")/../../../_lib.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
 aps_init_backend "create-event"
+: "${BIN:?aps_init_backend did not set BIN}"
 
 CALENDAR="${CAL_CALENDAR:-primary}"
 SUMMARY="${CAL_SUMMARY:?missing CAL_SUMMARY}"

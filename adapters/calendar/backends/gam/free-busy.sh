@@ -12,8 +12,9 @@
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
-. "$(dirname "$0")/../../../_lib.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../_lib.sh"
 aps_init_backend "free-busy"
+: "${BIN:?aps_init_backend did not set BIN}"
 
 USER="${APS_EMAIL_FROM:?missing APS_EMAIL_FROM}"
 EMAILS="${CAL_EMAILS:?missing CAL_EMAILS}"
