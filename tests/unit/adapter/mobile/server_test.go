@@ -46,6 +46,10 @@ func setupTestServer(t *testing.T, opts ...mobile.ServerOption) *testServerEnv {
 	t.Cleanup(func() {
 		cancel()
 		server.Stop()
+		// Close the sqlite handle before t.TempDir's rmdir runs;
+		// Windows holds an exclusive lock on the .db (+ WAL/SHM)
+		// until the handle is closed.
+		_ = registry.Close()
 	})
 
 	return &testServerEnv{
@@ -79,6 +83,7 @@ func TestServerLifecycle(t *testing.T) {
 	t.Run("stops cleanly", func(t *testing.T) {
 		dir := t.TempDir()
 		registry, _ := mobile.NewRegistry(filepath.Join(dir, "reg"))
+		t.Cleanup(func() { _ = registry.Close() })
 		tokenMgr, _ := mobile.NewTokenManager("p", filepath.Join(dir, "keys"))
 		server := mobile.NewAdapterServer("p", registry, tokenMgr)
 
