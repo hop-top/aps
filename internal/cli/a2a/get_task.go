@@ -73,10 +73,22 @@ func NewGetTaskCmd() *cobra.Command {
 
 			switch format {
 			case "json":
-				enc := json.NewEncoder(os.Stdout)
-				enc.SetIndent("", "  ")
-				if err := enc.Encode(task); err != nil {
+				body, err := json.MarshalIndent(task, "", "  ")
+				if err != nil {
 					return fmt.Errorf("encode task: %w", err)
+				}
+				// Task.History.Parts can include peer-supplied text
+				// that carries secrets (O5 surface in
+				// docs/cli/redact-inventory.md). The text path
+				// already redacts via logging.Apply in
+				// printTaskDetails; the JSON path needs the same
+				// guarantee at the byte-stream level so --format json
+				// doesn't bypass it.
+				if _, err := os.Stdout.Write(logging.ApplyBytes(body)); err != nil {
+					return fmt.Errorf("write task: %w", err)
+				}
+				if _, err := os.Stdout.Write([]byte{'\n'}); err != nil {
+					return fmt.Errorf("write task: %w", err)
 				}
 				return nil
 			default:

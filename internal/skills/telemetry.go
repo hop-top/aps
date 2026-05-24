@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/logging"
 )
 
 // TelemetryEvent represents a skill usage event
@@ -134,7 +135,15 @@ func (t *Telemetry) TrackFailure(skillName, profileID, sessionID, scriptName str
 	return t.writeEvent(event)
 }
 
-// writeEvent appends an event to the log file (JSONL format)
+// writeEvent appends an event to the log file (JSONL format).
+//
+// The on-disk writer is wrapped via logging.NewWriter so the
+// TelemetryEvent.ErrorMsg field — populated from action errors via
+// TrackFailure, which can echo subprocess stderr (W3 chain in
+// docs/cli/redact-inventory.md) — is redacted before persistence.
+// The wrapper is a transparent pass-through when redaction is
+// disabled at write-time, so --no-redact / APS_DEBUG_NO_REDACT
+// bypass costs nothing on this path.
 func (t *Telemetry) writeEvent(event TelemetryEvent) error {
 	// Open file in append mode
 	f, err := os.OpenFile(t.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -149,8 +158,9 @@ func (t *Telemetry) writeEvent(event TelemetryEvent) error {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	// Write as single line (JSONL)
-	if _, err := f.Write(append(eventJSON, '\n')); err != nil {
+	// Write as single line (JSONL) through the redacting writer.
+	w := logging.NewWriter(f)
+	if _, err := w.Write(append(eventJSON, '\n')); err != nil {
 		return fmt.Errorf("failed to write event: %w", err)
 	}
 
