@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"hop.top/kit/go/console/alias"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/core/xdg"
 )
 
@@ -106,5 +107,10 @@ That behaviour has moved to ` + "`aps alias shell`" + `; this notice will be
 removed after one release.`
 
 	aliasCmd.AddCommand(aliasShellCmd)
+	// T-0648 — `alias shell` emits source-able alias lines per profile;
+	// pure read of the profile list. Kit-owned subleaves (add/list/
+	// remove) are annotated by kit's alias factory.
+	kitcli.SetSideEffect(aliasShellCmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(aliasShellCmd, kitcli.IdempotencyYes)
 	rootCmd.AddCommand(aliasCmd)
 }

@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // profileWorkspaceCmd is the `aps profile workspace` mid-level command
@@ -64,4 +65,9 @@ func init() {
 	// link/unlink, which do not exist as subcommands; set is the
 	// canonical way to bind a profile to a workspace.)
 	AddNoteFlag(profileSetWorkspaceCmd)
+
+	// T-0648 — kit signature annotations. `set` overwrites the
+	// workspace link on the profile struct (local write, idempotent).
+	kitcli.SetSideEffect(profileSetWorkspaceCmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(profileSetWorkspaceCmd, kitcli.IdempotencyYes)
 }
