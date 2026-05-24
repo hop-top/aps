@@ -89,10 +89,9 @@ func ServeWebhooks(config WebhookServerConfig) error {
 		target, ok := config.EventMap[eventType]
 		if !ok {
 			// Spec clarification: 400 Bad Request if no mapping
-			resp := map[string]string{"error": fmt.Sprintf("No mapping for event '%s'", eventType)}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(resp)
+			respondJSON(w, http.StatusBadRequest, map[string]string{
+				"error": fmt.Sprintf("No mapping for event '%s'", eventType),
+			})
 			return
 		}
 
@@ -188,8 +187,10 @@ func respondJSON(w http.ResponseWriter, status int, data any) {
 	body, err := json.Marshal(data)
 	if err != nil {
 		// Fall back to the original encoder path so a marshal failure
-		// doesn't drop the response entirely.
-		json.NewEncoder(w).Encode(data)
+		// doesn't drop the response entirely. The encoder output still
+		// passes through the redacting writer so secrets that landed in
+		// error strings are tagged before egress.
+		_ = json.NewEncoder(logging.NewWriter(w)).Encode(data)
 		return
 	}
 	w.Write(logging.ApplyBytes(body))
