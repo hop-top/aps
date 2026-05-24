@@ -36,9 +36,7 @@ func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter,
 		_, _ = a.core.ExecuteRun(r.Context(), input, nil)
 	}()
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{
+	a.sendJSON(w, http.StatusAccepted, map[string]string{
 		"message": "run started in background",
 	})
 }
@@ -84,8 +82,7 @@ func (a *AgentProtocolAdapter) handleRunsDelete(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(map[string]string{
+	a.sendJSON(w, http.StatusNotImplemented, map[string]string{
 		"message": "run deletion not yet implemented",
 	})
 }

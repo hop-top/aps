@@ -415,8 +415,7 @@ func (a *AgentProtocolAdapter) handleStorePut(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
+	a.sendJSON(w, http.StatusCreated, map[string]string{
 		"message": "item stored successfully",
 	})
 }
@@ -592,7 +591,9 @@ func (a *AgentProtocolAdapter) sendJSON(w http.ResponseWriter, code int, data in
 	w.WriteHeader(code)
 	body, err := json.Marshal(data)
 	if err != nil {
-		json.NewEncoder(w).Encode(data)
+		// Fall back through the redacting writer so a marshal failure
+		// doesn't drop the redaction guarantee for the encoder path.
+		_ = json.NewEncoder(logging.NewWriter(w)).Encode(data)
 		return
 	}
 	w.Write(logging.ApplyBytes(body))
