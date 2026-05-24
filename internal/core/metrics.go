@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"hop.top/aps/internal/logging"
 )
 
 type UsageEvent struct {
@@ -52,7 +54,10 @@ func TrackEvent(name string, properties map[string]string) error {
 	}
 	defer file.Close()
 
-	if _, err := file.Write(append(data, '\n')); err != nil {
+	// Wrap in the redacting writer so future Properties values cannot
+	// persist secrets in the clear. Idempotent on the current static
+	// keys; protects against future template additions.
+	if _, err := logging.NewWriter(file).Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("failed to write metrics event: %w", err)
 	}
 

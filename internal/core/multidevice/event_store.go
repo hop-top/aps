@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/logging"
 )
 
 // eventIndex tracks metadata about the event store.
@@ -132,7 +134,9 @@ func (s *EventStore) Store(event *WorkspaceEvent) error {
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	if _, err := f.Write(append(data, '\n')); err != nil {
+	// Wrap in the redacting writer so payload fields that may carry
+	// secrets are tagged before persistence to the workspace event log.
+	if _, err := logging.NewWriter(f).Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("failed to write event: %w", err)
 	}
 
