@@ -68,7 +68,7 @@ func TestCommandGroupsContent(t *testing.T) {
 		"pipelines":  {"a2a", "acp", "adapter", "webhook", "directory", "service", "action", "skill"},
 		"security":   {"identity", "policy"},
 		"instance":   {"observability"},
-		"management": {"alias", "config", "docs", "env", "migrate", "upgrade", "toolspec", "version"},
+		"management": {"alias", "config", "docs", "env", "migrate", "status", "upgrade", "toolspec", "version"},
 	}
 	for groupID, expectMembers := range want {
 		got := []string{}

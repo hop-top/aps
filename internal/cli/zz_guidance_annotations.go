@@ -1089,6 +1089,14 @@ var leafGuidance = map[string]kitcli.Guidance{
 		},
 	},
 
+	// === status ===
+	"aps status": {
+		Examples: []kitcli.Example{
+			ex("Show aps configuration and runtime status", "aps status"),
+			ex("Emit status as JSON for agents", "aps status --format json"),
+		},
+	},
+
 	// === toolspec ===
 	"aps toolspec": {
 		Examples: []kitcli.Example{

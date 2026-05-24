@@ -67,10 +67,18 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-// profileFlagName is the canonical name of the --profile root global
-// flag. Centralised so subcommands, group-mapping tables, and the
-// flag's own registration all reference the same identifier.
-const profileFlagName = "profile"
+// profileFlagName / workspaceFlagName name the --profile and
+// --workspace root global flags. statusCmdName is the reserved-name
+// subcommand kit's signature validator requires. versionLabel is the
+// row key for the build-version line of `aps status`. Centralised so
+// subcommands and group-mapping tables reference the same identifier
+// and the goconst linter doesn't fire on cross-file repetition.
+const (
+	profileFlagName   = "profile"
+	workspaceFlagName = "workspace"
+	statusCmdName     = "status"
+	versionLabel      = "version"
+)
 
 var root = kitcli.New(kitcli.Config{
 	Name:    "aps",

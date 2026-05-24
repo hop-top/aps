@@ -49,6 +49,7 @@ var commandGroups = map[string]string{
 	"docs":     "management",
 	"env":      "management",
 	"migrate":  "management",
+	"status":   "management",
 	"upgrade":  "management",
 	"toolspec": "management",
 	"version":  "management",
