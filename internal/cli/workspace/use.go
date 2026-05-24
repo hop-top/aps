@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/clinote"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewUseCmd creates the "collab use" command.
@@ -47,6 +48,11 @@ when no --workspace flag is provided.`,
 	}
 
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — sets the active workspace pointer in local state; setting
+	// the same workspace twice yields the same final state.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

@@ -9,6 +9,7 @@ import (
 	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // memberRow is the table/json/yaml row shape for `aps workspace members`.
@@ -78,6 +79,10 @@ func NewMembersCmd() *cobra.Command {
 
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of workspace membership.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

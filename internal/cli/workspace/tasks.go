@@ -12,6 +12,7 @@ import (
 	"hop.top/kit/go/console/output"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // taskRow is the table row shape for `aps workspace tasks`. T-0456 —
@@ -108,6 +109,10 @@ func NewTasksCmd() *cobra.Command {
 	addLimitFlag(cmd)
 	cmd.Flags().String("status", "", "Filter by status (submitted, working, completed, failed, cancelled)")
 	cmd.Flags().String("agent", "", "Filter by agent (sender or recipient)")
+
+	// T-0648 — pure read of inter-agent tasks.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

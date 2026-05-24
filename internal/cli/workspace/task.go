@@ -7,6 +7,7 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewTaskCmd creates the "collab task" command.
@@ -78,6 +79,10 @@ func NewTaskCmd() *cobra.Command {
 
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of one task's details.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

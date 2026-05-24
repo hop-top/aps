@@ -9,6 +9,7 @@ import (
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core/multidevice"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // conflictSummaryRow is the per-conflict row rendered by
@@ -42,6 +43,10 @@ workspace when not supplied.`,
 
 	cmd.Flags().Bool("unresolved", false,
 		"Show only conflicts not yet fully resolved")
+
+	// T-0648 — pure read of detected conflicts; safe to retry.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

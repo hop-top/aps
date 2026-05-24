@@ -2,6 +2,8 @@ package workspace
 
 import (
 	"github.com/spf13/cobra"
+
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewWorkspaceCmd creates the workspace command group.
@@ -23,6 +25,9 @@ workspace to avoid repeating its name:
   aps workspace use my-team
   aps workspace members      # uses active workspace`,
 	}
+	// T-0648 — mark as hierarchical so the kit signature validator
+	// permits depth-3 leaves (workspace ctx/<verb>, workspace conflicts/<verb>).
+	kitcli.SetHierarchical(cmd)
 
 	// Lifecycle
 	cmd.AddCommand(NewCreateCmd())
@@ -75,6 +80,8 @@ the same workspace resource concurrently.
 Conflicts are detected automatically during sync. Use these
 commands to list, inspect, and resolve them.`,
 	}
+	// T-0648 — intermediate node hosting depth-3 leaves.
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(newConflictsListCmd())
 	cmd.AddCommand(newConflictsShowCmd())

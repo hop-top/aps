@@ -8,6 +8,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewCreateCmd creates the "workspace create" command.
@@ -94,9 +95,19 @@ exchange tasks, and resolve conflicts.`,
 	addProfileFlag(cmd)
 	_ = cmd.MarkFlagRequired("profile")
 	cmd.Flags().String("description", "", "Workspace description")
+	// NOTE (T-0648): --policy shadows the hidden kit-global delegation
+	// policy flag. Renaming to clear the signature-validator warning
+	// would change user-facing UX, so the shadow is left in place per
+	// the batch's stop-condition for UX-breaking renames. Flagged in
+	// the batch-2 PR body for the coordinator to triage.
 	cmd.Flags().String("policy", "priority", "Conflict resolution policy")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — mints a new workspace; each invocation creates state, so
+	// not natively idempotent.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 
 	return cmd
 }

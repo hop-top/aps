@@ -8,6 +8,7 @@ import (
 
 	"hop.top/aps/internal/cli/clinote"
 	collab "hop.top/aps/internal/core/collaboration"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewRoleCmd creates the "collab role" command.
@@ -87,6 +88,11 @@ If role is not provided, an interactive selector is shown.`,
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — updates the agent's role in local workspace state;
+	// re-applying the same role yields the same observable state.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

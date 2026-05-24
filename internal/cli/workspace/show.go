@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewShowCmd creates the "collab show" command.
@@ -45,6 +46,10 @@ func NewShowCmd() *cobra.Command {
 
 	addWorkspaceFlag(cmd)
 	addJSONFlag(cmd)
+
+	// T-0648 — pure read of workspace metadata.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
