@@ -36,7 +36,7 @@ Primitive vocabulary (see `kit/go/runtime/job`):
 | Stdin-pipe writers | 4 (protocol/core, execution, isolation/*) | Out of scope — local one-shot pipe writes |
 | Streaming/keepalive | 2 (sse, chat/engine) | Out of scope — per-request streams, no daemon lifecycle |
 
-**Net migration surface in Phase 1 (T-0472):** two callsites.
+**Net migration surface in Phase 1:** two callsites.
 
 The audit framing — "webhook + listener daemons under
 `internal/core/webhook.go` and adapter handlers" — needs correction.
@@ -169,7 +169,7 @@ no retry queue, no goroutine spawned per request.
 configured subscribers), that path should be a Job from day one —
 queue `webhooks`, type `webhook.deliver`, backoff strategy
 `{Initial: 1s, Max: 5m, Factor: 2.0, Jitter: 0.5}` per the kit
-runtime-job reference. Not in scope for T-0472.
+runtime-job reference. Not in scope for the current phase.
 
 ## Out-of-scope sites (intentional)
 
@@ -252,13 +252,12 @@ daemons — they own no state that survives process exit.
 `internal/core/adapter/mobile/server.go:162`: simple `<-ctx.Done() →
 stop()` shims. Standard wiring, not a job concern.
 
-## Phase 2 alignment (T-0661)
+## Phase 2 alignment
 
-T-0661 frames the broader migration: "kit/runtime/job with Service +
+Phase 2 frames the broader migration: "kit/runtime/job with Service +
 Poller pattern, durabletask SQLite backend". The two Phase 1 sites
-above already adopt that exact pattern. When T-0472 lands, T-0661 is
-satisfied insofar as the "first production adopter" milestone is
-reached. The remaining T-0661 work is:
+above already adopt that exact pattern, so the "first production
+adopter" milestone is reached in Phase 1. Remaining Phase 2 work is:
 
 1. Documentation update: the `Adoption pull` section of
    `~/.ops/docs/kit-conventions/reference/runtime-job.md` should
@@ -267,26 +266,23 @@ reached. The remaining T-0661 work is:
    (`$XDG_DATA_HOME/aps/jobs.db`) — operators need this in release
    notes.
 
-If the migration in T-0472 leaves the session reaper or the agent-
+If the Phase 1 migration leaves the session reaper or the agent-
 protocol background runner outside the Service + Poller + durabletask
-pattern, T-0661 picks up the gap. Otherwise T-0661 closes with a
-note pointing at the T-0472 commits.
+pattern, Phase 2 picks up the gap. Otherwise Phase 2 closes with a
+note pointing at the Phase 1 commits.
 
 ## Recommended sequence
 
-1. **T-0472a** — Wire a singleton `job.Service` (durabletask, SQLite
-   at `xdg.DataDir("aps") + "/jobs.db"`) into the root cobra command,
+1. Wire a singleton `job.Service` (durabletask, SQLite at
+   `xdg.DataDir("aps") + "/jobs.db"`) into the root cobra command,
    alongside `eventBus`. Add to `drainBus` (rename to `drainRuntime`?)
    so `Close()` runs on shutdown.
-2. **T-0472b** — Migrate `runs_advanced.go` background run to a
-   `action.run` Job. Status endpoints read from the Service. This is
-   the user-visible win — `runs.wait` / `runs.stream` start working
-   for background runs.
-3. **T-0472c** — Migrate `startReaper` to a Poller-driven sweep. Drop
-   the goroutine in `startReaper`; the singleton wiring from (a) is
-   reused.
-4. **T-0661** — Doc update + release notes; close as satisfied by
-   T-0472 if the implementation followed Service + Poller +
+2. Migrate `runs_advanced.go` background run to an `action.run` Job.
+   Status endpoints read from the Service.
+3. Migrate `startReaper` to a Poller-driven sweep. Drop the goroutine
+   in `startReaper`; the singleton wiring from (1) is reused.
+4. Doc update + release notes; close Phase 2 as satisfied by the
+   above if the implementation followed Service + Poller +
    durabletask.
 
 End of inventory.

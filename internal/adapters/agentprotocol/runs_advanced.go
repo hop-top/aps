@@ -74,11 +74,15 @@ func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter,
 		}
 	}
 
-	// Preferred path: enqueue a durable job. Falls back to the
-	// in-process goroutine when no service is wired (library / test
-	// embeddings, APS_JOBS_DISABLE=1) so the adapter remains usable
-	// outside the long-lived `aps serve` process.
-	if id, ok := apsjobs.Enqueue(r.Context(), apsjobs.EnqueueOpts{
+	// Both branches below are fire-and-forget: this endpoint has never
+	// returned a run_id, so clients cannot poll /v1/runs/{id}. The
+	// preferred path enqueues a durable job (kit re-runs on transient
+	// failure up to MaxAttempts); the fallback spawns an in-process
+	// goroutine for library/test embeddings or APS_JOBS_DISABLE=1.
+	// Keeping both branches on core.RunAction guarantees identical
+	// execution semantics — the durable path is purely about restart
+	// survival and retry, not about adding a tracked RunState.
+	if _, ok := apsjobs.Enqueue(r.Context(), apsjobs.EnqueueOpts{
 		Queue: apsjobs.QueueActions,
 		Type:  apsjobs.TypeActionRun,
 		Payload: agentProtocolRunPayload{
@@ -88,33 +92,27 @@ func (a *AgentProtocolAdapter) handleRunsCreateBackground(w http.ResponseWriter,
 			Input:     input.Payload,
 		},
 		MaxAttempts: 3,
-	}); ok {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "run started in background",
-			"job_id":  id,
-		})
-		return
+	}); !ok {
+		// Fallback uses context.Background deliberately: r.Context is
+		// cancelled when this handler returns (well before the spawned
+		// goroutine finishes), so the request-scoped context would
+		// surface as spurious cancels in the action handler.
+		go func() {
+			_ = core.RunAction(input.ProfileID, input.ActionID, input.Payload)
+		}()
 	}
-
-	// Fallback — preserves prior fire-and-forget semantics for the
-	// no-runtime case. Uses context.Background deliberately: r.Context
-	// is cancelled when this handler returns (well before the spawned
-	// goroutine finishes executing the action), so the request-scoped
-	// context would surface as spurious cancels in the action handler.
-	// The job-runner path above is the durable replacement; this
-	// branch only runs when APS_JOBS_DISABLE=1 or initJobs failed.
-	go func() { //nolint:gosec // intentional context.Background; see comment
-		_, _ = a.core.ExecuteRun(context.Background(), input, nil)
-	}()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "run started in background",
-	})
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"message": backgroundRunStartedMsg,
+	}); err != nil {
+		// Body already written; nothing meaningful to do here.
+		return
+	}
 }
+
+const backgroundRunStartedMsg = "run started in background"
 
 func (a *AgentProtocolAdapter) handleRunsWaitExisting(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
