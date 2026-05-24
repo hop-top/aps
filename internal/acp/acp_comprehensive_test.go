@@ -221,6 +221,11 @@ func TestServer_ErrorHandling_InternalError(t *testing.T) {
 }
 
 // Test 9: Message loop with EOF handling
+//
+// The loop must return when the transport reports EOF, but the
+// server's lifecycle status is only flipped to "stopped" when the
+// owning context is cancelled (i.e. Stop() was called). A bare EOF
+// on a still-live server keeps it in "running" — see T-0677.
 func TestServer_MessageLoop_EOFHandling(t *testing.T) {
 	core := newMockAPSCore()
 	server, _ := NewServer("test-profile", core)
@@ -241,9 +246,14 @@ func TestServer_MessageLoop_EOFHandling(t *testing.T) {
 		ID:      1,
 	})
 
-	// Message loop will return on EOF
+	// Message loop returns on EOF without altering server status.
 	server.messageLoop()
+	assert.Equal(t, "running", server.Status())
 
+	// Once the context is cancelled and the loop re-runs (or Stop is
+	// called) the status moves to "stopped".
+	cancel()
+	server.messageLoop()
 	assert.Equal(t, "stopped", server.Status())
 }
 
@@ -366,10 +376,21 @@ func TestHandler_Terminal_GetOutput(t *testing.T) {
 	term, err := tm.CreateTerminal("echo", []string{"test-output"}, "", map[string]string{})
 	require.NoError(t, err)
 
-	// Wait for command to complete
-	time.Sleep(100 * time.Millisecond)
+	// Wait for command to exit so the output reader goroutines have
+	// drained their pipes. A fixed sleep races on slower runners
+	// (Linux CI) where the child + reader goroutine haven't appended
+	// to the buffer yet — see T-0677.
+	_, err = tm.WaitForExit(term.ID)
+	require.NoError(t, err)
 
-	output, err := tm.GetOutput(term.ID)
+	// After exit, the readers may still be flushing the final line.
+	// Poll briefly until the buffer is populated.
+	var output string
+	require.Eventually(t, func() bool {
+		output, err = tm.GetOutput(term.ID)
+		return err == nil && output != ""
+	}, 2*time.Second, 10*time.Millisecond, "expected non-empty output after process exit")
+
 	assert.NoError(t, err)
 	assert.NotEmpty(t, output)
 }

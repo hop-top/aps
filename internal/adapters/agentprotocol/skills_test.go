@@ -113,14 +113,16 @@ display_name: Test Agent
 		skillID        string
 		agentID        string
 		expectedStatus int
-		skipValidation bool
 	}{
 		{
-			name:           "skill not found (expected)",
+			// The skill is copied into APS_DATA_PATH/skills above so
+			// the registry must find it. Previously this asserted 404
+			// because skills/paths.go picked OS-native data dirs on
+			// macOS instead of honouring APS_DATA_PATH — see T-0677.
+			name:           "skill found",
 			skillID:        "test-skill",
 			agentID:        "testagent",
-			expectedStatus: http.StatusNotFound,
-			skipValidation: true, // Skill won't be found in isolated test environment
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "skill not found",
@@ -145,7 +147,7 @@ display_name: Test Agent
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
-			if w.Code == http.StatusOK && !tt.skipValidation {
+			if w.Code == http.StatusOK {
 				var response SkillDetailResponse
 				err := json.NewDecoder(w.Body).Decode(&response)
 				require.NoError(t, err)

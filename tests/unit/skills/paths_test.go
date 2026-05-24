@@ -3,7 +3,6 @@ package skills_test
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,26 +24,42 @@ func TestNewSkillPaths(t *testing.T) {
 	assert.Contains(t, paths.ProfilePath, "profiles")
 }
 
-func TestSkillPaths_GlobalPath_Linux(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Linux-specific test")
-	}
-
-	// Test with XDG_DATA_HOME set
-	t.Setenv("XDG_DATA_HOME", "/custom/data")
+func TestSkillPaths_GlobalPath_XDG(t *testing.T) {
+	// Skills delegate to core.GetDataDir() which uses Linux-style
+	// XDG resolution on every platform (see JUSTIFIED note in
+	// internal/core/paths.go). Setting XDG_DATA_HOME wins regardless
+	// of GOOS. Compose the expected path via filepath.Join so the
+	// comparison holds on Windows runners (backslash separators).
+	xdg := filepath.Join(string(filepath.Separator), "custom", "data")
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_DATA_HOME", xdg)
 
 	paths := skills.NewSkillPaths("")
-	assert.Contains(t, paths.GlobalPath, "/custom/data/aps/skills")
+	assert.Equal(t, filepath.Join(xdg, "aps", "skills"), paths.GlobalPath)
 }
 
-func TestSkillPaths_GlobalPath_Darwin(t *testing.T) {
-	if runtime.GOOS != "darwin" {
-		t.Skip("macOS-specific test")
-	}
+func TestSkillPaths_GlobalPath_APSDataPath(t *testing.T) {
+	// APS_DATA_PATH takes precedence over XDG_DATA_HOME.
+	// Compose the expected path via filepath.Join so the comparison
+	// holds on Windows runners (backslash separators).
+	apsData := filepath.Join(string(filepath.Separator), "explicit", "aps", "data")
+	xdg := filepath.Join(string(filepath.Separator), "custom", "data")
+	t.Setenv("APS_DATA_PATH", apsData)
+	t.Setenv("XDG_DATA_HOME", xdg)
+
+	paths := skills.NewSkillPaths("")
+	assert.Equal(t, filepath.Join(apsData, "skills"), paths.GlobalPath)
+}
+
+func TestSkillPaths_GlobalPath_DefaultsToLinuxLayout(t *testing.T) {
+	// With no env vars the path falls back to ~/.local/share/aps/skills
+	// on every platform — matching core.GetDataDir.
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_DATA_HOME", "")
 
 	paths := skills.NewSkillPaths("")
 	homeDir, _ := os.UserHomeDir()
-	expected := filepath.Join(homeDir, "Library", "Application Support", "aps", "skills")
+	expected := filepath.Join(homeDir, ".local", "share", "aps", "skills")
 	assert.Equal(t, expected, paths.GlobalPath)
 }
 

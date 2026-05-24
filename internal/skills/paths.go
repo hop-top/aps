@@ -42,39 +42,25 @@ func getProfileSkillsPath(profileID string) string {
 	return filepath.Join(profileDir, "skills")
 }
 
-// getGlobalSkillsPath returns global APS skills directory using XDG
+// getGlobalSkillsPath returns global APS skills directory.
+//
+// Delegates to core.GetDataDir() so the lookup honours
+// $APS_DATA_PATH > $XDG_DATA_HOME/aps > ~/.local/share/aps on every
+// platform, matching the rest of the aps data layout (see the
+// JUSTIFIED note in internal/core/paths.go). Previously this picked
+// OS-native data dirs (~/Library/Application Support on darwin,
+// %LOCALAPPDATA% on windows), which silently ignored the env vars
+// that the rest of aps respects — surfaced by T-0677 when the
+// skills_test fixture only worked on Linux.
 func getGlobalSkillsPath() string {
-	var dataHome string
-
-	switch runtime.GOOS {
-	case "linux", "freebsd", "openbsd", "netbsd":
-		// XDG_DATA_HOME or ~/.local/share
-		dataHome = os.Getenv("XDG_DATA_HOME")
-		if dataHome == "" {
-			homeDir, _ := os.UserHomeDir()
-			dataHome = filepath.Join(homeDir, ".local", "share")
-		}
-
-	case "darwin":
-		// macOS: ~/Library/Application Support
-		homeDir, _ := os.UserHomeDir()
-		dataHome = filepath.Join(homeDir, "Library", "Application Support")
-
-	case "windows":
-		// Windows: %LOCALAPPDATA%
-		dataHome = os.Getenv("LOCALAPPDATA")
-		if dataHome == "" {
-			homeDir, _ := os.UserHomeDir()
-			dataHome = filepath.Join(homeDir, "AppData", "Local")
-		}
-
-	default:
-		// Fallback to ~/.local/share
-		homeDir, _ := os.UserHomeDir()
-		dataHome = filepath.Join(homeDir, ".local", "share")
+	dataDir, err := core.GetDataDir()
+	if err != nil {
+		// Returning a relative fallback risks reading/writing skills
+		// from the caller's CWD on a misconfigured host. Disable
+		// global discovery instead, matching getProfileSkillsPath.
+		return ""
 	}
-
-	return filepath.Join(dataHome, "aps", "skills")
+	return filepath.Join(dataDir, "skills")
 }
 
 // AllPaths returns all skill paths in priority order (high to low)
