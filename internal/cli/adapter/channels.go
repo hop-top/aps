@@ -10,6 +10,7 @@ import (
 	msgtypes "hop.top/aps/internal/core/messenger"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 )
 
@@ -30,6 +31,8 @@ func newChannelsCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

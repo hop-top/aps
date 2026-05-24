@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core/multidevice"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newSetPermissionsCmd() *cobra.Command {
 	var (
-		workspaceID string
-		role        string
-		canWrite    bool
-		canExecute  bool
-		canManage   bool
-		rateLimit   int
-		show        bool
-		jsonOutput  bool
+		role       string
+		canWrite   bool
+		canExecute bool
+		canManage  bool
+		rateLimit  int
+		show       bool
+		jsonOutput bool
 	)
 
 	cmd := &cobra.Command{
@@ -38,6 +39,11 @@ Roles:
 Use --show to display current permissions without making changes.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --workspace from kit-managed global.
+			workspaceID := globals.Workspace()
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runSetPermissions(
 				args[0], workspaceID, role,
 				canWrite, canExecute, canManage, rateLimit,
@@ -47,9 +53,6 @@ Use --show to display current permissions without making changes.`,
 		ValidArgsFunction: completeDeviceNames,
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID (required)")
-	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().StringVar(&role, "role", "",
 		"Set role: owner, collaborator, viewer")
 	cmd.Flags().BoolVar(&canWrite, "can-write", false,
@@ -64,6 +67,8 @@ Use --show to display current permissions without making changes.`,
 		"Show current permissions without changes")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

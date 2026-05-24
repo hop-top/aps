@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"hop.top/aps/internal/cli/globals"
 	coreadapter "hop.top/aps/internal/core/adapter"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newStatusCmd() *cobra.Command {
 	var jsonOutput bool
-	var verbose bool
 
 	cmd := &cobra.Command{
 		Use:     "status <name>",
@@ -21,13 +22,15 @@ func newStatusCmd() *cobra.Command {
 		Short:   "Show device status",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStatus(args[0], jsonOutput, verbose)
+			// T-0648 — read --verbose from kit-managed global.
+			return runStatus(args[0], jsonOutput, globals.Verbose())
 		},
 	}
 
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show verbose output")
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

@@ -6,15 +6,16 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/prompt"
 	coreadapter "hop.top/aps/internal/core/adapter"
 )
 
 func newStopCmd() *cobra.Command {
 	var force bool
-	var dryRun bool
 	var jsonOutput bool
 
 	cmd := &cobra.Command{
@@ -22,15 +23,17 @@ func newStopCmd() *cobra.Command {
 		Short: "Stop a device",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStop(cmd.Context(), args[0], force, dryRun, jsonOutput)
+			// T-0648 — read --dry-run from kit-managed global.
+			return runStop(cmd.Context(), args[0], force, globals.DryRun(), jsonOutput)
 		},
 	}
 
 	cmd.Flags().BoolVar(&force, "force", false, "Force stop (SIGKILL)")
-	cmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "Show what would be stopped without stopping")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	clinote.AddFlag(cmd) // T-1291 (long-form only; -n taken by --dry-run)
+	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

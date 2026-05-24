@@ -7,6 +7,7 @@ package adapter
 
 import (
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newLinkParentCmd() *cobra.Command {
@@ -18,6 +19,10 @@ func newLinkParentCmd() *cobra.Command {
 A "link" is the relationship between a device and a profile; the device
 and profile are the parties.`,
 	}
+	// T-0648 — link is an intermediate grouping node (depth 2 under
+	// `adapter`, depth 3 under `messenger` alias); its add/list/delete
+	// leaves trip the depth-hierarchical check without this annotation.
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(newLinkAddCmd())
 	cmd.AddCommand(newLinkListCmd())

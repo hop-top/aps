@@ -12,16 +12,17 @@ import (
 	"time"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/adapter/mobile"
 	"hop.top/aps/internal/styles"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newPairCmd() *cobra.Command {
 	var (
-		profileID    string
 		expires      string
 		qrExpires    string
 		capabilities []string
@@ -31,7 +32,6 @@ func newPairCmd() *cobra.Command {
 		codeOnly     bool
 		qrOutput     string
 		jsonOutput   bool
-		quiet        bool
 	)
 
 	cmd := &cobra.Command{
@@ -42,13 +42,16 @@ func newPairCmd() *cobra.Command {
 The QR code contains connection details that the mobile APS app uses to
 establish a WebSocket connection to this profile.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile and --quiet from kit-managed globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			return runPair(cmd.Context(), profileID, expires, qrExpires, capabilities,
-				port, bindAddr, noQR, codeOnly, qrOutput, jsonOutput, quiet)
+				port, bindAddr, noQR, codeOnly, qrOutput, jsonOutput, globals.Quiet())
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile to pair with (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&expires, "expires", "14d", "Device token expiry (e.g., 14d, 30d)")
 	cmd.Flags().StringVar(&qrExpires, "qr-expires", "15m", "QR code expiry (e.g., 15m, 30m)")
 	cmd.Flags().StringSliceVar(&capabilities, "capabilities", nil, "Device capabilities (default: run:stateless,run:streaming,monitor:sessions)")
@@ -58,9 +61,10 @@ establish a WebSocket connection to this profile.`,
 	cmd.Flags().BoolVar(&codeOnly, "code-only", false, "Show pairing code only, no QR")
 	cmd.Flags().StringVar(&qrOutput, "qr-output", "", "Save QR code as PNG to file")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&quiet, "quiet", false, "Minimal output (pairing code only)")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectInteractive)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyNo)
 	return cmd
 }
 

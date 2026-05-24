@@ -5,32 +5,34 @@ import (
 	"fmt"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newRejectCmd() *cobra.Command {
-	var (
-		profileID  string
-		jsonOutput bool
-		quiet      bool
-	)
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "reject <device-id>",
 		Short: "Reject a pending mobile device",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runReject(args[0], profileID, jsonOutput, quiet)
+			// T-0648 — read --profile and --quiet from kit-managed globals.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
+			return runReject(args[0], profileID, jsonOutput, globals.Quiet())
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
-	cmd.Flags().BoolVar(&quiet, "quiet", false, "Exit code only")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 

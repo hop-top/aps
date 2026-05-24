@@ -1,6 +1,9 @@
 package adapter
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
+)
 
 func NewAdapterCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -8,6 +11,11 @@ func NewAdapterCmd() *cobra.Command {
 		Aliases: []string{"adapters"},
 		Short:   "Manage adapters (messengers, protocols, mobile, desktop)",
 	}
+	// T-0648 — adapter is an intermediate grouping node with depth-3
+	// leaves underneath (link/messenger/permissions subtrees); kit's
+	// signature-validator depth-hierarchical check requires the
+	// annotation on every intermediate ancestor of a depth>=3 leaf.
+	kitcli.SetHierarchical(cmd)
 
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newCreateCmd())

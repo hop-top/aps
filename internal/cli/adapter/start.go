@@ -9,6 +9,7 @@ import (
 	coreadapter "hop.top/aps/internal/core/adapter"
 
 	"github.com/spf13/cobra"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 func newStartCmd() *cobra.Command {
@@ -26,6 +27,8 @@ func newStartCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
 
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }
 
