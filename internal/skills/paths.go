@@ -55,9 +55,10 @@ func getProfileSkillsPath(profileID string) string {
 func getGlobalSkillsPath() string {
 	dataDir, err := core.GetDataDir()
 	if err != nil {
-		// Best-effort fallback if home cannot be resolved. Keeping
-		// the literal join here matches GetDataDir's own structure.
-		return filepath.Join("aps", "skills")
+		// Returning a relative fallback risks reading/writing skills
+		// from the caller's CWD on a misconfigured host. Disable
+		// global discovery instead, matching getProfileSkillsPath.
+		return ""
 	}
 	return filepath.Join(dataDir, "skills")
 }
