@@ -49,7 +49,7 @@ Use --force to skip confirmation.`,
 	// the device (irreversible local mutation per the Long text);
 	// repeated detach on an already-detached device is a no-op.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — detach drops any pending offline-queue entries for the
 	// device; preview would have to enumerate the queue, which is

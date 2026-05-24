@@ -42,7 +42,7 @@ a missing user bundle reports the bundle as not found.`,
 	// T-0654 — bundle delete removes the user-bundle file on disk;
 	// irreversible local mutation. Delete-by-name is idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the user-bundle path being removed.

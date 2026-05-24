@@ -60,7 +60,7 @@ restate the capability name. Idempotent on already-absent records.`,
 	// (removes the on-disk capability + its symlinks); delete-by-name
 	// is naturally idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the irreversible
 	// disk delete; preview would only restate the capability name.

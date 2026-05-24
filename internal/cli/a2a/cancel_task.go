@@ -70,7 +70,7 @@ func NewCancelTaskCmd() *cobra.Command {
 	// remote task; repeated cancels of an already-cancelled task are
 	// no-ops, so idempotent.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteShared)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	// T-0656 — preview would require speaking JSON-RPC to the remote
 	// peer to discover task state; the wire call is the operation.
 	kitcli.OptOutDryRun(cmd)

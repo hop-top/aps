@@ -199,7 +199,16 @@ var root = kitcli.New(kitcli.Config{
 			{ID: "instance", Title: "INSTANCE"},
 		},
 	},
-})
+},
+	// Install the kit-managed --idempotency-key replay store. Backend
+	// selection comes from $XDG_CONFIG_HOME/aps/config.yaml's
+	// idempotency.backend ("sqlite" default; "memory" for tests). Each
+	// invocation that targets a conditional+write/destructive leaf
+	// either records its envelope under the supplied key (on miss) or
+	// short-circuits to the recorded result (on hit). See ~/.ops/docs/
+	// cli-conventions-with-kit.md §8.5.
+	withIdempotencyStore(),
+)
 
 // rootCmd is an alias so other files can call rootCmd.AddCommand() in init().
 var rootCmd = root.Cmd

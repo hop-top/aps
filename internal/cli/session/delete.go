@@ -101,7 +101,7 @@ attach an audit reason that flows to the SessionStopped event.`,
 	// removal is irreversible at the user level. Idempotent on missing
 	// target.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the session ID being torn down.

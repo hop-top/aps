@@ -79,7 +79,7 @@ audit reason that flows to the SessionStopped event payload.`,
 	// in-flight work is lost. Idempotent on the registry status
 	// (terminated sessions stay inactive).
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
-	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
 	// T-0656 — terminate sends SIGTERM and waits for the tmux server
 	// to exit; preview would have to fake the OS signal path.
