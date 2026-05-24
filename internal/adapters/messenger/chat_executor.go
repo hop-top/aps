@@ -42,7 +42,54 @@ type ChatTurnResult struct {
 	SessionID string
 	ReplyText string
 	Metadata  map[string]string
+
+	// ReplyDestination selects where the reply lands. The zero value
+	// (ReplyDestinationChannel) sends the reply in the originating
+	// conversation — the default for group bot replies. SideChat opens a
+	// private DM with the original sender for AskUserQuestion-style turns
+	// (clarifying questions, sensitive prompts).
+	ReplyDestination ReplyDestination `json:"reply_destination,omitempty"`
+	// SideChatLifecycle is honored only when ReplyDestination is
+	// ReplyDestinationSideChat. Zero value (SideChatLifecycleKeep) continues
+	// an existing side-chat or opens one if absent; Open forces a fresh
+	// private channel; Close tears it down after delivering this turn.
+	// Per-provider DM-opening implementations land separately.
+	SideChatLifecycle SideChatLifecycle `json:"side_chat_lifecycle,omitempty"`
 }
+
+// ReplyDestination selects how a chat reply is routed back to the requester.
+// Zero value is ReplyDestinationChannel (default in-channel reply); SideChat
+// signals the runtime should deliver via a private DM rather than the
+// originating conversation.
+type ReplyDestination string
+
+const (
+	// ReplyDestinationChannel sends the reply in the originating conversation.
+	// Zero-value default for group bot replies.
+	ReplyDestinationChannel ReplyDestination = ""
+	// ReplyDestinationSideChat opens a private DM with the original sender.
+	// Used for clarifying questions, sensitive prompts, or AskUserQuestion-
+	// style turns that should not surface in the group thread.
+	ReplyDestinationSideChat ReplyDestination = "side_chat"
+)
+
+// SideChatLifecycle hints whether the runtime should open / keep / close
+// the private side-chat for this turn. Ignored unless ReplyDestination is
+// ReplyDestinationSideChat.
+type SideChatLifecycle string
+
+const (
+	// SideChatLifecycleKeep (zero value) continues an existing side-chat
+	// for the requester or opens one if none exists.
+	SideChatLifecycleKeep SideChatLifecycle = ""
+	// SideChatLifecycleOpen forces a fresh private channel for this turn,
+	// even if a prior side-chat exists.
+	SideChatLifecycleOpen SideChatLifecycle = "open"
+	// SideChatLifecycleClose tears down the private channel after the
+	// reply lands. Used for one-shot AskUserQuestion exchanges that
+	// should not persist as an ongoing DM.
+	SideChatLifecycleClose SideChatLifecycle = "close"
+)
 
 // ChatMessageExecutor routes message handoffs into the native chat runtime.
 type ChatMessageExecutor struct {
@@ -133,9 +180,31 @@ func (e *ChatMessageExecutor) ExecuteMessage(ctx context.Context, handoff msgtyp
 	}
 	result.Reply = &msgtypes.DeliveryRequest{
 		Text:     text,
-		Metadata: replyMetadata(handoff.Message, e.service),
+		Metadata: deliveryReplyMetadata(handoff.Message, e.service, reply),
 	}
 	return result, nil
+}
+
+// deliveryReplyMetadata layers delivery-mode hints onto the
+// provider-specific reply metadata. Channel mode (the default) returns
+// the unmodified provider metadata; SideChat mode adds reply_destination +
+// side_chat_lifecycle keys so per-provider DeliverMessage paths can
+// route to a private DM and honor the open/close lifecycle. Per-provider
+// DM-opening implementations land separately; this only carries the
+// signal across the bridge.
+func deliveryReplyMetadata(msg *msgtypes.NormalizedMessage, service *core.ServiceConfig, reply *ChatTurnResult) map[string]any {
+	metadata := replyMetadata(msg, service)
+	if reply == nil || reply.ReplyDestination != ReplyDestinationSideChat {
+		return metadata
+	}
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+	metadata["reply_destination"] = string(ReplyDestinationSideChat)
+	if reply.SideChatLifecycle != SideChatLifecycleKeep {
+		metadata["side_chat_lifecycle"] = string(reply.SideChatLifecycle)
+	}
+	return metadata
 }
 
 func (e *ChatMessageExecutor) failureResult(msg *msgtypes.NormalizedMessage, turn ChatTurn) *msgtypes.ExecutionResult {
@@ -168,6 +237,16 @@ func chatExecutionMetadata(state msgtypes.ConversationState, reply *ChatTurnResu
 	if reply != nil {
 		if reply.SessionID != "" {
 			metadata["chat_session_id"] = reply.SessionID
+		}
+		// Surface delivery hints in the execution metadata so
+		// consumers reading ExecutionResult.Metadata (audit logs, hub
+		// forwarders, runtime observers) see the routing decision even
+		// when the per-leg reply has been routed elsewhere.
+		if reply.ReplyDestination == ReplyDestinationSideChat {
+			metadata["reply_destination"] = string(ReplyDestinationSideChat)
+			if reply.SideChatLifecycle != SideChatLifecycleKeep {
+				metadata["side_chat_lifecycle"] = string(reply.SideChatLifecycle)
+			}
 		}
 		for key, value := range reply.Metadata {
 			if strings.TrimSpace(key) != "" {
