@@ -213,7 +213,7 @@ isolation:
 		err := os.WriteFile(secretsPath, []byte("E2E_VAR=e2e_value\n"), 0o600)
 		require.NoError(t, err)
 
-		err = core.RunCommand(profileID, "echo", []string{"integration test"})
+		err = core.RunCommand(profileID, "echo", []string{"integration test"}, nil)
 		assert.NoError(t, err)
 	})
 
@@ -368,13 +368,13 @@ isolation:
     image: ubuntu:22.04
 `)
 
-		err := core.RunCommand(profileID, "echo", []string{"test"})
+		err := core.RunCommand(profileID, "echo", []string{"test"}, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not yet implemented")
 	})
 
 	t.Run("Non-existent profile", func(t *testing.T) {
-		err := core.RunCommand("nonexistent-profile", "echo", []string{"test"})
+		err := core.RunCommand("nonexistent-profile", "echo", []string{"test"}, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to load profile")
 	})
@@ -400,7 +400,7 @@ display_name: Old Style Profile
 		require.NoError(t, err)
 		assert.Equal(t, core.IsolationProcess, profile.Isolation.Level)
 
-		err = core.RunCommand(profileID, "echo", []string{"backward compat"})
+		err = core.RunCommand(profileID, "echo", []string{"backward compat"}, nil)
 		assert.NoError(t, err)
 	})
 

@@ -260,7 +260,7 @@ ID followed by a command to run that command under the selected profile.`
 					shell = core.DetectShell()
 				}
 				fmt.Printf("Starting session for %s using %s...\n", profileID, shell)
-				if err := core.RunCommand(profileID, shell, nil); err != nil {
+				if err := core.RunCommand(profileID, shell, nil, nil); err != nil {
 					logging.GetLogger().Error("session ended with error", err)
 					os.Exit(1)
 				}
@@ -269,7 +269,7 @@ ID followed by a command to run that command under the selected profile.`
 
 			commandName := args[1]
 			commandArgs := args[2:]
-			if err := core.RunCommand(profileID, commandName, commandArgs); err != nil {
+			if err := core.RunCommand(profileID, commandName, commandArgs, nil); err != nil {
 				if exitErr, ok := err.(*exec.ExitError); ok {
 					os.Exit(exitErr.ExitCode())
 				}
