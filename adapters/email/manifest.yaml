@@ -3,6 +3,7 @@ kind: adapter
 name: email
 type: messenger
 strategy: script
+env_prefix: EMAIL
 description: >
   Email adapter for agent profiles. Dispatches send/reply/list/read
   actions to a pluggable backend (himalaya, mxhook, etc.).

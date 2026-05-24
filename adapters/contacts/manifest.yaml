@@ -3,6 +3,7 @@ kind: adapter
 name: contacts
 type: messenger
 strategy: script
+env_prefix: CONTACT
 description: >
   Contact management adapter for agent profiles. Dispatches
   list/show/add/update/find/note/delete actions to a pluggable
