@@ -43,9 +43,13 @@ Profile is supplied via the tool-level --profile global:
 
 			client, err := discovery.NewClient(profile.Directory)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID, OK: &okFalse})
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
+			okConnect := true
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: profileID, OK: &okConnect})
 
 			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: profileID})
 			record, err := client.Show(ctx, profileID)

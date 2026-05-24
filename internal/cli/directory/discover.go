@@ -79,9 +79,13 @@ Example:
 
 			client, err := discovery.NewClient(cfg)
 			if err != nil {
+				okFalse := false
+				r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: resolved, OK: &okFalse})
 				return fmt.Errorf("failed to create directory client: %w", err)
 			}
 			defer client.Close()
+			okConnect := true
+			r.Emit(ctx, progress.Event{Phase: phaseConnect, Item: resolved, OK: &okConnect})
 
 			r.Emit(ctx, progress.Event{Phase: phaseFetch, Item: capability})
 			results, err := client.Discover(ctx, capability)

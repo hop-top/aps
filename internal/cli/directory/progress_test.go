@@ -38,4 +38,11 @@ func TestDiscover_EmitsProgress(t *testing.T) {
 	if !strings.Contains(got, `"ok":true`) {
 		t.Errorf("expected ok:true on fetch completion, got: %q", got)
 	}
+	// JSONL consumers tracking phase pairs require every start event
+	// to have a matching ok-event. Two `"phase":"connect"` lines means
+	// the start was paired with a terminal ok event; a single line
+	// would mean the start was orphaned.
+	if n := strings.Count(got, `"phase":"connect"`); n < 2 {
+		t.Errorf("connect phase emitted %d events, want >= 2 (start + ok), got: %q", n, got)
+	}
 }
