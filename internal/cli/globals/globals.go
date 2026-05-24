@@ -24,3 +24,12 @@ func Format() string {
 	}
 	return v.GetString("format")
 }
+
+// Workspace returns the value of the --workspace global (kit/cli
+// registers it via Config.Globals in root.go). Empty string when unset.
+func Workspace() string {
+	if v == nil {
+		return ""
+	}
+	return v.GetString("workspace")
+}

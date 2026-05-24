@@ -7,15 +7,14 @@ import (
 
 	idpkg "hop.top/aps/internal/agntcy/identity"
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewInitCmd creates the identity init command.
 func NewInitCmd() *cobra.Command {
-	var (
-		profileID string
-		method    string
-	)
+	var method string
 
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -26,10 +25,15 @@ Supported DID methods:
   did:key  — Self-describing, no network required (default)
   did:web  — Web-based, requires hosting a DID document
 
-Examples:
-  aps identity init --profile worker
-  aps id init --profile worker --method did:web`,
+Profile is supplied via the tool-level --profile global:
+  aps --profile worker identity init
+  aps --profile worker id init --method did:web`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --profile from the tool-level global.
+			profileID := globals.Profile()
+			if profileID == "" {
+				return fmt.Errorf("--profile is required")
+			}
 			profile, err := core.LoadProfile(profileID)
 			if err != nil {
 				return fmt.Errorf("failed to load profile %s: %w", profileID, err)
@@ -77,10 +81,12 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&profileID, "profile", "p", "", "Profile ID (required)")
-	cmd.MarkFlagRequired("profile")
 	cmd.Flags().StringVar(&method, "method", "did:key", "DID method (did:key, did:web)")
 	clinote.AddFlag(cmd)
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

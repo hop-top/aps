@@ -8,6 +8,7 @@ import (
 	"hop.top/aps/internal/agntcy/discovery"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // resolveInstance is overridable for tests; defaults to core.Resolve.
@@ -107,6 +108,10 @@ Example:
 	cmd.Flags().StringVar(&capability, "capability", "", "Capability to search for (required)")
 	cmd.MarkFlagRequired("capability")
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Directory endpoint URL (default: https://dir.agntcy.org)")
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

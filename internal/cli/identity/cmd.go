@@ -2,6 +2,8 @@ package identity
 
 import (
 	"github.com/spf13/cobra"
+
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewIdentityCmd creates the identity command group.
@@ -20,6 +22,9 @@ badges (Verifiable Credentials) to attest agent capabilities.`,
 	cmd.AddCommand(NewShowCmd())
 	cmd.AddCommand(NewVerifyCmd())
 	cmd.AddCommand(NewBadgeCmd())
+
+	// T-0648 — intermediate node for depth-3 leaves under `identity badge`.
+	kitcli.SetHierarchical(cmd)
 
 	return cmd
 }

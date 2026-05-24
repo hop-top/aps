@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	idpkg "hop.top/aps/internal/agntcy/identity"
+	kitcli "hop.top/kit/go/console/cli"
 )
 
 // NewVerifyCmd creates the identity verify command.
@@ -40,6 +41,10 @@ Example:
 			return nil
 		},
 	}
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }

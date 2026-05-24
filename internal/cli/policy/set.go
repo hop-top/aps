@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core/multidevice"
+	kitcli "hop.top/kit/go/console/cli"
 
 	"github.com/spf13/cobra"
 )
 
 func newSetCmd() *cobra.Command {
 	var (
-		workspaceID string
 		mode        string
 		addAllow    []string
 		removeAllow []string
@@ -32,8 +33,16 @@ Modes:
   deny-list   All devices except specified ones have access
 
 Use --add-allow / --remove-allow to manage the allow list.
-Use --add-deny / --remove-deny to manage the deny list.`,
+Use --add-deny / --remove-deny to manage the deny list.
+
+Workspace is supplied via the tool-level --workspace global:
+  aps --workspace <id> policy set --mode allow-list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// T-0648 — read --workspace from the tool-level global.
+			workspaceID := globals.Workspace()
+			if workspaceID == "" {
+				return fmt.Errorf("--workspace is required")
+			}
 			return runPolicySet(
 				workspaceID, mode,
 				addAllow, removeAllow,
@@ -43,9 +52,6 @@ Use --add-deny / --remove-deny to manage the deny list.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&workspaceID, "workspace", "w", "",
-		"Workspace ID (required)")
-	cmd.MarkFlagRequired("workspace")
 	cmd.Flags().StringVar(&mode, "mode", "",
 		"Policy mode: allow-all, allow-list, deny-list")
 	cmd.Flags().StringSliceVar(&addAllow, "add-allow", nil,
@@ -58,6 +64,10 @@ Use --add-deny / --remove-deny to manage the deny list.`,
 		"Remove devices from deny list")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "JSON output")
 	clinote.AddFlag(cmd) // T-1291
+
+	// T-0648 — kit/cli signature annotations.
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
+	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
 }
