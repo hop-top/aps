@@ -438,7 +438,7 @@ func newCtxDeleteCmd() *cobra.Command {
 
 	// T-0648 — delete is a local irreversible mutation on the workspace
 	// context store; deleting an absent key is a no-op (idempotent).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd

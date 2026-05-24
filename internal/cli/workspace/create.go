@@ -31,7 +31,7 @@ exchange tasks, and resolve conflicts.`,
 			}
 
 			description, _ := cmd.Flags().GetString("description")
-			policy, _ := cmd.Flags().GetString("policy")
+			policy, _ := cmd.Flags().GetString("resolution-policy")
 
 			// Interactive prompts when flags not provided
 			if description == "" {
@@ -43,7 +43,7 @@ exchange tasks, and resolve conflicts.`,
 				}
 			}
 
-			if !cmd.Flags().Changed("policy") {
+			if !cmd.Flags().Changed("resolution-policy") {
 				if err := huh.NewSelect[string]().
 					Title("Conflict resolution policy").
 					Options(
@@ -95,12 +95,7 @@ exchange tasks, and resolve conflicts.`,
 	addProfileFlag(cmd)
 	_ = cmd.MarkFlagRequired("profile")
 	cmd.Flags().String("description", "", "Workspace description")
-	// NOTE (T-0648): --policy shadows the hidden kit-global delegation
-	// policy flag. Renaming to clear the signature-validator warning
-	// would change user-facing UX, so the shadow is left in place per
-	// the batch's stop-condition for UX-breaking renames. Flagged in
-	// the batch-2 PR body for the coordinator to triage.
-	cmd.Flags().String("policy", "priority", "Conflict resolution policy")
+	cmd.Flags().String("resolution-policy", "priority", "Conflict resolution policy")
 	addJSONFlag(cmd)
 	clinote.AddFlag(cmd) // T-1291
 

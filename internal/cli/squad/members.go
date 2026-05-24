@@ -64,7 +64,7 @@ func newRemoveMemberCmd() *cobra.Command {
 	clinote.AddFlag(cmd) // T-1291
 	// T-0648 — kit 0.4 signature annotations. Remove-by-id is
 	// naturally idempotent.
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

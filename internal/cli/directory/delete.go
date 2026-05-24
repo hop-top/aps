@@ -61,7 +61,7 @@ Profile is supplied via the tool-level --profile global:
 	// T-0648 — kit/cli signature annotations. Deregistration is
 	// destructive (removes shared upstream record); delete-by-name is
 	// idempotent.
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructive)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd

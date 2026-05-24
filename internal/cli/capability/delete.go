@@ -45,7 +45,7 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Skip link warning")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

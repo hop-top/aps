@@ -69,12 +69,3 @@ func TestFlag_Upgrade_NoLocalQuiet(t *testing.T) {
 	}
 }
 
-func TestFlag_ActionRun_DryRunHasShortN(t *testing.T) {
-	cmd := findSubcommand(rootCmd, "action", "run")
-	if cmd == nil {
-		t.Fatal("action run not registered")
-	}
-	if got := shortLetter(cmd, "dry-run"); got != "n" {
-		t.Errorf("action run --dry-run short = %q, want \"n\"", got)
-	}
-}

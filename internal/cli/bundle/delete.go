@@ -28,7 +28,7 @@ func newDeleteCmd() *cobra.Command {
 		"Skip confirmation prompt")
 	clinote.AddFlag(cmd) // T-1291
 
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

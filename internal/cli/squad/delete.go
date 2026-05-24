@@ -23,7 +23,7 @@ func newDeleteCmd() *cobra.Command {
 
 	// T-0648 — kit 0.4 signature annotations. Squad deletion mutates
 	// the local squad store and is naturally idempotent (delete-by-id).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
 }

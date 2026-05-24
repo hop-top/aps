@@ -22,16 +22,6 @@ The --type flag accepts canonical service types and adapter aliases. Adapter
 aliases are resolved through kit aliasing before APS persists the service.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// --profile and --dry-run are persistent globals (--profile
-			// declared in root.go Globals; --dry-run auto-registered by
-			// kit/cli). Pull them off the inherited flag set instead of
-			// redeclaring as locals (signature validator local-globals
-			// check, T-0648).
-			//
-			// NOTE: --workspace here is Linear-specific (the Linear team
-			// workspace key) and intentionally collides on name with the
-			// aps workspace global. Renaming would be a UX break — left
-			// in place pending a deliberate rename track.
 			opts.profile, _ = cmd.Flags().GetString("profile")
 			opts.dryRun, _ = cmd.Flags().GetBool("dry-run")
 			return runAdd(cmd, args[0], opts)
@@ -46,7 +36,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.site, "site", "", "Ticket adapter site or base URL")
 	cmd.Flags().StringVar(&opts.project, "project", "", "Ticket adapter project key, ID, or path")
 	cmd.Flags().StringVar(&opts.jql, "jql", "", "Jira issue query")
-	cmd.Flags().StringVar(&opts.workspace, "workspace", "", "Linear workspace key or ID")
+	cmd.Flags().StringVar(&opts.workspace, "linear-workspace", "", "Linear workspace key or ID")
 	cmd.Flags().StringVar(&opts.team, "team", "", "Linear team key or ID")
 	cmd.Flags().StringVar(&opts.group, "group", "", "GitLab group path or ID")
 	cmd.Flags().StringVar(&opts.events, "events", "", "Comma-separated ticket events to receive")

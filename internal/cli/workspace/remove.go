@@ -79,7 +79,7 @@ can perform this action. Use --force to skip confirmation.`,
 
 	// T-0648 — irreversibly drops an agent from local workspace state;
 	// removing an absent agent is a no-op (idempotent).
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd

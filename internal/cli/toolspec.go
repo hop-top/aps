@@ -11,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 	"hop.top/kit/go/ai/toolspec"
 	kitcli "hop.top/kit/go/console/cli"
+
+	"hop.top/aps/internal/cli/globals"
 )
 
 // toolspecSchemaVersion identifies the ToolSpec schema this aps build emits.
@@ -207,7 +209,6 @@ func apsWorkflows() []toolspec.Workflow {
 // newToolspecCmd builds the `aps toolspec` cobra subcommand. The command is
 // pure metadata; it does not touch profiles, sessions, or the filesystem.
 func newToolspecCmd() *cobra.Command {
-	var format string
 	cmd := &cobra.Command{
 		Use:   "toolspec",
 		Short: "Print the aps tool specification (commands, flags, errors, workflows)",
@@ -218,12 +219,13 @@ drive aps without parsing --help.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			spec := buildToolSpec(rootCmd)
+			format := globals.Format()
+			if format == "" {
+				format = "json"
+			}
 			return writeToolSpec(cmd.OutOrStdout(), strings.ToLower(format), spec)
 		},
 	}
-	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml)")
-	// T-0648 — kit signature annotations. `toolspec` walks the in-memory
-	// command tree and prints metadata; no FS or network mutation.
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd

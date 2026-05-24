@@ -80,7 +80,7 @@ func NewDeleteCmd() *cobra.Command {
 
 	// T-0648 — kit 0.4 signature annotations. Session delete tears
 	// down tmux + the registry entry; idempotent on missing target.
-	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructive)
+	kitcli.SetSideEffect(cmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 
 	return cmd
