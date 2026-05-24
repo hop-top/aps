@@ -17,7 +17,16 @@ func newLogsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs <name>",
 		Short: "View device logs",
-		Args:  cobra.ExactArgs(1),
+		Long: `Print captured stdout/stderr lines from the named adapter
+device's runtime. Defaults to the last 20 lines; --tail <N>
+controls the line count, --follow / -f streams new lines as they
+arrive (blocks until interrupted), and --since <duration> (e.g.
+1h, 30m) restricts to lines emitted within the given window. The
+device must exist in the registry; logs are sourced from the
+manager's per-adapter log buffer.
+
+Read-only: no state mutation. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLogs(args[0], tail, follow, since)
 		},

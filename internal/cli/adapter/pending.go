@@ -43,6 +43,20 @@ func newPendingCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pending",
 		Short: "List mobile devices pending approval",
+		Long: `Print one row per mobile device that has registered via
+the pairing flow (aps adapter pair) but has not yet been approved
+or rejected. Each row shows the device id, a time-ago badge for
+the pairing request, and a composite "name, os version"
+device-info column. The default output is a styled table;
+--json emits the structured registry rows.
+
+After listing the command echoes the resolved approve / reject
+commands (pre-filled with --profile when set) so the operator can
+copy-paste the next action. --profile is inherited from the root
+global and scopes the listing to one profile's pending queue when
+provided.
+
+Read-only: no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --profile from kit-managed global.
 			return runPending(globals.Profile(), jsonOutput)

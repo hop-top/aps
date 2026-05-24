@@ -21,7 +21,24 @@ func newStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop <name>",
 		Short: "Stop a device",
-		Args:  cobra.ExactArgs(1),
+		Long: `Terminate the runtime for the named adapter device.
+Default behavior sends SIGTERM and waits for graceful shutdown;
+--force escalates to SIGKILL. When the device is linked to one
+or more profiles, the command prints the linked-profile list and
+prompts for confirmation before stopping (suppressed under --json
+or --force).
+
+--json emits the structured outcome instead of the human
+"Stopping <name>... stopped" progress line. --dry-run (root
+global) prints what would happen — type, current state, PID, and
+the profiles that would be unaffected — without sending any
+signal.
+
+Mutates local runtime state. Idempotent in the already-stopped
+sense; force-stopping a healthy adapter is destructive only for
+the in-flight work the device was handling, not for the device
+record itself (use aps adapter delete to remove the record).`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --dry-run from kit-managed global.
 			return runStop(cmd.Context(), args[0], force, globals.DryRun(), jsonOutput)

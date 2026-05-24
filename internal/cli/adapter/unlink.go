@@ -24,7 +24,24 @@ func newLinkDeleteCmd() *cobra.Command {
 		Use:     "delete <device>",
 		Aliases: []string{"remove", "rm"},
 		Short:   "Unlink a device from a profile",
-		Args:    cobra.ExactArgs(1),
+		Long: `Detach an adapter device from a profile, removing the
+profile id from the device's linked-profiles list and publishing
+an adapter-unlinked event. For messenger devices this also tears
+down the routing entry that mapped channels to skills. The device
+record itself is preserved — use aps adapter delete (when
+available) to remove the device entirely. Companion read is
+aps adapter link list.
+
+The command errors when the device is not currently linked to the
+named profile. --json emits the structured outcome.
+--profile and --dry-run inherit from the root globals; --profile
+is required. --dry-run prints the would-be transition without
+mutating anything.
+
+Mutates the local registry only. Not naturally idempotent — a
+second invocation against an already-unlinked device returns a
+"not linked" error so the operator can distinguish drift.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --profile and --dry-run from kit-managed globals.
 			profileID := globals.Profile()

@@ -68,6 +68,16 @@ func newMessengerListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List messenger adapters",
+		Long: `Print one row per messenger-type adapter device with
+name, platform (telegram, slack, discord, ...), runtime status,
+owning profile, and channel-mapping count. Equivalent to
+aps adapter list --type=messenger but type-scoped at the parent
+group level. Output respects the root --format flag
+(table | json | yaml). The local --platform / --status flags
+filter by platform string and runtime state; --profile inherits
+from the root global.
+
+Read-only: no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runMessengerList(platformFilter, statusFilter, globals.Profile())
 		},

@@ -17,7 +17,19 @@ func newRejectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reject <device-id>",
 		Short: "Reject a pending mobile device",
-		Args:  cobra.ExactArgs(1),
+		Long: `Remove a pending mobile device entry from the profile's
+adapter registry, denying the pairing request. The device must
+currently sit in the pending state (list candidates with
+aps adapter pending); attempting to reject a non-pending entry
+returns the registry error verbatim. --profile is inherited from
+the root global and is required. --json emits a structured
+outcome; --quiet (root global) suppresses the success line.
+
+Mutates the local registry only. Idempotent: re-rejecting an
+already-rejected (i.e. removed) device returns a not-found error.
+Dry-run is opted out because preview would only echo the device
+ID the user already passed.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --profile and --quiet from kit-managed globals.
 			profileID := globals.Profile()

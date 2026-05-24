@@ -20,7 +20,18 @@ func newStatusCmd() *cobra.Command {
 		Use:     "status <name>",
 		Aliases: []string{"show"},
 		Short:   "Show device status",
-		Args:    cobra.ExactArgs(1),
+		Long: `Print the resolved state of the named adapter device:
+type, scope (global vs profile-bound), runtime state, health
+(when running), uptime, PID, loading strategy, creation timestamp,
+and the list of profiles the device is linked to. Failed-state
+devices also show the captured LastError and a hint pointing at
+aps adapter logs <name>. --json emits the same fields as a
+structured payload; --verbose (root global) is plumbed through
+for future expansion. Output respects only the local --json flag
+because the human view is hand-rendered with styled badges.
+
+Read-only: no state mutation. Idempotent.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// T-0648 — read --verbose from kit-managed global.
 			return runStatus(args[0], jsonOutput, globals.Verbose())

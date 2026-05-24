@@ -18,7 +18,26 @@ func newStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start <name>",
 		Short: "Start a device",
-		Args:  cobra.ExactArgs(1),
+		Long: `Spawn the runtime for the named adapter device under
+the manager. The exact mechanics depend on the device's loading
+strategy: subprocess strategies fork the executable named by the
+manifest, script strategies invoke the script binary, and builtin
+strategies attach the in-process handler. Pair with
+aps adapter create <name> to mint a device record first, and
+aps adapter stop <name> to terminate.
+
+The command prints a "Starting <name>... running (PID <pid>)"
+progress line on a TTY, or emits structured runtime state with
+--json. On failure it surfaces the error and — for messenger
+devices missing a token — hints the corresponding
+aps secrets set <NAME>_TOKEN command. The Already-Running case
+returns success.
+
+Mutates local runtime state. Idempotent only in the
+already-running sense (no double-spawn). Dry-run is opted out
+because previewing would have to bisect the spawn-and-wait path
+that is the operation itself.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runStart(cmd.Context(), args[0], jsonOutput)
 		},
