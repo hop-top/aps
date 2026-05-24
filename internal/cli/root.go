@@ -89,6 +89,14 @@ var root = kitcli.New(kitcli.Config{
 	// arms the policy-gate confirm flow on every destructive leaf so the
 	// CLI refuses to run them on non-TTY without --confirm-token=<sha>.
 	EnforceDestructiveToken: true,
+	// T-0655 — refuse runnable leaves that lack kit/examples, and non-read
+	// leaves that lack kit/next-steps. Every aps leaf is annotated via
+	// zz_guidance_annotations.go's init-time pass (174 leaves, 97 of
+	// which carry next-steps). Same pre-flight semantics as
+	// EnforceDestructiveToken: gated by DisableValidate today, armed for
+	// when T-0657 flips DisableValidate back to false. See kit cli.go:218
+	// for the field definition and cli.go:1080 for the runtime gate.
+	EnforceGuidance: true,
 	// T-0657 — paired with DisableValidate above. While DisableValidate
 	// is true (the production guardrail during the 12fcc annotation
 	// rollout) kit/cli short-circuits the pre-flight validator and this
