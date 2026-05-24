@@ -14,7 +14,12 @@ const (
 	AdapterTypeProtocol  AdapterType = "protocol"
 	AdapterTypeSense     AdapterType = "sense"
 	AdapterTypeActuator  AdapterType = "actuator"
+	AdapterTypeScheduler AdapterType = "scheduler"
 )
+
+// DefaultEnvPrefix is the env-var prefix applied to script-strategy
+// action inputs when an adapter manifest omits env_prefix.
+const DefaultEnvPrefix = "ADAPTER"
 
 type LoadingStrategy string
 
@@ -62,6 +67,7 @@ var AdapterTypes = map[AdapterType]AdapterTypeMeta{
 	AdapterTypeMobile:    {Type: AdapterTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: true},
 	AdapterTypeSense:     {Type: AdapterTypeSense, Description: "Camera, microphone", Implemented: true},
 	AdapterTypeActuator:  {Type: AdapterTypeActuator, Description: "Robotics, hardware", Implemented: true},
+	AdapterTypeScheduler: {Type: AdapterTypeScheduler, Description: "Calendars, schedulers, reminders", Implemented: true},
 }
 
 func ImplementedAdapterTypes() []AdapterType {
@@ -100,6 +106,7 @@ type Adapter struct {
 	ProfileID    string          `json:"profile_id,omitempty" yaml:"profile_id,omitempty"`
 	Strategy     LoadingStrategy `json:"strategy" yaml:"strategy"`
 	Description  string          `json:"description,omitempty" yaml:"description,omitempty"`
+	EnvPrefix    string          `json:"env_prefix,omitempty" yaml:"env_prefix,omitempty"`
 	Config       map[string]any  `json:"config,omitempty" yaml:"config,omitempty"`
 	CreatedAt    time.Time       `json:"created_at" yaml:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at" yaml:"updated_at"`
@@ -127,6 +134,7 @@ type AdapterManifest struct {
 	Type        AdapterType     `json:"type" yaml:"type"`
 	Strategy    LoadingStrategy `json:"strategy" yaml:"strategy"`
 	Description string          `json:"description,omitempty" yaml:"description,omitempty"`
+	EnvPrefix   string          `json:"env_prefix,omitempty" yaml:"env_prefix,omitempty"`
 	Config      map[string]any  `json:"config,omitempty" yaml:"config,omitempty"`
 	LinkedTo    []string        `json:"linked_to,omitempty" yaml:"linked_to,omitempty"`
 }
@@ -161,7 +169,7 @@ func DefaultStrategyForType(t AdapterType) LoadingStrategy {
 		return StrategyBuiltin
 	case AdapterTypeDesktop:
 		return StrategySubprocess
-	case AdapterTypeSense, AdapterTypeActuator:
+	case AdapterTypeSense, AdapterTypeActuator, AdapterTypeScheduler:
 		return StrategyScript
 	default:
 		return StrategySubprocess

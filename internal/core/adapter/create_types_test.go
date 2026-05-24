@@ -10,6 +10,7 @@ func TestDefaultStrategyForImplementedAdapterTypes(t *testing.T) {
 		AdapterTypeDesktop:   StrategySubprocess,
 		AdapterTypeSense:     StrategyScript,
 		AdapterTypeActuator:  StrategyScript,
+		AdapterTypeScheduler: StrategyScript,
 	}
 
 	for typ, want := range tests {
@@ -37,6 +38,7 @@ func TestCreateAdapterSupportsEveryImplementedType(t *testing.T) {
 		AdapterTypeDesktop,
 		AdapterTypeSense,
 		AdapterTypeActuator,
+		AdapterTypeScheduler,
 	} {
 		t.Run(string(typ), func(t *testing.T) {
 			name := "test-" + string(typ)

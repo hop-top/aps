@@ -21,6 +21,7 @@ func TestAdapterTypeValidation(t *testing.T) {
 		{"mobile is valid and implemented", adapter.AdapterTypeMobile, true, true},
 		{"sense is valid and implemented", adapter.AdapterTypeSense, true, true},
 		{"actuator is valid and implemented", adapter.AdapterTypeActuator, true, true},
+		{"scheduler is valid and implemented", adapter.AdapterTypeScheduler, true, true},
 		{"invalid type is not valid", adapter.AdapterType("invalid"), false, false},
 	}
 
@@ -40,6 +41,7 @@ func TestImplementedAdapterTypes(t *testing.T) {
 	assert.Contains(t, impl, adapter.AdapterTypeDesktop)
 	assert.Contains(t, impl, adapter.AdapterTypeSense)
 	assert.Contains(t, impl, adapter.AdapterTypeActuator)
+	assert.Contains(t, impl, adapter.AdapterTypeScheduler)
 }
 
 func TestDefaultStrategyForType(t *testing.T) {
@@ -54,6 +56,7 @@ func TestDefaultStrategyForType(t *testing.T) {
 		{"mobile defaults to builtin", adapter.AdapterTypeMobile, adapter.StrategyBuiltin},
 		{"sense defaults to script", adapter.AdapterTypeSense, adapter.StrategyScript},
 		{"actuator defaults to script", adapter.AdapterTypeActuator, adapter.StrategyScript},
+		{"scheduler defaults to script", adapter.AdapterTypeScheduler, adapter.StrategyScript},
 	}
 
 	for _, tt := range tests {

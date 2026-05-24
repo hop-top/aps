@@ -104,6 +104,7 @@ func loadAdapterFromPath(path string, scope AdapterScope, profileID string) (*Ad
 		ProfileID:    profileID,
 		Strategy:     manifest.Strategy,
 		Description:  manifest.Description,
+		EnvPrefix:    manifest.EnvPrefix,
 		Config:       manifest.Config,
 		LinkedTo:     manifest.LinkedTo,
 		Path:         path,
@@ -147,6 +148,7 @@ func SaveAdapter(device *Adapter) error {
 		Type:        device.Type,
 		Strategy:    device.Strategy,
 		Description: device.Description,
+		EnvPrefix:   device.EnvPrefix,
 		Config:      device.Config,
 		LinkedTo:    device.LinkedTo,
 	}

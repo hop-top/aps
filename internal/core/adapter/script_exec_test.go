@@ -1,0 +1,171 @@
+package adapter
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
+	tests := []struct {
+		name           string
+		manifestPrefix string
+		inputs         map[string]string
+		wantPrefix     string
+		wantKey        string
+	}{
+		{
+			name:           "no prefix falls back to ADAPTER",
+			manifestPrefix: "",
+			inputs:         map[string]string{"foo": "bar"},
+			wantPrefix:     "ADAPTER",
+			wantKey:        "ADAPTER_FOO=bar",
+		},
+		{
+			name:           "manifest prefix CAL",
+			manifestPrefix: "CAL",
+			inputs:         map[string]string{"event-id": "42"},
+			wantPrefix:     "CAL",
+			wantKey:        "CAL_EVENT_ID=42",
+		},
+		{
+			name:           "manifest prefix EMAIL regression guard",
+			manifestPrefix: "EMAIL",
+			inputs:         map[string]string{"to": "u@example.com"},
+			wantPrefix:     "EMAIL",
+			wantKey:        "EMAIL_TO=u@example.com",
+		},
+		{
+			name:           "manifest prefix CONTACT regression guard",
+			manifestPrefix: "CONTACT",
+			inputs:         map[string]string{"id": "abc"},
+			wantPrefix:     "CONTACT",
+			wantKey:        "CONTACT_ID=abc",
+		},
+		{
+			name:           "lowercase manifest prefix uppercases",
+			manifestPrefix: "cal",
+			inputs:         map[string]string{"x": "y"},
+			wantPrefix:     "CAL",
+			wantKey:        "CAL_X=y",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			device := &Adapter{
+				Name:   "test",
+				Config: map[string]any{},
+			}
+			manifest := &AdapterManifest{
+				Name:      "test",
+				EnvPrefix: tt.manifestPrefix,
+			}
+
+			env := buildScriptEnv(device, manifest, "", tt.inputs)
+
+			var found bool
+			for _, e := range env {
+				if e == tt.wantKey {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("env missing %q; got: %v", tt.wantKey, env)
+			}
+
+			for _, e := range env {
+				if !strings.Contains(e, "=") {
+					continue
+				}
+				key := e[:strings.Index(e, "=")]
+				if strings.HasPrefix(key, "APS_") {
+					continue
+				}
+				if !strings.HasPrefix(key, tt.wantPrefix+"_") {
+					t.Fatalf("env key %q does not match wanted prefix %q", key, tt.wantPrefix)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveEnvPrefix_Precedence(t *testing.T) {
+	if got := resolveEnvPrefix(&AdapterManifest{EnvPrefix: "MAN"}); got != "MAN" {
+		t.Fatalf("manifest prefix should be returned; got %q", got)
+	}
+	if got := resolveEnvPrefix(&AdapterManifest{}); got != DefaultEnvPrefix {
+		t.Fatalf("default fallback failed; got %q", got)
+	}
+	if got := resolveEnvPrefix(nil); got != DefaultEnvPrefix {
+		t.Fatalf("nil-safe fallback failed; got %q", got)
+	}
+}
+
+func TestValidateManifestEnvPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		wantErr bool
+	}{
+		{"empty is valid", "", false},
+		{"single underscore valid", "_", false},
+		{"alpha only", "CAL", false},
+		{"alphanumeric", "CAL2", false},
+		{"underscore separator", "MY_PREFIX", false},
+		{"lowercase valid (uppercased later)", "cal", false},
+		{"mixed case valid", "MyPrefix", false},
+		{"leading digit invalid", "2CAL", true},
+		{"contains space invalid", "MY PREFIX", true},
+		{"contains hyphen invalid", "MY-PREFIX", true},
+		{"contains dot invalid", "MY.PREFIX", true},
+		{"trailing space invalid", "CAL ", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateManifestEnvPrefix(tt.prefix)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateManifestEnvPrefix(%q) err=%v, wantErr=%v", tt.prefix, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateManifestEnvPrefix_EscapeHatch(t *testing.T) {
+	t.Setenv(envPrefixValidationDisableEnv, "1")
+	if err := validateManifestEnvPrefix("MY PREFIX"); err != nil {
+		t.Fatalf("escape hatch should bypass validation; got %v", err)
+	}
+}
+
+func TestLoadManifest_RejectsInvalidEnvPrefix(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "manifest.yaml")
+	if err := os.WriteFile(path, []byte("name: test\ntype: messenger\nenv_prefix: \"MY PREFIX\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadManifest(path)
+	if err == nil {
+		t.Fatal("LoadManifest should reject invalid env_prefix")
+	}
+	if !strings.Contains(err.Error(), "env_prefix") {
+		t.Fatalf("error should mention env_prefix; got %v", err)
+	}
+}
+
+func TestLoadManifest_AcceptsValidEnvPrefix(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "manifest.yaml")
+	if err := os.WriteFile(path, []byte("name: test\ntype: messenger\nenv_prefix: CAL\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := LoadManifest(path)
+	if err != nil {
+		t.Fatalf("LoadManifest should accept valid prefix; got %v", err)
+	}
+	if manifest.EnvPrefix != "CAL" {
+		t.Fatalf("EnvPrefix not preserved; got %q", manifest.EnvPrefix)
+	}
+}
