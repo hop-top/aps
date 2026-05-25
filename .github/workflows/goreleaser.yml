@@ -10,3 +10,6 @@ jobs:
     secrets:
       RELEASE_BOT_APP_ID: ${{ secrets.RELEASE_BOT_APP_ID }}
       RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+    with:
+      homebrew-tap-repo: homebrew-tap
+      scoop-bucket-repo: scoop-bucket
