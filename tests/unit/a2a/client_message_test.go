@@ -20,7 +20,7 @@ func TestClient_SendMessage_InvalidMessage(t *testing.T) {
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
 			ProtocolBinding: "jsonrpc",
-			ListenAddr:      "127.0.0.1:8081",
+			ListenAddr:      freeAddr(t),
 			IsolationTier:   "process",
 		},
 	}
@@ -37,13 +37,19 @@ func TestClient_SendMessage_InvalidMessage(t *testing.T) {
 }
 
 func TestClient_SendMessage_ValidMessage(t *testing.T) {
+	// freeAddr binds :0, captures the assigned port, and closes the
+	// listener so we have an address that is (very likely) free for
+	// the duration of the test. SendMessage is expected to fail with
+	// "connection refused" — without a kernel-assigned port, a sibling
+	// test happening to listen on a hardcoded constant could make this
+	// connect succeed and silently invert the assertion.
 	profile := &core.Profile{
 		ID:          "test-profile",
 		DisplayName: "Test Profile",
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
 			ProtocolBinding: "jsonrpc",
-			ListenAddr:      "127.0.0.1:8081",
+			ListenAddr:      freeAddr(t),
 			IsolationTier:   "process",
 		},
 	}

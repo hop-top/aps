@@ -44,7 +44,7 @@ func TestNewClient_ValidProfile(t *testing.T) {
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
 			ProtocolBinding: "jsonrpc",
-			ListenAddr:      "127.0.0.1:8081",
+			ListenAddr:      freeAddr(t),
 			IsolationTier:   "process",
 		},
 	}

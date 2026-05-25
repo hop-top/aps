@@ -36,7 +36,7 @@ func TestNewHTTPTransport_EmptyEndpoint(t *testing.T) {
 }
 
 func TestNewHTTPTransport_ValidConfig(t *testing.T) {
-	config := transport.DefaultHTTPConfig("http://127.0.0.1:8081")
+	config := transport.DefaultHTTPConfig("http://" + freeAddr(t))
 
 	handler := &HTTPMockHandler{}
 	httpTransport, err := transport.NewHTTPTransport(config, handler)
@@ -49,7 +49,11 @@ func TestNewHTTPTransport_ValidConfig(t *testing.T) {
 
 func TestNewHTTPTransport_SendMessage(t *testing.T) {
 	ctx := context.Background()
-	config := transport.DefaultHTTPConfig("http://127.0.0.1:9999")
+	// freeAddr returns a port that is nominally free for the rest of
+	// the test run; Send is expected to fail with "connection refused"
+	// since nothing else binds it. A hardcoded port could collide with
+	// a sibling test and silently flip the assertion.
+	config := transport.DefaultHTTPConfig("http://" + freeAddr(t))
 	config.Timeout = 100
 
 	handler := &HTTPMockHandler{}
@@ -65,7 +69,7 @@ func TestNewHTTPTransport_SendMessage(t *testing.T) {
 }
 
 func TestNewHTTPTransport_IsHealthy(t *testing.T) {
-	config := transport.DefaultHTTPConfig("http://127.0.0.1:9999")
+	config := transport.DefaultHTTPConfig("http://" + freeAddr(t))
 
 	handler := &HTTPMockHandler{}
 	httpTransport, err := transport.NewHTTPTransport(config, handler)
