@@ -61,3 +61,38 @@ release:
   # different tag name than the current git tag (release.tag: is
   # Pro-only), so we disable its own release publishing entirely.
   disable: true
+
+brews:
+  - name: aps
+    repository:
+      owner: hop-top
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: https://github.com/hop-top/aps
+    description: "Agent Profile System"
+    license: MIT
+    # {{ .Env.RELEASE_TAG }} is the literal `aps/v<version>` tag,
+    # which is the path segment GitHub Releases use for asset
+    # downloads. {{.Tag}} here would resolve to the synthesized
+    # bare tag — wrong for the URL.
+    url_template: "https://github.com/hop-top/aps/releases/download/{{ .Env.RELEASE_TAG }}/{{ .ArtifactName }}"
+    install: |
+      bin.install "aps"
+    test: |
+      system "#{bin}/aps", "--version"
+
+scoops:
+  - name: aps
+    repository:
+      owner: hop-top
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
+    homepage: https://github.com/hop-top/aps
+    description: "Agent Profile System"
+    license: MIT
+    # Same RELEASE_TAG reasoning as brews above: the literal
+    # `aps/v<version>` tag is the path segment GitHub Releases use
+    # for asset downloads.
+    url_template: "https://github.com/hop-top/aps/releases/download/{{ .Env.RELEASE_TAG }}/{{ .ArtifactName }}"
