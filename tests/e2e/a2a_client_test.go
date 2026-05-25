@@ -51,7 +51,7 @@ func TestClient_ListTasks(t *testing.T) {
 		Capabilities: []string{"a2a", "test"},
 		A2A: &core.A2AConfig{
 			ProtocolBinding: "jsonrpc",
-			ListenAddr:      "127.0.0.1:8084",
+			ListenAddr:      GetAvailableAddress(t),
 		},
 	}
 

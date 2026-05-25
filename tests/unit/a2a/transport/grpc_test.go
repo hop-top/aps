@@ -36,7 +36,7 @@ func TestNewGRPCTransport_EmptyEndpoint(t *testing.T) {
 }
 
 func TestNewGRPCTransport_ValidConfig(t *testing.T) {
-	config := transport.DefaultGRPCConfig("127.0.0.1:9090")
+	config := transport.DefaultGRPCConfig(freeAddr(t))
 
 	handler := &GRPCMockHandler{}
 	grpcTransport, err := transport.NewGRPCTransport(config, handler)
@@ -49,7 +49,7 @@ func TestNewGRPCTransport_ValidConfig(t *testing.T) {
 
 func TestNewGRPCTransport_SendMessage(t *testing.T) {
 	ctx := context.Background()
-	config := transport.DefaultGRPCConfig("127.0.0.1:9090")
+	config := transport.DefaultGRPCConfig(freeAddr(t))
 
 	handler := &GRPCMockHandler{}
 	grpcTransport, err := transport.NewGRPCTransport(config, handler)
@@ -65,7 +65,7 @@ func TestNewGRPCTransport_SendMessage(t *testing.T) {
 }
 
 func TestNewGRPCTransport_IsHealthy(t *testing.T) {
-	config := transport.DefaultGRPCConfig("127.0.0.1:9090")
+	config := transport.DefaultGRPCConfig(freeAddr(t))
 
 	handler := &GRPCMockHandler{}
 	grpcTransport, err := transport.NewGRPCTransport(config, handler)

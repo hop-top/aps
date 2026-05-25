@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"testing"
@@ -78,9 +79,11 @@ func TestUseCase2_PublicRESTAPIForExternalClients(t *testing.T) {
 	err = adapter.RegisterRoutes(mux, coreAdapter)
 	require.NoError(t, err)
 
-	// Start test server
+	// Start test server on a kernel-assigned port to avoid zombies
+	// from prior interrupted runs blocking the bind.
+	addr := GetAvailableAddress(t)
 	server := &http.Server{
-		Addr:    "127.0.0.1:19080",
+		Addr:    addr,
 		Handler: mux,
 	}
 	defer server.Close()
@@ -93,7 +96,7 @@ func TestUseCase2_PublicRESTAPIForExternalClients(t *testing.T) {
 	assert.Equal(t, "agent-protocol", adapter.Name())
 
 	// Test HTTP client access
-	resp, err := http.Get("http://127.0.0.1:19080/v1/agents/search")
+	resp, err := http.Get("http://" + addr + "/v1/agents/search")
 	if err == nil {
 		defer resp.Body.Close()
 		assert.True(t, resp.StatusCode == 200 || resp.StatusCode == 400 || resp.StatusCode == 404) // 200 for success, 400 for bad request, 404 if not found
@@ -115,7 +118,7 @@ func TestUseCase3_AgentToAgentOrchestration(t *testing.T) {
 		DisplayName:  "Code Analyzer Agent",
 		Capabilities: []string{"a2a", "analyze", "read"},
 		A2A: &core.A2AConfig{
-			ListenAddr:      "127.0.0.1:29081",
+			ListenAddr:      GetAvailableAddress(t),
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
 			IsolationTier:   "process",
@@ -192,7 +195,7 @@ func TestUseCase5_UnifiedProtocolManagementDashboard(t *testing.T) {
 		ID:           "orchestrator",
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			ListenAddr:      "127.0.0.1:29082",
+			ListenAddr:      GetAvailableAddress(t),
 			ProtocolBinding: "jsonrpc",
 			SecurityScheme:  "apikey",
 			IsolationTier:   "process",
@@ -264,13 +267,13 @@ func TestUseCase6_MicroserviceAgentArchitecture(t *testing.T) {
 	defer cancel()
 
 	var servers []*a2a.Server
-	for i, agent := range agents {
+	for _, agent := range agents {
 		profile := &core.Profile{
 			ID:           agent.name,
 			DisplayName:  agent.role + " Agent",
 			Capabilities: []string{"a2a", "process", "execute"},
 			A2A: &core.A2AConfig{
-				ListenAddr:      getAvailableAddr(29083 + i),
+				ListenAddr:      GetAvailableAddress(t),
 				ProtocolBinding: "jsonrpc",
 				SecurityScheme:  "apikey",
 				IsolationTier:   "process",
@@ -311,12 +314,12 @@ func TestUseCase7_LocalDevelopmentSetup(t *testing.T) {
 	err = agentAdapter.RegisterRoutes(mainMux, coreAdapter)
 	require.NoError(t, err)
 
-	// Create A2A server (port 8081)
+	// Create A2A server on a kernel-assigned port
 	a2aProfile := &core.Profile{
 		ID:           "local-orchestrator",
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			ListenAddr:      "127.0.0.1:29084",
+			ListenAddr:      GetAvailableAddress(t),
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
 		},
@@ -482,7 +485,7 @@ func TestUseCase11_ContainerizedAgentDeployment(t *testing.T) {
 		ID:           "pod-agent",
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			ListenAddr:      "0.0.0.0:8081",
+			ListenAddr:      GetAvailableAddress(t),
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
 		},
@@ -529,7 +532,7 @@ func TestUseCase12_TestingMultipleProtocols(t *testing.T) {
 			ID:           "test-a2a",
 			Capabilities: []string{"a2a"},
 			A2A: &core.A2AConfig{
-				ListenAddr:      "127.0.0.1:29085",
+				ListenAddr:      GetAvailableAddress(t),
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
 			},
@@ -593,7 +596,7 @@ func TestUseCase14_ProtocolDebugging(t *testing.T) {
 		ID:           "debug-a2a",
 		Capabilities: []string{"a2a"},
 		A2A: &core.A2AConfig{
-			ListenAddr:      "127.0.0.1:29086",
+			ListenAddr:      GetAvailableAddress(t),
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
 		},
@@ -646,7 +649,7 @@ func TestUseCase15_ScalingFromSingleToMultiProtocol(t *testing.T) {
 			ID:           "phase2-a2a",
 			Capabilities: []string{"a2a"},
 			A2A: &core.A2AConfig{
-				ListenAddr:      "127.0.0.1:29087",
+				ListenAddr:      GetAvailableAddress(t),
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
 			},
@@ -676,20 +679,6 @@ func TestUseCase15_ScalingFromSingleToMultiProtocol(t *testing.T) {
 }
 
 // Helper functions
-
-func getAvailableAddr(basePort int) string {
-	for i := 0; i < 100; i++ {
-		addr := ""
-		if basePort+i > 0 {
-			// In real implementation, would check if port is available
-			addr = ""
-		}
-		if addr != "" {
-			return addr
-		}
-	}
-	return "127.0.0.1:29090"
-}
 
 type mockCustomProtocol struct {
 	name   string
@@ -745,10 +734,10 @@ func TestAllUseCasesIntegration(t *testing.T) {
 	// Use Case 3 & 6: Agent Orchestration & Microservices
 	for i := 0; i < 3; i++ {
 		profile := &core.Profile{
-			ID:           "agent-" + string(rune(i)),
+			ID:           fmt.Sprintf("agent-%d", i),
 			Capabilities: []string{"a2a"},
 			A2A: &core.A2AConfig{
-				ListenAddr:      "127.0.0.1:" + string(rune(29100+i)),
+				ListenAddr:      GetAvailableAddress(t),
 				ProtocolBinding: "jsonrpc",
 				IsolationTier:   "process",
 			},
@@ -794,10 +783,14 @@ func BenchmarkUseCase2_RESTAPIThroughput(b *testing.B) {
 }
 
 func BenchmarkUseCase3_A2ATaskCreation(b *testing.B) {
+	addr, err := GetAvailablePort()
+	if err != nil {
+		b.Fatalf("Failed to get available port: %v", err)
+	}
 	profile := &core.Profile{
 		ID: "bench-a2a",
 		A2A: &core.A2AConfig{
-			ListenAddr:      "127.0.0.1:29200",
+			ListenAddr:      addr,
 			ProtocolBinding: "jsonrpc",
 			IsolationTier:   "process",
 		},
