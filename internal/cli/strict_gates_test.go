@@ -44,3 +44,37 @@ func TestRootValidate_StrictGatesPass(t *testing.T) {
 	// inspect a specific bucket shape. We don't, so discard it.
 	_ = kitconformance.AssertCLI(t, root)
 }
+
+// TestRootValidateSignature_NoViolations closes the gap AssertCLI
+// leaves open: kit runs TWO independent validators at boot, and
+// AssertCLI only exercises one of them.
+//
+//   - Root.Validate() — the Layer-A walk (annotations, Short/Long,
+//     shape, configurable gates). AssertCLI calls this with
+//     EnforceValidate forced on. Signature checks are NOT part of
+//     Validate(); see kit cli.go (collectShippedValidation +
+//     collectLayerAValidation only).
+//   - Root.ValidateSignature() — the four signature checks
+//     (local-globals, reserved-name, depth-hierarchical,
+//     passthrough). Execute() runs this in a SEPARATE gate keyed on
+//     Config.SignatureStrictness (kit cli.go, dispatchSignatureReport
+//     after the EnforceValidate block), independent of
+//     EnforceValidate.
+//
+// Because aps runs with SignatureStrictness=Reject, a leaf that
+// redefines a global flag (e.g. a local --format shadowing kit's
+// persistent output-mode --format) aborts EVERY invocation at
+// startup — including --help — while AssertCLI stays green. This
+// test invokes the exact walk Execute() dispatches on and fails on
+// ANY violation: reject mode keys on report.HasViolations() without
+// filtering severity (kit dispatchSignatureReport), so even a
+// warning-severity passthrough entry aborts startup.
+func TestRootValidateSignature_NoViolations(t *testing.T) {
+	if root == nil || root.Cmd == nil {
+		t.Fatal("aps root command tree is nil")
+	}
+	report := root.ValidateSignature()
+	for _, v := range report.Violations {
+		t.Errorf("signature violation: %s [%s/%s] %s", v.Path, v.Check, v.Severity, v.Detail)
+	}
+}
