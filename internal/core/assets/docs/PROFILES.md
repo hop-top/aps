@@ -229,12 +229,12 @@ links, and the skipped shortnames without writing anything.
 
 ```bash
 aps profile export myagent                              # native profile.yaml dump
-aps profile export myagent --format agentco             # AGENTS.md to stdout
-aps profile export myagent --format agentco --out AGENTS.md
+aps profile export myagent --manifest-format agentco             # AGENTS.md to stdout
+aps profile export myagent --manifest-format agentco --out AGENTS.md
 ```
 
 Without `--format`, export dumps the native profile.yaml record.
-`--format agentco` renders an agent role manifest: `name` from the
+`--manifest-format agentco` renders an agent role manifest: `name` from the
 display name, `slug` from the profile id, `skills` from the linked
 capability shortnames, and the body from `notes.md` (the same file
 import writes). `reportsTo` is never emitted — APS has no reporting

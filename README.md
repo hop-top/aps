@@ -319,7 +319,7 @@ aps profile list       # List all profiles
 aps profile create <id>   # Create a new profile
 aps profile show <id>  # Show profile details
 aps profile import <bundle|AGENTS.md>  # Import a bundle or agent role manifest
-aps profile export <id> [--format agentco]  # Export native yaml or AGENTS.md
+aps profile export <id> [--manifest-format agentco]  # Export native yaml or AGENTS.md
 aps run <id> -- <cmd>  # Run command under profile
 aps action list <id>   # List profile actions
 aps action run <id> <action>  # Run action

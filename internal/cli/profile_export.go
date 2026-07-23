@@ -15,7 +15,7 @@ import (
 )
 
 // agentcoFrontmatter is the frontmatter shape written by
-// --format agentco. reportsTo is deliberately absent: aps has no
+// --manifest-format agentco. reportsTo is deliberately absent: aps has no
 // reporting model and export must not invent one. Only identity-level
 // fields appear — never secrets, isolation, gitconfig, knowledge
 // references, or machine paths.
@@ -97,8 +97,8 @@ var profileExportCmd = &cobra.Command{
 	Use:   "export <id>",
 	Short: "Export a profile record",
 	Long: `Export a profile to stdout (or --out <path>). The default
-output is the native profile.yaml record. --format agentco renders
-an agent role manifest (AGENTS.md — YAML frontmatter + markdown
+output is the native profile.yaml record. --manifest-format agentco
+renders an agent role manifest (AGENTS.md — YAML frontmatter + markdown
 body): name from the display name, slug from the profile id,
 skills from the linked capability shortnames, and the body from
 notes.md (the same file manifest import writes).
@@ -112,7 +112,7 @@ Read-only: loads profile state; writes only to stdout or the
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
-		format, _ := cmd.Flags().GetString("format")
+		format, _ := cmd.Flags().GetString("manifest-format")
 		outPath, _ := cmd.Flags().GetString("out")
 
 		var out io.Writer = os.Stdout
@@ -136,7 +136,12 @@ Read-only: loads profile state; writes only to stdout or the
 
 func init() {
 	profileCmd.AddCommand(profileExportCmd)
-	profileExportCmd.Flags().String("format", "", "Export format: agentco (agent role manifest); omit for native yaml")
+	// Named manifest-format (not format) so it does not shadow kit's
+	// global --format output-mode flag (table|json|yaml); the signature
+	// validator rejects leaf-level redefinition of globals at startup.
+	// Same qualified <noun>-format pattern as profile create's
+	// --avatar-format.
+	profileExportCmd.Flags().String("manifest-format", "", "Manifest format: agentco (agent role manifest); omit for native yaml")
 	profileExportCmd.Flags().String("out", "", "Write to a file instead of stdout")
 
 	kitcli.SetSideEffect(profileExportCmd, kitcli.SideEffectRead)

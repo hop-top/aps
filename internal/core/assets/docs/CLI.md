@@ -168,7 +168,7 @@ aps profile export <profile-id> [flags]
 
 **Flags:**
 
-- `--format agentco` - Render an agent role manifest (AGENTS.md); omit for the native profile.yaml dump
+- `--manifest-format agentco` - Render an agent role manifest (AGENTS.md); omit for the native profile.yaml dump
 - `--out <path>` - Write to a file instead of stdout
 
 The agentco format maps the display name to `name`, the profile id to
@@ -183,10 +183,10 @@ gitconfig, absolute machine paths, or knowledge subscription values.
 aps profile export myagent
 
 # Agent role manifest to stdout
-aps profile export myagent --format agentco
+aps profile export myagent --manifest-format agentco
 
 # Agent role manifest to a file
-aps profile export myagent --format agentco --out AGENTS.md
+aps profile export myagent --manifest-format agentco --out AGENTS.md
 ```
 
 ## Run Commands

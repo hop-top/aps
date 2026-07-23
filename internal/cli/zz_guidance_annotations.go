@@ -842,7 +842,7 @@ var leafGuidance = map[string]kitcli.Guidance{
 	"aps profile export": {
 		Examples: []kitcli.Example{
 			ex("Export the native profile record", "aps profile export alice"),
-			ex("Export an agent role manifest", "aps profile export alice --format agentco --out AGENTS.md"),
+			ex("Export an agent role manifest", "aps profile export alice --manifest-format agentco --out AGENTS.md"),
 		},
 	},
 	"aps profile import": {
