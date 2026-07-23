@@ -84,7 +84,7 @@ func TestSlugifyManifestName(t *testing.T) {
 func writeManifestFile(t *testing.T, dir, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, "AGENTS.md")
-	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 	return path
 }
 
@@ -125,6 +125,9 @@ func TestRunManifestImport_CreatesProfile(t *testing.T) {
 	notes, err := os.ReadFile(filepath.Join(dir, "notes.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(notes), "Owns technical vision.")
+
+	// Persisted import keeps the affirmative message.
+	assert.Contains(t, out.String(), "Profile 'acme-cto' imported from manifest")
 }
 
 func TestRunManifestImport_DryRunWritesNothing(t *testing.T) {
@@ -144,6 +147,12 @@ func TestRunManifestImport_DryRunWritesNothing(t *testing.T) {
 	assert.Contains(t, out.String(), "acme-cto")
 	assert.Contains(t, out.String(), "a2a")
 	assert.Contains(t, out.String(), "not-a-real-capability")
+
+	// Preview phrasing only — the persisted-import message must not
+	// leak into dry-run output.
+	assert.Contains(t, out.String(), "dry-run — nothing written")
+	assert.Contains(t, out.String(), "would link capabilities")
+	assert.NotContains(t, out.String(), "imported from manifest")
 }
 
 func TestRunManifestImport_IDOverride(t *testing.T) {

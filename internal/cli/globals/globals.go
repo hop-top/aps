@@ -64,11 +64,16 @@ func Verbose() bool {
 // DryRun returns the value of the --dry-run global (kit/cli auto-
 // registers it via cli.New per ADR-0020). False when unset.
 //
+// The kit binds the root --dry-run persistent flag to viper key
+// kit.dry_run (also fed by KIT_DRY_RUN / config), not to the flag
+// name — reading "dry-run" always returns false and turns previews
+// into real writes.
+//
 // T-0648 — added so adapter leaves can stop redeclaring a local
 // --dry-run flag that shadows the kit global.
 func DryRun() bool {
 	if v == nil {
 		return false
 	}
-	return v.GetBool("dry-run")
+	return v.GetBool("kit.dry_run")
 }
