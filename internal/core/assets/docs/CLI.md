@@ -117,6 +117,78 @@ modules:
 
 Secret values are redacted (shown as `***redacted***`).
 
+### `aps profile import`
+
+Import a shared profile bundle or an agent role manifest.
+
+```bash
+aps profile import <bundle|AGENTS.md> [flags]
+```
+
+Dispatch is by extension: a `.md` argument is treated as an agent role
+manifest (YAML frontmatter + markdown body), anything else as a
+`.aps-profile.yaml` bundle.
+
+**Flags:**
+
+- `--id <id>` - Override the target profile id
+- `--force` - Overwrite existing profile (bundle imports only)
+- `--dry-run` - Preview the resulting profile.yaml, capability links, and skips without writing (manifest imports only)
+
+**Manifest mapping:**
+
+- `title` (falling back to `name`) → display name
+- `--id` > `slug` > slugified `name` → profile id
+- markdown body → `notes.md`
+- `skills` shortnames → capability links; unresolvable shortnames warn to stderr and are skipped
+
+Secrets, isolation config, and machine-specific paths are never taken
+from a manifest — the profile gets normal create-path defaults.
+
+**Examples:**
+
+```bash
+# Import a profile bundle
+aps profile import ./alice.aps-profile.yaml
+
+# Import an agent role manifest
+aps profile import ./AGENTS.md
+
+# Preview without writing
+aps profile import ./AGENTS.md --dry-run
+```
+
+### `aps profile export`
+
+Export a profile record.
+
+```bash
+aps profile export <profile-id> [flags]
+```
+
+**Flags:**
+
+- `--format agentco` - Render an agent role manifest (AGENTS.md); omit for the native profile.yaml dump
+- `--out <path>` - Write to a file instead of stdout
+
+The agentco format maps the display name to `name`, the profile id to
+`slug`, linked capability shortnames to `skills`, and `notes.md` to the
+body. It never includes secrets.env content, isolation config,
+gitconfig, absolute machine paths, or knowledge subscription values.
+
+**Examples:**
+
+```bash
+# Native profile.yaml dump
+aps profile export myagent
+
+# Agent role manifest to stdout
+aps profile export myagent --format agentco
+
+# Agent role manifest to a file
+aps profile export myagent --format agentco --out AGENTS.md
+```
+
 ## Run Commands
 
 ### `aps run`

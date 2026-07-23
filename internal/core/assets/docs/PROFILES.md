@@ -82,6 +82,10 @@ limits:
   max_concurrency: 2
   max_runtime_minutes: 30
 
+# Knowledge references (optional)
+knowledge:
+  subscriptions: "https://registry.example.com/subscriptions.yaml"
+
 # Git module
 git:
   enabled: true
@@ -163,6 +167,82 @@ token = os.environ.get('GITHUB_TOKEN')
 # In a Node.js action
 const token = process.env.GITHUB_TOKEN;
 ```
+
+## Knowledge Subscriptions
+
+The optional `knowledge.subscriptions` field on profile.yaml references a
+config fragment (path or URL) listing registry endpoints:
+
+```yaml
+knowledge:
+  subscriptions: "https://registry.example.com/subscriptions.yaml"
+```
+
+APS only stores the reference. When set, commands run under the profile
+receive it as an environment variable derived from the configured env
+prefix (default `APS`):
+
+```bash
+APS_KNOWLEDGE_SUBSCRIPTIONS=https://registry.example.com/subscriptions.yaml
+```
+
+Field absent → no variable injected; behavior is identical to profiles
+that predate the field.
+
+## Agent Role Manifests (Import / Export)
+
+APS-native profile.yaml remains the default and canonical format.
+Agent role manifests (`AGENTS.md` — YAML frontmatter + markdown body)
+are one opt-in interchange converter: manifests are parsed on import
+and rendered on export, never stored.
+
+### Importing a Manifest
+
+```bash
+aps profile import ./AGENTS.md
+aps profile import ./AGENTS.md --id custom-id
+aps profile import ./AGENTS.md --dry-run
+```
+
+A `.md` argument on the existing `aps profile import` command routes to
+the manifest path (anything else stays a profile bundle). Mapping:
+
+| Manifest | Profile |
+|----------|---------|
+| `title` (falling back to `name`) | display name |
+| `--id` flag > `slug` > slugified `name` | profile id |
+| markdown body | `notes.md` |
+| `skills` shortnames | capability links |
+
+Each skills shortname that resolves in the capability registry is linked
+via the normal capability-add path; unresolvable shortnames print a
+warning to stderr and are skipped — a missing capability never fails the
+import.
+
+Never imported: secrets, isolation config, and machine-specific paths.
+The profile receives the normal create-path defaults for all of these.
+
+`--dry-run` prints the resulting profile.yaml, the intended capability
+links, and the skipped shortnames without writing anything.
+
+### Exporting a Manifest
+
+```bash
+aps profile export myagent                              # native profile.yaml dump
+aps profile export myagent --format agentco             # AGENTS.md to stdout
+aps profile export myagent --format agentco --out AGENTS.md
+```
+
+Without `--format`, export dumps the native profile.yaml record.
+`--format agentco` renders an agent role manifest: `name` from the
+display name, `slug` from the profile id, `skills` from the linked
+capability shortnames, and the body from `notes.md` (the same file
+import writes). `reportsTo` is never emitted — APS has no reporting
+model.
+
+Never exported (agentco format): secrets.env keys or values, isolation
+config, gitconfig content, absolute machine paths, and knowledge
+subscription values. The manifest carries identity only.
 
 ## Modules
 

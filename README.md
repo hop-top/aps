@@ -132,6 +132,7 @@ Documentation will be generated at `~/.agents/docs/`.
 - **Secrets Management**: Secure credential storage with automatic environment injection
 - **Action Automation**: Custom scripts triggered by CLI or webhooks
 - **Git Integration**: Automatic gitconfig and SSH key management
+- **Manifest Interchange**: Import/export agent role manifests (AGENTS.md) — profiles stay aps-native; manifests convert on the way in and out
 - **Webhook Support**: Event-driven automation from GitHub, GitLab, and more
 - **TUI Interface**: Interactive terminal user interface for easy profile management
 - **Voice Sessions**: Speech-to-speech backend integration (PersonaPlex, Moshi) with web, terminal, messenger, and telephony channels
@@ -317,6 +318,8 @@ aps help               # Show help
 aps profile list       # List all profiles
 aps profile create <id>   # Create a new profile
 aps profile show <id>  # Show profile details
+aps profile import <bundle|AGENTS.md>  # Import a bundle or agent role manifest
+aps profile export <id> [--format agentco]  # Export native yaml or AGENTS.md
 aps run <id> -- <cmd>  # Run command under profile
 aps action list <id>   # List profile actions
 aps action run <id> <action>  # Run action
