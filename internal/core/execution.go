@@ -68,6 +68,10 @@ func buildEnvVars(profile *Profile) ([]string, error) {
 		fmt.Sprintf("%s_PROFILE_DOCS_DIR", prefix): docsDir,
 	}
 
+	if profile.Knowledge != nil && profile.Knowledge.Subscriptions != "" {
+		apsEnv[fmt.Sprintf("%s_KNOWLEDGE_SUBSCRIPTIONS", prefix)] = profile.Knowledge.Subscriptions
+	}
+
 	for k, v := range apsEnv {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}

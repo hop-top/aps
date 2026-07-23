@@ -106,10 +106,19 @@ type Profile struct {
 	Trust         *TrustConfig         `yaml:"trust,omitempty"`
 	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
 	LLM           *LLMConfig           `yaml:"llm,omitempty"`
+	Knowledge     *KnowledgeConfig     `yaml:"knowledge,omitempty"`
 	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
 	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
 	Roles         []string             `yaml:"roles,omitempty"` // owner, assignee, evaluator, auditor
 	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty"`
+}
+
+// KnowledgeConfig references external knowledge sources for a profile.
+// Subscriptions points at a config fragment (path or URL) listing registry
+// endpoints; aps stores the reference and surfaces it to commands run under
+// the profile via the <PREFIX>_KNOWLEDGE_SUBSCRIPTIONS env var.
+type KnowledgeConfig struct {
+	Subscriptions string `yaml:"subscriptions,omitempty"`
 }
 
 // LLMConfig holds native chat model and routing preferences for a profile.
