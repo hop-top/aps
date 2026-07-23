@@ -14,6 +14,7 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
@@ -699,14 +700,27 @@ aps profile import on the receiving install.`,
 }
 
 var profileImportCmd = &cobra.Command{
-	Use:   "import [bundle]",
-	Short: "Import a shared profile bundle",
+	Use:   "import [bundle|AGENTS.md]",
+	Short: "Import a shared profile bundle or an agent role manifest",
 	Long: `Import a profile bundle previously produced by aps profile
-share. The bundle argument is the path to the .aps-profile.yaml
-file. By default the new profile keeps the source id; pass --id
+share, or an agent role manifest (AGENTS.md — YAML frontmatter +
+markdown body). Dispatch is by extension: a .md argument is
+treated as a manifest, anything else as a .aps-profile.yaml
+bundle. By default the new profile keeps the source id; pass --id
 to rename it (e.g. when the local install already has a profile
 with the source id). --force overwrites an existing profile
-directory with the same target id.
+directory with the same target id (bundle imports only).
+
+Manifest imports map title (falling back to name) to the display
+name, slug (falling back to the slugified name) to the profile
+id, the markdown body to notes.md, and each skills entry to a
+capability link when the shortname resolves in the capability
+registry — unresolvable shortnames are warned to stderr and
+skipped, never failing the import. Secrets, isolation, and
+machine-specific paths are never taken from a manifest; the
+profile receives the normal create-path defaults. --dry-run
+prints the resulting profile.yaml plus intended links and skips
+without writing anything.
 
 Mutating: creates $APS_DATA_PATH/profiles/<target-id>/ and emits
 both a ProfileCreated bus event and a profile_share_imported
@@ -721,6 +735,16 @@ part of the bundle); set them separately after import.`,
 
 		// T-1291 — attach --note before importing (which calls Create).
 		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+
+		// Agent role manifest (.md) → manifest import path. The kit
+		// root-persistent --dry-run global previews the profile.yaml
+		// plus intended capability links without writing.
+		if isAgentManifestPath(bundlePath) {
+			return runManifestImport(ctx, bundlePath, id, globals.DryRun(), os.Stdout, os.Stderr)
+		}
+		if globals.DryRun() {
+			return errors.New("--dry-run is only supported for agent manifest (.md) imports; bundle imports copy the source directly")
+		}
 		profile, bundle, err := core.ImportProfileBundleWithContext(ctx, bundlePath, id, force)
 		if err != nil {
 			return fmt.Errorf("importing profile bundle: %w", err)
@@ -901,13 +925,10 @@ func init() {
 	}
 	kitcli.SetSideEffect(profileImportCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileImportCmd, kitcli.IdempotencyConditional)
-	// T-0656 — import copies a foreign profile directory in; preview
-	// would have to walk the source, which is the same disk read the
-	// real import performs.
-	kitcli.OptOutDryRun(profileImportCmd)
-	if err := kitcli.SetDryRunRationale(profileImportCmd, "import copies an external profile directory into the local store; previewing would have to walk and decode the source, performing the same disk read that the real import performs."); err != nil {
-		panic(err)
-	}
+	// --dry-run is honored on the agent-manifest (.md) import path
+	// (previews profile.yaml + capability links without writing);
+	// bundle imports reject it in RunE since previewing would perform
+	// the same disk read as the real import.
 	// T-0654 — profile delete removes the profile directory and all
 	// associated state irreversibly; delete-by-id is idempotent.
 	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)
