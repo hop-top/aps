@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	urischeme "hop.top/uri/scheme"
+	citescheme "hop.top/cite/scheme"
 )
 
 // ProfileURIScheme is the canonical scheme for aps profile URIs.
@@ -16,7 +16,7 @@ const ProfileURISpace = "profile"
 // URI returns the canonical URI for this profile (aps://profile/<id>).
 // Cross-tool refs use this form (e.g. linking from tlc, ctxt, wsm).
 func (p *Profile) URI() string {
-	u := &urischeme.URI{Scheme: ProfileURIScheme, Namespace: ProfileURISpace, ID: p.ID}
+	u := &citescheme.URI{Scheme: ProfileURIScheme, Namespace: ProfileURISpace, ID: p.ID}
 	return u.String()
 }
 
@@ -29,13 +29,13 @@ func ParseProfileRef(s string) (string, error) {
 		return "", fmt.Errorf("empty profile ref")
 	}
 
-	// Bare id form (no scheme separator). hop.top/uri@v0.2 Parse rejects
-	// inputs without a scheme, so handle bare ids before delegating.
+	// Bare id form (no scheme separator). Parse rejects inputs without
+	// a scheme, so handle bare ids before delegating.
 	if !strings.Contains(s, "://") {
 		return s, nil
 	}
 
-	u, err := urischeme.Parse(s)
+	u, err := citescheme.Parse(s)
 	if err != nil {
 		return "", fmt.Errorf("parse profile ref: %w", err)
 	}

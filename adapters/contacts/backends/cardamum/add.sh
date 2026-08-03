@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Add a contact via cardamum (vCard format)
 # Input: CONTACT_EMAIL (required), CONTACT_NAME, CONTACT_ORG,
-#        CONTACT_PHONE, CONTACT_NOTE, CONTACT_ADDRESSBOOK
+#        CONTACT_PHONE, CONTACT_NOTE
+#        CONTACT_ADDRESSBOOK (override)
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh

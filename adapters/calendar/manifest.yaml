@@ -66,10 +66,15 @@ config:
           description: ISO 8601 end
         - name: all_day
           required: false
+          default: "false"
           description: "true|false; treat start/end as dates"
         - name: transparency
           required: false
-          description: "opaque (busy) | transparent (free)"
+          description: >-
+            opaque (busy) | transparent (free). No manifest default:
+            unset means "leave the backend default alone". gcalcli
+            treats unset as opaque; gam omits the field entirely so
+            the Google API default applies.
         - name: attendees
           required: false
           description: Comma-separated attendee emails
@@ -97,8 +102,14 @@ config:
           required: false
         - name: all_day
           required: false
+          default: "false"
+          description: "true|false; treat start/end as dates"
         - name: transparency
           required: false
+          description: >-
+            opaque (busy) | transparent (free). No manifest default:
+            an update patches only the fields it is given, so a
+            default would force transparency into every patch.
         - name: attendees
           required: false
         - name: location

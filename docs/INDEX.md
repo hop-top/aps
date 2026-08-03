@@ -6,7 +6,7 @@ Quick navigation to all APS documentation.
 
 - [**Messengers Overview**](MESSENGERS_OVERVIEW.md) — Platform comparison, routing architecture, best practices
 - [**Voice**](dev/voice.md) — Speech-to-speech backend, channel adapters, CLI commands
-- [**Adapters**](dev/adapters.md) — What adapters are, types, CLI usage, export/import
+- [**Adapters**](dev/adapters.md) — What adapters are, types, manifest input contract, CLI usage, export/import
 - [**Squads**](dev/squads.md) — Squad topologies, contracts, checklist, CLI usage
 - [**Configuration**](dev/configuration.md) — XDG directories, config file, profile storage, migration
 

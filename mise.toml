@@ -3,7 +3,7 @@
 # Docs: https://mise.jdx.dev
 
 [tools]
-go = "1.26.3"
+go = "1.26.5"
 goreleaser = "latest"
 # Pin minor version so local + CI agree on enabled linters and
 # formatter rules. Bump in lockstep with .github/workflows/lint.yml.

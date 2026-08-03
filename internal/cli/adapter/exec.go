@@ -59,7 +59,10 @@ Examples:
 				return err
 			}
 
-			inputMap := parseInputs(inputs)
+			inputMap, err := parseInputs(inputs)
+			if err != nil {
+				return err
+			}
 
 			mgr := coreadapter.NewManager()
 			out, err := mgr.ExecAction(
@@ -103,15 +106,22 @@ Examples:
 	return cmd
 }
 
-func parseInputs(raw []string) map[string]string {
+// parseInputs turns repeated --input arguments into an input map.
+// Split is on the FIRST "=" only, so later separators stay in the
+// value. An empty value ("cc=") is well-formed and yields a present
+// key; a missing separator or empty key is a user error naming the
+// offending argument.
+func parseInputs(raw []string) (map[string]string, error) {
 	m := make(map[string]string, len(raw))
 	for _, kv := range raw {
-		parts := strings.SplitN(kv, "=", 2)
-		if len(parts) == 2 {
-			m[parts[0]] = parts[1]
+		key, value, ok := strings.Cut(kv, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf(
+				"invalid input format '%s': expected 'key=value'", kv)
 		}
+		m[key] = value
 	}
-	return m
+	return m, nil
 }
 
 // resolveFromAddress determines the From email address.

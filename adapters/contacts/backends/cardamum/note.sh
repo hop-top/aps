@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Append note to contact via cardamum
-# Input: CONTACT_ID, CONTACT_TEXT
+# Env: CONTACTS_ACCOUNT, CONTACTS_ADDRESSBOOK
+# Input: CONTACT_ID, CONTACT_TEXT, CONTACT_ADDRESSBOOK (override)
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
@@ -9,7 +10,7 @@ aps_init_backend "note"
 : "${BIN:?aps_init_backend did not set BIN}"
 
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
-ABOOK="${CONTACTS_ADDRESSBOOK:-default}"
+ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 ID="${CONTACT_ID:?missing CONTACT_ID}"
 TEXT="${CONTACT_TEXT:?missing CONTACT_TEXT}"
 
