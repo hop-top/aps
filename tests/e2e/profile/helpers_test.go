@@ -17,7 +17,12 @@ import (
 
 // apsBinary is the absolute path to the compiled aps binary used by
 // all child-process invocations. Built once in TestMain.
-var apsBinary string
+var (
+	apsBinary string
+	// binDir is a per-run temp dir holding the compiled binary, so
+	// concurrent runs of this package never share a path.
+	binDir string
+)
 
 func TestMain(m *testing.M) {
 	if err := compileBinary(); err != nil {
@@ -25,7 +30,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	code := m.Run()
-	_ = os.Remove(apsBinary)
+	_ = os.RemoveAll(binDir)
 	os.Exit(code)
 }
 
@@ -34,9 +39,17 @@ func compileBinary() error {
 	if runtime.GOOS == "windows" {
 		binName += ".exe"
 	}
-	apsBinary = filepath.Join(os.TempDir(), binName)
+	var (
+		err     error
+		rootDir string
+	)
+	binDir, err = os.MkdirTemp("", "aps-e2e-*")
+	if err != nil {
+		return err
+	}
+	apsBinary = filepath.Join(binDir, binName)
 
-	rootDir, err := filepath.Abs("../../..")
+	rootDir, err = filepath.Abs("../../..")
 	if err != nil {
 		return err
 	}

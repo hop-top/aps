@@ -9,7 +9,12 @@ import (
 	"testing"
 )
 
-var apsBinary string
+var (
+	apsBinary string
+	// binDir is a per-run temp dir holding the compiled binary, so
+	// concurrent runs of this package never share a path.
+	binDir string
+)
 
 func TestMain(m *testing.M) {
 	// 1. Compile the binary
@@ -22,7 +27,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// 3. Cleanup
-	os.Remove(apsBinary)
+	_ = os.RemoveAll(binDir)
 
 	os.Exit(code)
 }
@@ -34,12 +39,19 @@ func compileBinary() error {
 		binName += ".exe"
 	}
 
-	tmpDir := os.TempDir()
-	apsBinary = filepath.Join(tmpDir, binName)
+	var (
+		err     error
+		rootDir string
+	)
+	binDir, err = os.MkdirTemp("", "aps-e2e-*")
+	if err != nil {
+		return err
+	}
+	apsBinary = filepath.Join(binDir, binName)
 
 	// Build from project root (../../)
 	// Assuming tests/e2e is 2 levels deep
-	rootDir, err := filepath.Abs("../../")
+	rootDir, err = filepath.Abs("../../")
 	if err != nil {
 		return err
 	}
