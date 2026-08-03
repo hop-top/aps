@@ -48,6 +48,12 @@ func (m *Manager) ExecAction(
 		return "", err
 	}
 
+	// Typed view of the action's declared inputs. Parsed here so input
+	// validation has a model to work against; nothing consumes it yet,
+	// so caller-supplied inputs still pass through unfiltered.
+	schema, _ := findActionSchema(parseActionSchemas(manifest), action)
+	_ = schema
+
 	env := buildScriptEnv(device, manifest, profileEmail, inputs)
 
 	cmd := exec.CommandContext(ctx, scriptPath)
