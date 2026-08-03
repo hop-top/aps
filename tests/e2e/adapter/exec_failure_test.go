@@ -1,6 +1,7 @@
 package adapter_e2e
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -260,6 +261,17 @@ var execRedactSecrets = []struct {
 // the secret-shaped lines above instead of its env dump.
 func writeExecRedactScript(t *testing.T, home, name, action string) {
 	t.Helper()
+	writeExecRedactScriptExit(t, home, name, action, 0)
+}
+
+// writeExecRedactScriptExit is writeExecRedactScript with a caller-set
+// exit code, so the same secret corpus can be driven down the failure
+// path. A non-zero code sends the last line to stderr as well, proving
+// the assertion covers both halves of CombinedOutput.
+func writeExecRedactScriptExit(
+	t *testing.T, home, name, action string, exitCode int,
+) {
+	t.Helper()
 
 	var b strings.Builder
 	b.WriteString("#!/usr/bin/env bash\n")
@@ -267,7 +279,11 @@ func writeExecRedactScript(t *testing.T, home, name, action string) {
 	for _, s := range execRedactSecrets {
 		b.WriteString("echo '" + s.line + "'\n")
 	}
-	b.WriteString("exit 0\n")
+	if exitCode != 0 {
+		last := execRedactSecrets[len(execRedactSecrets)-1]
+		b.WriteString("echo '" + last.line + "' >&2\n")
+	}
+	fmt.Fprintf(&b, "exit %d\n", exitCode)
 
 	path := execFixtureScriptPath(home, name, action)
 	if err := os.WriteFile(path, []byte(b.String()), 0o755); err != nil {
@@ -349,6 +365,95 @@ func TestExec_NoRedactBypassEmitsRawSecrets(t *testing.T) {
 		if strings.Contains(stdout, s.tag) {
 			t.Errorf("%s: --no-redact should not tag output, found %q:\n%s",
 				s.name, s.tag, stdout)
+		}
+	}
+}
+
+// TestExecFailure_RedactsActionOutput is the failure-path counterpart
+// of TestExec_RedactsActionOutput. A stub that emits the same secret
+// corpus and then exits non-zero has its output folded into the error
+// value, which the CLI renders to stderr several times over — a raw
+// diagnostic line, a boxed ERROR block, and a final "Error:" line.
+// None of them may carry a raw token.
+func TestExecFailure_RedactsActionOutput(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+
+	name := writeExecFixtureAdapter(t, home, execFixtureOptions{
+		Name:           "redactfail",
+		FailingActions: map[string]int{"list": 9},
+	})
+	writeExecRedactScriptExit(t, home, name, "list", 9)
+
+	stdout, stderr, err := runAPS(t, home,
+		"adapter", "exec", name, "list",
+		"--from", "ops@example.com",
+	)
+	if err == nil {
+		t.Fatalf("expected non-zero exit to fail, got success\nstdout: %s", stdout)
+	}
+
+	combined := stdout + stderr
+
+	// The error wrapper must still be recognisable — otherwise the
+	// no-leak assertion could pass simply because the stub never ran.
+	for _, want := range []string{
+		`action "list" failed`,
+		"exit status 9",
+		"output:",
+	} {
+		if !strings.Contains(combined, want) {
+			t.Errorf("error output missing %q\nstdout: %s\nstderr: %s",
+				want, stdout, stderr)
+		}
+	}
+
+	for _, s := range execRedactSecrets {
+		if strings.Contains(combined, s.token) {
+			t.Errorf("%s: raw secret %q leaked on failure path:\n%s",
+				s.name, s.token, combined)
+		}
+		if !strings.Contains(combined, s.tag) {
+			t.Errorf("%s: expected redaction tag %q on failure path:\n%s",
+				s.name, s.tag, combined)
+		}
+	}
+}
+
+// TestExecFailure_NoRedactBypassEmitsRawSecrets is the negative control
+// for TestExecFailure_RedactsActionOutput: with the explicit
+// --no-redact bypass the identical failing stub's output reaches the
+// terminal verbatim. Without it the no-leak assertion above could pass
+// for the wrong reason (stub never ran, output never reached any
+// stream, error path swallowed the output entirely).
+func TestExecFailure_NoRedactBypassEmitsRawSecrets(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+
+	name := writeExecFixtureAdapter(t, home, execFixtureOptions{
+		Name:           "redactfailbypass",
+		FailingActions: map[string]int{"list": 9},
+	})
+	writeExecRedactScriptExit(t, home, name, "list", 9)
+
+	stdout, stderr, err := runAPS(t, home,
+		"adapter", "exec", name, "list",
+		"--from", "ops@example.com",
+		"--no-redact",
+	)
+	if err == nil {
+		t.Fatalf("expected non-zero exit to fail, got success\nstdout: %s", stdout)
+	}
+
+	combined := stdout + stderr
+	for _, s := range execRedactSecrets {
+		if !strings.Contains(combined, s.token) {
+			t.Errorf("%s: --no-redact should emit raw secret %q on failure path:\nstdout: %s\nstderr: %s",
+				s.name, s.token, stdout, stderr)
+		}
+		if strings.Contains(combined, s.tag) {
+			t.Errorf("%s: --no-redact should not tag failure output, found %q:\n%s",
+				s.name, s.tag, combined)
 		}
 	}
 }

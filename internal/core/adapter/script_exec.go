@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"hop.top/aps/internal/logging"
 )
 
 // ExecAction runs a script-strategy adapter action.
@@ -62,9 +64,15 @@ func (m *Manager) ExecAction(
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf(
+		// Action output is external content. On the failure path the
+		// CLI returns the error before reaching its redacting print
+		// sink, and the error string is what renders to the terminal,
+		// so the output must be redacted here — at the point it enters
+		// the error value — rather than at any one caller's boundary.
+		safe := logging.Apply(string(out))
+		return safe, fmt.Errorf(
 			"action %q failed: %w\noutput: %s",
-			action, err, string(out),
+			action, err, safe,
 		)
 	}
 	return string(out), nil
