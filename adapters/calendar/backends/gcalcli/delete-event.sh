@@ -20,6 +20,10 @@ CALENDAR="${CAL_CALENDAR:-primary}"
 EVENT_ID="${CAL_EVENT_ID:?missing CAL_EVENT_ID}"
 SEND="${CAL_SEND_NOTIFICATIONS:-true}"
 
+# Expanded as ${CAL_FLAG+...} at each use: bash 3.2 (the system
+# bash on macOS) treats "${EMPTY[@]}" as an unbound variable under
+# `set -u`, so the default primary-calendar path — which leaves this
+# array empty — aborted before reaching gcalcli.
 CAL_FLAG=()
 [ "$CALENDAR" != "primary" ] && CAL_FLAG=(--calendar "$CALENDAR")
 
@@ -29,7 +33,7 @@ CAL_FLAG=()
 # diagnosis. The previous one-shot pipeline used `| grep -cE ... || true`
 # which converted any tool failure into matches=0 → exit 65.
 search_output=""
-if ! search_output="$("$BIN" "${CAL_FLAG[@]}" search "$EVENT_ID" 2>&1)"; then
+if ! search_output="$("$BIN" ${CAL_FLAG+"${CAL_FLAG[@]}"} search "$EVENT_ID" 2>&1)"; then
   echo "delete-event: gcalcli search failed for '$EVENT_ID' on calendar '$CALENDAR':" >&2
   printf '%s\n' "$search_output" >&2
   # Forward gcalcli's exit class via 1 (general failure) so the caller
@@ -57,4 +61,4 @@ fi
 ARGS=(delete "$EVENT_ID")
 [ "$SEND" = "false" ] && ARGS+=(--nonotifications)
 
-"$BIN" "${CAL_FLAG[@]}" "${ARGS[@]}"
+"$BIN" ${CAL_FLAG+"${CAL_FLAG[@]}"} "${ARGS[@]}"
