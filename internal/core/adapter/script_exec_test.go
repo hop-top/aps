@@ -309,3 +309,123 @@ func TestLoadManifest_AcceptsValidEnvPrefix(t *testing.T) {
 		t.Fatalf("EnvPrefix not preserved; got %q", manifest.EnvPrefix)
 	}
 }
+
+func TestUndeclaredInputNames(t *testing.T) {
+	declared := &ActionSchema{
+		Name: "send",
+		Inputs: []ActionInput{
+			{Name: "to", Required: true},
+			{Name: "subject", Required: true},
+			{Name: "cc"},
+		},
+	}
+
+	tests := []struct {
+		name   string
+		schema *ActionSchema
+		inputs map[string]string
+		want   []string
+	}{
+		{
+			name:   "all declared yields none",
+			schema: declared,
+			inputs: map[string]string{"to": "u@example.com", "cc": "x@example.com"},
+			want:   nil,
+		},
+		{
+			name:   "single undeclared key named",
+			schema: declared,
+			inputs: map[string]string{"to": "u@example.com", "bdy": "typo"},
+			want:   []string{"bdy"},
+		},
+		{
+			name:   "multiple undeclared sorted",
+			schema: declared,
+			inputs: map[string]string{"zeta": "1", "alpha": "2", "to": "3"},
+			want:   []string{"alpha", "zeta"},
+		},
+		{
+			// An action with no `input:` key declares no vocabulary, so
+			// nothing can be undeclared against it. Warning here would
+			// flag every key of every such adapter.
+			name:   "schema declaring no inputs never warns",
+			schema: &ActionSchema{Name: "raw"},
+			inputs: map[string]string{"anything": "1", "else": "2"},
+			want:   nil,
+		},
+		{
+			name:   "nil schema never warns",
+			schema: nil,
+			inputs: map[string]string{"anything": "1"},
+			want:   nil,
+		},
+		{
+			name:   "no inputs supplied yields none",
+			schema: declared,
+			inputs: nil,
+			want:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := undeclaredInputNames(tt.schema, tt.inputs)
+			if len(got) != len(tt.want) {
+				t.Fatalf("undeclaredInputNames() = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("undeclaredInputNames() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestWarnUndeclaredInputs_Output(t *testing.T) {
+	schema := &ActionSchema{
+		Name:   "read",
+		Inputs: []ActionInput{{Name: "id", Required: true}},
+	}
+
+	t.Run("names action and undeclared key", func(t *testing.T) {
+		var buf strings.Builder
+		warnUndeclaredInputs(&buf, "read", schema, map[string]string{
+			"id":              "42",
+			"not-in-manifest": "leaked",
+		})
+		got := buf.String()
+		if !strings.HasPrefix(got, "warn: ") {
+			t.Errorf("warning should use the warn: prefix; got %q", got)
+		}
+		if !strings.Contains(got, "not-in-manifest") {
+			t.Errorf("warning should name the undeclared key; got %q", got)
+		}
+		if !strings.Contains(got, `"read"`) {
+			t.Errorf("warning should name the action; got %q", got)
+		}
+		if strings.Contains(got, "\"id\"") {
+			t.Errorf("warning should not name declared inputs; got %q", got)
+		}
+		if !strings.HasSuffix(got, "\n") {
+			t.Errorf("warning should end with a newline; got %q", got)
+		}
+	})
+
+	t.Run("silent when every key is declared", func(t *testing.T) {
+		var buf strings.Builder
+		warnUndeclaredInputs(&buf, "read", schema, map[string]string{"id": "42"})
+		if got := buf.String(); got != "" {
+			t.Errorf("expected no warning, got %q", got)
+		}
+	})
+
+	t.Run("silent when action declares no inputs", func(t *testing.T) {
+		var buf strings.Builder
+		warnUndeclaredInputs(&buf, "raw", &ActionSchema{Name: "raw"},
+			map[string]string{"whatever": "1"})
+		if got := buf.String(); got != "" {
+			t.Errorf("expected no warning for an action declaring no inputs, got %q", got)
+		}
+	})
+}

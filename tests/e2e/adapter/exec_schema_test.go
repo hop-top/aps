@@ -13,7 +13,10 @@ import (
 // now enforced on three axes: `required: true` inputs are checked
 // against the caller-supplied map before the script is spawned,
 // declared `default:` values fill in omitted inputs, and keys the
-// action does not declare are forwarded but warned about on stderr.
+// action does not declare are forwarded but warned about on stderr
+// (see TestExecSchema_UndeclaredInputsPassThroughWithWarning) —
+// scripts may legitimately read vars the manifest does not enumerate,
+// so an unknown key is a diagnostic rather than a rejection.
 //
 // Required-checking deliberately runs before defaults are merged, so a
 // declared default never satisfies a required marker.
@@ -184,13 +187,14 @@ func TestExecSchema_SuppliedInputOverridesDefault(t *testing.T) {
 	}
 }
 
-// TestExecSchema_UndeclaredInputsPassThrough pins current behaviour of
-// an unenforced manifest input schema: an `--input` key the action does
-// not declare at all is still forwarded to the script as a prefixed env
-// var, because the runtime iterates the caller-supplied map rather than
-// the declared input list. Expected to be inverted once enforcement
-// lands.
-func TestExecSchema_UndeclaredInputsPassThrough(t *testing.T) {
+// TestExecSchema_UndeclaredInputsPassThroughWithWarning covers the
+// permissive-with-a-warning contract for undeclared inputs: an `--input`
+// key the action does not declare is still forwarded to the script as a
+// prefixed env var — backend scripts may read vars their manifest does
+// not enumerate — but the runtime now names it on stderr so a typo is
+// visible to the operator. The action still runs and the exit code is
+// unchanged; this is a diagnostic, not a rejection.
+func TestExecSchema_UndeclaredInputsPassThroughWithWarning(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
@@ -229,5 +233,20 @@ func TestExecSchema_UndeclaredInputsPassThrough(t *testing.T) {
 	if got := env["FIXTURE_ID"]; got != "42" {
 		t.Errorf("env FIXTURE_ID = %q, want %q; got keys %v",
 			got, "42", fixtureEnvKeys(env))
+	}
+
+	// Pass-through is no longer silent: the undeclared key is named on
+	// stderr, keeping stdout free of diagnostics.
+	diagnostic := diagnosticStderr(stderr)
+	if !strings.Contains(diagnostic, "not-in-manifest") {
+		t.Errorf("stderr = %q, want it to name the undeclared input key",
+			diagnostic)
+	}
+	if !strings.Contains(diagnostic, "warn:") {
+		t.Errorf("stderr = %q, want an undeclared-input warning", diagnostic)
+	}
+	if strings.Contains(stdout, "not-in-manifest") {
+		t.Errorf("warning leaked onto stdout, which must stay machine-parseable:\n%s",
+			stdout)
 	}
 }

@@ -3,10 +3,12 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -55,10 +57,15 @@ func (m *Manager) ExecAction(
 	// effects, and it checks the caller-supplied map before defaults
 	// are merged in — a declared default must not satisfy a
 	// required marker.
+	//
+	// Undeclared keys still reach the script — backend scripts may
+	// legitimately read vars the manifest does not enumerate — but
+	// they no longer do so silently.
 	schema, _ := findActionSchema(parseActionSchemas(manifest), action)
 	if err := checkRequiredInputs(schema, action, inputs); err != nil {
 		return "", err
 	}
+	warnUndeclaredInputs(os.Stderr, action, schema, inputs)
 
 	env := buildScriptEnv(device, manifest, profileEmail, applyInputDefaults(schema, inputs))
 
@@ -80,6 +87,60 @@ func (m *Manager) ExecAction(
 		)
 	}
 	return string(out), nil
+}
+
+// warnUndeclaredInputs reports caller-supplied input keys the action's
+// manifest does not declare.
+//
+// Advisory only: the keys still reach the script environment. Scripts
+// may read vars their manifest does not enumerate, so an unknown key is
+// not an error — but a silent pass-through turns a typo (`bdy=` for
+// `body=`) into an input the operator believes was delivered. The
+// warning makes that visible without changing the exit code.
+//
+// Goes to w (os.Stderr in the exec path) rather than stdout, which
+// carries action output and must stay machine-parseable.
+//
+// An action that declares no inputs at all is skipped rather than
+// flagging every supplied key: with no declared vocabulary there is
+// nothing to be undeclared against, and warning would spam every
+// legitimate adapter whose manifest simply omits `input:`.
+func warnUndeclaredInputs(
+	w io.Writer,
+	action string,
+	schema *ActionSchema,
+	inputs map[string]string,
+) {
+	undeclared := undeclaredInputNames(schema, inputs)
+	if len(undeclared) == 0 {
+		return
+	}
+	fmt.Fprintf(
+		w,
+		"warn: action %q: undeclared input(s) %s; not declared in manifest, forwarded to script anyway\n",
+		action, strings.Join(undeclared, ", "),
+	)
+}
+
+// undeclaredInputNames returns the sorted input keys absent from the
+// action's declared input list. Returns nil when the schema declares no
+// inputs, so callers cannot mistake "nothing declared" for "everything
+// undeclared". Sorted for deterministic output over the input map.
+func undeclaredInputNames(
+	schema *ActionSchema,
+	inputs map[string]string,
+) []string {
+	if schema == nil || len(schema.Inputs) == 0 {
+		return nil
+	}
+	var undeclared []string
+	for name := range inputs {
+		if _, ok := schema.FindInput(name); !ok {
+			undeclared = append(undeclared, name)
+		}
+	}
+	sort.Strings(undeclared)
+	return undeclared
 }
 
 func resolveActionScript(
