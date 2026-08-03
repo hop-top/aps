@@ -16,6 +16,10 @@ SUMMARY="${CAL_SUMMARY:?missing CAL_SUMMARY}"
 START="${CAL_START:?missing CAL_START}"
 END="${CAL_END:?missing CAL_END}"
 
+# Expanded as ${CAL_FLAG+...} at each use: bash 3.2 (the system
+# bash on macOS) treats "${EMPTY[@]}" as an unbound variable under
+# `set -u`, so the default primary-calendar path — which leaves this
+# array empty — aborted before reaching gcalcli.
 CAL_FLAG=()
 [ "$CALENDAR" != "primary" ] && CAL_FLAG=(--calendar "$CALENDAR")
 
@@ -35,4 +39,4 @@ if [ -n "${CAL_ATTENDEES:-}" ]; then
   done
 fi
 
-"$BIN" "${CAL_FLAG[@]}" "${ARGS[@]}"
+"$BIN" ${CAL_FLAG+"${CAL_FLAG[@]}"} "${ARGS[@]}"

@@ -12,7 +12,10 @@ aps_init_backend "list"
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
 ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 
-ACCT_FLAG=""
-[ -n "$ACCOUNT" ] && ACCT_FLAG="-a $ACCOUNT"
+# Array, not a string: "-a $ACCOUNT" expanded unquoted word-splits on
+# an account name containing a space. An empty array expands to
+# nothing under `set -u`, so the unset case still omits the flag.
+ACCT_FLAG=()
+[ -n "$ACCOUNT" ] && ACCT_FLAG=(-a "$ACCOUNT")
 
-"$BIN" cards list "$ABOOK" $ACCT_FLAG --json 2>/dev/null
+"$BIN" cards list "$ABOOK" ${ACCT_FLAG+"${ACCT_FLAG[@]}"} --json
