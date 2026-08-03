@@ -137,14 +137,14 @@ func TestRedact_SessionInspectRedactsEnvironment(t *testing.T) {
 	t.Skip("session-id wiring requires fixture; covered by unit test")
 }
 
-// TestRedact_AdapterExecRedactsActionOutput drives the `aps adapter
-// exec` path with a script-strategy adapter that echoes a secret.
-// SKIPPED today — fixture adapter setup is heavy; covered by
-// integration test in tests/e2e/adapters_integration_test.go and
-// the unit-level Apply test.
-func TestRedact_AdapterExecRedactsActionOutput(t *testing.T) {
-	t.Skip("adapter fixture overhead; covered by adapters_integration_test")
-}
+// The `aps adapter exec` action-output redaction guarantee (O3 in
+// docs/cli/redact-inventory.md) is covered by
+// TestExec_RedactsActionOutput in tests/e2e/adapter. That test drives
+// the real binary against a script-strategy fixture whose stub emits
+// bearer- and API-key-shaped tokens, and asserts they come back
+// tagged. TestExec_NoRedactBypassEmitsRawSecrets is its negative
+// control: with redaction disabled the same tokens appear verbatim,
+// so the positive assertion cannot pass for the wrong reason.
 
 // TestRedact_AuthorizationHeaderKeyAware verifies that an
 // Authorization: Bearer header redacts the value while keeping the
