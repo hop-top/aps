@@ -168,22 +168,15 @@ func TestExecInputs_HyphenKeyBecomesUnderscore(t *testing.T) {
 	requireFixtureEnv(t, env, "FIXTURE_PREVIEW_ONLY", "true")
 }
 
-// TestExecInputs_MalformedPairSilentlyDropped is a characterization
-// test: it pins the CURRENT behaviour of an --input argument that
-// carries no "=" separator.
+// TestExecInputs_MalformedPairIsError asserts an --input argument
+// carrying no "=" separator aborts the command and is named in the
+// diagnostic.
 //
-// parseInputs keeps a pair only when strings.SplitN(kv, "=", 2)
-// yields two parts, so a separator-less argument is discarded with no
-// diagnostic. The command still succeeds, the action script never
-// sees a corresponding env var, and no output names the dropped
-// argument or calls it malformed — a mistyped flag is therefore
-// indistinguishable from an omitted one.
-//
-// This behaviour is a known defect, not a guarantee. When malformed
-// input is promoted to an error, this test is expected to be
-// inverted: the assertions below become "command fails and names the
-// offending argument".
-func TestExecInputs_MalformedPairSilentlyDropped(t *testing.T) {
+// A separator-less argument is a typo for a real pair. Dropping it
+// silently would make a mistyped flag indistinguishable from an
+// omitted one, so exec must fail before the action script runs and
+// point at the offending argument by name.
+func TestExecInputs_MalformedPairIsError(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
@@ -196,30 +189,38 @@ func TestExecInputs_MalformedPairSilentlyDropped(t *testing.T) {
 		"--input", "subject=Subject",
 		"--input", "body",
 	)
-	// Current behaviour: no error despite a required input missing.
-	if err != nil {
-		t.Fatalf("expected malformed input to be tolerated, got: %v\nstdout: %s\nstderr: %s",
-			err, stdout, stderr)
+	if err == nil {
+		t.Fatalf("expected malformed input to fail\nstdout: %s\nstderr: %s",
+			stdout, stderr)
 	}
 
+	// The action script never ran, so no pair reached it.
 	env := parseFixtureEnv(stdout)
-	// The well-formed pairs still arrive.
-	requireFixtureEnv(t, env, "FIXTURE_TO", "user@example.com")
-	requireFixtureEnv(t, env, "FIXTURE_SUBJECT", "Subject")
-	// The separator-less argument produces no env var at all: not
-	// under its own name, and not as an empty-valued key.
+	requireNoFixtureEnv(t, env, "FIXTURE_TO")
+	requireNoFixtureEnv(t, env, "FIXTURE_SUBJECT")
 	requireNoFixtureEnv(t, env, "FIXTURE_BODY")
 
-	// No diagnostic: the only stderr lines are unrelated startup
-	// warnings, and none of them mentions the input flag.
+	// The diagnostic names the offending argument, not merely the flag.
+	diagnostic := diagnosticStderr(stderr)
+	if !strings.Contains(diagnostic, "invalid input format") {
+		t.Errorf("stderr = %q, want an invalid input format diagnostic",
+			diagnostic)
+	}
+	if !strings.Contains(diagnostic, "'body'") {
+		t.Errorf("stderr = %q, want it to name the offending argument",
+			diagnostic)
+	}
+}
+
+// diagnosticStderr strips the startup warnings an isolated HOME emits
+// so assertions only see the command's own diagnostic.
+func diagnosticStderr(stderr string) string {
+	var kept []string
 	for line := range strings.SplitSeq(strings.TrimSpace(stderr), "\n") {
 		if line == "" || strings.HasPrefix(line, "warn: bus auth:") {
 			continue
 		}
-		t.Errorf("unexpected stderr line for dropped input: %q", line)
+		kept = append(kept, line)
 	}
-	if strings.Contains(strings.ToLower(stderr), "input") {
-		t.Errorf("expected stderr to say nothing about the dropped input, got: %q",
-			stderr)
-	}
+	return strings.Join(kept, "\n")
 }
