@@ -40,7 +40,8 @@ func execFixtureSend(
 ) (string, string, error) {
 	t.Helper()
 
-	args := []string{"adapter", "exec", name, "send"}
+	args := make([]string, 0, 4+len(flags)+6)
+	args = append(args, "adapter", "exec", name, "send")
 	args = append(args, flags...)
 	args = append(args,
 		"--input", "to=user@example.com",
