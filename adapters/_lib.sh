@@ -128,6 +128,24 @@ aps__yaml_value() {
   printf '%s' "$raw"
 }
 
+# aps_sed_replacement escapes $1 for safe use on the RIGHT-hand side
+# of a sed `s///` substitution.
+#
+# Three characters are special there and must be backslash-escaped:
+#   /  closes the replacement early — the remainder is then parsed as
+#      sed flags ("bad flag in substitute command")
+#   &  expands to the entire matched text, so "R&D" silently becomes
+#      "R<whole matched line>D"
+#   \  introduces an escape sequence
+#
+# All three are ordinary in contact fields: job titles ("Eng/Ops"),
+# organisation names ("R&D"), addresses, and URLs in notes. Callers
+# interpolating an untrusted value into `s/^KEY:.*/KEY:$VALUE/` must
+# route it through this first.
+aps_sed_replacement() {
+  printf '%s' "$1" | sed -e 's/[&\\/]/\\&/g'
+}
+
 # aps_trim_attendee trims leading/trailing whitespace from $1 and,
 # if the result is in display-name form ("Jane Doe <jane@x.com>"),
 # returns just the bracketed email. The naive "${a// /}" pattern

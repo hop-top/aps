@@ -13,8 +13,10 @@ ACCOUNT="${CONTACTS_ACCOUNT:-}"
 ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 ID="${CONTACT_ID:?missing CONTACT_ID}"
 
-ACCT_FLAG=""
-[ -n "$ACCOUNT" ] && ACCT_FLAG="-a $ACCOUNT"
+# Array, not a string: "-a $ACCOUNT" expanded unquoted word-splits on
+# an account name containing a space. An empty array expands to
+# nothing under `set -u`, so the unset case still omits the flag.
+ACCT_FLAG=()
+[ -n "$ACCOUNT" ] && ACCT_FLAG=(-a "$ACCOUNT")
 
-"$BIN" cards delete "$ABOOK" "$ID" $ACCT_FLAG \
-  2>/dev/null
+"$BIN" cards delete "$ABOOK" "$ID" ${ACCT_FLAG+"${ACCT_FLAG[@]}"} \
