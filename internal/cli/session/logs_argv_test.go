@@ -293,3 +293,197 @@ func hasPair(args []string, flag, value string) bool {
 	}
 	return false
 }
+
+// --- docker ----------------------------------------------------------
+
+// Coverage for the `docker logs` command line.
+//
+// Unlike the tmux path every option here maps to a real flag
+// (verified against docker 29.4.0: -f/--follow, -n/--tail defaulting
+// to "all", -t/--timestamps), so these are regression tests rather
+// than fixes. The container id is positional and must come last;
+// docker rejects flags placed after it.
+
+// assertDockerSpec compares a captured command line against want.
+func assertDockerSpec(t *testing.T, spec invoke.CommandSpec, wantArgs ...string) {
+	t.Helper()
+	got := argvOf(spec)
+	want := argvOf(invoke.CommandSpec{Path: "docker", Args: wantArgs})
+	if got != want {
+		t.Errorf("command line mismatch\n got: %s\nwant: %s", got, want)
+	}
+}
+
+// TestDockerLogsSpec_Minimal is the baseline: no options, just the
+// container id.
+func TestDockerLogsSpec_Minimal(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", false, "", false)
+
+	assertDockerSpec(t, spec, "logs", "abc123")
+}
+
+// TestDockerLogsSpec_ContainerIdIsLast guards the positional argument.
+// docker parses flags only before the container id, so an option
+// appended after it would be passed through to nothing and ignored.
+func TestDockerLogsSpec_ContainerIdIsLast(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		follow     bool
+		tail       string
+		timestamps bool
+	}{
+		{name: "no options"},
+		{name: "follow", follow: true},
+		{name: "tail", tail: "50"},
+		{name: "timestamps", timestamps: true},
+		{name: "all options", follow: true, tail: "all", timestamps: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			spec := dockerLogsSpec("abc123", tc.follow, tc.tail, tc.timestamps)
+			if len(spec.Args) == 0 {
+				t.Fatal("empty argv")
+			}
+			if got := spec.Args[len(spec.Args)-1]; got != "abc123" {
+				t.Errorf("container id is not last: %s", argvOf(spec))
+			}
+		})
+	}
+}
+
+// TestDockerLogsSpec_EmptyTailOmitsFlag pins that an unset tail sends
+// no --tail at all. docker's own default is "all", so omitting the
+// flag is correct; `--tail ""` would be rejected as an invalid value.
+func TestDockerLogsSpec_EmptyTailOmitsFlag(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", false, "", false)
+
+	for _, a := range spec.Args {
+		if a == "--tail" {
+			t.Errorf("empty tail emitted a --tail flag: %s", argvOf(spec))
+		}
+	}
+}
+
+// TestDockerLogsSpec_TailAll covers the explicit "all" value, which
+// docker accepts as a --tail argument.
+func TestDockerLogsSpec_TailAll(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", false, "all", false)
+
+	assertDockerSpec(t, spec, "logs", "--tail", "all", "abc123")
+}
+
+// TestDockerLogsSpec_TailN covers a numeric tail.
+func TestDockerLogsSpec_TailN(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", false, "50", false)
+
+	assertDockerSpec(t, spec, "logs", "--tail", "50", "abc123")
+}
+
+// TestDockerLogsSpec_TimestampsIsSupported is the contrast with the
+// tmux path: docker logs really does have --timestamps, so the flag
+// must be emitted rather than warned about.
+func TestDockerLogsSpec_TimestampsIsSupported(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", false, "", true)
+
+	assertDockerSpec(t, spec, "logs", "--timestamps", "abc123")
+}
+
+// TestDockerLogsSpec_Follow covers -f.
+func TestDockerLogsSpec_Follow(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", true, "", false)
+
+	assertDockerSpec(t, spec, "logs", "-f", "abc123")
+}
+
+// TestDockerLogsSpec_AllOptions covers flag ordering with everything
+// set at once.
+func TestDockerLogsSpec_AllOptions(t *testing.T) {
+	t.Parallel()
+
+	spec := dockerLogsSpec("abc123", true, "100", true)
+
+	assertDockerSpec(t, spec, "logs",
+		"-f", "--tail", "100", "--timestamps", "abc123")
+}
+
+// TestCaptureContainerLogs_RequiresContainerID covers the guard: a
+// session with no container id must fail rather than invoking docker
+// with an empty positional argument, which would target nothing.
+func TestCaptureContainerLogs_RequiresContainerID(t *testing.T) {
+	t.Parallel()
+
+	runner := &recordingRunner{result: invoke.Result{Code: 0}}
+	sess := &coresession.SessionInfo{ID: "sess-1"}
+
+	err := captureContainerLogs(context.Background(), runner, sess, false, "", false)
+	if err == nil {
+		t.Fatal("expected failure with no container id")
+	}
+	if len(runner.specs) != 0 {
+		t.Errorf("docker was invoked without a container id: %s",
+			argvOf(runner.specs[0]))
+	}
+}
+
+// TestCaptureContainerLogs_NonZeroExitIsReported covers a failing
+// capture surfacing rather than yielding a silent empty log.
+func TestCaptureContainerLogs_NonZeroExitIsReported(t *testing.T) {
+	t.Parallel()
+
+	runner := &recordingRunner{result: invoke.Result{
+		Code:   1,
+		Stderr: []byte("No such container: abc123"),
+	}}
+	sess := &coresession.SessionInfo{ID: "sess-1", ContainerID: "abc123"}
+
+	err := captureContainerLogs(context.Background(), runner, sess, false, "", false)
+	if err == nil {
+		t.Fatal("a failing capture was reported as success")
+	}
+	if !strings.Contains(err.Error(), "No such container") {
+		t.Errorf("error does not carry docker's diagnostic: %v", err)
+	}
+}
+
+// TestCaptureContainerLogs_RecordsToCassette exercises the path
+// through cmdrun with an xrr-backed runner, then replays with no
+// inner runner so a hit proves nothing was spawned the second time.
+func TestCaptureContainerLogs_RecordsToCassette(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	sess := &coresession.SessionInfo{ID: "sess-1", ContainerID: "abc123"}
+
+	inner := &recordingRunner{result: invoke.Result{Code: 0, Stdout: []byte("log line\n")}}
+	rec := cmdrun.NewRecorder(xrr.NewSession(xrr.ModeRecord, xrr.NewFileCassette(dir)), inner)
+
+	if err := captureContainerLogs(context.Background(), rec, sess, false, "all", true); err != nil {
+		t.Fatalf("capture: %v", err)
+	}
+	if len(inner.specs) != 1 {
+		t.Fatalf("expected 1 docker call, got %d", len(inner.specs))
+	}
+	assertDockerSpec(t, inner.specs[0], "logs", "--tail", "all", "--timestamps", "abc123")
+
+	replay := cmdrun.NewRecorder(xrr.NewSession(xrr.ModeReplay, xrr.NewFileCassette(dir)), nil)
+	if err := captureContainerLogs(context.Background(), replay, sess, false, "all", true); err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+}

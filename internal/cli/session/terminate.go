@@ -221,7 +221,7 @@ func killTmuxSession(sess *session.SessionInfo) error {
 // is a server option and precedes the subcommand.
 func tmuxKillSpec(socket, name string) invoke.CommandSpec {
 	return invoke.CommandSpec{
-		Path: "tmux",
+		Path: binTmux,
 		Args: []string{"-S", socket, "kill-session", "-t", name},
 	}
 }
