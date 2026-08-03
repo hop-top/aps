@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Search contacts via cardamum (list + grep)
-# Input: CONTACT_QUERY
+# Env: CONTACTS_ACCOUNT, CONTACTS_ADDRESSBOOK
+# Input: CONTACT_QUERY, CONTACT_ADDRESSBOOK (override)
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
@@ -9,7 +10,7 @@ aps_init_backend "find"
 : "${BIN:?aps_init_backend did not set BIN}"
 
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
-ABOOK="${CONTACTS_ADDRESSBOOK:-default}"
+ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 QUERY="${CONTACT_QUERY:?missing CONTACT_QUERY}"
 
 ACCT_FLAG=""

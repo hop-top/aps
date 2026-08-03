@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Update contact via cardamum
+# Env: CONTACTS_ACCOUNT, CONTACTS_ADDRESSBOOK
 # Input: CONTACT_ID (required), CONTACT_NAME, CONTACT_EMAIL,
-#        CONTACT_ORG, CONTACT_PHONE, CONTACT_NOTE
+#        CONTACT_ORG, CONTACT_PHONE, CONTACT_NOTE,
+#        CONTACT_ADDRESSBOOK (override)
 set -euo pipefail
 
 # shellcheck source=../../../_lib.sh
@@ -10,7 +12,7 @@ aps_init_backend "update"
 : "${BIN:?aps_init_backend did not set BIN}"
 
 ACCOUNT="${CONTACTS_ACCOUNT:-}"
-ABOOK="${CONTACTS_ADDRESSBOOK:-default}"
+ABOOK="${CONTACT_ADDRESSBOOK:-${CONTACTS_ADDRESSBOOK:-default}}"
 ID="${CONTACT_ID:?missing CONTACT_ID}"
 
 ACCT_FLAG=""
