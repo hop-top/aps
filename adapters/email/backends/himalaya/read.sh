@@ -12,7 +12,10 @@ aps_init_backend "read"
 ID="${EMAIL_ID:?missing EMAIL_ID}"
 ACCOUNT="${APS_EMAIL_ACCOUNT:-}"
 
-ACCOUNT_FLAG=""
-[ -n "$ACCOUNT" ] && ACCOUNT_FLAG="-a $ACCOUNT"
+# Array, not a string: "-a $ACCOUNT" expanded unquoted word-splits on
+# an account name containing a space. An empty array expands to
+# nothing under `set -u`, so the unset case still omits the flag.
+ACCOUNT_FLAG=()
+[ -n "$ACCOUNT" ] && ACCOUNT_FLAG=(-a "$ACCOUNT")
 
-"$BIN" message read "$ID" $ACCOUNT_FLAG
+"$BIN" message read "$ID" ${ACCOUNT_FLAG+"${ACCOUNT_FLAG[@]}"}

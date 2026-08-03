@@ -15,13 +15,17 @@ SUBJECT="${EMAIL_SUBJECT:?missing EMAIL_SUBJECT}"
 BODY="${EMAIL_BODY:?missing EMAIL_BODY}"
 ACCOUNT="${APS_EMAIL_ACCOUNT:-}"
 
-ACCOUNT_FLAG=""
-[ -n "$ACCOUNT" ] && ACCOUNT_FLAG="-a $ACCOUNT"
+# Array, not a string: "-a $ACCOUNT" expanded unquoted word-splits on
+# an account name containing a space, passing a truncated account plus
+# a stray positional arg. An empty array expands to nothing under
+# `set -u`, so the unset case still omits the flag entirely.
+ACCOUNT_FLAG=()
+[ -n "$ACCOUNT" ] && ACCOUNT_FLAG=(-a "$ACCOUNT")
 
 CC_HEADER=""
 [ -n "${EMAIL_CC:-}" ] && CC_HEADER="Cc: $EMAIL_CC"
 
-"$BIN" template send $ACCOUNT_FLAG <<EOF
+"$BIN" template send ${ACCOUNT_FLAG+"${ACCOUNT_FLAG[@]}"} <<EOF
 From: $FROM
 To: $TO
 ${CC_HEADER:+$CC_HEADER
