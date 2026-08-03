@@ -250,7 +250,7 @@ func execFixtureScript(action string, exitCode int) string {
 // emitted into a map, dropping the marker prefix.
 func parseFixtureEnv(out string) map[string]string {
 	env := make(map[string]string)
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, execFixtureEnvMarker) {
 			continue
