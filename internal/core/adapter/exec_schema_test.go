@@ -17,7 +17,7 @@ import (
 // Exists so the enforcement sequence can be exercised through the real
 // ExecAction entry point — LoadAdapter, LoadManifest, script resolution
 // and spawn included — rather than through its parts.
-func scriptAdapter(t *testing.T, manifestBody, script string) string {
+func scriptAdapter(t *testing.T, manifestBody, script string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("script-strategy adapters need a POSIX shell")
@@ -41,7 +41,6 @@ func scriptAdapter(t *testing.T, manifestBody, script string) string {
 	); err != nil {
 		t.Fatal(err)
 	}
-	return dir
 }
 
 // echoEnvScript dumps every PROBE_-prefixed env var, one per line, so a

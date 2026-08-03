@@ -111,7 +111,9 @@ func (m *Manager) ExecAction(
 // carries action output and must stay machine-parseable.
 func warnManifestDiagnostics(w io.Writer, adapterName string, diags []string) {
 	for _, d := range diags {
-		fmt.Fprintf(w, "warn: adapter %q manifest: %s\n", adapterName, d)
+		// Advisory: a failed warning write is not worth failing the
+		// exec over, and there is no second channel to report it on.
+		_, _ = fmt.Fprintf(w, "warn: adapter %q manifest: %s\n", adapterName, d)
 	}
 }
 
@@ -141,7 +143,8 @@ func warnUndeclaredInputs(
 	if len(undeclared) == 0 {
 		return
 	}
-	fmt.Fprintf(
+	// Advisory: see warnManifestDiagnostics.
+	_, _ = fmt.Fprintf(
 		w,
 		"warn: action %q: undeclared input(s) %s; not declared in manifest, forwarded to script anyway\n",
 		action, strings.Join(undeclared, ", "),

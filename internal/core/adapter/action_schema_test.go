@@ -31,12 +31,6 @@ func schemasOf(manifest *AdapterManifest) []ActionSchema {
 	return schemas
 }
 
-// diagsOf parses and keeps only the diagnostics.
-func diagsOf(manifest *AdapterManifest) []string {
-	_, diags := parseActionSchemas(manifest)
-	return diags
-}
-
 func TestParseActionSchemas_RequiredInputs(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: email
 type: messenger
@@ -628,7 +622,7 @@ func TestCheckRequiredInputs_ReportsEveryMissingInManifestOrder(t *testing.T) {
 	iTo := strings.Index(msg, "to")
 	iSubject := strings.Index(msg, "subject")
 	iBody := strings.Index(msg, "body")
-	if !(iTo < iSubject && iSubject < iBody) {
+	if iTo >= iSubject || iSubject >= iBody {
 		t.Errorf("missing inputs not reported in manifest order: %s", msg)
 	}
 

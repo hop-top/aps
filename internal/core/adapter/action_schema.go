@@ -1,3 +1,4 @@
+// Package adapter loads adapter definitions and runs their actions.
 package adapter
 
 import (
