@@ -193,7 +193,7 @@ func TestExec_RunsInManifestDirectory(t *testing.T) {
 	}
 
 	var got string
-	for _, line := range strings.Split(stdout, "\n") {
+	for line := range strings.SplitSeq(stdout, "\n") {
 		if after, ok := strings.CutPrefix(strings.TrimSpace(line), "PWD "); ok {
 			got = after
 			break
