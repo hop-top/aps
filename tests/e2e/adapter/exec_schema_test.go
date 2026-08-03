@@ -5,25 +5,26 @@ import (
 	"testing"
 )
 
-// Characterization coverage for the manifest `input` schema.
+// Coverage for the manifest `input` schema as the runtime treats it.
 //
 // `aps adapter exec` resolves an action's script from the manifest and
-// forwards whatever `--input` pairs the caller supplied as
-// <PREFIX>_<KEY> env vars. It never reads the action's declared `input`
-// list, so `required` and `default` are documentation rather than
-// behaviour, and undeclared keys are forwarded verbatim.
+// forwards the caller's `--input` pairs as <PREFIX>_<KEY> env vars.
+// `required: true` is enforced ahead of the spawn — see the enforced
+// tests below.
 //
-// The tests below pin that current, unenforced behaviour. They are
-// expected to be inverted — asserting rejection, defaulting, and
-// filtering — once schema enforcement lands in the runtime. A failure
-// here after such a change is the intended signal, not a regression.
+// The remaining tests are characterization: `default:` and undeclared
+// keys are still documentation rather than behaviour, so defaulting
+// never happens and undeclared keys are forwarded verbatim. Those are
+// expected to be inverted as the corresponding enforcement lands; a
+// failure there after such a change is the intended signal, not a
+// regression.
 
-// TestExecSchema_RequiredInputsUnenforced pins current behaviour of an
-// unenforced manifest input schema: the fixture's `send` action declares
-// three inputs with `required: true`, yet invoking it with none of them
-// still runs the script to a zero exit and produces no validation error.
-// Expected to be inverted once enforcement lands.
-func TestExecSchema_RequiredInputsUnenforced(t *testing.T) {
+// TestExecSchema_RequiredInputsEnforced covers the enforced half of the
+// manifest input schema: the fixture's `send` action declares three
+// inputs with `required: true`, and invoking it with none of them is
+// rejected before the script is spawned. The diagnostic names all three
+// missing inputs at once rather than failing on the first.
+func TestExecSchema_RequiredInputsEnforced(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
@@ -35,8 +36,53 @@ func TestExecSchema_RequiredInputsUnenforced(t *testing.T) {
 		"adapter", "exec", name, "send",
 		"--from", "ops@example.com",
 	)
+	if err == nil {
+		t.Fatalf("expected exec to fail with missing required inputs\nstdout: %s\nstderr: %s",
+			stdout, stderr)
+	}
+
+	// Every missing input is named in one diagnostic.
+	for _, want := range []string{"to", "subject", "body"} {
+		if !strings.Contains(stderr, "'"+want+"'") {
+			t.Errorf("stderr does not name missing input %q:\n%s",
+				want, stderr)
+		}
+	}
+	if !strings.Contains(stderr, "missing required input") {
+		t.Errorf("stderr lacks the required-input diagnostic:\n%s", stderr)
+	}
+
+	// The rejection happens before exec, so the script never ran.
+	if strings.Contains(stdout, "ACTION send") {
+		t.Fatalf("stub script ran despite rejection; stdout:\n%s", stdout)
+	}
+	env := parseFixtureEnv(stdout)
+	if len(env) != 0 {
+		t.Errorf("script environment observed after rejection; got keys %v",
+			fixtureEnvKeys(env))
+	}
+}
+
+// TestExecSchema_RequiredInputsSatisfied is the companion of the
+// rejection case: supplying every declared-required input lets the same
+// action through to the script unchanged.
+func TestExecSchema_RequiredInputsSatisfied(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+
+	name := writeExecFixtureAdapter(t, home, execFixtureOptions{
+		Name: "schema-required-ok",
+	})
+
+	stdout, stderr, err := runAPS(t, home,
+		"adapter", "exec", name, "send",
+		"--from", "ops@example.com",
+		"--input", "to=user@example.com",
+		"--input", "subject=Hello",
+		"--input", "body=Message body",
+	)
 	if err != nil {
-		t.Fatalf("expected exec to succeed despite missing required inputs, got: %v\nstdout: %s\nstderr: %s",
+		t.Fatalf("exec with all required inputs: %v\nstdout: %s\nstderr: %s",
 			err, stdout, stderr)
 	}
 	if !strings.Contains(stdout, "ACTION send") {
@@ -45,27 +91,9 @@ func TestExecSchema_RequiredInputsUnenforced(t *testing.T) {
 	}
 
 	env := parseFixtureEnv(stdout)
-
-	// The declared-required inputs never reach the script, and nothing
-	// rejects the call.
-	for _, key := range []string{
-		"FIXTURE_TO", "FIXTURE_SUBJECT", "FIXTURE_BODY",
-	} {
-		if got, ok := env[key]; ok {
-			t.Errorf("env %s unexpectedly present (=%q); required inputs are neither supplied nor validated, got keys %v",
-				key, got, fixtureEnvKeys(env))
-		}
-	}
-
-	// Profile-derived vars still arrive, proving the script ran with a
-	// real environment rather than being short-circuited.
 	if got := env["APS_EMAIL_FROM"]; got != "ops@example.com" {
 		t.Errorf("env APS_EMAIL_FROM = %q, want %q; got keys %v",
 			got, "ops@example.com", fixtureEnvKeys(env))
-	}
-
-	if strings.Contains(strings.ToLower(stderr), "required") {
-		t.Errorf("unexpected validation diagnostic on stderr:\n%s", stderr)
 	}
 }
 

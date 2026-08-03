@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -388,5 +389,132 @@ func TestParseActionSchemas_RealEmailManifest(t *testing.T) {
 	want := map[string]string{"limit": "10", "folder": "INBOX"}
 	if got := list.Defaults(); !reflect.DeepEqual(got, want) {
 		t.Errorf("list Defaults() = %v, want %v", got, want)
+	}
+}
+
+func TestCheckRequiredInputs_AllSupplied(t *testing.T) {
+	schema := &ActionSchema{
+		Name: "send",
+		Inputs: []ActionInput{
+			{Name: "to", Required: true},
+			{Name: "subject", Required: true},
+			{Name: "cc"},
+		},
+	}
+	inputs := map[string]string{"to": "u@example.com", "subject": "hi"}
+	if err := checkRequiredInputs(schema, "send", inputs); err != nil {
+		t.Fatalf("all required inputs supplied should pass; got %v", err)
+	}
+}
+
+func TestCheckRequiredInputs_EmptyValueSatisfies(t *testing.T) {
+	// parseInputs treats "cc=" as a present key with an empty value, so
+	// presence — not emptiness — is what `required` asks about.
+	schema := &ActionSchema{
+		Name:   "send",
+		Inputs: []ActionInput{{Name: "to", Required: true}},
+	}
+	if err := checkRequiredInputs(schema, "send", map[string]string{"to": ""}); err != nil {
+		t.Fatalf("explicitly empty value should satisfy required; got %v", err)
+	}
+}
+
+func TestCheckRequiredInputs_ReportsEveryMissingInManifestOrder(t *testing.T) {
+	schema := &ActionSchema{
+		Name: "send",
+		Inputs: []ActionInput{
+			{Name: "to", Required: true},
+			{Name: "subject", Required: true},
+			{Name: "body", Required: true},
+			{Name: "cc"},
+		},
+	}
+
+	err := checkRequiredInputs(schema, "send", nil)
+	if err == nil {
+		t.Fatal("missing required inputs should be rejected")
+	}
+
+	msg := err.Error()
+	for _, want := range []string{"to", "subject", "body"} {
+		if !strings.Contains(msg, "'"+want+"'") {
+			t.Errorf("error does not name missing input %q: %s", want, msg)
+		}
+	}
+	if !strings.Contains(msg, "'send'") {
+		t.Errorf("error does not name the action: %s", msg)
+	}
+
+	// Manifest order, not map iteration order.
+	iTo := strings.Index(msg, "to")
+	iSubject := strings.Index(msg, "subject")
+	iBody := strings.Index(msg, "body")
+	if !(iTo < iSubject && iSubject < iBody) {
+		t.Errorf("missing inputs not reported in manifest order: %s", msg)
+	}
+
+	// The optional input is not dragged into the diagnostic.
+	if strings.Contains(msg, "cc") {
+		t.Errorf("error names a non-required input: %s", msg)
+	}
+}
+
+func TestCheckRequiredInputs_PartiallySupplied(t *testing.T) {
+	schema := &ActionSchema{
+		Name: "send",
+		Inputs: []ActionInput{
+			{Name: "to", Required: true},
+			{Name: "subject", Required: true},
+			{Name: "body", Required: true},
+		},
+	}
+
+	err := checkRequiredInputs(schema, "send", map[string]string{"subject": "hi"})
+	if err == nil {
+		t.Fatal("partially supplied required inputs should be rejected")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "'to'") || !strings.Contains(msg, "'body'") {
+		t.Errorf("error should name both still-missing inputs: %s", msg)
+	}
+	if strings.Contains(msg, "'subject'") {
+		t.Errorf("error names a supplied input: %s", msg)
+	}
+}
+
+func TestCheckRequiredInputs_DefaultDoesNotSatisfyRequired(t *testing.T) {
+	// A `default:` is a convenience for optional inputs. Enforcement
+	// runs against what the caller supplied, so a default on a
+	// `required: true` input must not excuse its absence.
+	schema := &ActionSchema{
+		Name:   "send",
+		Inputs: []ActionInput{{Name: "to", Required: true, Default: "ops@example.com"}},
+	}
+	if err := checkRequiredInputs(schema, "send", nil); err == nil {
+		t.Fatal("a declared default must not satisfy required: true")
+	}
+}
+
+func TestCheckRequiredInputs_NilSchema(t *testing.T) {
+	// An unparseable manifest or an absent action declares nothing, so
+	// it must neither panic nor spuriously reject.
+	if err := checkRequiredInputs(nil, "send", nil); err != nil {
+		t.Fatalf("nil schema should not reject; got %v", err)
+	}
+	if err := checkRequiredInputs(nil, "send", map[string]string{"to": "x"}); err != nil {
+		t.Fatalf("nil schema should not reject; got %v", err)
+	}
+}
+
+func TestCheckRequiredInputs_NoRequiredInputs(t *testing.T) {
+	schema := &ActionSchema{
+		Name: "list",
+		Inputs: []ActionInput{
+			{Name: "limit", Default: "10"},
+			{Name: "query"},
+		},
+	}
+	if err := checkRequiredInputs(schema, "list", nil); err != nil {
+		t.Fatalf("action with no required inputs should pass; got %v", err)
 	}
 }

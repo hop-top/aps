@@ -50,11 +50,13 @@ func (m *Manager) ExecAction(
 		return "", err
 	}
 
-	// Typed view of the action's declared inputs. Parsed here so input
-	// validation has a model to work against; nothing consumes it yet,
-	// so caller-supplied inputs still pass through unfiltered.
+	// Typed view of the action's declared inputs. Validation runs
+	// before the script is spawned so a rejected call has no side
+	// effects.
 	schema, _ := findActionSchema(parseActionSchemas(manifest), action)
-	_ = schema
+	if err := checkRequiredInputs(schema, action, inputs); err != nil {
+		return "", err
+	}
 
 	env := buildScriptEnv(device, manifest, profileEmail, inputs)
 

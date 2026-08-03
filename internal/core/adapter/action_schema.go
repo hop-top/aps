@@ -1,6 +1,10 @@
 package adapter
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // ActionInput is a single declared input of a manifest action.
 //
@@ -156,6 +160,34 @@ func findActionSchema(schemas []ActionSchema, action string) (*ActionSchema, boo
 		}
 	}
 	return nil, false
+}
+
+// checkRequiredInputs rejects a call that omits inputs the action
+// declares `required: true`. Reports every missing name at once, in
+// manifest order, so the caller fixes the whole invocation in one pass.
+//
+// Enforced against what the CALLER supplied: a declared `default:` is a
+// convenience for optional inputs and never satisfies `required: true`.
+// A nil schema (action absent or manifest unparseable) declares nothing
+// and so rejects nothing.
+func checkRequiredInputs(
+	schema *ActionSchema,
+	action string,
+	inputs map[string]string,
+) error {
+	var missing []string
+	for _, name := range schema.RequiredInputs() {
+		if _, ok := inputs[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf(
+		"missing required input '%s' for action '%s': expected '--input %s=<value>'",
+		strings.Join(missing, "', '"), action,
+		missing[0])
 }
 
 // scalarString renders a YAML scalar as a string. Manifest authors write
