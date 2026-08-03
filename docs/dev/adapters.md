@@ -70,7 +70,7 @@ Each entry under an action's `input:` list accepts:
 | Field | Meaning |
 | :--- | :--- |
 | `name` | Input key, as passed to `--input <name>=<value>`. |
-| `required` | `true` rejects calls that omit the key. Defaults to `false`. |
+| `required` | `true` rejects calls that omit the key. Defaults to `false` when absent. Must be an **unquoted** YAML boolean — see [Marker typing](#marker-typing). |
 | `default` | Value used when the caller omits the key. Unquoted scalars (`default: 10`, `default: true`) are rendered as strings. |
 | `description` | Human-readable note; not enforced. |
 
@@ -92,11 +92,45 @@ Presence, not emptiness, is the test: `--input to=` supplies the key with an emp
 
 An action whose schema cannot be resolved — an unparseable manifest, or an action absent from the list — declares nothing and therefore rejects nothing.
 
+#### Marker typing
+
+`required:` must be an unquoted YAML boolean. `required: true` and `required: false` are the only two spellings that mean what they look like.
+
+Quoting changes the type: `required: "true"` is the *string* `true`, not the boolean. So is `required: yes`, and `required: 1` is an int. None of these is a boolean, and a manifest that uses one is a manifest bug.
+
+An unreadable marker resolves to **required**, and says so on stderr:
+
+```
+warn: adapter "email" manifest: action "send": input "to" has non-boolean required: true (string); treating the input as REQUIRED — write an unquoted `required: true` or `required: false`
+```
+
+The asymmetry is deliberate. Resolving an unreadable marker to *optional* would silently retire the requirement — the manifest still reads `required`, `aps` reports nothing, and the action runs with the input missing. Resolving it to *required* is loud: the next call that omits the input is rejected by name, which is the nudge that gets the manifest fixed.
+
+This applies to `required: "false"` too. It is not special-cased into a string-to-boolean parse, because doing so would re-open the same hole for `required: "true"` in any manifest that quotes one marker but not the other. Write the marker unquoted or leave it out.
+
+#### Duplicate input names
+
+An input name declared more than once within one action collapses to the **first** declaration; later entries are dropped and the collapse is reported:
+
+```
+warn: adapter "email" manifest: action "list": input "folder" declared more than once; keeping the first declaration and ignoring the rest
+```
+
+Collapsing at parse time is what keeps the schema self-consistent — every reader of the action resolves a name to the same single entry, rather than each scanning the list on its own terms.
+
 #### Defaults
 
 A declared `default:` fills in an input the caller omitted. Merged defaults reach the script as ordinary `<PREFIX>_<KEY>` env vars, indistinguishable from caller-supplied ones.
 
 Precedence is by **key presence**: a caller-supplied value always wins, including an explicitly empty one. `--input cc=` means "empty", not "use the default". Only a key the caller left out entirely is filled from the manifest. An empty `default:` declares nothing and is skipped.
+
+A `default:` must be a scalar — string, number or boolean. Sequences and mappings cannot be rendered into a single env var, so they are dropped with a warning:
+
+```
+warn: adapter "email" manifest: action "list": input "folders" has a default of unsupported type []interface {}; dropping it — declare a string, number or boolean scalar
+```
+
+Unlike an unreadable `required` marker, a dropped default is not resolved in a stricter direction. It degrades to "input not supplied", which the script's own fallback or a `required` marker already covers — so it warns rather than failing the exec.
 
 #### Ordering: defaults never satisfy `required`
 

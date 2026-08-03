@@ -58,10 +58,17 @@ func (m *Manager) ExecAction(
 	// are merged in — a declared default must not satisfy a
 	// required marker.
 	//
+	// Parse diagnostics come first: they describe the manifest itself,
+	// so they must be visible even on the call that a coerced
+	// `required` marker goes on to reject.
+	//
 	// Undeclared keys still reach the script — backend scripts may
 	// legitimately read vars the manifest does not enumerate — but
 	// they no longer do so silently.
-	schema, _ := findActionSchema(parseActionSchemas(manifest), action)
+	schemas, diags := parseActionSchemas(manifest)
+	warnManifestDiagnostics(os.Stderr, adapterName, diags)
+
+	schema, _ := findActionSchema(schemas, action)
 	if err := checkRequiredInputs(schema, action, inputs); err != nil {
 		return "", err
 	}
@@ -87,6 +94,25 @@ func (m *Manager) ExecAction(
 		)
 	}
 	return string(out), nil
+}
+
+// warnManifestDiagnostics reports what parsing the adapter's action
+// schemas had to coerce or discard.
+//
+// Advisory by design, and reported per exec rather than per install:
+// there is no manifest-lint step to hang these on, and the exec path is
+// the only place that reads the schema. A malformed manifest that the
+// current call does not depend on must not break a working adapter, so
+// these never change the exit code on their own — but a coerced
+// `required` marker will separately reject the next call that omits the
+// input, and this line is what explains why.
+//
+// Goes to w (os.Stderr in the exec path) rather than stdout, which
+// carries action output and must stay machine-parseable.
+func warnManifestDiagnostics(w io.Writer, adapterName string, diags []string) {
+	for _, d := range diags {
+		fmt.Fprintf(w, "warn: adapter %q manifest: %s\n", adapterName, d)
+	}
 }
 
 // warnUndeclaredInputs reports caller-supplied input keys the action's

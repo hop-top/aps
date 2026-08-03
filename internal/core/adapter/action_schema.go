@@ -35,6 +35,9 @@ type ActionSchema struct {
 }
 
 // FindInput returns the declared input with the given name.
+//
+// Parsing drops duplicate declarations, so at most one entry can match
+// and every accessor on this type resolves the same name identically.
 func (s *ActionSchema) FindInput(name string) (ActionInput, bool) {
 	if s == nil {
 		return ActionInput{}, false
@@ -82,24 +85,37 @@ func (s *ActionSchema) Defaults() map[string]string {
 }
 
 // parseActionSchemas extracts the typed action list from a manifest's
-// untyped config. Tolerant by design: a missing or malformed `actions`
-// key yields nil, and entries that are not maps or carry no name are
-// skipped rather than failing the whole parse. Callers that need to
-// report a missing/malformed actions list keep their own checks.
-func parseActionSchemas(manifest *AdapterManifest) []ActionSchema {
+// untyped config, along with diagnostics describing anything the parse
+// had to coerce or discard.
+//
+// Tolerant by design: a missing or malformed `actions` key yields nil,
+// and entries that are not maps or carry no name are skipped rather
+// than failing the whole parse. Callers that need to report a
+// missing/malformed actions list keep their own checks.
+//
+// Tolerance is not silence. Structural problems inside a declared
+// input — a `required:` that is not a YAML bool, a `default:` that is
+// not a scalar, a name declared twice — are reported through the
+// returned diagnostics so the exec path can surface them. Parsing
+// itself never fails: a manifest whose actions block is unreadable
+// disables enforcement rather than breaking an adapter that works.
+func parseActionSchemas(manifest *AdapterManifest) ([]ActionSchema, []string) {
 	if manifest == nil {
-		return nil
+		return nil, nil
 	}
 	raw, ok := manifest.Config["actions"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
-	var schemas []ActionSchema
+	var (
+		schemas []ActionSchema
+		diags   []string
+	)
 	for _, entry := range list {
 		aMap, ok := entry.(map[string]any)
 		if !ok {
@@ -111,26 +127,43 @@ func parseActionSchemas(manifest *AdapterManifest) []ActionSchema {
 		}
 		script, _ := aMap["script"].(string)
 		description, _ := aMap["description"].(string)
+		inputs, inputDiags := parseActionInputs(name, aMap["input"])
+		diags = append(diags, inputDiags...)
 		schemas = append(schemas, ActionSchema{
 			Name:        name,
 			Script:      script,
 			Description: description,
-			Inputs:      parseActionInputs(aMap["input"]),
+			Inputs:      inputs,
 		})
 	}
-	return schemas
+	return schemas, diags
 }
 
 // parseActionInputs converts an action's raw `input` value into typed
-// entries. A missing, non-list, or malformed value means "no declared
-// inputs" rather than an error.
-func parseActionInputs(raw any) []ActionInput {
+// entries, plus diagnostics for values it had to coerce or discard.
+// A missing or non-list value means "no declared inputs" rather than an
+// error; entries that are not maps or carry no name are skipped.
+//
+// Duplicate names: the FIRST declaration wins and later ones are
+// dropped. Chosen over last-wins because it is the rule the reading
+// accessors already implied (FindInput scans in order), and because
+// dropping at parse time is what makes FindInput, RequiredInputs and
+// Defaults agree — a duplicate that survived parsing would let two call
+// sites read two different answers from one manifest.
+//
+// action names the enclosing action so a diagnostic points at the
+// manifest entry to edit.
+func parseActionInputs(action string, raw any) ([]ActionInput, []string) {
 	list, ok := raw.([]any)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
-	var inputs []ActionInput
+	var (
+		inputs []ActionInput
+		diags  []string
+		seen   map[string]struct{}
+	)
 	for _, entry := range list {
 		iMap, ok := entry.(map[string]any)
 		if !ok {
@@ -140,16 +173,94 @@ func parseActionInputs(raw any) []ActionInput {
 		if name == "" {
 			continue
 		}
-		required, _ := iMap["required"].(bool)
+		if _, dup := seen[name]; dup {
+			diags = append(diags, fmt.Sprintf(
+				"action %q: input %q declared more than once; "+
+					"keeping the first declaration and ignoring the rest",
+				action, name))
+			continue
+		}
+		if seen == nil {
+			seen = make(map[string]struct{}, len(list))
+		}
+		seen[name] = struct{}{}
+
+		required, reqDiag := parseRequiredMarker(action, name, iMap["required"])
+		if reqDiag != "" {
+			diags = append(diags, reqDiag)
+		}
+		def, defDiag := parseDefaultValue(action, name, iMap["default"])
+		if defDiag != "" {
+			diags = append(diags, defDiag)
+		}
+
 		description, _ := iMap["description"].(string)
 		inputs = append(inputs, ActionInput{
 			Name:        name,
 			Required:    required,
-			Default:     scalarString(iMap["default"]),
+			Default:     def,
 			Description: description,
 		})
 	}
-	return inputs
+	return inputs, diags
+}
+
+// parseRequiredMarker reads an input's `required:` value.
+//
+// An absent marker means optional — the manifest said nothing, so
+// nothing is asserted. Anything present that is not a YAML bool is a
+// manifest bug, and it resolves to REQUIRED rather than optional.
+//
+// The asymmetry is deliberate. `required` is the only safety marker in
+// the schema, and the two failure directions are not equal: resolving
+// an unreadable marker to optional silently retires the requirement and
+// lets a call through that the author meant to block, with nothing
+// visible at any layer. Resolving it to required is loud — the next
+// call that omits the input is rejected by name, which is exactly the
+// nudge that gets the manifest fixed. Quoting is the common case
+// (`required: "true"`, next to a quoted `default: "10"`) and the author
+// there meant required; a genuinely malformed value (`required: yes`,
+// `required: 1`) has no defensible reading, so it fails closed too. In
+// both cases the diagnostic names the value and the accepted spelling.
+func parseRequiredMarker(action, name string, raw any) (bool, string) {
+	switch v := raw.(type) {
+	case nil:
+		return false, ""
+	case bool:
+		return v, ""
+	default:
+		return true, fmt.Sprintf(
+			"action %q: input %q has non-boolean required: %v (%T); "+
+				"treating the input as REQUIRED — write an unquoted "+
+				"`required: true` or `required: false`",
+			action, name, raw, raw)
+	}
+}
+
+// parseDefaultValue renders an input's `default:` as the string the
+// script env needs, reporting values scalarString cannot render.
+//
+// Failing open is tolerable here in a way it is not for `required`: a
+// dropped default degrades to "input not supplied", which the script's
+// own fallback or a required marker already covers. So the value is
+// still dropped — but no longer silently, since the alternative is an
+// operator reading a default in the manifest that never reaches the
+// script.
+//
+// An explicitly empty default (`default: ""`) is a legitimate
+// declaration of nothing and draws no diagnostic.
+func parseDefaultValue(action, name string, raw any) (string, string) {
+	rendered := scalarString(raw)
+	if rendered != "" || raw == nil {
+		return rendered, ""
+	}
+	if s, ok := raw.(string); ok && s == "" {
+		return "", ""
+	}
+	return "", fmt.Sprintf(
+		"action %q: input %q has a default of unsupported type %T; "+
+			"dropping it — declare a string, number or boolean scalar",
+		action, name, raw)
 }
 
 // findActionSchema returns the schema for the named action.

@@ -200,12 +200,17 @@ config:
 	}
 }
 
-// TestParseActionInputs_DuplicateNames pins current behaviour on a
-// manifest that declares one name twice. Both entries survive parsing;
-// FindInput and Defaults resolve to the FIRST and LAST respectively,
-// because FindInput scans in order and Defaults overwrites as it goes.
-// Asserted, not endorsed — a manifest linter is the right place to
-// reject this, and none exists yet.
+// TestParseActionInputs_DuplicateNames is the duplicate-name contract:
+// a name declared twice collapses to the FIRST declaration at parse
+// time, and the collapse is reported.
+//
+// Dropping the later entry is what makes the accessors agree. While
+// both entries survived, FindInput read the first and Defaults() the
+// last, so two call sites could take two different answers off one
+// manifest — the exec path could warn that an input was undeclared
+// while filling in a default for it. Collapsing at the parse boundary
+// means every accessor sees one entry per name by construction rather
+// than by each accessor's own scan order.
 func TestParseActionInputs_DuplicateNames(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: probe
 type: messenger
@@ -222,12 +227,18 @@ config:
         description: second
 `)
 
-	list, ok := findActionSchema(parseActionSchemas(manifest), "list")
+	schemas, diags := parseActionSchemas(manifest)
+	list, ok := findActionSchema(schemas, "list")
 	if !ok {
 		t.Fatal(`action "list" not parsed`)
 	}
-	if got := len(list.Inputs); got != 2 {
-		t.Fatalf("both duplicate entries should survive parsing; got %d", got)
+	if got := len(list.Inputs); got != 1 {
+		t.Fatalf("duplicate should collapse to one entry; got %d: %+v",
+			got, list.Inputs)
+	}
+	if len(diags) != 1 ||
+		!strings.Contains(diags[0], `input "folder" declared more than once`) {
+		t.Fatalf("collapse should be reported; got %v", diags)
 	}
 
 	first, _ := list.FindInput("folder")
@@ -235,14 +246,16 @@ config:
 		t.Errorf("FindInput should return the first declaration; got %q",
 			first.Description)
 	}
-	if got, want := list.Defaults(), map[string]string{"folder": "Sent"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("Defaults() = %v, want %v (last declaration wins)", got, want)
+	// The point of the collapse: both accessors now name the same entry.
+	if got, want := list.Defaults(), map[string]string{"folder": "INBOX"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Defaults() = %v, want %v (first declaration wins, "+
+			"matching FindInput)", got, want)
 	}
 }
 
 // TestParseActionInputs_DuplicateRequiredMarker: a name declared twice
-// with only one entry marked required is reported once per entry, since
-// RequiredInputs walks the declaration list rather than a name set.
+// yields one required entry, not one per declaration, because the
+// duplicate never reaches the schema.
 func TestParseActionInputs_DuplicateRequiredMarker(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: probe
 type: messenger
@@ -257,22 +270,34 @@ config:
         required: true
 `)
 
-	send, _ := findActionSchema(parseActionSchemas(manifest), "send")
-	if got, want := send.RequiredInputs(), []string{"to", "to"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("RequiredInputs() = %v, want %v", got, want)
+	send, _ := findActionSchema(schemasOf(manifest), "send")
+	if got, want := send.RequiredInputs(), []string{"to"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("RequiredInputs() = %v, want %v; a collapsed duplicate must "+
+			"not be reported twice", got, want)
 	}
-	// The duplicate must not double-count into the rejection: supplying
-	// the name once satisfies every entry that carries it.
 	if err := checkRequiredInputs(send, "send", map[string]string{"to": "u@example.com"}); err != nil {
-		t.Fatalf("one supplied value should satisfy duplicate markers; got %v", err)
+		t.Fatalf("supplying the name should satisfy it; got %v", err)
+	}
+	// And the rejection names it once, not once per declaration.
+	err := checkRequiredInputs(send, "send", nil)
+	if err == nil {
+		t.Fatal("omitting the required input should be rejected")
+	}
+	if got := strings.Count(err.Error(), "'to'"); got != 1 {
+		t.Errorf("missing input named %d times, want 1: %v", got, err)
 	}
 }
 
-// TestParseActionInputs_RequiredAsString pins the yaml.v3 typing
-// boundary: `required: "true"` is a string, not a bool, so the type
-// assertion in parseActionInputs yields false and the input is parsed as
-// OPTIONAL. A quoted marker silently disables the requirement.
-// Asserted as current behaviour; not fixed here.
+// TestParseActionInputs_RequiredAsString is the defect this change
+// closes. `required: "true"` is a string to yaml.v3, not a bool. It
+// used to fail a discarded type assertion and leave the input OPTIONAL
+// — a quoted marker silently retired the requirement, with nothing
+// visible at any layer.
+//
+// Now an unreadable marker resolves to REQUIRED and says so. Failing
+// closed is the safe direction: the worst case is a rejected call that
+// names the input and the manifest line to fix, rather than an accepted
+// call that was supposed to be blocked.
 func TestParseActionInputs_RequiredAsString(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: probe
 type: messenger
@@ -287,14 +312,90 @@ config:
         required: true
 `)
 
-	send, _ := findActionSchema(parseActionSchemas(manifest), "send")
-	if got, want := send.RequiredInputs(), []string{"subject"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("RequiredInputs() = %v, want %v; a quoted marker does not "+
-			"assert to bool and so does not mark the input required", got, want)
+	schemas, diags := parseActionSchemas(manifest)
+	send, _ := findActionSchema(schemas, "send")
+	if got, want := send.RequiredInputs(), []string{"to", "subject"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("RequiredInputs() = %v, want %v; a quoted marker must not "+
+			"silently leave the input optional", got, want)
 	}
-	// The consequence, stated at the enforcement boundary.
-	if err := checkRequiredInputs(send, "send", map[string]string{"subject": "hi"}); err != nil {
-		t.Fatalf("quoted marker leaves the input optional; got %v", err)
+	if len(diags) != 1 {
+		t.Fatalf("the coercion should be reported once; got %v", diags)
+	}
+	for _, want := range []string{
+		`action "send"`, `input "to"`, "non-boolean required",
+		"REQUIRED", "`required: true`",
+	} {
+		if !strings.Contains(diags[0], want) {
+			t.Errorf("diagnostic %q missing %q", diags[0], want)
+		}
+	}
+
+	// The consequence at the enforcement boundary: the quoted marker is
+	// now enforced, where before it was inert.
+	err := checkRequiredInputs(send, "send", map[string]string{"subject": "hi"})
+	if err == nil {
+		t.Fatal("a quoted required marker must be enforced, not ignored")
+	}
+	if !strings.Contains(err.Error(), "'to'") {
+		t.Errorf("rejection should name the input; got %v", err)
+	}
+}
+
+// TestWarnManifestDiagnostics_RendersToStderr pins where the parse
+// diagnostics surface: one advisory line per diagnostic on the writer
+// the exec path points at stderr, naming the adapter.
+func TestWarnManifestDiagnostics_RendersToStderr(t *testing.T) {
+	var buf strings.Builder
+	warnManifestDiagnostics(&buf, "probe", []string{"first thing", "second thing"})
+
+	got := buf.String()
+	for _, want := range []string{
+		"warn: adapter \"probe\" manifest: first thing\n",
+		"warn: adapter \"probe\" manifest: second thing\n",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output %q missing %q", got, want)
+		}
+	}
+
+	// Nothing to report writes nothing at all.
+	var quiet strings.Builder
+	warnManifestDiagnostics(&quiet, "probe", nil)
+	if quiet.String() != "" {
+		t.Errorf("clean manifest should print nothing; got %q", quiet.String())
+	}
+}
+
+// TestExecAction_QuotedRequiredMarkerIsEnforced walks the fix through
+// the real entry point: a manifest whose `required` marker is quoted
+// both warns on stderr and rejects the call that omits the input.
+// Before this change the same manifest ran the script silently.
+func TestExecAction_QuotedRequiredMarkerIsEnforced(t *testing.T) {
+	scriptAdapter(t, `name: probe
+type: messenger
+strategy: script
+env_prefix: PROBE
+config:
+  actions:
+  - name: send
+    script: backends/probe.sh
+    input:
+      - name: to
+        required: "true"
+`, "#!/bin/sh\necho spawned\n")
+
+	out, err := NewManager().ExecAction(
+		context.Background(), "probe", "send", nil, "me@example.com",
+	)
+	if err == nil {
+		t.Fatalf("quoted required marker must reject the omitting call; "+
+			"got output %q", out)
+	}
+	if !strings.Contains(err.Error(), "missing required input 'to'") {
+		t.Fatalf("error should name the missing required input; got %v", err)
+	}
+	if strings.Contains(out, "spawned") {
+		t.Fatalf("script ran despite a rejected call; out=%q", out)
 	}
 }
 
@@ -338,6 +439,12 @@ func TestScalarString(t *testing.T) {
 // scalarString default branch to Defaults(): a list-valued default
 // normalises to "" and so is filtered out entirely rather than reaching
 // the script as an empty env var.
+//
+// The drop itself is kept — unlike `required`, a lost default degrades
+// to "input not supplied", which the script's own fallback or a
+// required marker already covers, so failing the exec over it would
+// break working adapters for a milder problem. What changes is that the
+// drop is now reported instead of silent.
 func TestParseActionInputs_UnsupportedDefaultTypeDropped(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: probe
 type: messenger
@@ -352,7 +459,8 @@ config:
         default: 10
 `)
 
-	list, _ := findActionSchema(parseActionSchemas(manifest), "list")
+	schemas, diags := parseActionSchemas(manifest)
+	list, _ := findActionSchema(schemas, "list")
 	if got, want := list.Defaults(), map[string]string{"limit": "10"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("Defaults() = %v, want %v", got, want)
 	}
@@ -367,5 +475,44 @@ config:
 	// Consequence: no PROBE_FOLDERS is synthesised.
 	if _, ok := applyInputDefaults(list, map[string]string{})["folders"]; ok {
 		t.Error("an unrenderable default must not be applied")
+	}
+
+	// The drop is reported, and only for the value that could not be
+	// rendered — `limit: 10` normalises fine and says nothing.
+	if len(diags) != 1 {
+		t.Fatalf("want exactly one diagnostic; got %v", diags)
+	}
+	for _, want := range []string{
+		`action "list"`, `input "folders"`, "unsupported type", "dropping it",
+	} {
+		if !strings.Contains(diags[0], want) {
+			t.Errorf("diagnostic %q missing %q", diags[0], want)
+		}
+	}
+}
+
+// TestParseActionInputs_EmptyDefaultIsNotADiagnostic: `default: ""` is
+// a legitimate declaration of nothing, not an unrenderable value, so it
+// must not be reported alongside the genuine drops.
+func TestParseActionInputs_EmptyDefaultIsNotADiagnostic(t *testing.T) {
+	manifest := manifestFromYAML(t, `name: probe
+type: messenger
+config:
+  actions:
+  - name: list
+    script: backends/list.sh
+    input:
+      - name: query
+        default: ""
+      - name: folder
+`)
+
+	schemas, diags := parseActionSchemas(manifest)
+	if len(diags) != 0 {
+		t.Errorf("empty and absent defaults should report nothing; got %v", diags)
+	}
+	list, _ := findActionSchema(schemas, "list")
+	if got := list.Defaults(); got != nil {
+		t.Errorf("Defaults() = %v, want nil", got)
 	}
 }

@@ -24,6 +24,19 @@ func manifestFromYAML(t *testing.T, src string) *AdapterManifest {
 	return manifest
 }
 
+// schemasOf parses and discards diagnostics, for the tests whose
+// subject is the parsed shape rather than what parsing reported.
+func schemasOf(manifest *AdapterManifest) []ActionSchema {
+	schemas, _ := parseActionSchemas(manifest)
+	return schemas
+}
+
+// diagsOf parses and keeps only the diagnostics.
+func diagsOf(manifest *AdapterManifest) []string {
+	_, diags := parseActionSchemas(manifest)
+	return diags
+}
+
 func TestParseActionSchemas_RequiredInputs(t *testing.T) {
 	manifest := manifestFromYAML(t, `name: email
 type: messenger
@@ -43,9 +56,13 @@ config:
         required: false
 `)
 
-	schemas := parseActionSchemas(manifest)
+	schemas, diags := parseActionSchemas(manifest)
 	if len(schemas) != 1 {
 		t.Fatalf("want 1 action, got %d: %+v", len(schemas), schemas)
+	}
+	// A well-formed input block reports nothing.
+	if len(diags) != 0 {
+		t.Errorf("well-formed manifest produced diagnostics: %v", diags)
 	}
 
 	send, ok := findActionSchema(schemas, "send")
@@ -95,7 +112,7 @@ config:
         default: INBOX
 `)
 
-	list, ok := findActionSchema(parseActionSchemas(manifest), "list")
+	list, ok := findActionSchema(schemasOf(manifest), "list")
 	if !ok {
 		t.Fatal(`action "list" not parsed`)
 	}
@@ -126,7 +143,7 @@ config:
         default: false
 `)
 
-	list, _ := findActionSchema(parseActionSchemas(manifest), "list")
+	list, _ := findActionSchema(schemasOf(manifest), "list")
 	want := map[string]string{
 		"limit":   "10",
 		"ratio":   "1.5",
@@ -159,7 +176,7 @@ config:
         default: INBOX
 `)
 
-	reply, ok := findActionSchema(parseActionSchemas(manifest), "reply")
+	reply, ok := findActionSchema(schemasOf(manifest), "reply")
 	if !ok {
 		t.Fatal(`action "reply" not parsed`)
 	}
@@ -184,7 +201,7 @@ config:
     script: backends/sync.sh
 `)
 
-	sync, ok := findActionSchema(parseActionSchemas(manifest), "sync")
+	sync, ok := findActionSchema(schemasOf(manifest), "sync")
 	if !ok {
 		t.Fatal(`action "sync" not parsed`)
 	}
@@ -207,6 +224,10 @@ func TestParseActionSchemas_Malformed(t *testing.T) {
 		name string
 		yaml string
 		want []ActionSchema
+		// wantDiags are substrings every returned diagnostic set must
+		// contain, one per expected diagnostic. Empty means the parse
+		// must report nothing.
+		wantDiags []string
 	}{
 		{
 			name: "no config at all",
@@ -267,7 +288,12 @@ config:
 			want: []ActionSchema{{Name: "ok", Script: "backends/ok.sh"}},
 		},
 		{
-			name: "malformed input entries are skipped",
+			// Nameless and non-map entries are still skipped silently:
+			// there is no input there to say anything about. But a named
+			// input whose `required:` cannot be read fails CLOSED, and
+			// says so — the one thing it must not do is quietly become
+			// optional.
+			name: "malformed input entries are skipped; unreadable required fails closed",
 			yaml: `name: email
 type: messenger
 config:
@@ -285,8 +311,103 @@ config:
 			want: []ActionSchema{{
 				Name:   "ok",
 				Script: "backends/ok.sh",
-				Inputs: []ActionInput{{Name: "to"}},
+				Inputs: []ActionInput{{Name: "to", Required: true}},
 			}},
+			wantDiags: []string{
+				`input "to" has non-boolean required: yes-not-a-bool (string); treating the input as REQUIRED`,
+			},
+		},
+		{
+			// The quoted-scalar case that motivated the strictness: an
+			// author mirroring a nearby quoted `default: "10"` writes
+			// `required: "true"` and must not silently lose the marker.
+			name: "quoted required marker is honoured, not dropped",
+			yaml: `name: email
+type: messenger
+config:
+  actions:
+  - name: ok
+    script: backends/ok.sh
+    input:
+      - name: to
+        required: "true"
+      - name: cc
+        required: "false"
+      - name: bcc
+        required: 1
+`,
+			want: []ActionSchema{{
+				Name:   "ok",
+				Script: "backends/ok.sh",
+				Inputs: []ActionInput{
+					{Name: "to", Required: true},
+					// "false" is not a bool either. It resolves the same
+					// way every unreadable marker does — closed — rather
+					// than being special-cased into a string-to-bool
+					// parse that would re-open the exact hole this
+					// closes for `required: "true"`.
+					{Name: "cc", Required: true},
+					{Name: "bcc", Required: true},
+				},
+			}},
+			wantDiags: []string{
+				`input "to" has non-boolean required: true (string)`,
+				`input "cc" has non-boolean required: false (string)`,
+				`input "bcc" has non-boolean required: 1 (int)`,
+			},
+		},
+		{
+			// First-wins duplicate collapse, reported.
+			name: "duplicate input names collapse to the first declaration",
+			yaml: `name: email
+type: messenger
+config:
+  actions:
+  - name: ok
+    script: backends/ok.sh
+    input:
+      - name: folder
+        default: INBOX
+        description: first
+      - name: folder
+        default: Sent
+        description: second
+`,
+			want: []ActionSchema{{
+				Name:   "ok",
+				Script: "backends/ok.sh",
+				Inputs: []ActionInput{
+					{Name: "folder", Default: "INBOX", Description: "first"},
+				},
+			}},
+			wantDiags: []string{
+				`input "folder" declared more than once; keeping the first`,
+			},
+		},
+		{
+			// Unrenderable defaults are still dropped — but no longer
+			// without a word.
+			name: "unsupported default type is dropped with a diagnostic",
+			yaml: `name: email
+type: messenger
+config:
+  actions:
+  - name: ok
+    script: backends/ok.sh
+    input:
+      - name: folders
+        default: [INBOX, Sent]
+      - name: empty
+        default: ""
+`,
+			want: []ActionSchema{{
+				Name:   "ok",
+				Script: "backends/ok.sh",
+				Inputs: []ActionInput{{Name: "folders"}, {Name: "empty"}},
+			}},
+			wantDiags: []string{
+				`input "folders" has a default of unsupported type []interface {}; dropping it`,
+			},
 		},
 		{
 			name: "action without script still parses",
@@ -308,17 +429,31 @@ config:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseActionSchemas(manifestFromYAML(t, tt.yaml))
+			got, diags := parseActionSchemas(manifestFromYAML(t, tt.yaml))
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("parseActionSchemas() = %+v, want %+v", got, tt.want)
+			}
+			if len(diags) != len(tt.wantDiags) {
+				t.Fatalf("got %d diagnostics, want %d:\ngot:  %v\nwant: %v",
+					len(diags), len(tt.wantDiags), diags, tt.wantDiags)
+			}
+			for i, want := range tt.wantDiags {
+				if !strings.Contains(diags[i], want) {
+					t.Errorf("diagnostic %d = %q, want it to contain %q",
+						i, diags[i], want)
+				}
 			}
 		})
 	}
 }
 
 func TestParseActionSchemas_NilManifest(t *testing.T) {
-	if got := parseActionSchemas(nil); got != nil {
+	got, diags := parseActionSchemas(nil)
+	if got != nil {
 		t.Fatalf("parseActionSchemas(nil) = %v, want nil", got)
+	}
+	if diags != nil {
+		t.Fatalf("parseActionSchemas(nil) diagnostics = %v, want nil", diags)
 	}
 }
 
@@ -369,9 +504,12 @@ func TestParseActionSchemas_RealEmailManifest(t *testing.T) {
 		t.Fatalf("LoadManifest: %v", err)
 	}
 
-	schemas := parseActionSchemas(manifest)
+	schemas, diags := parseActionSchemas(manifest)
 	if len(schemas) != 4 {
 		t.Fatalf("want 4 actions, got %d", len(schemas))
+	}
+	if len(diags) != 0 {
+		t.Errorf("shipped manifest should parse cleanly; got %v", diags)
 	}
 
 	send, ok := findActionSchema(schemas, "send")
@@ -389,6 +527,47 @@ func TestParseActionSchemas_RealEmailManifest(t *testing.T) {
 	want := map[string]string{"limit": "10", "folder": "INBOX"}
 	if got := list.Defaults(); !reflect.DeepEqual(got, want) {
 		t.Errorf("list Defaults() = %v, want %v", got, want)
+	}
+}
+
+// TestParseActionSchemas_ShippedManifestsAreClean is the regression
+// guard for the strictness added here: every manifest that ships in the
+// repo must parse without a single diagnostic. A shipped manifest that
+// trips the new checks would print warnings on every exec, so the
+// checks and the manifests have to stay in agreement.
+func TestParseActionSchemas_ShippedManifestsAreClean(t *testing.T) {
+	root := filepath.Join("..", "..", "..", "adapters")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Skipf("adapters dir not present: %v", err)
+	}
+
+	var checked int
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		path := filepath.Join(root, e.Name(), ManifestFileName)
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		t.Run(e.Name(), func(t *testing.T) {
+			manifest, err := LoadManifest(path)
+			if err != nil {
+				t.Fatalf("LoadManifest: %v", err)
+			}
+			schemas, diags := parseActionSchemas(manifest)
+			if len(schemas) == 0 {
+				t.Fatal("shipped manifest declares no actions")
+			}
+			for _, d := range diags {
+				t.Errorf("shipped manifest is not clean: %s", d)
+			}
+		})
+		checked++
+	}
+	if checked == 0 {
+		t.Fatal("no shipped manifests found to check")
 	}
 }
 
