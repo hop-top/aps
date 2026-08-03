@@ -19,6 +19,11 @@ config:
       input:
         - name: addressbook
           required: false
+          description: >-
+            Per-call override of the addressbook. No manifest default:
+            when omitted the script falls back to the profile-level
+            CONTACTS_ADDRESSBOOK, then to "default". A manifest
+            default would shadow that profile setting on every call.
     - name: show
       description: Show contact detail
       script: backends/{{backend}}/show.sh
@@ -34,6 +39,10 @@ config:
           required: true
         - name: name
           required: false
+          description: >-
+            Display name (vCard FN). No manifest default: when omitted
+            the script reuses the supplied email, which a static
+            default cannot express.
         - name: org
           required: false
         - name: phone
@@ -42,6 +51,11 @@ config:
           required: false
         - name: addressbook
           required: false
+          description: >-
+            Per-call override of the addressbook. No manifest default:
+            when omitted the script falls back to the profile-level
+            CONTACTS_ADDRESSBOOK, then to "default". A manifest
+            default would shadow that profile setting on every call.
     - name: update
       description: Update contact fields
       script: backends/{{backend}}/update.sh
