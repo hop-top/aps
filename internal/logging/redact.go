@@ -123,23 +123,26 @@ func Redactor() *redact.Redactor {
 	defaultOnce.Do(func() {
 		r := redact.Default()
 		// Pass-through known-safe placeholders so docs/test fixtures
-		// don't get mangled. The Presidio PII pack matches IPs and
-		// emails generically; we suppress matches against
-		// non-sensitive local-loopback / RFC1918 ranges and the
-		// in-tree contributor / fixture email domains so log lines
-		// like "webhook server listening addr=127.0.0.1:8080" stay
-		// readable. Production secrets do not look like 127.0.0.1.
+		// don't get mangled.
+		//
+		// redact.Allow is SUBSTRING-matched (kit/core/redact
+		// Redactor.allowed -> contains), and it is global: every entry
+		// is tested against every rule's match text. Bare network
+		// fragments like "10." or "172.16." therefore exempt any match
+		// that merely contains them anywhere, including real secrets —
+		// token charsets permit both digits and dots, so
+		// "Bearer abcdef10.0123456789abcdefgh" escaped redaction
+		// entirely. The loopback/RFC1918 pass-through is now handled
+		// rule-scoped in apsCustomReplacement, which only exempts
+		// matches produced by the IP rules themselves.
+		//
+		// Entries kept here are full literal values, not prefixes, so
+		// they cannot be embedded in a longer live credential.
 		r.Allow(
-			"sk-test", "AKIAIOSFODNN7EXAMPLE", "ghp_test",
-			// Local loopback + RFC1918 leading octets. Substring
-			// match: "127." catches 127.0.0.1, 127.0.0.0/8.
-			"127.", "0.0.0.0", "::1",
-			"10.", "192.168.", "172.16.", "172.17.", "172.18.",
-			"172.19.", "172.20.", "172.21.", "172.22.", "172.23.",
-			"172.24.", "172.25.", "172.26.", "172.27.", "172.28.",
-			"172.29.", "172.30.", "172.31.",
-			// Documentation IPv6 ranges.
-			"fe80:", "fc00:", "fd00:",
+			// Published documentation fixtures. Exact values only:
+			// "ghp_test" as a prefix would exempt any real PAT spelled
+			// ghp_test<...>.
+			"AKIAIOSFODNN7EXAMPLE",
 			// Fixture/test domains. example.com is RFC2606-reserved.
 			"@example.com", "@example.org", "@example.net",
 			"@hop.top", "@ideacrafters.com",
@@ -167,6 +170,17 @@ func Redactor() *redact.Redactor {
 			`\bBearer\s+([\w=~@.+/-]{16,})`,
 			"",
 		)
+		// Provider token shapes the vendored gitleaks corpus misses.
+		// Upstream anchors each rule to one exact historical layout
+		// (openai-api-key requires the literal "T3BlbkFJ" infix;
+		// anthropic-api-key requires exactly 93 body chars ending
+		// "AA"), so current-format keys in those families are printed
+		// verbatim. These rules match on the provider prefix plus a
+		// length floor instead, which is the property that actually
+		// makes the string a credential.
+		for _, ar := range apsSecretRules {
+			_, _ = r.AddRule(ar.id, ar.pattern, "")
+		}
 		// Custom strategy: aps-domain header rules keep the key name
 		// visible (e.g. "Authorization: <aps-bearer-header>"), every
 		// other rule falls back to the standard Tag strategy.
@@ -174,6 +188,70 @@ func Redactor() *redact.Redactor {
 		defaultRdc = r
 	})
 	return defaultRdc
+}
+
+// apsSecretRules are aps-local additions covering provider token
+// shapes absent from the vendored gitleaks corpus. Each pattern is
+// prefix-anchored on a vendor-assigned, non-guessable marker and
+// carries a body-length floor, so a prose lookalike ("sk-live-mode"
+// in a sentence) does not match.
+var apsSecretRules = []struct{ id, pattern string }{
+	// OpenAI. openai-api-key upstream only fires on keys carrying the
+	// "T3BlbkFJ" infix; project/live/service keys without it, and the
+	// classic "sk-" + 32 form, are otherwise uncovered.
+	{"aps-openai-key", `\bsk-(?:live|proj|admin|svcacct)-[A-Za-z0-9_-]{16,}`},
+	{"aps-openai-legacy-key", `\bsk-[A-Za-z0-9]{32,}\b`},
+	// Anthropic. anthropic-api-key upstream demands exactly 93 body
+	// chars terminated by "AA"; any other length escapes.
+	{"aps-anthropic-key", `\bsk-ant-(?:api|admin)[0-9]{2}-[A-Za-z0-9_-]{16,}`},
+	// GitHub fine-grained PAT. Upstream github-fine-grained-pat
+	// requires exactly 82 body chars; real tokens vary in length.
+	{"aps-github-fine-grained-pat", `\bgithub_pat_\w{20,}`},
+	// Google API key.
+	{"aps-google-api-key", `\bAIza[A-Za-z0-9_-]{35}\b`},
+	// npm / Hugging Face / DigitalOcean: upstream rules pin exact
+	// body lengths and character classes that current tokens exceed.
+	{"aps-npm-token", `\bnpm_[A-Za-z0-9]{30,}`},
+	{"aps-huggingface-token", `\bhf_[A-Za-z0-9]{30,}`},
+	{"aps-digitalocean-token", `\bdo[oprt]_v1_[A-Za-z0-9]{32,}`},
+	// Stripe publishable-adjacent live secret forms not covered by
+	// stripe-access-token.
+	{"aps-stripe-live-key", `\b[sprk]k_live_[A-Za-z0-9]{20,}`},
+}
+
+// ipRuleIDs are the Presidio PII rule ids whose matches are plain
+// network addresses. Only matches from these rules are eligible for
+// the loopback/RFC1918 pass-through below.
+var ipRuleIDs = map[string]bool{
+	"ipv4": true, "ipv6": true,
+	"ipv4-pii": true, "ipv6-pii": true,
+}
+
+// privateHostRE matches addresses that are non-sensitive by
+// construction: loopback, link-local, and RFC1918 private ranges.
+// Anchored end-to-end so it describes the WHOLE match rather than a
+// fragment of it — the property the substring allowlist could not
+// express.
+var privateHostRE = regexp.MustCompile(
+	`^(?:` +
+		// 127.0.0.0/8 loopback, 0.0.0.0, 10.0.0.0/8, 192.168.0.0/16.
+		`127\.\d{1,3}\.\d{1,3}\.\d{1,3}` +
+		`|0\.0\.0\.0` +
+		`|10\.\d{1,3}\.\d{1,3}\.\d{1,3}` +
+		`|192\.168\.\d{1,3}\.\d{1,3}` +
+		// 172.16.0.0/12 -> second octet 16-31.
+		`|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}` +
+		// IPv6 loopback / link-local / unique-local prefixes.
+		`|::1|fe80:[0-9a-fA-F:]*|f[cd][0-9a-fA-F]{2}:[0-9a-fA-F:]*` +
+		`)$`,
+)
+
+// allowedNetworkAddr reports whether an IP-rule match is a private or
+// loopback address that stays readable in logs. Keeps lines like
+// "webhook server listening addr=127.0.0.1:8080" legible while a
+// routable address is still redacted as PII.
+func allowedNetworkAddr(m redact.Match) bool {
+	return ipRuleIDs[m.RuleID] && privateHostRE.MatchString(m.Original)
 }
 
 // apsCustomReplacement renders a redaction tag while preserving the
@@ -190,6 +268,11 @@ func Redactor() *redact.Redactor {
 // the kit Tag default — the entire match is replaced with the rule
 // label.
 func apsCustomReplacement(m redact.Match) string {
+	// Rule-scoped pass-through for private/loopback addresses. Runs
+	// first so it can only ever affect IP-rule matches.
+	if allowedNetworkAddr(m) {
+		return m.Original
+	}
 	switch m.RuleID {
 	case "aps-bearer-header":
 		key, _ := splitHeaderMatch(m.Original, headerSepBearer)
