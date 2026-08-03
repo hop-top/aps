@@ -1,22 +1,22 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"syscall"
 	"time"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/core/cmdrun"
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/progress"
+	"hop.top/kit/go/core/uxp/invoke"
 )
 
 // tmuxKillTimeout bounds how long a tmux kill-session invocation can
@@ -214,21 +214,42 @@ func killTmuxSession(sess *session.SessionInfo) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), tmuxKillTimeout)
 	defer cancel()
-	var stderr bytes.Buffer
-	// #nosec G204 -- tmux args come from the session registry, not user input
-	cmd := exec.CommandContext(ctx, "tmux", "-S", sess.TmuxSocket, "kill-session", "-t", name)
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		// Tmux returns non-zero when the session/server is already
-		// gone. That's a benign race — the session is definitely not
-		// running, which is the desired end state.
-		msg := stderr.String()
-		if session.IsBenignTmuxError(msg) {
-			return nil
-		}
-		return fmt.Errorf("tmux kill-session failed: %w: %s", err, strings.TrimSpace(msg))
+	return killTmuxSessionWith(ctx, cmdrun.Exec(), sess.TmuxSocket, name)
+}
+
+// tmuxKillSpec builds the `tmux kill-session` command line. The socket
+// is a server option and precedes the subcommand.
+func tmuxKillSpec(socket, name string) invoke.CommandSpec {
+	return invoke.CommandSpec{
+		Path: "tmux",
+		Args: []string{"-S", socket, "kill-session", "-t", name},
 	}
-	return nil
+}
+
+// killTmuxSessionWith is the runner-injected form, so tests can assert
+// the command line and drive the benign-error classification without a
+// live tmux server.
+func killTmuxSessionWith(
+	ctx context.Context,
+	runner cmdrun.Runner,
+	socket, name string,
+) error {
+	res, err := runner.Run(ctx, tmuxKillSpec(socket, name))
+	if err != nil {
+		return fmt.Errorf("tmux kill-session failed: %w", err)
+	}
+	if res.Code == 0 {
+		return nil
+	}
+	// Tmux returns non-zero when the session/server is already gone.
+	// That's a benign race — the session is definitely not running,
+	// which is the desired end state.
+	msg := string(res.Stderr)
+	if session.IsBenignTmuxError(msg) {
+		return nil
+	}
+	return fmt.Errorf("tmux kill-session failed: exit %d: %s",
+		res.Code, strings.TrimSpace(msg))
 }
 
 // tmuxSessionName resolves the tmux session name for a SessionInfo,
