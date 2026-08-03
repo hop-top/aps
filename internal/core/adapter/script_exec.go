@@ -52,13 +52,15 @@ func (m *Manager) ExecAction(
 
 	// Typed view of the action's declared inputs. Validation runs
 	// before the script is spawned so a rejected call has no side
-	// effects.
+	// effects, and it checks the caller-supplied map before defaults
+	// are merged in — a declared default must not satisfy a
+	// required marker.
 	schema, _ := findActionSchema(parseActionSchemas(manifest), action)
 	if err := checkRequiredInputs(schema, action, inputs); err != nil {
 		return "", err
 	}
 
-	env := buildScriptEnv(device, manifest, profileEmail, inputs)
+	env := buildScriptEnv(device, manifest, profileEmail, applyInputDefaults(schema, inputs))
 
 	cmd := exec.CommandContext(ctx, scriptPath)
 	cmd.Env = append(os.Environ(), env...)
@@ -133,6 +135,49 @@ func resolveActionScript(
 	return "", fmt.Errorf(
 		"action %q not found in manifest", action,
 	)
+}
+
+// applyInputDefaults returns the caller-supplied inputs with declared
+// defaults filled in for keys the caller omitted entirely.
+//
+// Precedence: a caller-supplied value always wins, including an
+// explicitly empty one — `--input cc=` means "empty", not "use the
+// default". Presence of the key, not its emptiness, is the test.
+//
+// Defaults never satisfy a `required: true` marker: required inputs
+// carry no default in practice, and this function only ever adds keys
+// that declare a non-empty `default:`, so a missing required input
+// stays missing for whatever validates it. Required-input enforcement
+// therefore runs on the caller-supplied map, not this result.
+//
+// The input map is not mutated; a copy is returned only when there is
+// something to add.
+func applyInputDefaults(
+	schema *ActionSchema,
+	inputs map[string]string,
+) map[string]string {
+	defaults := schema.Defaults()
+	if len(defaults) == 0 {
+		return inputs
+	}
+
+	var merged map[string]string
+	for name, value := range defaults {
+		if _, supplied := inputs[name]; supplied {
+			continue
+		}
+		if merged == nil {
+			merged = make(map[string]string, len(inputs)+len(defaults))
+			for k, v := range inputs {
+				merged[k] = v
+			}
+		}
+		merged[name] = value
+	}
+	if merged == nil {
+		return inputs
+	}
+	return merged
 }
 
 func buildScriptEnv(

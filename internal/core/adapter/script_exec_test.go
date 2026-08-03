@@ -92,6 +92,146 @@ func TestBuildScriptEnv_EnvPrefix(t *testing.T) {
 	}
 }
 
+func TestApplyInputDefaults(t *testing.T) {
+	schema := &ActionSchema{
+		Name: "list",
+		Inputs: []ActionInput{
+			{Name: "limit", Default: "10"},
+			{Name: "folder", Default: "INBOX"},
+			{Name: "query"},
+			{Name: "id", Required: true},
+		},
+	}
+
+	tests := []struct {
+		name   string
+		schema *ActionSchema
+		inputs map[string]string
+		want   map[string]string
+	}{
+		{
+			name:   "omitted keys take declared defaults",
+			schema: schema,
+			inputs: map[string]string{},
+			want:   map[string]string{"limit": "10", "folder": "INBOX"},
+		},
+		{
+			name:   "supplied value beats default",
+			schema: schema,
+			inputs: map[string]string{"limit": "50"},
+			want:   map[string]string{"limit": "50", "folder": "INBOX"},
+		},
+		{
+			name:   "explicitly empty supplied value beats default",
+			schema: schema,
+			inputs: map[string]string{"folder": ""},
+			want:   map[string]string{"limit": "10", "folder": ""},
+		},
+		{
+			name:   "input without a declared default stays absent",
+			schema: schema,
+			inputs: map[string]string{"limit": "1", "folder": "Sent"},
+			want:   map[string]string{"limit": "1", "folder": "Sent"},
+		},
+		{
+			name:   "required input is never synthesised",
+			schema: schema,
+			inputs: map[string]string{},
+			want:   map[string]string{"limit": "10", "folder": "INBOX"},
+		},
+		{
+			name:   "undeclared supplied key is preserved",
+			schema: schema,
+			inputs: map[string]string{"not-in-manifest": "leaked"},
+			want: map[string]string{
+				"not-in-manifest": "leaked",
+				"limit":           "10",
+				"folder":          "INBOX",
+			},
+		},
+		{
+			name:   "schema with no defaults returns inputs unchanged",
+			schema: &ActionSchema{Name: "read", Inputs: []ActionInput{{Name: "id", Required: true}}},
+			inputs: map[string]string{"id": "42"},
+			want:   map[string]string{"id": "42"},
+		},
+		{
+			name:   "nil schema returns inputs unchanged",
+			schema: nil,
+			inputs: map[string]string{"id": "42"},
+			want:   map[string]string{"id": "42"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := applyInputDefaults(tt.schema, tt.inputs)
+			if len(got) != len(tt.want) {
+				t.Fatalf("applyInputDefaults() = %v, want %v", got, tt.want)
+			}
+			for k, v := range tt.want {
+				gotV, ok := got[k]
+				if !ok {
+					t.Errorf("key %q absent; got %v", k, got)
+					continue
+				}
+				if gotV != v {
+					t.Errorf("key %q = %q, want %q", k, gotV, v)
+				}
+			}
+		})
+	}
+}
+
+// TestApplyInputDefaults_DoesNotMutateCaller guards the copy-on-write
+// contract: the caller's map must be left exactly as it was passed.
+func TestApplyInputDefaults_DoesNotMutateCaller(t *testing.T) {
+	schema := &ActionSchema{
+		Inputs: []ActionInput{{Name: "folder", Default: "INBOX"}},
+	}
+	inputs := map[string]string{"limit": "5"}
+
+	got := applyInputDefaults(schema, inputs)
+
+	if _, ok := inputs["folder"]; ok {
+		t.Fatalf("caller map was mutated: %v", inputs)
+	}
+	if got["folder"] != "INBOX" {
+		t.Fatalf("default not applied to result: %v", got)
+	}
+}
+
+// TestBuildScriptEnv_DefaultsReachScript proves the defaulted map is
+// what reaches the env, prefixed like any caller-supplied input.
+func TestBuildScriptEnv_DefaultsReachScript(t *testing.T) {
+	schema := &ActionSchema{
+		Inputs: []ActionInput{
+			{Name: "limit", Default: "10"},
+			{Name: "folder", Default: "INBOX"},
+		},
+	}
+	device := &Adapter{Name: "email", Config: map[string]any{}}
+	manifest := &AdapterManifest{Name: "email", EnvPrefix: "EMAIL"}
+
+	env := buildScriptEnv(device, manifest, "",
+		applyInputDefaults(schema, map[string]string{"limit": "50"}))
+
+	want := map[string]bool{"EMAIL_LIMIT=50": false, "EMAIL_FOLDER=INBOX": false}
+	for _, e := range env {
+		if _, ok := want[e]; ok {
+			want[e] = true
+		}
+		if e == "EMAIL_LIMIT=10" {
+			t.Errorf("default overrode caller-supplied limit; env: %v", env)
+		}
+	}
+	for k, seen := range want {
+		if !seen {
+			t.Errorf("env missing %q; got %v", k, env)
+		}
+	}
+}
+
 func TestResolveEnvPrefix_Precedence(t *testing.T) {
 	if got := resolveEnvPrefix(&AdapterManifest{EnvPrefix: "MAN"}); got != "MAN" {
 		t.Fatalf("manifest prefix should be returned; got %q", got)
