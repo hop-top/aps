@@ -3,6 +3,7 @@ package manifest_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -98,6 +99,22 @@ func TestParse_UnterminatedFrontmatter(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, manifest.ErrMissingFrontmatter)
 	assert.Nil(t, got)
+}
+
+// CRLF input must parse identically to LF. Built in-code rather than as
+// a fixture: a CRLF file on disk is itself rewritten by checkout/editor
+// line-ending settings, so it would not reliably carry the \r.
+func TestParse_CRLFMatchesLF(t *testing.T) {
+	const lf = "---\nname: cto\ntitle: CTO\n---\n\n# CTO\n\nOwns the vision.\n"
+
+	fromLF, err := manifest.Parse([]byte(lf))
+	require.NoError(t, err)
+
+	fromCRLF, err := manifest.Parse([]byte(strings.ReplaceAll(lf, "\n", "\r\n")))
+	require.NoError(t, err)
+
+	assert.Equal(t, fromLF, fromCRLF)
+	assert.NotContains(t, fromCRLF.Body, "\r", "carriage returns must not survive into the body")
 }
 
 func TestParseFile(t *testing.T) {

@@ -44,8 +44,17 @@ type frontmatter struct {
 	Skills      []string `yaml:"skills"`
 }
 
+// crlf is normalized away before parsing so a manifest authored on
+// Windows (or checked out with CRLF endings) yields the same body as
+// the LF original. Without this the carriage returns survive into
+// notes.md and back out through export, so a round-trip through a CRLF
+// checkout would not be byte-identical.
+var crlf = []byte("\r\n")
+
 // Parse parses manifest content into an AgentManifest.
 func Parse(content []byte) (*AgentManifest, error) {
+	content = bytes.ReplaceAll(content, crlf, []byte("\n"))
+
 	fmBytes, body, err := splitFrontmatter(content)
 	if err != nil {
 		return nil, err
