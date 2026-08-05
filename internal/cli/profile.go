@@ -708,21 +708,25 @@ markdown body). Dispatch is by extension: a .md argument is
 treated as a manifest, anything else as a .aps-profile.yaml
 bundle. By default the new profile keeps the source id; pass --id
 to rename it (e.g. when the local install already has a profile
-with the source id). --force overwrites an existing profile
-directory with the same target id (bundle imports only).
+with the source id). For bundle imports --force overwrites an
+existing profile directory with the same target id; for manifest
+imports it overrides the reportsTo check (see below).
 
 Manifest imports map title (falling back to name) to the display
 name, slug (falling back to the slugified name) to the profile
-id, description and reportsTo to the matching profile fields
-(reportsTo is an opaque id; aps does not verify it resolves),
+id, description and reportsTo to the matching profile fields,
 the markdown body to notes.md, and each skills entry to a
 capability link when the shortname resolves in the capability
 registry — unresolvable shortnames are warned to stderr and
-skipped, never failing the import. Secrets, isolation, and
+skipped, never failing the import. A reportsTo naming no existing
+profile does fail the import, before anything is written — import
+the supervising profile first, or pass --force to downgrade it to
+a warning and store the value anyway. Secrets, isolation, and
 machine-specific paths are never taken from a manifest; the
 profile receives the normal create-path defaults. --dry-run
 prints the resulting profile.yaml plus intended links and skips
-without writing anything.
+without writing anything, and reports the same reportsTo verdict
+a real import would.
 
 Mutating: creates $APS_DATA_PATH/profiles/<target-id>/ and emits
 both a ProfileCreated bus event and a profile_share_imported
@@ -742,7 +746,7 @@ part of the bundle); set them separately after import.`,
 		// root-persistent --dry-run global previews the profile.yaml
 		// plus intended capability links without writing.
 		if isAgentManifestPath(bundlePath) {
-			return runManifestImport(ctx, bundlePath, id, globals.DryRun(), os.Stdout, os.Stderr)
+			return runManifestImport(ctx, bundlePath, id, globals.DryRun(), force, os.Stdout, os.Stderr)
 		}
 		if globals.DryRun() {
 			return errors.New("--dry-run is only supported for agent manifest (.md) imports; bundle imports copy the source directly")
@@ -877,7 +881,7 @@ func init() {
 	// the inherited global. Behaviour is unchanged.
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
-	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
+	profileImportCmd.Flags().Bool("force", false, "Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)")
 	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
 	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
 

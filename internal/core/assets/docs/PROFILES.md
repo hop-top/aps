@@ -222,8 +222,18 @@ warning to stderr and are skipped — a missing capability never fails the
 import.
 
 `reports_to` is stored verbatim as an opaque profile id — aps has no
-reporting model and does not verify that the referenced profile exists.
-It exists so a manifest survives an import/export round-trip unchanged.
+reporting model and never resolves the reference. It exists so a
+manifest survives an import/export round-trip unchanged.
+
+Import fails when `reportsTo` names no profile on disk, so a typo is
+caught at the boundary instead of persisting as a dangling reference.
+Import the supervising profile first, or pass `--force` to import
+anyway — `--force` downgrades the failure to a stderr warning and still
+stores the value, which is what you want when seeding a hierarchy
+top-down is not practical.
+
+Note this makes import order-dependent for hierarchies: without
+`--force`, supervisors must be imported before their reports.
 
 Never imported: secrets, isolation config, and machine-specific paths.
 The profile receives the normal create-path defaults for all of these.

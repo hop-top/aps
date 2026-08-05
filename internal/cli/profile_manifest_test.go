@@ -127,7 +127,7 @@ func TestRunManifestImport_CreatesProfile(t *testing.T) {
 	path := writeManifestFile(t, t.TempDir(), importManifestDoc)
 
 	var out, errOut strings.Builder
-	require.NoError(t, runManifestImport(t.Context(), path, "", false, &out, &errOut))
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, false, &out, &errOut))
 
 	p, err := core.LoadProfile("acme-cto")
 	require.NoError(t, err)
@@ -164,10 +164,14 @@ reportsTo: acme-ceo
 
 # CTO
 `
+	// Supervisor first, so reportsTo resolves and no --force is needed.
+	require.NoError(t, core.CreateProfileWithContext(
+		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"}))
+
 	path := writeManifestFile(t, t.TempDir(), doc)
 
 	var out, errOut strings.Builder
-	require.NoError(t, runManifestImport(t.Context(), path, "", false, &out, &errOut))
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, false, &out, &errOut))
 
 	p, err := core.LoadProfile("acme-cto")
 	require.NoError(t, err)
@@ -184,6 +188,104 @@ reportsTo: acme-ceo
 	assert.Equal(t, "acme-ceo", m.ReportsTo)
 }
 
+const reportsToManifestDoc = `---
+name: cto
+slug: acme-cto
+reportsTo: acme-ceo
+---
+`
+
+// A dangling reportsTo fails the import outright, and must not leave a
+// partially-created profile behind.
+func TestRunManifestImport_DanglingReportsToFails(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	var out, errOut strings.Builder
+	err := runManifestImport(t.Context(), path, "", false, false, &out, &errOut)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "acme-ceo")
+	assert.Contains(t, err.Error(), "--force")
+
+	_, loadErr := core.LoadProfile("acme-cto")
+	assert.Error(t, loadErr, "failed import must write nothing")
+}
+
+// --force downgrades the failure to a warning and keeps the value, for
+// importing a hierarchy before its supervisors exist.
+func TestRunManifestImport_DanglingReportsToForceWarnsAndKeeps(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	var out, errOut strings.Builder
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, true, &out, &errOut))
+
+	assert.Contains(t, errOut.String(), "acme-ceo")
+	assert.Contains(t, errOut.String(), "--force")
+
+	p, err := core.LoadProfile("acme-cto")
+	require.NoError(t, err)
+	assert.Equal(t, "acme-ceo", p.ReportsTo, "forced import must still persist the value")
+}
+
+func TestRunManifestImport_ResolvableReportsToSucceedsSilently(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+
+	// Supervising profile exists first → no warning, no --force needed.
+	require.NoError(t, core.CreateProfileWithContext(
+		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"}))
+
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	var out, errOut strings.Builder
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, false, &out, &errOut))
+
+	assert.NotContains(t, errOut.String(), "reportsTo")
+
+	p, err := core.LoadProfile("acme-cto")
+	require.NoError(t, err)
+	assert.Equal(t, "acme-ceo", p.ReportsTo)
+}
+
+func TestRunManifestImport_NoReportsToNeedsNoForce(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	path := writeManifestFile(t, t.TempDir(), importManifestDoc)
+
+	var out, errOut strings.Builder
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, false, &out, &errOut))
+
+	assert.NotContains(t, errOut.String(), "reportsTo")
+}
+
+// Dry-run reports the same verdict a real import would: it fails rather
+// than previewing a profile that could not actually be imported.
+func TestRunManifestImport_DryRunFailsOnDanglingReportsTo(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	var out, errOut strings.Builder
+	err := runManifestImport(t.Context(), path, "", true, false, &out, &errOut)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--force")
+	assert.Empty(t, out.String(), "no preview when the import would fail")
+}
+
+func TestRunManifestImport_DryRunForcePreviewsWithWarning(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	var out, errOut strings.Builder
+	require.NoError(t, runManifestImport(t.Context(), path, "", true, true, &out, &errOut))
+
+	assert.Contains(t, errOut.String(), "--force")
+	assert.Contains(t, out.String(), "reports_to: acme-ceo")
+
+	_, loadErr := core.LoadProfile("acme-cto")
+	assert.Error(t, loadErr, "dry-run must not write the profile")
+}
+
 func TestRunManifestImport_DryRunWritesNothing(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmp)
@@ -191,7 +293,7 @@ func TestRunManifestImport_DryRunWritesNothing(t *testing.T) {
 	path := writeManifestFile(t, t.TempDir(), importManifestDoc)
 
 	var out, errOut strings.Builder
-	require.NoError(t, runManifestImport(t.Context(), path, "", true, &out, &errOut))
+	require.NoError(t, runManifestImport(t.Context(), path, "", true, false, &out, &errOut))
 
 	// Nothing created.
 	_, err := core.LoadProfile("acme-cto")
@@ -216,7 +318,7 @@ func TestRunManifestImport_IDOverride(t *testing.T) {
 	path := writeManifestFile(t, t.TempDir(), importManifestDoc)
 
 	var out, errOut strings.Builder
-	require.NoError(t, runManifestImport(t.Context(), path, "custom-id", false, &out, &errOut))
+	require.NoError(t, runManifestImport(t.Context(), path, "custom-id", false, false, &out, &errOut))
 
 	_, err := core.LoadProfile("custom-id")
 	require.NoError(t, err)

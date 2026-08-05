@@ -76,12 +76,62 @@ func partitionManifestSkills(skills []string, exists func(string) bool) (linkabl
 	return linkable, skipped
 }
 
+// profileExists reports whether a profile directory with a profile.yaml
+// is present for id. The bool is only meaningful when err is nil; an
+// unreadable data dir returns an error so callers can stay silent
+// rather than warn about a profile that may well exist.
+func profileExists(id string) (bool, error) {
+	path, err := core.GetProfilePath(id)
+	if err != nil {
+		return false, fmt.Errorf("resolving profile path: %w", err)
+	}
+	switch _, err := os.Stat(path); {
+	case err == nil:
+		return true, nil
+	case os.IsNotExist(err):
+		return false, nil
+	default:
+		return false, fmt.Errorf("checking profile %q: %w", id, err)
+	}
+}
+
+// checkReportsTo verifies that reportsTo names a profile on disk.
+// A dangling reference fails the import so a typo'd or out-of-order
+// manifest is caught at the boundary rather than persisted as silent
+// data rot; force downgrades the failure to a stderr warning for the
+// legitimate case of importing a hierarchy before its supervisors.
+//
+// A failed existence check (unreadable data dir) is reported as-is
+// rather than treated as "missing" — the profile may well exist.
+func checkReportsTo(reportsTo string, force bool, errOut io.Writer) error {
+	if reportsTo == "" {
+		return nil
+	}
+	exists, err := profileExists(reportsTo)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	if force {
+		fmt.Fprintf(errOut,
+			"Warning: reportsTo %q does not match an existing profile; kept as-is (--force)\n",
+			reportsTo)
+		return nil
+	}
+	return fmt.Errorf(
+		"reportsTo %q does not match an existing profile\n\nHint: import the supervising profile first, or pass --force to import anyway",
+		reportsTo)
+}
+
 // runManifestImport imports an agent role manifest file as a profile.
 // dryRun previews the resulting profile.yaml, intended capability
 // links, and skipped shortnames without writing anything. Missing
 // capabilities never fail the import — they are warned to errOut and
-// skipped.
-func runManifestImport(ctx context.Context, path, idOverride string, dryRun bool, out, errOut io.Writer) error {
+// skipped. A dangling reportsTo does fail it, unless force downgrades
+// the failure to a warning.
+func runManifestImport(ctx context.Context, path, idOverride string, dryRun, force bool, out, errOut io.Writer) error {
 	m, err := manifest.ParseFile(path)
 	if err != nil {
 		return fmt.Errorf("parsing manifest: %w", err)
@@ -93,6 +143,12 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun bool
 	}
 
 	linkable, skipped := partitionManifestSkills(m.Skills, capability.Exists)
+
+	// Guarded before any write (and before the dry-run preview, so the
+	// preview reports the same verdict the real import would).
+	if err := checkReportsTo(profile.ReportsTo, force, errOut); err != nil {
+		return err
+	}
 
 	if dryRun {
 		profile.ID = id

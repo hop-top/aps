@@ -140,7 +140,9 @@ manifest (YAML frontmatter + markdown body), anything else as a
 - `title` (falling back to `name`) → display name
 - `--id` > `slug` > slugified `name` → profile id
 - `description` → `description`
-- `reportsTo` → `reports_to` (opaque id; existence is not verified)
+- `reportsTo` → `reports_to` (opaque id; import fails when it names no
+  existing profile — import the supervisor first, or pass `--force` to
+  downgrade the failure to a warning and store the value anyway)
 - markdown body → `notes.md`
 - `skills` shortnames → capability links; unresolvable shortnames warn to stderr and are skipped
 
