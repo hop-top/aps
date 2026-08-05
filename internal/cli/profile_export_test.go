@@ -95,9 +95,9 @@ func TestRunProfileExport_AgentcoExcludesSensitive(t *testing.T) {
 	dir, err := core.GetProfileDir("loaded")
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "secrets.env"),
-		[]byte("SUPER_SECRET_TOKEN=hunter2\nDB_PASSWORD=swordfish\n"), 0600))
+		[]byte("SUPER_SECRET_TOKEN=hunter2\nDB_PASSWORD=swordfish\n"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.md"),
-		[]byte("# Loaded Agent\n\nPersona body.\n"), 0644))
+		[]byte("# Loaded Agent\n\nPersona body.\n"), 0o644))
 
 	var out strings.Builder
 	require.NoError(t, runProfileExport("loaded", "agentco", &out))

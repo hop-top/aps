@@ -76,11 +76,15 @@ func runProfileExport(id, format string, out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("marshaling profile: %w", err)
 		}
-		_, err = out.Write(data)
-		return err
+		if _, err := out.Write(data); err != nil {
+			return fmt.Errorf("writing profile: %w", err)
+		}
+		return nil
 	case "agentco":
 		body := ""
 		if dir, err := core.GetProfileDir(id); err == nil {
+			// #nosec G304 -- notes.md is resolved under the profile's own
+			// directory, not from caller-supplied input.
 			if notes, err := os.ReadFile(filepath.Join(dir, "notes.md")); err == nil {
 				body = string(notes)
 			}
@@ -89,8 +93,10 @@ func runProfileExport(id, format string, out io.Writer) error {
 		if err != nil {
 			return err
 		}
-		_, err = io.WriteString(out, doc)
-		return err
+		if _, err := io.WriteString(out, doc); err != nil {
+			return fmt.Errorf("writing manifest: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown export format %q (supported: agentco, or omit for native yaml)", format)
 	}
@@ -114,19 +120,27 @@ paths are never included.
 Read-only: loads profile state; writes only to stdout or the
 --out destination. Idempotent.`,
 	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (retErr error) {
 		id := args[0]
 		format, _ := cmd.Flags().GetString("manifest-format")
 		outPath, _ := cmd.Flags().GetString("out")
 
 		var out io.Writer = os.Stdout
 		if outPath != "" {
+			// #nosec G304 -- outPath is the operator's --out argument;
+			// writing there is the flag's purpose.
 			f, err := os.Create(outPath)
 			if err != nil {
 				return fmt.Errorf("creating output file: %w", err)
 			}
-			defer f.Close()
 			out = f
+			// Close is checked, not deferred-and-dropped: a write-back
+			// error on close means the exported manifest is truncated.
+			defer func() {
+				if cerr := f.Close(); cerr != nil && retErr == nil {
+					retErr = fmt.Errorf("closing output file: %w", cerr)
+				}
+			}()
 		}
 		if err := runProfileExport(id, format, out); err != nil {
 			return err

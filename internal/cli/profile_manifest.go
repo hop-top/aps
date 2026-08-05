@@ -115,6 +115,7 @@ func checkReportsTo(reportsTo string, force bool, errOut io.Writer) error {
 		return nil
 	}
 	if force {
+		//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 		fmt.Fprintf(errOut,
 			"Warning: reportsTo %q does not match an existing profile; kept as-is (--force)\n",
 			reportsTo)
@@ -156,14 +157,18 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 		if err != nil {
 			return fmt.Errorf("marshaling profile preview: %w", err)
 		}
+		//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 		fmt.Fprintf(out, "# profile.yaml (dry-run — nothing written)\n%s", data)
 		if len(linkable) > 0 {
+			//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 			fmt.Fprintf(out, "# would link capabilities: %s\n", strings.Join(linkable, ", "))
 		}
 		if len(skipped) > 0 {
+			//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 			fmt.Fprintf(out, "# would skip (not in capability registry): %s\n", strings.Join(skipped, ", "))
 		}
 		if m.Body != "" {
+			//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 			fmt.Fprintf(out, "# would write manifest body to notes.md (%d bytes)\n", len(m.Body))
 		}
 		return nil
@@ -181,6 +186,9 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 		if err != nil {
 			return fmt.Errorf("resolving profile dir: %w", err)
 		}
+		// #nosec G306 -- matches the 0644 core.CreateProfile uses for the
+		// notes.md it seeds; an imported profile must not differ from a
+		// created one. Not secret material (that is secrets.env, 0600).
 		if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte(m.Body+"\n"), 0o644); err != nil {
 			return fmt.Errorf("writing notes.md: %w", err)
 		}
@@ -192,11 +200,14 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 		}
 	}
 	for _, s := range skipped {
+		//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 		fmt.Fprintf(errOut, "Warning: skill %q not found in capability registry; skipped\n", s)
 	}
 
+	//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 	fmt.Fprintf(out, "Profile '%s' imported from manifest %s.\n", id, path)
 	if len(linkable) > 0 {
+		//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
 		fmt.Fprintf(out, "Linked capabilities: %s\n", strings.Join(linkable, ", "))
 	}
 	return nil
