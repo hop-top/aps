@@ -202,21 +202,37 @@ func TestChatAttach_ReplaysPriorTurns(t *testing.T) {
 }
 
 type registrySession struct {
+	ID          string            `json:"id"`
 	ProfileID   string            `json:"profile_id"`
 	Type        string            `json:"type"`
 	Environment map[string]string `json:"environment"`
 }
 
+// readRegistry lists sessions through the aps binary rather than the
+// on-disk registry, so the test stays agnostic to the storage backend
+// (sessions now persist to a sqlite kv store, not registry.json).
 func readRegistry(t *testing.T, home string) map[string]registrySession {
 	t.Helper()
-	path := filepath.Join(home, ".local", "share", "aps", "sessions", "registry.json")
-	data, err := os.ReadFile(path)
+	env := map[string]string{"APS_NO_BUS_WARN": "1"}
+	stdout, stderr, err := runAPS(t, home, env, "session", "list", "--format", "json")
 	if err != nil {
-		t.Fatalf("read registry: %v", err)
+		t.Fatalf("session list failed: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
 	}
-	var sessions map[string]registrySession
-	if err := json.Unmarshal(data, &sessions); err != nil {
-		t.Fatalf("decode registry: %v\n%s", err, data)
+	var rows []registrySession
+	if err := json.Unmarshal([]byte(stdout), &rows); err != nil {
+		t.Fatalf("decode session list: %v\n%s", err, stdout)
+	}
+	sessions := make(map[string]registrySession, len(rows))
+	for _, row := range rows {
+		out, serr, err := runAPS(t, home, env, "session", "inspect", row.ID, "--json")
+		if err != nil {
+			t.Fatalf("session inspect %s failed: %v\nstdout=%s\nstderr=%s", row.ID, err, out, serr)
+		}
+		var sess registrySession
+		if err := json.Unmarshal([]byte(out), &sess); err != nil {
+			t.Fatalf("decode session inspect: %v\n%s", err, out)
+		}
+		sessions[sess.ID] = sess
 	}
 	return sessions
 }
