@@ -48,6 +48,9 @@ aps profile create openai-agent \
 id: myagent
 display_name: "My AI Agent"
 
+# Profile type: "agent" (default) or "human"
+type: agent
+
 # Persona configuration
 persona:
   tone: "concise"
@@ -102,6 +105,24 @@ webhooks:
     - "github.push"
     - "github.issue_comment.created"
 ```
+
+### Profile Type
+
+The `type` field discriminates between runnable agents and human
+directory entries:
+
+- **Allowed values**: `agent`, `human`. Omitting the field is
+  equivalent to `agent`, so existing profiles need no migration.
+- **Write-strict, read-tolerant**: create/edit/import reject unknown
+  values, but loading a profile with an unrecognized `type` (e.g. a
+  typo like `person`) still succeeds so the profile stays visible in
+  lists and org graphs. Unknown values are surfaced by `aps org check`.
+- **Run rejection**: `aps run` and session start refuse `type: human`
+  profiles with an error like
+  `profile "jane" is type human and cannot be run`. Human profiles
+  exist for org charts and contact routing, not execution.
+- **A2A cards**: generating an a2a card for a human profile is not
+  blocked — human profiles may still publish contact/discovery cards.
 
 ### Editing Profiles
 
