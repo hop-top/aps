@@ -76,6 +76,8 @@ func Parse(content []byte) (*AgentManifest, error) {
 
 // ParseFile reads and parses a manifest file from disk.
 func ParseFile(path string) (*AgentManifest, error) {
+	// #nosec G304 -- path is the manifest argument the operator passes to
+	// aps profile import; reading it is the command's purpose.
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read manifest: %w", err)
