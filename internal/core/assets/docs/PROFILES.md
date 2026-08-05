@@ -211,6 +211,8 @@ the manifest path (anything else stays a profile bundle). Mapping:
 |----------|---------|
 | `title` (falling back to `name`) | display name |
 | `--id` flag > `slug` > slugified `name` | profile id |
+| `description` | `description` |
+| `reportsTo` | `reports_to` |
 | markdown body | `notes.md` |
 | `skills` shortnames | capability links |
 
@@ -218,6 +220,10 @@ Each skills shortname that resolves in the capability registry is linked
 via the normal capability-add path; unresolvable shortnames print a
 warning to stderr and are skipped — a missing capability never fails the
 import.
+
+`reports_to` is stored verbatim as an opaque profile id — aps has no
+reporting model and does not verify that the referenced profile exists.
+It exists so a manifest survives an import/export round-trip unchanged.
 
 Never imported: secrets, isolation config, and machine-specific paths.
 The profile receives the normal create-path defaults for all of these.

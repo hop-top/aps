@@ -84,6 +84,8 @@ const (
 type Profile struct {
 	ID            string               `yaml:"id"`
 	DisplayName   string               `yaml:"display_name"`
+	Description   string               `yaml:"description,omitempty"` // one-line role summary
+	ReportsTo     string               `yaml:"reports_to,omitempty"`  // profile id of the supervising role
 	Email         string               `yaml:"email,omitempty"`
 	Avatar        string               `yaml:"avatar,omitempty"` // URL or local path to profile image
 	Color         string               `yaml:"color,omitempty"`  // hex color (e.g. "#3b82f6") for UI rendering

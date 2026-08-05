@@ -57,6 +57,8 @@ func manifestToProfile(m *manifest.AgentManifest, idOverride string) (string, co
 
 	return id, core.Profile{
 		DisplayName: displayName,
+		Description: m.Description,
+		ReportsTo:   m.ReportsTo,
 	}
 }
 

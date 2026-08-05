@@ -713,7 +713,9 @@ directory with the same target id (bundle imports only).
 
 Manifest imports map title (falling back to name) to the display
 name, slug (falling back to the slugified name) to the profile
-id, the markdown body to notes.md, and each skills entry to a
+id, description and reportsTo to the matching profile fields
+(reportsTo is an opaque id; aps does not verify it resolves),
+the markdown body to notes.md, and each skills entry to a
 capability link when the shortname resolves in the capability
 registry — unresolvable shortnames are warned to stderr and
 skipped, never failing the import. Secrets, isolation, and

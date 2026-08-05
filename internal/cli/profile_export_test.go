@@ -33,8 +33,25 @@ func TestRenderAgentcoManifest_Full(t *testing.T) {
 	assert.Equal(t, "", m.ReportsTo)
 	assert.Contains(t, m.Body, "Owns technical vision.")
 
-	// reportsTo never emitted — aps has no reporting model.
+	// reportsTo omitted when the profile carries none — aps never
+	// derives a reporting relationship of its own.
 	assert.NotContains(t, out, "reportsTo")
+}
+
+func TestRenderAgentcoManifest_RoundTripsDescriptionAndReportsTo(t *testing.T) {
+	p := &core.Profile{
+		ID:          "acme-cto",
+		DisplayName: "Chief Technology Officer",
+		Description: "Owns technical vision",
+		ReportsTo:   "acme-ceo",
+	}
+	out, err := renderAgentcoManifest(p, "")
+	require.NoError(t, err)
+
+	m, err := manifest.Parse([]byte(out))
+	require.NoError(t, err)
+	assert.Equal(t, "Owns technical vision", m.Description)
+	assert.Equal(t, "acme-ceo", m.ReportsTo)
 }
 
 func TestRenderAgentcoManifest_Minimal(t *testing.T) {

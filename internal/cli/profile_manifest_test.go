@@ -46,6 +46,24 @@ func TestManifestToProfile_SlugifyNameFallback(t *testing.T) {
 	assert.Equal(t, "chief-of-staff", id)
 }
 
+func TestManifestToProfile_CarriesDescriptionAndReportsTo(t *testing.T) {
+	m := &manifest.AgentManifest{
+		Name:        "cto",
+		Description: "Owns technical vision",
+		ReportsTo:   "ceo",
+	}
+	_, p := manifestToProfile(m, "")
+	assert.Equal(t, "Owns technical vision", p.Description)
+	assert.Equal(t, "ceo", p.ReportsTo)
+}
+
+func TestManifestToProfile_OmittedDescriptionAndReportsToStayEmpty(t *testing.T) {
+	m := &manifest.AgentManifest{Name: "scribe"}
+	_, p := manifestToProfile(m, "")
+	assert.Empty(t, p.Description)
+	assert.Empty(t, p.ReportsTo)
+}
+
 func TestManifestToProfile_NoSecretsNoIsolation(t *testing.T) {
 	m := &manifest.AgentManifest{Name: "cto", Title: "CTO"}
 	_, p := manifestToProfile(m, "")
@@ -128,6 +146,42 @@ func TestRunManifestImport_CreatesProfile(t *testing.T) {
 
 	// Persisted import keeps the affirmative message.
 	assert.Contains(t, out.String(), "Profile 'acme-cto' imported from manifest")
+}
+
+// Manifest → profile → manifest must not drop description/reportsTo;
+// before they were persisted, a round-trip silently lost both.
+func TestRunManifestImport_RoundTripPreservesDescriptionAndReportsTo(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmp)
+
+	const doc = `---
+name: cto
+title: Chief Technology Officer
+slug: acme-cto
+description: Owns technical vision
+reportsTo: acme-ceo
+---
+
+# CTO
+`
+	path := writeManifestFile(t, t.TempDir(), doc)
+
+	var out, errOut strings.Builder
+	require.NoError(t, runManifestImport(t.Context(), path, "", false, &out, &errOut))
+
+	p, err := core.LoadProfile("acme-cto")
+	require.NoError(t, err)
+	assert.Equal(t, "Owns technical vision", p.Description)
+	assert.Equal(t, "acme-ceo", p.ReportsTo)
+
+	// Export back out and reparse: both fields survive the full cycle.
+	var exported strings.Builder
+	require.NoError(t, runProfileExport("acme-cto", "agentco", &exported))
+
+	m, err := manifest.Parse([]byte(exported.String()))
+	require.NoError(t, err)
+	assert.Equal(t, "Owns technical vision", m.Description)
+	assert.Equal(t, "acme-ceo", m.ReportsTo)
 }
 
 func TestRunManifestImport_DryRunWritesNothing(t *testing.T) {

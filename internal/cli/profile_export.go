@@ -15,15 +15,17 @@ import (
 )
 
 // agentcoFrontmatter is the frontmatter shape written by
-// --manifest-format agentco. reportsTo is deliberately absent: aps has no
-// reporting model and export must not invent one. Only identity-level
-// fields appear — never secrets, isolation, gitconfig, knowledge
-// references, or machine paths.
+// --manifest-format agentco. reportsTo is echoed back only when the
+// profile carries one (set by a prior manifest import); aps still has no
+// reporting model of its own and never derives the value. Only
+// identity-level fields appear — never secrets, isolation, gitconfig,
+// knowledge references, or machine paths.
 type agentcoFrontmatter struct {
 	Name        string   `yaml:"name"`
 	Title       string   `yaml:"title,omitempty"`
 	Slug        string   `yaml:"slug,omitempty"`
 	Description string   `yaml:"description,omitempty"`
+	ReportsTo   string   `yaml:"reportsTo,omitempty"`
 	Skills      []string `yaml:"skills,omitempty"`
 }
 
@@ -32,9 +34,11 @@ type agentcoFrontmatter struct {
 // notes.md content (the same file manifest import writes to).
 func renderAgentcoManifest(p *core.Profile, body string) (string, error) {
 	fm := agentcoFrontmatter{
-		Name:   p.DisplayName,
-		Slug:   p.ID,
-		Skills: p.Capabilities,
+		Name:        p.DisplayName,
+		Slug:        p.ID,
+		Description: p.Description,
+		ReportsTo:   p.ReportsTo,
+		Skills:      p.Capabilities,
 	}
 	if fm.Name == "" {
 		fm.Name = p.ID

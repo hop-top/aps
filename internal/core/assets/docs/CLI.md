@@ -139,6 +139,8 @@ manifest (YAML frontmatter + markdown body), anything else as a
 
 - `title` (falling back to `name`) → display name
 - `--id` > `slug` > slugified `name` → profile id
+- `description` → `description`
+- `reportsTo` → `reports_to` (opaque id; existence is not verified)
 - markdown body → `notes.md`
 - `skills` shortnames → capability links; unresolvable shortnames warn to stderr and are skipped
 
@@ -172,9 +174,11 @@ aps profile export <profile-id> [flags]
 - `--out <path>` - Write to a file instead of stdout
 
 The agentco format maps the display name to `name`, the profile id to
-`slug`, linked capability shortnames to `skills`, and `notes.md` to the
-body. It never includes secrets.env content, isolation config,
-gitconfig, absolute machine paths, or knowledge subscription values.
+`slug`, `description` and `reports_to` back to `description` and
+`reportsTo` (each omitted when empty), linked capability shortnames to
+`skills`, and `notes.md` to the body. It never includes secrets.env
+content, isolation config, gitconfig, absolute machine paths, or
+knowledge subscription values.
 
 **Examples:**
 
