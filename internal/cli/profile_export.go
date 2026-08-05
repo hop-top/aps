@@ -15,11 +15,11 @@ import (
 )
 
 // agentcoFrontmatter is the frontmatter shape written by
-// --manifest-format agentco. reportsTo is echoed back only when the
-// profile carries one (set by a prior manifest import); aps still has no
-// reporting model of its own and never derives the value. Only
-// identity-level fields appear — never secrets, isolation, gitconfig,
-// knowledge references, or machine paths.
+// --manifest-format agentco. reportsTo is emitted whenever the profile
+// carries one so a reporting hierarchy survives an export/import
+// round-trip; graph integrity is validated separately by `aps org
+// check`. Only identity-level fields appear — never secrets, isolation,
+// gitconfig, knowledge references, or machine paths.
 type agentcoFrontmatter struct {
 	Name        string   `yaml:"name"`
 	Title       string   `yaml:"title,omitempty"`

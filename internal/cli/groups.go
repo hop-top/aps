@@ -21,6 +21,7 @@ var commandGroups = map[string]string{
 	"capability": "organize",
 	"bundle":     "organize",
 	"squad":      "organize",
+	"org":        "organize",
 	"workspace":  "organize",
 	"contact":    "organize",
 

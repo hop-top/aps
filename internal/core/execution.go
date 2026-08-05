@@ -247,6 +247,11 @@ func RunCommand(profileID string, command string, args []string, overrides []str
 		return fmt.Errorf("failed to load profile %s: %w", profileID, err)
 	}
 
+	// Human profiles are directory entries, not runnable agents.
+	if err := profile.EnsureRunnable(); err != nil {
+		return err
+	}
+
 	// Check if requested isolation level is supported
 	requestedLevel := profile.Isolation.Level
 	if requestedLevel == "" {

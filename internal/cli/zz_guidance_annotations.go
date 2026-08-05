@@ -764,6 +764,26 @@ var leafGuidance = map[string]kitcli.Guidance{
 		},
 	},
 
+	// === org ===
+	"aps org check": {
+		Examples: []kitcli.Example{
+			ex("Validate the reporting hierarchy", "aps org check"),
+			ex("Emit findings as JSON for CI", "aps org check --format json"),
+		},
+	},
+	"aps org show": {
+		Examples: []kitcli.Example{
+			ex("Show a profile's chain and reports", "aps org show alice"),
+			ex("Limit transitive reports to one level", "aps org show alice --depth 1"),
+		},
+	},
+	"aps org snapshot": {
+		Examples: []kitcli.Example{
+			ex("Capture the org tree", "aps org snapshot"),
+			ex("Export a mermaid organigram", "aps org snapshot --snapshot-format mermaid --output org.mmd"),
+		},
+	},
+
 	// === policy ===
 	"aps policy list": {
 		Examples: []kitcli.Example{

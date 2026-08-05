@@ -1,6 +1,6 @@
 # Architecture — aps
 
-Last updated: 2026-04-26
+Last updated: 2026-08-05
 Author: $USER
 
 ## Purpose
@@ -36,9 +36,15 @@ Cross-references:
 |---|---|---|
 | `aps` CLI | `cmd/aps/` | Cobra-based CLI |
 | `aps serve` HTTP API | `internal/server/` | Optional REST server for profiles, sessions, A2A tasks |
-| Adapters | `~/.agents/adapters/` + `~/.agents/profiles/<id>/adapters/` | Per-profile or global adapter binaries |
-| Profile registry | `~/.agents/profiles/<id>/profile.yaml` | YAML files; one per profile |
-| Session registry | `~/.agents/sessions/registry.json` | Active session tracking |
+| Adapters | `<data-dir>/adapters/` + `<data-dir>/profiles/<id>/adapters/` | Per-profile or global adapter binaries |
+| Profile registry | `<data-dir>/profiles/<id>/profile.yaml` | YAML files; one per profile |
+| Session registry | `<data-dir>/sessions/registry.json` | Active session tracking |
+
+`<data-dir>` resolves via `internal/core/paths.go`
+(`core.GetDataDir()`): `$APS_DATA_PATH` > `$XDG_DATA_HOME/aps` >
+`~/.local/share/aps`. Linux-style on every platform (deliberate — see
+the justification comment in `paths.go`). Legacy `~/.agents/profiles/`
+data is migrated by `MigrateProfilesFromLegacy`.
 
 ## Components
 
@@ -46,14 +52,14 @@ Cross-references:
 
 YAML profile load / save. Enforces the `WorkspaceLink`,
 `Persona`, `Capabilities`, and `Scope` isolation contracts.
-Profile data is per-machine (`~/.agents/profiles/<id>/`).
+Profile data is per-machine (`<data-dir>/profiles/<id>/`).
 
 ### Adapter system (`internal/core/adapter/`)
 
 Multi-strategy dispatch. An adapter has a `type`
 (messenger / protocol / mobile / desktop / sense / actuator)
 and a `strategy` (`subprocess` / `script` / `builtin`).
-Adapters are auto-discovered from `~/.agents/adapters/` and
+Adapters are auto-discovered from `<data-dir>/adapters/` and
 per-profile dirs. Each declares itself via `manifest.yaml`.
 
 The messenger adapter (`messenger_adapter.go`) ships with a
@@ -71,7 +77,7 @@ workspace state.
 ### Session engine (`internal/core/session/`)
 
 Sessions move through `active → terminated`. The registry at
-`~/.agents/sessions/registry.json` tracks `{session_id:
+`<data-dir>/sessions/registry.json` tracks `{session_id:
 {profile_id, status, ...}}`. Loose JSON parsing tolerates
 corruption — deletes still work even if the file is partially
 broken.
@@ -115,6 +121,27 @@ Capability discovery + enforcement. Capabilities are typed
 strings declared on profile (`capabilities: []`). Adapters
 gate actions on required capabilities.
 
+### Org hierarchy (`internal/core/org/` + `internal/cli/org/`)
+
+Optional reporting hierarchy across profiles. `Profile.ReportsTo`
+names the supervisor (agent or `type: human` profile); the core
+package is a pure, I/O-free graph over loaded profiles (`Build`,
+`Chain`, `DirectReports`, `TransitiveReports`, `Roots`, `Validate`)
+— visited-set guarded, typed `CycleError`, deterministic (sorted by
+id). `org.Channels` derives each node's reachable channels
+(`a2a`/`acp`/`email`/`webhooks`) purely from profile config.
+
+CLI: `aps org check` (graph findings incl. unloadable files;
+non-zero exit gates CI), `aps org show <id>` (chain + reports +
+`--depth` + channels column), `aps org snapshot`
+(`--all`/`--root`/`--squad`; `--snapshot-format
+json|yaml|tree|mermaid`; `--output` atomic file write).
+`--reports-to`/`--type` on `profile create`/`edit` are write-strict
+(existence / self-ref / cycle checks); reads stay tolerant so `org
+check` can surface bad on-disk data. `reports_to` changes reuse the
+`aps.profile.updated` event with `fields: ["reports_to"]`. See
+[ADR 0002](adr/0002-reporting-hierarchy.md).
+
 ### Bundle resolution (`internal/core/bundle/`)
 
 Capability + action discovery; binary execution logging.
@@ -145,18 +172,21 @@ aps workspace [use\|list\|show\|join\|members\|agents\|send\|tasks\|task\|ctx\|c
 aps a2a [show-card\|fetch-card\|send-task\|get-task\|list-tasks\|subscribe-task\|cancel-task\|server]
 aps acp [server\|toggle]
 aps capability [list\|show\|install]
+aps org [check\|show\|snapshot]
 aps bundle [list\|show]
 aps serve --addr <host:port>
 ```
 
 ### Profile schema
 
-YAML at `~/.agents/profiles/<id>/profile.yaml`:
+YAML at `<data-dir>/profiles/<id>/profile.yaml`:
 
 ```yaml
 id: noor
 display_name: "Noor"
 email: "jad+noor@ideacrafters.com"
+type: agent            # agent (default) | human; write-strict, read-tolerant
+reports_to: jad        # optional supervisor profile id; validated on write
 persona: { tone, style, risk }
 capabilities: [...]
 accounts: { service: { username } }

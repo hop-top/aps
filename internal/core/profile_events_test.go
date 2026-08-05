@@ -141,6 +141,29 @@ func TestRemoveCapabilityFromProfile_EmitsProfileUpdated(t *testing.T) {
 	}
 }
 
+// TestPublishProfileUpdated_ReportsToField pins the payload shape the
+// CLI edit path relies on when a reports_to change is announced: the
+// existing ProfileUpdated topic with "reports_to" in Fields.
+func TestPublishProfileUpdated_ReportsToField(t *testing.T) {
+	f := installFakePublisher(t)
+
+	PublishProfileUpdated("dana-test", []string{"reports_to"})
+
+	if len(f.got) != 1 {
+		t.Fatalf("got %d events, want 1", len(f.got))
+	}
+	if f.got[0].topic != string(events.TopicProfileUpdated) {
+		t.Errorf("topic = %q, want ProfileUpdated", f.got[0].topic)
+	}
+	p, ok := f.got[0].payload.(events.ProfileUpdatedPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", f.got[0].payload)
+	}
+	if p.ProfileID != "dana-test" || len(p.Fields) != 1 || p.Fields[0] != "reports_to" {
+		t.Errorf("payload = %+v, want id=dana-test fields=[reports_to]", p)
+	}
+}
+
 // TestCorePublish_NilPublisher_NoPanic verifies that core operations work
 // fine when no publisher is wired (default state).
 func TestCorePublish_NilPublisher_NoPanic(t *testing.T) {

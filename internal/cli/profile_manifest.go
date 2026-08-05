@@ -95,35 +95,48 @@ func profileExists(id string) (bool, error) {
 	}
 }
 
-// checkReportsTo verifies that reportsTo names a profile on disk.
-// A dangling reference fails the import so a typo'd or out-of-order
-// manifest is caught at the boundary rather than persisted as silent
-// data rot; force downgrades the failure to a stderr warning for the
-// legitimate case of importing a hierarchy before its supervisors.
+// checkReportsTo verifies that reportsTo names a profile on disk and
+// keeps the reporting graph acyclic. A dangling reference fails the
+// import so a typo'd or out-of-order manifest is caught at the boundary
+// rather than persisted as silent data rot; force downgrades that
+// failure to a stderr warning for the legitimate case of importing a
+// hierarchy before its supervisors. A self-reference or a reporting
+// cycle is NEVER downgraded by force: a cycle is data corruption, not
+// an import-ordering problem.
 //
 // A failed existence check (unreadable data dir) is reported as-is
 // rather than treated as "missing" — the profile may well exist.
-func checkReportsTo(reportsTo string, force bool, errOut io.Writer) error {
+func checkReportsTo(id, reportsTo string, force bool, errOut io.Writer) error {
 	if reportsTo == "" {
 		return nil
+	}
+	if reportsTo == id {
+		return fmt.Errorf("profile %q cannot report to itself", id)
 	}
 	exists, err := profileExists(reportsTo)
 	if err != nil {
 		return err
 	}
-	if exists {
-		return nil
+	if !exists {
+		if force {
+			//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
+			fmt.Fprintf(errOut,
+				"Warning: reportsTo %q does not match an existing profile; kept as-is (--force)\n",
+				reportsTo)
+			return nil
+		}
+		return fmt.Errorf(
+			"reportsTo %q does not match an existing profile\n\nHint: import the supervising profile first, or pass --force to import anyway",
+			reportsTo,
+		)
 	}
-	if force {
-		//nolint:errcheck // CLI progress output; a failed write to stdout/stderr is not actionable
-		fmt.Fprintf(errOut,
-			"Warning: reportsTo %q does not match an existing profile; kept as-is (--force)\n",
-			reportsTo)
-		return nil
+	// Target exists — guard the graph shape through the same cycle
+	// check the create/edit flag paths use.
+	profiles, err := core.ListProfilesFull()
+	if err != nil {
+		return fmt.Errorf("listing profiles: %w", err)
 	}
-	return fmt.Errorf(
-		"reportsTo %q does not match an existing profile\n\nHint: import the supervising profile first, or pass --force to import anyway",
-		reportsTo)
+	return reportsToCycleCheck(id, reportsTo, profiles)
 }
 
 // runManifestImport imports an agent role manifest file as a profile.
@@ -131,7 +144,8 @@ func checkReportsTo(reportsTo string, force bool, errOut io.Writer) error {
 // links, and skipped shortnames without writing anything. Missing
 // capabilities never fail the import — they are warned to errOut and
 // skipped. A dangling reportsTo does fail it, unless force downgrades
-// the failure to a warning.
+// the failure to a warning; a self-referencing or cycle-introducing
+// reportsTo always fails it, force or not.
 func runManifestImport(ctx context.Context, path, idOverride string, dryRun, force bool, out, errOut io.Writer) error {
 	m, err := manifest.ParseFile(path)
 	if err != nil {
@@ -147,7 +161,7 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 
 	// Guarded before any write (and before the dry-run preview, so the
 	// preview reports the same verdict the real import would).
-	if err := checkReportsTo(profile.ReportsTo, force, errOut); err != nil {
+	if err := checkReportsTo(id, profile.ReportsTo, force, errOut); err != nil {
 		return err
 	}
 

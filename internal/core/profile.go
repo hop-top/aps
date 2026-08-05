@@ -80,10 +80,18 @@ const (
 	IsolationContainer IsolationLevel = "container"
 )
 
+// Profile type discriminator values. An empty Type means agent, so
+// pre-existing profiles keep their behavior without migration.
+const (
+	ProfileTypeAgent = "agent"
+	ProfileTypeHuman = "human"
+)
+
 // Profile represents an agent profile configuration
 type Profile struct {
 	ID            string               `yaml:"id"`
 	DisplayName   string               `yaml:"display_name"`
+	Type          string               `yaml:"type,omitempty"`        // "human" or "agent"; empty means agent
 	Description   string               `yaml:"description,omitempty"` // one-line role summary
 	ReportsTo     string               `yaml:"reports_to,omitempty"`  // profile id of the supervising role
 	Email         string               `yaml:"email,omitempty"`
@@ -353,6 +361,44 @@ func LoadProfileFromPath(id, path string) (*Profile, error) {
 	}
 
 	return &profile, nil
+}
+
+// EffectiveType returns the profile type with the empty-value default
+// applied: empty means agent, any other value (including unknown ones)
+// is returned as-is. Unknown values are deliberately passed through so
+// read paths stay tolerant; `aps org check` is the surface that flags
+// them.
+func (p *Profile) EffectiveType() string {
+	if p.Type == "" {
+		return ProfileTypeAgent
+	}
+	return p.Type
+}
+
+// ValidateType enforces the write-time posture on the type field:
+// only "", "agent" and "human" are accepted. Create/edit/import paths
+// call this before persisting; read paths (LoadProfileFromPath) do NOT,
+// so a typo'd profile still loads and stays visible in lists and graphs
+// instead of silently vanishing via ListProfilesFull's skip-on-error.
+func (p *Profile) ValidateType() error {
+	switch p.Type {
+	case "", ProfileTypeAgent, ProfileTypeHuman:
+		return nil
+	default:
+		return fmt.Errorf("invalid profile type: %q (allowed: %q, %q)", p.Type, ProfileTypeAgent, ProfileTypeHuman)
+	}
+}
+
+// EnsureRunnable returns an error when the profile's type bars it from
+// execution: human profiles are directory entries (org charts, contact
+// routing) and cannot back `aps run` or a session. Unknown type values
+// remain runnable — they are tolerated at read time and surfaced by
+// `aps org check` instead.
+func (p *Profile) EnsureRunnable() error {
+	if p.EffectiveType() == ProfileTypeHuman {
+		return fmt.Errorf("profile %q is type human and cannot be run", p.ID)
+	}
+	return nil
 }
 
 // ValidateIsolation validates the isolation configuration
