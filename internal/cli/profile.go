@@ -14,10 +14,12 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/bundle"
 	"hop.top/aps/internal/core/capability"
+	"hop.top/aps/internal/core/org"
 	"hop.top/aps/internal/styles"
 )
 
@@ -123,6 +125,57 @@ func dedupeStrings(s []string) []string {
 	return out
 }
 
+// reportsToCycleCheck builds the would-be reporting graph with profile
+// id's reports_to set to reportsTo and reports any cycle the mutation
+// would introduce. profiles is the current on-disk set; the entry for
+// id is replaced (or appended when id is being created) before the walk.
+func reportsToCycleCheck(id, reportsTo string, profiles []core.Profile) error {
+	mutated := make([]core.Profile, 0, len(profiles)+1)
+	replaced := false
+	for _, p := range profiles {
+		if p.ID == id {
+			p.ReportsTo = reportsTo
+			replaced = true
+		}
+		mutated = append(mutated, p)
+	}
+	if !replaced {
+		mutated = append(mutated, core.Profile{ID: id, ReportsTo: reportsTo})
+	}
+	if _, err := org.Build(mutated).Chain(id); err != nil {
+		return fmt.Errorf("reports-to %q would introduce a %w", reportsTo, err)
+	}
+	return nil
+}
+
+// validateReportsTo enforces the write-time posture on reports_to for
+// the create/edit flag paths: the target must exist, must not be the
+// profile itself, and must not close a reporting cycle. Empty clears
+// and is always valid.
+func validateReportsTo(id, reportsTo string) error {
+	if reportsTo == "" {
+		return nil
+	}
+	if reportsTo == id {
+		return fmt.Errorf("profile %q cannot report to itself", id)
+	}
+	profiles, err := core.ListProfilesFull()
+	if err != nil {
+		return fmt.Errorf("listing profiles: %w", err)
+	}
+	exists := false
+	for _, p := range profiles {
+		if p.ID == reportsTo {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		return fmt.Errorf("reports-to %q does not match an existing profile", reportsTo)
+	}
+	return reportsToCycleCheck(id, reportsTo, profiles)
+}
+
 // profileHasSecrets reports whether the profile has at least one
 // non-empty secret entry. Used by the --has-secrets filter; absence
 // of the file (or an empty file) is treated as "no secrets".
@@ -166,6 +219,12 @@ directory name; display name, email, avatar URL, and color hex
 default to interactive prompts when omitted and stdin is a TTY.
 Pass --force to overwrite an existing profile directory.
 
+The --type flag sets the profile type discriminator (agent or
+human; empty means agent). The --reports-to flag links the profile
+into the reporting hierarchy: the target must be an existing
+profile, and self-references or reporting cycles are rejected
+before anything is written.
+
 The --auto-avatar / --auto-color flags generate deterministic
 values from the profile id (avatar via the configured provider,
 default dicebear; color from a fixed palette hash). Provider knobs
@@ -184,6 +243,8 @@ record (use --force to replace).`,
 		email, _ := cmd.Flags().GetString("email")
 		avatarVal, _ := cmd.Flags().GetString("avatar")
 		colorVal, _ := cmd.Flags().GetString("color")
+		typeVal, _ := cmd.Flags().GetString("type")
+		reportsTo, _ := cmd.Flags().GetString("reports-to")
 		force, _ := cmd.Flags().GetBool("force")
 
 		// Resolve auto-assignment policy. Explicit --auto-avatar/--auto-color
@@ -259,6 +320,8 @@ record (use --force to replace).`,
 		config := core.Profile{
 			DisplayName: displayName,
 			Email:       email,
+			Type:        typeVal,
+			ReportsTo:   reportsTo,
 			Avatar:      avatarVal,
 			Color:       colorVal,
 			Git: core.GitConfig{
@@ -267,6 +330,16 @@ record (use --force to replace).`,
 		}
 		if config.DisplayName == "" {
 			config.DisplayName = id
+		}
+
+		// Write-strict validation BEFORE any mutation (including the
+		// --force removal below), so a rejected create never destroys
+		// the existing profile it would have replaced.
+		if err := config.ValidateType(); err != nil {
+			return err
+		}
+		if err := validateReportsTo(id, reportsTo); err != nil {
+			return err
 		}
 
 		if force {
@@ -298,11 +371,16 @@ record (use --force to replace).`,
 var profileEditCmd = &cobra.Command{
 	Use:   "edit [id]",
 	Short: "Edit fields on an existing profile",
-	Long: `Update display name, email, avatar, or color on an existing profile.
+	Long: `Update display name, email, avatar, color, type, or reports-to on an
+existing profile.
 
 Only flags that are explicitly passed are applied; unset flags leave the
 existing value unchanged. To clear a field, pass the flag with an empty
 string (e.g. --avatar "").
+
+--type is validated write-strict (agent or human). --reports-to must
+name an existing profile and may not introduce a self-reference or a
+reporting cycle; the would-be graph is checked before saving.
 
 The --auto-avatar / --auto-color flags generate a deterministic value
 from the profile id and overwrite the existing value when set.`,
@@ -330,6 +408,24 @@ from the profile id and overwrite the existing value when set.`,
 		if cmd.Flags().Changed("color") {
 			profile.Color, _ = cmd.Flags().GetString("color")
 			fields = append(fields, "color")
+		}
+		if cmd.Flags().Changed("type") {
+			profile.Type, _ = cmd.Flags().GetString("type")
+			fields = append(fields, "type")
+			// Write-strict: read paths tolerate unknown types, the
+			// write path does not.
+			if err := profile.ValidateType(); err != nil {
+				return err
+			}
+		}
+		if cmd.Flags().Changed("reports-to") {
+			profile.ReportsTo, _ = cmd.Flags().GetString("reports-to")
+			fields = append(fields, "reports_to")
+			// Target must exist, no self-reference, no cycle — checked
+			// against the would-be graph before anything is saved.
+			if err := validateReportsTo(id, profile.ReportsTo); err != nil {
+				return err
+			}
 		}
 		if v, _ := cmd.Flags().GetBool("auto-avatar"); v {
 			cfg, _ := core.LoadConfig()
@@ -359,7 +455,7 @@ from the profile id and overwrite the existing value when set.`,
 		}
 
 		if len(fields) == 0 {
-			return fmt.Errorf("no fields specified; pass at least one of --display-name, --email, --avatar, --color, --auto-avatar, --auto-color")
+			return fmt.Errorf("no fields specified; pass at least one of --display-name, --email, --avatar, --color, --type, --reports-to, --auto-avatar, --auto-color")
 		}
 
 		// T-1291 — attach --note to ctx BEFORE the save so the
@@ -572,7 +668,8 @@ disk writes. Idempotent up to filesystem drift between calls.`,
 		for _, name := range bundleNames {
 			rb, ok := rbByName[name]
 			if !ok {
-				fmt.Printf("  %s bundle:%s  %s\n",
+				fmt.Printf(
+					"  %s bundle:%s  %s\n",
 					styles.Error.Render("✗"),
 					name,
 					styles.Dim.Render("(not resolved)"),
@@ -699,14 +796,35 @@ aps profile import on the receiving install.`,
 }
 
 var profileImportCmd = &cobra.Command{
-	Use:   "import [bundle]",
-	Short: "Import a shared profile bundle",
+	Use:   "import [bundle|AGENTS.md]",
+	Short: "Import a shared profile bundle or an agent role manifest",
 	Long: `Import a profile bundle previously produced by aps profile
-share. The bundle argument is the path to the .aps-profile.yaml
-file. By default the new profile keeps the source id; pass --id
+share, or an agent role manifest (AGENTS.md — YAML frontmatter +
+markdown body). Dispatch is by extension: a .md argument is
+treated as a manifest, anything else as a .aps-profile.yaml
+bundle. By default the new profile keeps the source id; pass --id
 to rename it (e.g. when the local install already has a profile
-with the source id). --force overwrites an existing profile
-directory with the same target id.
+with the source id). For bundle imports --force overwrites an
+existing profile directory with the same target id; for manifest
+imports it overrides the reportsTo check (see below).
+
+Manifest imports map title (falling back to name) to the display
+name, slug (falling back to the slugified name) to the profile
+id, description and reportsTo to the matching profile fields,
+the markdown body to notes.md, and each skills entry to a
+capability link when the shortname resolves in the capability
+registry — unresolvable shortnames are warned to stderr and
+skipped, never failing the import. A reportsTo naming no existing
+profile does fail the import, before anything is written — import
+the supervising profile first, or pass --force to downgrade it to
+a warning and store the value anyway. A reportsTo that would
+introduce a self-reference or a reporting cycle always fails the
+import; --force never downgrades a cycle. Secrets, isolation, and
+machine-specific paths are never taken from a manifest; the
+profile receives the normal create-path defaults. --dry-run
+prints the resulting profile.yaml plus intended links and skips
+without writing anything, and reports the same reportsTo verdict
+a real import would.
 
 Mutating: creates $APS_DATA_PATH/profiles/<target-id>/ and emits
 both a ProfileCreated bus event and a profile_share_imported
@@ -721,6 +839,16 @@ part of the bundle); set them separately after import.`,
 
 		// T-1291 — attach --note before importing (which calls Create).
 		ctx := WithNote(cmd.Context(), NoteFromCmd(cmd))
+
+		// Agent role manifest (.md) → manifest import path. The kit
+		// root-persistent --dry-run global previews the profile.yaml
+		// plus intended capability links without writing.
+		if isAgentManifestPath(bundlePath) {
+			return runManifestImport(ctx, bundlePath, id, globals.DryRun(), force, os.Stdout, os.Stderr)
+		}
+		if globals.DryRun() {
+			return errors.New("--dry-run is only supported for agent manifest (.md) imports; bundle imports copy the source directly")
+		}
 		profile, bundle, err := core.ImportProfileBundleWithContext(ctx, bundlePath, id, force)
 		if err != nil {
 			return fmt.Errorf("importing profile bundle: %w", err)
@@ -754,15 +882,39 @@ not a TTY.
 
 Destructive: irreversible without a prior aps profile share
 export. Blocked when the profile has active sessions in the
-session store; --force overrides that guard and removes the
-profile anyway, leaving the orphaned sessions to fail on next
-lookup. A ProfileDeleted bus event fires with the --note
-metadata attached.`,
+session store, or when other profiles report to it (their ids are
+listed); --force overrides both guards and removes the profile
+anyway, leaving orphaned sessions to fail on next lookup and
+inbound reports_to links dangling. A ProfileDeleted bus event
+fires with the --note metadata attached.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		force, _ := cmd.Flags().GetBool("force")
 		yes, _ := cmd.Flags().GetBool("yes")
+
+		// Reporting-hierarchy guard: deleting a profile that others
+		// report to would leave their reports_to dangling. Blocked
+		// without --force; forced deletes warn with the reporter list.
+		profiles, err := core.ListProfilesFull()
+		if err != nil {
+			return fmt.Errorf("listing profiles: %w", err)
+		}
+		if inbound := org.Build(profiles).DirectReports(id); len(inbound) > 0 {
+			ids := make([]string, 0, len(inbound))
+			for _, p := range inbound {
+				ids = append(ids, p.ID)
+			}
+			if !force {
+				return fmt.Errorf(
+					"cannot delete profile %q: %d profile(s) report to it: %s\n\nHint: reassign their reports_to first, or pass --force to delete anyway (their reports_to will dangle)",
+					id, len(ids), strings.Join(ids, ", "),
+				)
+			}
+			fmt.Fprintf(os.Stderr,
+				"Warning: %d profile(s) report to %q and will be left with a dangling reports_to: %s\n",
+				len(ids), id, strings.Join(ids, ", "))
+		}
 
 		// Interactive confirmation unless --yes or non-tty.
 		if !yes && term.IsTerminal(int(os.Stdin.Fd())) {
@@ -825,6 +977,8 @@ func init() {
 
 	profileCreateCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileCreateCmd.Flags().String("email", "", "Email for profile and git config")
+	profileCreateCmd.Flags().String("type", "", "Profile type: agent or human (empty means agent)")
+	profileCreateCmd.Flags().String("reports-to", "", "Profile id this profile reports to (must exist; no self-reference or cycles)")
 	profileCreateCmd.Flags().String("avatar", "", "URL or local path to profile image")
 	profileCreateCmd.Flags().String("color", "", "Hex color (e.g. #3b82f6) for UI rendering")
 	profileCreateCmd.Flags().Bool("auto-avatar", false, "Generate a deterministic avatar via the configured provider (overrides config)")
@@ -837,6 +991,8 @@ func init() {
 
 	profileEditCmd.Flags().String("display-name", "", "Display name for the profile")
 	profileEditCmd.Flags().String("email", "", "Email for profile and git config")
+	profileEditCmd.Flags().String("type", "", "Profile type: agent or human (pass empty string to clear back to the agent default)")
+	profileEditCmd.Flags().String("reports-to", "", "Profile id this profile reports to (pass empty string to clear; must exist; no self-reference or cycles)")
 	profileEditCmd.Flags().String("avatar", "", "URL or local path to profile image (pass empty string to clear)")
 	profileEditCmd.Flags().String("color", "", "Hex color (e.g. #3b82f6) for UI rendering (pass empty string to clear)")
 	profileEditCmd.Flags().Bool("auto-avatar", false, "Generate and apply a deterministic avatar via the configured provider")
@@ -851,8 +1007,8 @@ func init() {
 	// the inherited global. Behaviour is unchanged.
 	profileShareCmd.Flags().String("out", "", "Output path for the bundle")
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
-	profileImportCmd.Flags().Bool("force", false, "Overwrite existing profile")
-	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context)")
+	profileImportCmd.Flags().Bool("force", false, "Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)")
+	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)")
 	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
 
 	// T-1291 — --note|-n on every state-changing profile subcommand.
@@ -901,13 +1057,10 @@ func init() {
 	}
 	kitcli.SetSideEffect(profileImportCmd, kitcli.SideEffectWriteLocal)
 	kitcli.SetIdempotency(profileImportCmd, kitcli.IdempotencyConditional)
-	// T-0656 — import copies a foreign profile directory in; preview
-	// would have to walk the source, which is the same disk read the
-	// real import performs.
-	kitcli.OptOutDryRun(profileImportCmd)
-	if err := kitcli.SetDryRunRationale(profileImportCmd, "import copies an external profile directory into the local store; previewing would have to walk and decode the source, performing the same disk read that the real import performs."); err != nil {
-		panic(err)
-	}
+	// --dry-run is honored on the agent-manifest (.md) import path
+	// (previews profile.yaml + capability links without writing);
+	// bundle imports reject it in RunE since previewing would perform
+	// the same disk read as the real import.
 	// T-0654 — profile delete removes the profile directory and all
 	// associated state irreversibly; delete-by-id is idempotent.
 	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)

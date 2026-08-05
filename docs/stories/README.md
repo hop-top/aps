@@ -53,6 +53,8 @@ Authoring convention: see [Story → e2e test linkage](../conventions/stories.md
 | [050](050-multi-device-workspace-access.md) | Multi-Device Workspace Access | Multi-Device Workspace | User | P2 |
 | [056](056-progress-on-long-running-ops.md) | Structured Progress on Long-Running Ops | CLI Core | User | P2 |
 | [061](061-profile-scoped-llm-cli-sessions.md) | Profile-Scoped External LLM CLI Sessions | CLI Core | User | P1 |
+| [065](065-agent-reporting-hierarchy.md) | Agent Reporting Hierarchy | Org Hierarchy | User | P2 |
+| [066](066-org-snapshot.md) | Org Snapshot | Org Hierarchy | User | P2 |
 
 ## By Feature
 
@@ -86,10 +88,13 @@ Authoring convention: see [Story → e2e test linkage](../conventions/stories.md
 ### Multi-Device Workspace
 [050](050-multi-device-workspace-access.md)
 
+### Org Hierarchy
+[065](065-agent-reporting-hierarchy.md), [066](066-org-snapshot.md)
+
 ## By Persona
 
 ### [User](../personas/user.md)
-001-005, 010-020, 026-030, 034-042, 050, 061
+001-005, 010-020, 026-030, 034-042, 050, 061, 065-066
 
 ### [Maintainer](../personas/maintainer.md)
 006-009, 031

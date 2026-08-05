@@ -68,6 +68,10 @@ func buildEnvVars(profile *Profile) ([]string, error) {
 		fmt.Sprintf("%s_PROFILE_DOCS_DIR", prefix): docsDir,
 	}
 
+	if profile.Knowledge != nil && profile.Knowledge.Subscriptions != "" {
+		apsEnv[fmt.Sprintf("%s_KNOWLEDGE_SUBSCRIPTIONS", prefix)] = profile.Knowledge.Subscriptions
+	}
+
 	for k, v := range apsEnv {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
@@ -241,6 +245,11 @@ func RunCommand(profileID string, command string, args []string, overrides []str
 	profile, err := LoadProfile(profileID)
 	if err != nil {
 		return fmt.Errorf("failed to load profile %s: %w", profileID, err)
+	}
+
+	// Human profiles are directory entries, not runnable agents.
+	if err := profile.EnsureRunnable(); err != nil {
+		return err
 	}
 
 	// Check if requested isolation level is supported

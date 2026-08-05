@@ -42,9 +42,15 @@ func NewDarwinSandbox() *DarwinSandbox {
 }
 
 func (d *DarwinSandbox) PrepareContext(profileID string) (*ExecutionContext, error) {
-	_, err := core.LoadProfile(profileID)
+	profile, err := core.LoadProfile(profileID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidProfile, err)
+	}
+
+	// Human profiles are directory entries, not runnable agents; refuse
+	// to start a session for them.
+	if err := profile.EnsureRunnable(); err != nil {
+		return nil, err
 	}
 
 	profileDir, err := core.GetProfileDir(profileID)

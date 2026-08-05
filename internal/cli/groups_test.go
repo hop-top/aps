@@ -64,7 +64,7 @@ func TestGroupIDsMatchHelpConfig(t *testing.T) {
 func TestCommandGroupsContent(t *testing.T) {
 	want := map[string][]string{
 		"interact":   {"run", "serve", "voice", "session", "listen", "chat"},
-		"organize":   {"profile", "capability", "bundle", "squad", "workspace", "contact"},
+		"organize":   {"profile", "capability", "bundle", "squad", "workspace", "contact", "org"},
 		"pipelines":  {"a2a", "acp", "adapter", "webhook", "directory", "service", "action", "skill"},
 		"security":   {"identity", "policy"},
 		"instance":   {"observability"},

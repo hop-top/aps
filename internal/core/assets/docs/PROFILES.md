@@ -48,6 +48,9 @@ aps profile create openai-agent \
 id: myagent
 display_name: "My AI Agent"
 
+# Profile type: "agent" (default) or "human"
+type: agent
+
 # Persona configuration
 persona:
   tone: "concise"
@@ -82,6 +85,10 @@ limits:
   max_concurrency: 2
   max_runtime_minutes: 30
 
+# Knowledge references (optional)
+knowledge:
+  subscriptions: "https://registry.example.com/subscriptions.yaml"
+
 # Git module
 git:
   enabled: true
@@ -98,6 +105,24 @@ webhooks:
     - "github.push"
     - "github.issue_comment.created"
 ```
+
+### Profile Type
+
+The `type` field discriminates between runnable agents and human
+directory entries:
+
+- **Allowed values**: `agent`, `human`. Omitting the field is
+  equivalent to `agent`, so existing profiles need no migration.
+- **Write-strict, read-tolerant**: create/edit/import reject unknown
+  values, but loading a profile with an unrecognized `type` (e.g. a
+  typo like `person`) still succeeds so the profile stays visible in
+  lists and org graphs. Unknown values are surfaced by `aps org check`.
+- **Run rejection**: `aps run` and session start refuse `type: human`
+  profiles with an error like
+  `profile "jane" is type human and cannot be run`. Human profiles
+  exist for org charts and contact routing, not execution.
+- **A2A cards**: generating an a2a card for a human profile is not
+  blocked — human profiles may still publish contact/discovery cards.
 
 ### Editing Profiles
 
@@ -163,6 +188,103 @@ token = os.environ.get('GITHUB_TOKEN')
 # In a Node.js action
 const token = process.env.GITHUB_TOKEN;
 ```
+
+## Knowledge Subscriptions
+
+The optional `knowledge.subscriptions` field on profile.yaml references a
+config fragment (path or URL) listing registry endpoints:
+
+```yaml
+knowledge:
+  subscriptions: "https://registry.example.com/subscriptions.yaml"
+```
+
+APS only stores the reference. When set, commands run under the profile
+receive it as an environment variable derived from the configured env
+prefix (default `APS`):
+
+```bash
+APS_KNOWLEDGE_SUBSCRIPTIONS=https://registry.example.com/subscriptions.yaml
+```
+
+Field absent → no variable injected; behavior is identical to profiles
+that predate the field.
+
+## Agent Role Manifests (Import / Export)
+
+APS-native profile.yaml remains the default and canonical format.
+Agent role manifests (`AGENTS.md` — YAML frontmatter + markdown body)
+are one opt-in interchange converter: manifests are parsed on import
+and rendered on export, never stored.
+
+### Importing a Manifest
+
+```bash
+aps profile import ./AGENTS.md
+aps profile import ./AGENTS.md --id custom-id
+aps profile import ./AGENTS.md --dry-run
+```
+
+A `.md` argument on the existing `aps profile import` command routes to
+the manifest path (anything else stays a profile bundle). Mapping:
+
+| Manifest | Profile |
+|----------|---------|
+| `title` (falling back to `name`) | display name |
+| `--id` flag > `slug` > slugified `name` | profile id |
+| `description` | `description` |
+| `reportsTo` | `reports_to` |
+| markdown body | `notes.md` |
+| `skills` shortnames | capability links |
+
+Each skills shortname that resolves in the capability registry is linked
+via the normal capability-add path; unresolvable shortnames print a
+warning to stderr and are skipped — a missing capability never fails the
+import.
+
+`reports_to` is stored as a profile id and feeds the reporting model:
+`aps org check` validates graph integrity, and `aps org show` /
+`aps org snapshot` traverse the hierarchy it forms. The value also
+survives an import/export round-trip unchanged.
+
+Import fails when `reportsTo` names no profile on disk, so a typo is
+caught at the boundary instead of persisting as a dangling reference.
+Import the supervising profile first, or pass `--force` to import
+anyway — `--force` downgrades the failure to a stderr warning and still
+stores the value, which is what you want when seeding a hierarchy
+top-down is not practical. A stored dangling reference is repairable
+post-hoc (import or create the missing supervisor) and is surfaced by
+`aps org check` until then. A self-reference or a reporting cycle is
+rejected outright — `--force` never downgrades those.
+
+Note this makes import order-dependent for hierarchies only without
+`--force`: supervisors before their reports. With `--force` any order
+works; run `aps org check` afterward to confirm the graph is whole.
+
+Never imported: secrets, isolation config, and machine-specific paths.
+The profile receives the normal create-path defaults for all of these.
+
+`--dry-run` prints the resulting profile.yaml, the intended capability
+links, and the skipped shortnames without writing anything.
+
+### Exporting a Manifest
+
+```bash
+aps profile export myagent                              # native profile.yaml dump
+aps profile export myagent --manifest-format agentco             # AGENTS.md to stdout
+aps profile export myagent --manifest-format agentco --out AGENTS.md
+```
+
+Without `--format`, export dumps the native profile.yaml record.
+`--manifest-format agentco` renders an agent role manifest: `name` from the
+display name, `slug` from the profile id, `skills` from the linked
+capability shortnames, and the body from `notes.md` (the same file
+import writes). `reportsTo` is emitted whenever the profile carries
+one, so a hierarchy survives an export/import round-trip.
+
+Never exported (agentco format): secrets.env keys or values, isolation
+config, gitconfig content, absolute machine paths, and knowledge
+subscription values. The manifest carries identity only.
 
 ## Modules
 

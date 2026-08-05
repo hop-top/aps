@@ -62,6 +62,8 @@ aps profile create <profile-id> [flags]
 - `--github <username>` - GitHub username
 - `--reddit <username>` - Reddit username
 - `--twitter <username>` - Twitter/X username
+- `--type <type>` - Profile type: `agent` (default) or `human`; anything else is rejected
+- `--reports-to <profile-id>` - Profile this one reports to (must exist; no self-reference or cycles)
 - `--force` - Overwrite existing profile
 
 **Examples:**
@@ -69,6 +71,12 @@ aps profile create <profile-id> [flags]
 ```bash
 # Minimal profile
 aps profile create myagent
+
+# Human manager profile
+aps profile create jad --type human
+
+# Agent reporting to a manager
+aps profile create worker --reports-to jad
 
 # Profile with display name
 aps profile create myagent --display-name "My AI Agent"
@@ -94,6 +102,37 @@ aps profile create myagent --force
 - `~/.agents/profiles/<id>/gitconfig` (if email provided)
 - `~/.agents/profiles/<id>/actions/` directory
 
+### `aps profile edit`
+
+Update fields on an existing profile.
+
+```bash
+aps profile edit <profile-id> [flags]
+```
+
+**Flags:**
+
+- `--display-name <name>` - Human-readable name for the profile
+- `--email <email>` - Email for git config
+- `--type <type>` - Profile type: `agent` or `human` (pass `""` to clear back to the agent default)
+- `--reports-to <profile-id>` - Profile this one reports to (pass `""` to clear; must exist; no self-reference or cycles)
+
+**Examples:**
+
+```bash
+# Point a profile at its manager
+aps profile edit worker --reports-to jad
+
+# Clear the reporting link
+aps profile edit worker --reports-to ""
+
+# Mark a profile as a human
+aps profile edit jad --type human
+```
+
+Changing `reports_to` publishes the `aps.profile.updated` event with
+`fields: ["reports_to"]`.
+
 ### `aps profile show`
 
 Display profile details.
@@ -116,6 +155,156 @@ modules:
 ```
 
 Secret values are redacted (shown as `***redacted***`).
+
+### `aps profile import`
+
+Import a shared profile bundle or an agent role manifest.
+
+```bash
+aps profile import <bundle|AGENTS.md> [flags]
+```
+
+Dispatch is by extension: a `.md` argument is treated as an agent role
+manifest (YAML frontmatter + markdown body), anything else as a
+`.aps-profile.yaml` bundle.
+
+**Flags:**
+
+- `--id <id>` - Override the target profile id
+- `--force` - Overwrite existing profile (bundle imports only)
+- `--dry-run` - Preview the resulting profile.yaml, capability links, and skips without writing (manifest imports only)
+
+**Manifest mapping:**
+
+- `title` (falling back to `name`) → display name
+- `--id` > `slug` > slugified `name` → profile id
+- `description` → `description`
+- `reportsTo` → `reports_to` (opaque id; import fails when it names no
+  existing profile — import the supervisor first, or pass `--force` to
+  downgrade the failure to a warning and store the value anyway)
+- markdown body → `notes.md`
+- `skills` shortnames → capability links; unresolvable shortnames warn to stderr and are skipped
+
+Secrets, isolation config, and machine-specific paths are never taken
+from a manifest — the profile gets normal create-path defaults.
+
+**Examples:**
+
+```bash
+# Import a profile bundle
+aps profile import ./alice.aps-profile.yaml
+
+# Import an agent role manifest
+aps profile import ./AGENTS.md
+
+# Preview without writing
+aps profile import ./AGENTS.md --dry-run
+```
+
+### `aps profile export`
+
+Export a profile record.
+
+```bash
+aps profile export <profile-id> [flags]
+```
+
+**Flags:**
+
+- `--manifest-format agentco` - Render an agent role manifest (AGENTS.md); omit for the native profile.yaml dump
+- `--out <path>` - Write to a file instead of stdout
+
+The agentco format maps the display name to `name`, the profile id to
+`slug`, `description` and `reports_to` back to `description` and
+`reportsTo` (each omitted when empty), linked capability shortnames to
+`skills`, and `notes.md` to the body. It never includes secrets.env
+content, isolation config, gitconfig, absolute machine paths, or
+knowledge subscription values.
+
+**Examples:**
+
+```bash
+# Native profile.yaml dump
+aps profile export myagent
+
+# Agent role manifest to stdout
+aps profile export myagent --manifest-format agentco
+
+# Agent role manifest to a file
+aps profile export myagent --manifest-format agentco --out AGENTS.md
+```
+
+## Org Commands
+
+Read-only views over the reporting hierarchy profiles declare via
+`reports_to`. Human managers are profiles with `type: human`; they are
+representable, not executable (`aps run` rejects them).
+
+### `aps org check`
+
+Validate the reporting hierarchy across all profiles on disk.
+
+```bash
+aps org check
+```
+
+Reports cycles (with the full path), dangling `reports_to` references,
+self-references, unknown `type:` values, and profile.yaml files that
+fail to load. Exits non-zero when any finding exists, so it can gate
+CI.
+
+**Example:**
+
+```bash
+aps org check --format json
+```
+
+### `aps org show`
+
+Show a profile's management chain and reports.
+
+```bash
+aps org show <profile-id> [flags]
+```
+
+**Flags:**
+
+- `--depth <n>` - Levels of transitive reports to include (0 = unlimited)
+
+Each row carries a CHANNELS column derived from the profile's config
+(`a2a`, `acp`, `email`, `webhooks`).
+
+**Example:**
+
+```bash
+aps org show vp --depth 1
+```
+
+### `aps org snapshot`
+
+Capture a point-in-time organigram.
+
+```bash
+aps org snapshot [flags]
+```
+
+**Flags:**
+
+- `--all` - Snapshot every profile on disk (default scope)
+- `--root <profile-id>` - Snapshot a profile and its transitive reports
+- `--squad <id>` - Snapshot the members of a squad
+- `--snapshot-format <fmt>` - Rendering: `json`, `yaml`, `tree` (default), or `mermaid`
+- `--output <path>` - Write to a file (atomic) instead of stdout
+
+Output is deterministic (sorted nodes and edges); `tree` and `mermaid`
+carry no timestamp, so unchanged state produces byte-identical output.
+Cyclic on-disk data still renders where possible and exits non-zero.
+
+**Example:**
+
+```bash
+aps org snapshot --root vp --snapshot-format mermaid --output org.mmd
+```
 
 ## Run Commands
 

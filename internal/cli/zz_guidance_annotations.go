@@ -764,6 +764,26 @@ var leafGuidance = map[string]kitcli.Guidance{
 		},
 	},
 
+	// === org ===
+	"aps org check": {
+		Examples: []kitcli.Example{
+			ex("Validate the reporting hierarchy", "aps org check"),
+			ex("Emit findings as JSON for CI", "aps org check --format json"),
+		},
+	},
+	"aps org show": {
+		Examples: []kitcli.Example{
+			ex("Show a profile's chain and reports", "aps org show alice"),
+			ex("Limit transitive reports to one level", "aps org show alice --depth 1"),
+		},
+	},
+	"aps org snapshot": {
+		Examples: []kitcli.Example{
+			ex("Capture the org tree", "aps org snapshot"),
+			ex("Export a mermaid organigram", "aps org snapshot --snapshot-format mermaid --output org.mmd"),
+		},
+	},
+
 	// === policy ===
 	"aps policy list": {
 		Examples: []kitcli.Example{
@@ -839,9 +859,16 @@ var leafGuidance = map[string]kitcli.Guidance{
 			ns("aps profile show alice", "review the change"),
 		},
 	},
+	"aps profile export": {
+		Examples: []kitcli.Example{
+			ex("Export the native profile record", "aps profile export alice"),
+			ex("Export an agent role manifest", "aps profile export alice --manifest-format agentco --out AGENTS.md"),
+		},
+	},
 	"aps profile import": {
 		Examples: []kitcli.Example{
 			ex("Import a profile bundle", "aps profile import ./alice.bundle"),
+			ex("Import an agent role manifest", "aps profile import ./AGENTS.md"),
 		},
 		NextSteps: []kitcli.NextStep{
 			ns("aps profile list", "see the imported profile"),
