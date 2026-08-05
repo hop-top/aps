@@ -1,5 +1,5 @@
 ---
-status: paper
+status: shipped-no-e2e
 ---
 
 # 066 - Org Snapshot
@@ -116,21 +116,24 @@ order, so repeated runs over unchanged profiles diff clean.
 
 ## E2E Tests
 
-- planned: `tests/e2e/org/org_show_test.go::TestOrgShow_ChainAndReports`
-- planned: `tests/e2e/org/org_show_test.go::TestOrgShow_DepthLimit`
-- planned: `tests/e2e/org/org_show_test.go::TestOrgShow_ChannelSummaryColumn`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_AllDefaultScope`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_RootScope`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_SquadScope`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_JSONNodesEdgesCapturedAt`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_MidTree`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_Root`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_Leaf`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_DepthLimit`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_UnknownID`
+- `tests/e2e/org/org_show_test.go::TestOrgShow_CycleErrorsNotHangs`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_TreeAll`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_Mermaid`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_RootScope`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_RootScopeUnknown`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_SquadScope`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_SquadScopeEmpty`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_ScopeFlagsMutuallyExclusive`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_JSONDeterminism`
 - planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_YAMLNodesEdgesCapturedAt`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_TreeAndMermaidNoTimestamp`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_MermaidFlowchartShape`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_OutputFileAtomicWrite`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_DeterministicSortedOutput`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_UnknownRootFails`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_EmptySquadFails`
-- planned: `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_CyclicDataFailsWithoutHang`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_OutputFile`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_CyclicTerminates`
+- `tests/e2e/org/org_snapshot_test.go::TestOrgSnapshot_CyclicMermaidStillEmits`
 
 ## Dependencies
 

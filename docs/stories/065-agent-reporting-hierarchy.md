@@ -1,5 +1,5 @@
 ---
-status: paper
+status: shipped-no-e2e
 ---
 
 # 065 - Agent Reporting Hierarchy
@@ -111,20 +111,25 @@ dangling refs.
 
 ## E2E Tests
 
-- planned: `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_ReportsTo`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_ReportsTo`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileEdit_SetAndClearReportsTo`
 - planned: `tests/e2e/profile/profile_reports_to_test.go::TestProfileEdit_ReportsToPublishesUpdatedEvent`
-- planned: `tests/e2e/profile/profile_reports_to_test.go::TestProfileEdit_ClearReportsTo`
-- planned: `tests/e2e/profile/profile_type_test.go::TestProfileCreate_TypeHuman`
-- planned: `tests/e2e/profile/profile_type_test.go::TestProfileCreate_UnknownTypeRejected`
-- planned: `tests/e2e/profile/profile_type_test.go::TestProfileShow_ToleratesUnknownTypeOnDisk`
-- planned: `tests/e2e/profile/profile_type_test.go::TestRun_RejectsHumanProfile`
-- planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_DetectsCycle`
-- planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_DanglingReportsTo`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_ReportsToSelfRejected`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileEdit_ReportsToCycleRejected`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_ReportsToDanglingRejected`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_TypeHumanAccepted`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileCreate_TypeInvalidRejected`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileEdit_TypeSetAndInvalidRejected`
+- planned: `tests/e2e/profile/profile_reports_to_test.go::TestProfileShow_ToleratesUnknownTypeOnDisk`
+- `tests/e2e/run_profile_type_test.go::TestRunRejectsHumanProfile`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_Cycle`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_Dangling`
 - planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_SelfReference`
-- planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_UnknownTypeValue`
-- planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_UnloadableProfile`
-- planned: `tests/e2e/org/org_check_test.go::TestOrgCheck_CleanOrgPasses`
-- planned: `tests/e2e/profile/profile_delete_test.go::TestProfileDelete_WarnsWhenReportedTo`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_UnknownType`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_UnloadableFile`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_Clean`
+- `tests/e2e/org/org_check_test.go::TestOrgCheck_JSONRoundTrip`
+- `tests/e2e/profile/profile_reports_to_test.go::TestProfileDelete_InboundReportsBlockedWithoutForce`
 
 ## Dependencies
 
