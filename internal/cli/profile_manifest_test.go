@@ -166,7 +166,8 @@ reportsTo: acme-ceo
 `
 	// Supervisor first, so reportsTo resolves and no --force is needed.
 	require.NoError(t, core.CreateProfileWithContext(
-		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"}))
+		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"},
+	))
 
 	path := writeManifestFile(t, t.TempDir(), doc)
 
@@ -234,7 +235,8 @@ func TestRunManifestImport_ResolvableReportsToSucceedsSilently(t *testing.T) {
 
 	// Supervising profile exists first → no warning, no --force needed.
 	require.NoError(t, core.CreateProfileWithContext(
-		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"}))
+		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO"},
+	))
 
 	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
 
@@ -329,4 +331,42 @@ func TestIsAgentManifestPath(t *testing.T) {
 	assert.True(t, isAgentManifestPath("/x/y/role.md"))
 	assert.False(t, isAgentManifestPath("cto.aps-profile.yaml"))
 	assert.False(t, isAgentManifestPath("bundle.yml"))
+}
+
+// A reportsTo that would introduce a reporting cycle always fails the
+// import — unlike a dangling reference, --force never downgrades it: a
+// cycle is data corruption, not an import-ordering problem.
+func TestRunManifestImport_CycleReportsToNeverDowngraded(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+
+	// The supervisor already reports to the profile the manifest is
+	// about to create, so persisting reportsTo would close a cycle.
+	require.NoError(t, core.CreateProfileWithContext(
+		t.Context(), "acme-ceo", core.Profile{DisplayName: "CEO", ReportsTo: "acme-cto"},
+	))
+
+	path := writeManifestFile(t, t.TempDir(), reportsToManifestDoc)
+
+	for _, force := range []bool{false, true} {
+		var out, errOut strings.Builder
+		err := runManifestImport(t.Context(), path, "", false, force, &out, &errOut)
+		require.Error(t, err, "force=%v must not downgrade a cycle", force)
+		assert.Contains(t, err.Error(), "reporting cycle")
+
+		_, loadErr := core.LoadProfile("acme-cto")
+		assert.Error(t, loadErr, "failed import must write nothing (force=%v)", force)
+	}
+}
+
+// A manifest whose profile would report to itself is rejected outright.
+func TestRunManifestImport_SelfReportsToRejected(t *testing.T) {
+	t.Setenv("APS_DATA_PATH", t.TempDir())
+
+	doc := "---\nname: cto\nslug: acme-cto\nreportsTo: acme-cto\n---\nBody.\n"
+	path := writeManifestFile(t, t.TempDir(), doc)
+
+	var out, errOut strings.Builder
+	err := runManifestImport(t.Context(), path, "", false, true, &out, &errOut)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot report to itself")
 }
