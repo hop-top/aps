@@ -242,19 +242,24 @@ via the normal capability-add path; unresolvable shortnames print a
 warning to stderr and are skipped — a missing capability never fails the
 import.
 
-`reports_to` is stored verbatim as an opaque profile id — aps has no
-reporting model and never resolves the reference. It exists so a
-manifest survives an import/export round-trip unchanged.
+`reports_to` is stored as a profile id and feeds the reporting model:
+`aps org check` validates graph integrity, and `aps org show` /
+`aps org snapshot` traverse the hierarchy it forms. The value also
+survives an import/export round-trip unchanged.
 
 Import fails when `reportsTo` names no profile on disk, so a typo is
 caught at the boundary instead of persisting as a dangling reference.
 Import the supervising profile first, or pass `--force` to import
 anyway — `--force` downgrades the failure to a stderr warning and still
 stores the value, which is what you want when seeding a hierarchy
-top-down is not practical.
+top-down is not practical. A stored dangling reference is repairable
+post-hoc (import or create the missing supervisor) and is surfaced by
+`aps org check` until then. A self-reference or a reporting cycle is
+rejected outright — `--force` never downgrades those.
 
-Note this makes import order-dependent for hierarchies: without
-`--force`, supervisors must be imported before their reports.
+Note this makes import order-dependent for hierarchies only without
+`--force`: supervisors before their reports. With `--force` any order
+works; run `aps org check` afterward to confirm the graph is whole.
 
 Never imported: secrets, isolation config, and machine-specific paths.
 The profile receives the normal create-path defaults for all of these.
@@ -274,8 +279,8 @@ Without `--format`, export dumps the native profile.yaml record.
 `--manifest-format agentco` renders an agent role manifest: `name` from the
 display name, `slug` from the profile id, `skills` from the linked
 capability shortnames, and the body from `notes.md` (the same file
-import writes). `reportsTo` is never emitted — APS has no reporting
-model.
+import writes). `reportsTo` is emitted whenever the profile carries
+one, so a hierarchy survives an export/import round-trip.
 
 Never exported (agentco format): secrets.env keys or values, isolation
 config, gitconfig content, absolute machine paths, and knowledge
