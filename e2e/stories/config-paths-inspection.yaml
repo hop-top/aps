@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.config.path-precedence-inspection
+title: Inspect which config files aps would load, and in what order
+binary: aps
+intent: |
+  Config that resolves differently between a developer's shell and an
+  unattended run is the usual cause of "works locally, fails in CI".
+  Before trusting a setting, an operator asks aps which files it would
+  actually read and in what precedence — project markers first, then
+  user scope, then system, then built-in defaults — and which of those
+  files exist right now. Reading the resolved chain as structured data
+  turns a guess about precedence into a fact a CI check can compare
+  against.
+steps:
+  - id: resolved_chain
+    intent: |
+      List the full config precedence chain as structured data, each
+      entry carrying its path, scope, and whether the file exists.
+    invoke: ["aps", "config", "paths", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: environment_snapshot
+    intent: |
+      Read the environment aps resolved alongside it, so the operator
+      can see the config chain and the effective environment together.
+    invoke: ["aps", "env", "--format", "json"]
+    capture: [exit_code, stdout]

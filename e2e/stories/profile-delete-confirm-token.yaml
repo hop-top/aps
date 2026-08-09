@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.profile.delete-requires-typed-confirmation
+title: Delete a profile through the typed-confirmation gate
+binary: aps
+intent: |
+  Deleting a profile removes its directory irreversibly, so a delegated
+  agent cannot do it by accident — an unattended run has no TTY and can
+  never be shown a y/n prompt. aps gates the deletion behind a
+  confirmation token derived from the command path: an agent that has
+  not been told to delete this exact profile cannot produce it. The
+  refusal names the token, so an operator who did intend the deletion
+  proceeds in one step, and the whole flow stays non-interactive.
+steps:
+  - id: create_target
+    intent: |
+      Create the profile that the rest of the story deletes.
+    invoke: ["aps", "profile", "create", "doomed"]
+    capture: [exit_code]
+  - id: delete_refused
+    intent: |
+      Attempt the deletion with no confirmation token and expect it to
+      be refused, un-run, with the required token named.
+    invoke: ["aps", "profile", "delete", "doomed"]
+    capture: [exit_code, stderr]
+  - id: profile_survived
+    intent: |
+      Confirm the refusal was a true no-op: the profile is still there.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: delete_confirmed
+    intent: |
+      Re-issue with the token the refusal named and expect the
+      deletion to go through.
+    invoke: ["aps", "profile", "delete", "doomed", "--confirm-token=90af62d5c895"]
+    capture: [exit_code]
+  - id: profile_gone
+    intent: |
+      Confirm the store is empty once the confirmed deletion applied.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout]

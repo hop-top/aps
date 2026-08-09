@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.toolspec.capability-discovery
+title: Discover the aps command surface without scraping help text
+binary: aps
+intent: |
+  An orchestrator about to delegate work to aps first learns what aps
+  can do. Rather than parsing --help for every node, it fetches the
+  tool specification: the full command tree, each command's flags,
+  the safety classification that says which verbs are destructive,
+  and the curated error patterns and workflows that tell the agent how
+  to recover and what sequence to run. The document is pinned to a
+  schema version so the orchestrator can detect an incompatible
+  upgrade instead of silently misreading a new shape.
+steps:
+  - id: toolspec_json
+    intent: |
+      Fetch the machine-readable tool specification and read the
+      declared schema version alongside the command tree.
+    invoke: ["aps", "toolspec", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: capability_roster
+    intent: |
+      List the capabilities aps knows about, so the orchestrator can
+      check a capability exists before assigning it to a profile.
+    invoke: ["aps", "capability", "list", "--format", "json"]
+    capture: [exit_code, stdout]

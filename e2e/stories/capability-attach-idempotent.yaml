@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.capability.reattach-converges
+title: Re-run a capability attachment safely after an ambiguous failure
+binary: aps
+intent: |
+  An agent that loses its connection mid-run does not know whether the
+  capability it was attaching landed. Its recovery is to re-issue the
+  same attachment and rely on the second run converging rather than
+  duplicating: the reissued command finishes cleanly and the profile
+  still carries the capability exactly once. That convergence is what
+  makes a blind retry a safe recovery strategy rather than a way to
+  corrupt the profile.
+steps:
+  - id: create_profile
+    intent: |
+      Create the profile the capability attaches to.
+    invoke: ["aps", "profile", "create", "worker"]
+    capture: [exit_code]
+  - id: attach_first
+    intent: |
+      Attach the capability for the first time.
+    invoke: ["aps", "profile", "capability", "add", "worker", "a2a"]
+    capture: [exit_code, stdout]
+  - id: attach_again
+    intent: |
+      Re-issue the identical attachment, standing in for a retry after
+      an ambiguous failure, and expect it to converge rather than
+      duplicate or error.
+    invoke: ["aps", "profile", "capability", "add", "worker", "a2a"]
+    capture: [exit_code, stdout, stderr]
+  - id: read_back
+    intent: |
+      Read the profile back and confirm the reissued attachment left
+      the capability recorded exactly once.
+    invoke: ["aps", "profile", "show", "worker", "--format", "json"]
+    capture: [exit_code, stdout]

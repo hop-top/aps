@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.status.machine-readable-output
+title: Read aps runtime state as JSON from an automation
+binary: aps
+intent: |
+  An operator wiring aps into a scheduled job needs to confirm the
+  runtime state the binary would act under before dispatching work:
+  which profile and workspace are active, which build is installed,
+  and whether the event bus is wired to a hub. They ask for JSON so
+  the job branches on structured fields instead of scraping the
+  human-oriented table.
+steps:
+  - id: status_json
+    intent: |
+      Render every status row — active profile, active workspace,
+      build version, and event-bus state — as one JSON document on
+      stdout. Unset profile and workspace surface as an explicit
+      "(none)" so the automation can tell unset from blank.
+    invoke: ["aps", "status", "--format", "json"]
+    capture: [exit_code, stdout]

@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.profile.create-conflict-is-distinguishable
+title: Tell "already exists" apart from a real failure when creating a profile
+binary: aps
+intent: |
+  An agent provisioning a profile may be retrying after a timeout, so
+  it cannot know whether the profile it wants already exists. Creating
+  a duplicate therefore fails in a way the agent can act on: a conflict
+  class distinct from a generic error, so a retry loop treats "already
+  exists" as converged and moves on instead of aborting the run or,
+  worse, reading a generic failure as a transient one and retrying
+  forever.
+steps:
+  - id: create_profile
+    intent: |
+      Create the profile for the first time and expect it to succeed.
+    invoke: ["aps", "profile", "create", "demo"]
+    capture: [exit_code, stdout]
+  - id: create_duplicate
+    intent: |
+      Re-issue the same creation and expect an explicit conflict —
+      distinguishable from a generic failure by exit class alone,
+      naming the profile that already exists.
+    invoke: ["aps", "profile", "create", "demo", "--format", "json"]
+    capture: [exit_code, stderr]
+  - id: confirm_single_entry
+    intent: |
+      Confirm the rejected duplicate left exactly one profile behind.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout]

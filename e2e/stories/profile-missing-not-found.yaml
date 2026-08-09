@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.profile.missing-is-not-found
+title: Detect a missing profile without parsing the error text
+binary: aps
+intent: |
+  An agent asked to inspect a profile it did not create needs to know
+  whether the profile is absent or whether aps failed for some other
+  reason — a corrupt store, a permissions problem. Those demand
+  opposite responses: create the profile, or escalate. The distinction
+  rides in the failure class rather than in prose, and the diagnostic
+  echoes the id that was looked up so the agent can correlate it with
+  the request it made.
+steps:
+  - id: show_missing
+    intent: |
+      Inspect a profile that does not exist and expect an explicit
+      not-found class echoing the requested id.
+    invoke: ["aps", "profile", "show", "ghost", "--format", "json"]
+    capture: [exit_code, stderr]
+  - id: list_is_still_healthy
+    intent: |
+      Confirm the failed lookup did not disturb the store: listing
+      still succeeds, proving the failure was about the one missing
+      profile and not a broken installation.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout]

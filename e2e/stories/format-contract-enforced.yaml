@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.output.format-contract-enforced
+title: Rely on the declared output-format contract
+binary: aps
+intent: |
+  An agent pins the output format it can parse. The dangerous failure
+  is silent coercion: asking for a format aps does not support and
+  receiving the default human table, which the agent would then parse
+  as though it were the format it requested. Instead aps refuses an
+  unsupported format loudly and names the accepted values, so the agent
+  fails fast and picks a real one rather than misreading a table as
+  structured data.
+steps:
+  - id: format_refused
+    intent: |
+      Request a format outside the declared registry and expect an
+      explicit usage refusal listing the accepted values.
+    invoke: ["aps", "status", "--format", "xml"]
+    capture: [exit_code, stderr]
+  - id: declared_format_json
+    intent: |
+      Request a format the registry does declare and expect a clean
+      structured document.
+    invoke: ["aps", "status", "--format", "json"]
+    capture: [exit_code, stdout]
+  - id: declared_format_yaml
+    intent: |
+      Request a second declared format and expect the same content in
+      that serialization.
+    invoke: ["aps", "status", "--format", "yaml"]
+    capture: [exit_code, stdout]

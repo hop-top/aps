@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.errors.unknown-command-recovery
+title: Recover from a mistyped subcommand without scraping prose
+binary: aps
+intent: |
+  An agent guesses a subcommand name that does not exist. It tells a
+  typo apart from a success by reading the process status alone: a
+  usage class, never the clean status that would let the agent proceed
+  as if the command had run. The diagnostic echoes the rejected token
+  so the agent can correlate the failure with the invocation it sent,
+  and names the exact help command that lists the real subcommands, so
+  recovery is a single follow-up call rather than a search.
+steps:
+  - id: unknown_subcommand
+    intent: |
+      Invoke a subcommand that does not exist under a real group and
+      expect a structured usage refusal naming the rejected token.
+    invoke: ["aps", "profile", "frobnicate", "--format", "json"]
+    capture: [exit_code, stderr]
+  - id: follow_the_correction
+    intent: |
+      Run the help command the refusal pointed at and read the real
+      subcommand list.
+    invoke: ["aps", "profile", "--help"]
+    capture: [exit_code, stdout]
+  - id: reissue_correctly
+    intent: |
+      Re-issue the corrected command and expect it to succeed.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout]
