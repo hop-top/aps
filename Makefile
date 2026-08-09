@@ -11,6 +11,7 @@ export CGO_ENABLED
 
 .PHONY: all build test lint lint-docs run clean release release-snapshot ci help setup \
 	test-stories \
+	12fcc-record 12fcc-grade 12fcc-badge 12fcc-scan \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
 	docker-test-install docker-test-e2e-user docker-test-cleanup docker-quick-start \
 	setup-wsm
@@ -155,6 +156,21 @@ docker-quick-start: ## Quick start Docker testing environment
 		echo "ERROR: Docker is not installed or not in PATH"; \
 		exit 1; \
 	fi
+
+# 12-factor AI-CLI conformance (12fcc). KIT_BIN must point at a kit
+# binary shipping the `conformance` command group; build one from
+# hop.top/kit cmd/kit. See e2e/conformance/README.md.
+12fcc-record: ## Re-record conformance cassettes from real binary runs
+	@./scripts/12fcc-record.sh
+
+12fcc-scan: ## Scan recorded cassettes for secrets and personal paths
+	@./scripts/12fcc-scan-cassettes.sh
+
+12fcc-grade: ## Grade recorded cassettes (STRICT=1 to fail on fail verdicts)
+	@./scripts/12fcc-grade.sh
+
+12fcc-badge: ## Regenerate .12fc.json from verify leaves + graded verdicts
+	@./scripts/12fcc-badge.sh
 
 help: ## Show this help message
 	@echo "Usage: make [target]"

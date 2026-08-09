@@ -1,0 +1,61 @@
+{
+  "scenario_id": "capability-idempotent",
+  "schema_version": "1",
+  "verdict": "pass",
+  "scored_at": "2026-08-09T12:30:39.059299Z",
+  "grader_version": "1.0.0",
+  "rules_version": "2026.05.12.1",
+  "tier": 3,
+  "facets": [
+    {
+      "factor": 7,
+      "status": "pass"
+    },
+    {
+      "factor": 11,
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "first-attach-clean",
+      "kind": "exit_code_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    },
+    {
+      "id": "reattach-clean",
+      "kind": "exit_code_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    },
+    {
+      "id": "capability-recorded-once",
+      "kind": "output_field_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": 1,
+      "expected": 1
+    },
+    {
+      "id": "capability-is-the-one-attached",
+      "kind": "output_field_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": "a2a",
+      "expected": "a2a"
+    },
+    {
+      "id": "read-back-exits-zero",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    }
+  ]
+}

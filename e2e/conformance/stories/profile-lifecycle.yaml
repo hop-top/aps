@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.conformance.profile-lifecycle
+title: Provision a profile and recognise a duplicate as converged
+binary: aps
+intent: |
+  An agent provisioning a profile may be retrying after a timeout, so
+  it cannot know whether the profile already exists. The first
+  creation succeeds; re-issuing the same creation comes back as a
+  conflict distinct from a generic failure, which lets a retry loop
+  treat "already exists" as converged rather than aborting. The
+  listing afterwards shows one entry, confirming the rejected
+  duplicate changed nothing.
+steps:
+  - id: create_profile
+    intent: |
+      Create the profile for the first time.
+    invoke: ["aps", "profile", "create", "demo"]
+    capture: [exit_code, stdout, stderr]
+  - id: create_duplicate
+    intent: |
+      Re-issue the identical creation and read the conflict.
+    invoke: ["aps", "profile", "create", "demo", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: list_converged
+    intent: |
+      List profiles and confirm the rejected duplicate left exactly one
+      entry behind.
+    invoke: ["aps", "profile", "list", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: show_structured
+    intent: |
+      Read the created profile back as a structured document.
+    invoke: ["aps", "profile", "show", "demo", "--format", "json"]
+    capture: [exit_code, stdout, stderr]

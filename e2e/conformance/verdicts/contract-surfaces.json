@@ -1,0 +1,114 @@
+{
+  "scenario_id": "contract-surfaces",
+  "schema_version": "1",
+  "verdict": "pass",
+  "scored_at": "2026-08-09T12:30:39.124275Z",
+  "grader_version": "1.0.0",
+  "rules_version": "2026.05.12.1",
+  "tier": 3,
+  "facets": [
+    {
+      "factor": 1,
+      "status": "pass"
+    },
+    {
+      "factor": 5,
+      "status": "pass"
+    },
+    {
+      "factor": 11,
+      "status": "pass"
+    },
+    {
+      "factor": 8,
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "toolspec-is-json",
+      "kind": "stream_discipline_pass",
+      "factor": 1,
+      "status": "pass",
+      "expected": "stream discipline OK"
+    },
+    {
+      "id": "toolspec-names-the-tool",
+      "kind": "output_field_equals",
+      "factor": 1,
+      "status": "pass",
+      "observed": "aps",
+      "expected": "aps"
+    },
+    {
+      "id": "toolspec-pins-schema-version",
+      "kind": "output_field_equals",
+      "factor": 5,
+      "status": "pass",
+      "observed": "1.0.0",
+      "expected": "1.0.0"
+    },
+    {
+      "id": "toolspec-declares-commands",
+      "kind": "output_field_present",
+      "factor": 1,
+      "status": "pass",
+      "observed": "commands.0.name",
+      "expected": "present"
+    },
+    {
+      "id": "toolspec-declares-error-patterns",
+      "kind": "output_field_present",
+      "factor": 5,
+      "status": "pass",
+      "observed": "error_patterns.0.pattern",
+      "expected": "present"
+    },
+    {
+      "id": "toolspec-exits-zero",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    },
+    {
+      "id": "capability-roster-is-json",
+      "kind": "stream_discipline_pass",
+      "factor": 1,
+      "status": "pass",
+      "expected": "stream discipline OK"
+    },
+    {
+      "id": "capability-declares-source",
+      "kind": "output_field_present",
+      "factor": 1,
+      "status": "pass",
+      "observed": "0.source",
+      "expected": "present"
+    },
+    {
+      "id": "config-chain-is-json",
+      "kind": "stream_discipline_pass",
+      "factor": 8,
+      "status": "pass",
+      "expected": "stream discipline OK"
+    },
+    {
+      "id": "config-chain-reports-existence",
+      "kind": "output_field_present",
+      "factor": 8,
+      "status": "pass",
+      "observed": "0.exists",
+      "expected": "present"
+    },
+    {
+      "id": "config-chain-exits-zero",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    }
+  ]
+}

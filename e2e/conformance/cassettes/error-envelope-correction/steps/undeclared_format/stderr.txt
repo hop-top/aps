@@ -1,0 +1,7 @@
+warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled
+          
+   ERROR  
+          
+  Usage: invalid --format "xml" (valid: csv, human, json, table, text, yaml).                                         
+
+[1;38;5;196mError: USAGE: invalid --format "xml" (valid: csv, human, json, table, text, yaml)[m

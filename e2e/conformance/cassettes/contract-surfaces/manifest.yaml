@@ -1,0 +1,22 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:57Z
+scenario_id: aps/contract-surfaces
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.contract-surfaces
+  story_path: story.yaml
+  content_hash: sha256:98b9446ee7edd122dc9094c8ba1f1c974d1ab9957534487be313f7ffa77309eb
+steps:
+  - id: toolspec_probe
+    cassette_dir: steps/toolspec_probe/cassette
+    captures: steps/toolspec_probe
+  - id: capability_roster
+    cassette_dir: steps/capability_roster/cassette
+    captures: steps/capability_roster
+  - id: config_chain
+    cassette_dir: steps/config_chain/cassette
+    captures: steps/config_chain

@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.conformance.contract-surfaces
+title: Discover what aps declares before delegating work to it
+binary: aps
+intent: |
+  Before delegating, an orchestrator learns what aps offers without
+  scraping help text: the tool specification names every command, its
+  flags, the safety classification marking destructive verbs, and the
+  error patterns and workflows describing recovery. It pins the schema
+  version it was built against, so an incompatible upgrade surfaces as
+  a version mismatch instead of a silently misread document, and it
+  reads the config precedence chain that determines which settings the
+  delegated commands will actually see.
+steps:
+  - id: toolspec_probe
+    intent: |
+      Fetch the machine-readable tool specification and read its
+      declared schema version alongside the command tree.
+    invoke: ["aps", "toolspec", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: capability_roster
+    intent: |
+      List the capabilities aps knows about.
+    invoke: ["aps", "capability", "list", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: config_chain
+    intent: |
+      Read the config precedence chain, each entry carrying its scope
+      and whether that file exists.
+    invoke: ["aps", "config", "paths", "--format", "json"]
+    capture: [exit_code, stdout, stderr]

@@ -1,0 +1,25 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:57Z
+scenario_id: aps/profile-lifecycle
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.profile-lifecycle
+  story_path: story.yaml
+  content_hash: sha256:87ae03e8ca814c05c48be4a190d32bb2a023c458068af71fdc821e98458e236f
+steps:
+  - id: create_profile
+    cassette_dir: steps/create_profile/cassette
+    captures: steps/create_profile
+  - id: create_duplicate
+    cassette_dir: steps/create_duplicate/cassette
+    captures: steps/create_duplicate
+  - id: list_converged
+    cassette_dir: steps/list_converged/cassette
+    captures: steps/list_converged
+  - id: show_structured
+    cassette_dir: steps/show_structured/cassette
+    captures: steps/show_structured

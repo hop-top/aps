@@ -1,0 +1,11 @@
+warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled
+This is a destructive operation requiring typed confirmation.
+Token: 90af62d5c895
+Re-run with --confirm-token=90af62d5c895 to proceed.
+UNAUTHORIZED: destructive command aps profile delete requires --confirm-token=90af62d5c895
+          
+   ERROR  
+          
+  Unauthorized: destructive command aps profile delete requires --confirm-token=90af62d5c895.                         
+
+[1;38;5;196mError: UNAUTHORIZED: destructive command aps profile delete requires --confirm-token=90af62d5c895[m

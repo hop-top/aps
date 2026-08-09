@@ -1,0 +1,12 @@
+warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled
+{
+  "code": "CONFLICT",
+  "message": "creating profile: domain: conflict: profile 'demo' already exists",
+  "exit_code": 4
+}
+          
+   ERROR  
+          
+  Conflict: creating profile: domain: conflict: profile 'demo' already exists.                                        
+
+[1;38;5;196mError: CONFLICT: creating profile: domain: conflict: profile 'demo' already exists[m

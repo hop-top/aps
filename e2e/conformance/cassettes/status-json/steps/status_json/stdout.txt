@@ -1,0 +1,18 @@
+[
+  {
+    "key": "profile",
+    "value": "(none)"
+  },
+  {
+    "key": "workspace",
+    "value": "(none)"
+  },
+  {
+    "key": "version",
+    "value": "dev"
+  },
+  {
+    "key": "bus",
+    "value": "disabled"
+  }
+]

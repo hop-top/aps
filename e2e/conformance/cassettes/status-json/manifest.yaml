@@ -1,0 +1,16 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:57Z
+scenario_id: aps/status-json
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.status-json
+  story_path: story.yaml
+  content_hash: sha256:f54088ba71110e19b3c621e10a0a9a7b7efbcf4fe378b8bd81ef945a34020e35
+steps:
+  - id: status_json
+    cassette_dir: steps/status_json/cassette
+    captures: steps/status_json

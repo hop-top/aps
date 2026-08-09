@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.conformance.capability-idempotent
+title: Reattach a capability safely after an ambiguous failure
+binary: aps
+intent: |
+  An agent that loses its connection mid-run does not know whether the
+  capability attachment landed. Re-issuing the identical attachment
+  converges: the second run finishes cleanly and the profile still
+  carries the capability exactly once. That convergence is what makes
+  a blind retry a safe recovery rather than a way to accumulate
+  duplicate entries in the stored record.
+steps:
+  - id: create_profile
+    intent: |
+      Create the profile the capability attaches to.
+    invoke: ["aps", "profile", "create", "worker"]
+    capture: [exit_code, stdout, stderr]
+  - id: attach_first
+    intent: |
+      Attach the capability for the first time.
+    invoke: ["aps", "profile", "capability", "add", "worker", "a2a"]
+    capture: [exit_code, stdout, stderr]
+  - id: attach_again
+    intent: |
+      Re-issue the identical attachment, standing in for a retry after
+      an ambiguous failure.
+    invoke: ["aps", "profile", "capability", "add", "worker", "a2a"]
+    capture: [exit_code, stdout, stderr]
+  - id: read_back
+    intent: |
+      Read the profile back and see the capability recorded once.
+    invoke: ["aps", "profile", "show", "worker", "--format", "json"]
+    capture: [exit_code, stdout, stderr]

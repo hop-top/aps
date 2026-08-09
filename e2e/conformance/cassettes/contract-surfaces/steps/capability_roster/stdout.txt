@@ -1,0 +1,42 @@
+[
+  {
+    "name": "a2a",
+    "source": "builtin",
+    "description": "Agent-to-Agent protocol"
+  },
+  {
+    "name": "agent-protocol",
+    "source": "builtin",
+    "description": "Agent Protocol (IDE/stdin client)"
+  },
+  {
+    "name": "webhooks",
+    "source": "builtin",
+    "description": "Webhook event server"
+  },
+  {
+    "name": "agntcy-observability",
+    "source": "builtin",
+    "description": "OpenTelemetry observability"
+  },
+  {
+    "name": "agntcy-directory",
+    "source": "builtin",
+    "description": "AGNTCY Directory registration and discovery"
+  },
+  {
+    "name": "agntcy-identity",
+    "source": "builtin",
+    "description": "DID-based agent identity"
+  },
+  {
+    "name": "agntcy-trust",
+    "source": "builtin",
+    "description": "Inbound trust verification"
+  },
+  {
+    "name": "ibr",
+    "source": "builtin",
+    "description": "Intent Browser Runtime - browser-based task automation"
+  }
+]

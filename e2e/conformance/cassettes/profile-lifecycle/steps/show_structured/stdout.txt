@@ -1,0 +1,48 @@
+{
+  "id": "demo",
+  "display_name": "demo",
+  "persona": {
+    "Tone": "",
+    "Style": "",
+    "Risk": ""
+  },
+  "preferences": {
+    "Language": "",
+    "Timezone": "",
+    "Shell": "/bin/zsh"
+  },
+  "limits": {
+    "MaxConcurrency": 0,
+    "MaxRuntimeMinutes": 0
+  },
+  "git": {
+    "Enabled": false
+  },
+  "ssh": {
+    "Enabled": false,
+    "KeyPath": ""
+  },
+  "webhooks": {
+    "AllowedEvents": null
+  },
+  "isolation": {
+    "Level": "process",
+    "Strict": false,
+    "Fallback": false,
+    "Platform": {
+      "SandboxID": "",
+      "Name": ""
+    },
+    "Container": {
+      "Image": "",
+      "Network": "",
+      "Volumes": null,
+      "Resources": {
+        "MemoryMB": 0,
+        "CPUQuota": 0
+      },
+      "BuildSteps": null,
+      "Packages": null
+    }
+  }
+}

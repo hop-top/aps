@@ -1,0 +1,96 @@
+{
+  "scenario_id": "profile-lifecycle",
+  "schema_version": "1",
+  "verdict": "pass",
+  "scored_at": "2026-08-09T12:30:39.30776Z",
+  "grader_version": "1.0.0",
+  "rules_version": "2026.05.12.1",
+  "tier": 3,
+  "facets": [
+    {
+      "factor": 11,
+      "status": "pass"
+    },
+    {
+      "factor": 7,
+      "status": "pass"
+    },
+    {
+      "factor": 3,
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "first-create-clean",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    },
+    {
+      "id": "duplicate-is-conflict-class",
+      "kind": "exit_code_class",
+      "factor": 11,
+      "status": "pass",
+      "observed": 4,
+      "expected": [
+        "CONFLICT"
+      ]
+    },
+    {
+      "id": "duplicate-echoes-input",
+      "kind": "stderr_contains",
+      "factor": 7,
+      "status": "pass",
+      "expected": "demo"
+    },
+    {
+      "id": "converged-single-entry",
+      "kind": "output_field_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": 1,
+      "expected": 1
+    },
+    {
+      "id": "converged-entry-id",
+      "kind": "output_field_equals",
+      "factor": 7,
+      "status": "pass",
+      "observed": "demo",
+      "expected": "demo"
+    },
+    {
+      "id": "listing-is-json",
+      "kind": "stream_discipline_pass",
+      "factor": 3,
+      "status": "pass",
+      "expected": "stream discipline OK"
+    },
+    {
+      "id": "show-is-json",
+      "kind": "stream_discipline_pass",
+      "factor": 3,
+      "status": "pass",
+      "expected": "stream discipline OK"
+    },
+    {
+      "id": "show-carries-id",
+      "kind": "output_field_equals",
+      "factor": 3,
+      "status": "pass",
+      "observed": "demo",
+      "expected": "demo"
+    },
+    {
+      "id": "show-exits-zero",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    }
+  ]
+}

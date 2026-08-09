@@ -1,0 +1,28 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:57Z
+scenario_id: aps/delete-confirm-gate
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.delete-confirm-gate
+  story_path: story.yaml
+  content_hash: sha256:2ee61c7c40c6ba80e92fa61ce70b21c7c1654b3cb5209790ccd8eea64e6b03c2
+steps:
+  - id: create_target
+    cassette_dir: steps/create_target/cassette
+    captures: steps/create_target
+  - id: delete_refused
+    cassette_dir: steps/delete_refused/cassette
+    captures: steps/delete_refused
+  - id: target_survived
+    cassette_dir: steps/target_survived/cassette
+    captures: steps/target_survived
+  - id: delete_confirmed
+    cassette_dir: steps/delete_confirmed/cassette
+    captures: steps/delete_confirmed
+  - id: target_gone
+    cassette_dir: steps/target_gone/cassette
+    captures: steps/target_gone

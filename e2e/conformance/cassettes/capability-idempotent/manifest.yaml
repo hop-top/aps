@@ -1,0 +1,25 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:56Z
+scenario_id: aps/capability-idempotent
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.capability-idempotent
+  story_path: story.yaml
+  content_hash: sha256:0b740fe72b6c74a0cb95fa9e17a5d9de0d7a957deeec32e2a657a1c9add0d0bf
+steps:
+  - id: create_profile
+    cassette_dir: steps/create_profile/cassette
+    captures: steps/create_profile
+  - id: attach_first
+    cassette_dir: steps/attach_first/cassette
+    captures: steps/attach_first
+  - id: attach_again
+    cassette_dir: steps/attach_again/cassette
+    captures: steps/attach_again
+  - id: read_back
+    cassette_dir: steps/read_back/cassette
+    captures: steps/read_back

@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.conformance.status-json
+title: Read aps runtime state as one structured document
+binary: aps
+intent: |
+  An automation embedding aps needs the runtime state the binary would
+  act under before it dispatches work: the active profile and
+  workspace, the build in use, and whether the event bus is wired.
+  Asking for JSON gives it typed fields to branch on instead of a
+  human table to scrape, and the report finishes cleanly even when the
+  bus is disabled — an unconfigured bus is a state to observe, not a
+  failure of the command.
+steps:
+  - id: status_json
+    intent: |
+      Render every status row as one JSON document on stdout.
+    invoke: ["aps", "status", "--format", "json"]
+    capture: [exit_code, stdout, stderr]

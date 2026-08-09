@@ -1,0 +1,13 @@
+warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled
+{
+  "code": "NOT_FOUND",
+  "message": "loading profile: failed to read profile ghost: open /tmp/aps-12fcc-record/error-envelope-correction/data/profiles/ghost/profile.yaml: no such file or directory",
+  "exit_code": 3
+}
+          
+   ERROR  
+          
+  Not_found: loading profile: failed to read profile ghost: open /tmp/aps-12fcc-record/error-envelope-                
+  correction/data/profiles/ghost/profile.yaml: no such file or directory.                                             
+
+[1;38;5;196mError: NOT_FOUND: loading profile: failed to read profile ghost: open /tmp/aps-12fcc-record/error-envelope-correction/data/profiles/ghost/profile.yaml: no such file or directory[m

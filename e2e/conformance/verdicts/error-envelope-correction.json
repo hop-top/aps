@@ -1,0 +1,86 @@
+{
+  "scenario_id": "error-envelope-correction",
+  "schema_version": "1",
+  "verdict": "pass",
+  "scored_at": "2026-08-09T12:30:39.246998Z",
+  "grader_version": "1.0.0",
+  "rules_version": "2026.05.12.1",
+  "tier": 3,
+  "facets": [
+    {
+      "factor": 4,
+      "status": "pass"
+    },
+    {
+      "factor": 11,
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "unknown-command-has-code",
+      "kind": "stderr_contains",
+      "factor": 4,
+      "status": "pass",
+      "expected": "\"code\""
+    },
+    {
+      "id": "unknown-command-offers-correction",
+      "kind": "stderr_contains",
+      "factor": 4,
+      "status": "pass",
+      "expected": "\"suggested_fix\""
+    },
+    {
+      "id": "unknown-command-echoes-input",
+      "kind": "stderr_contains",
+      "factor": 4,
+      "status": "pass",
+      "expected": "frobnicate"
+    },
+    {
+      "id": "unknown-command-usage-class",
+      "kind": "exit_code_class",
+      "factor": 11,
+      "status": "pass",
+      "observed": 2,
+      "expected": [
+        "USAGE"
+      ]
+    },
+    {
+      "id": "missing-profile-echoes-input",
+      "kind": "stderr_contains",
+      "factor": 4,
+      "status": "pass",
+      "expected": "ghost"
+    },
+    {
+      "id": "missing-profile-not-found-class",
+      "kind": "exit_code_class",
+      "factor": 11,
+      "status": "pass",
+      "observed": 3,
+      "expected": [
+        "NOT_FOUND"
+      ]
+    },
+    {
+      "id": "undeclared-format-refused",
+      "kind": "stderr_contains",
+      "factor": 4,
+      "status": "pass",
+      "expected": "json"
+    },
+    {
+      "id": "undeclared-format-usage-class",
+      "kind": "exit_code_class",
+      "factor": 11,
+      "status": "pass",
+      "observed": 2,
+      "expected": [
+        "USAGE"
+      ]
+    }
+  ]
+}

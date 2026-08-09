@@ -1,0 +1,81 @@
+{
+  "scenario_id": "delete-confirm-gate",
+  "schema_version": "1",
+  "verdict": "pass",
+  "scored_at": "2026-08-09T12:30:39.187205Z",
+  "grader_version": "1.0.0",
+  "rules_version": "2026.05.12.1",
+  "tier": 3,
+  "facets": [
+    {
+      "factor": 10,
+      "status": "pass"
+    },
+    {
+      "factor": 11,
+      "status": "pass"
+    },
+    {
+      "factor": 6,
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "refusal-names-the-token",
+      "kind": "stderr_contains",
+      "factor": 10,
+      "status": "pass",
+      "expected": "--confirm-token="
+    },
+    {
+      "id": "refusal-echoes-command",
+      "kind": "stderr_contains",
+      "factor": 10,
+      "status": "pass",
+      "expected": "aps profile delete"
+    },
+    {
+      "id": "refusal-is-not-success",
+      "kind": "exit_code_class",
+      "factor": 11,
+      "status": "pass",
+      "observed": 5,
+      "expected": [
+        "UNAUTHORIZED"
+      ]
+    },
+    {
+      "id": "refusal-changed-nothing",
+      "kind": "output_field_equals",
+      "factor": 6,
+      "status": "pass",
+      "observed": 1,
+      "expected": 1
+    },
+    {
+      "id": "survivor-is-the-target",
+      "kind": "output_field_equals",
+      "factor": 6,
+      "status": "pass",
+      "observed": "doomed",
+      "expected": "doomed"
+    },
+    {
+      "id": "confirmed-delete-applies",
+      "kind": "exit_code_equals",
+      "factor": 11,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    },
+    {
+      "id": "store-empty-after-delete",
+      "kind": "output_field_equals",
+      "factor": 6,
+      "status": "pass",
+      "observed": 0,
+      "expected": 0
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "path": "/private/tmp/aps-12fcc-record/contract-surfaces/.aps/config.yaml",
+    "source": "cwd",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/aps-12fcc-record/contract-surfaces/.hop/aps/config.yaml",
+    "source": "cwd",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/aps-12fcc-record/contract-surfaces/.aps.yaml",
+    "source": "cwd",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/aps-12fcc-record/.aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/aps-12fcc-record/.hop/aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/aps-12fcc-record/.aps.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/.aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/.hop/aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/tmp/.aps.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/.aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/.hop/aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/private/.aps.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/.aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/.hop/aps/config.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/.aps.yaml",
+    "source": "project",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/tmp/aps-12fcc-record/contract-surfaces/xdg/config/aps/config.yaml",
+    "source": "user",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "/etc/aps/config.yaml",
+    "source": "system",
+    "scope": "",
+    "exists": false
+  },
+  {
+    "path": "\u003cdefaults\u003e",
+    "source": "default",
+    "scope": "",
+    "exists": true
+  }
+]

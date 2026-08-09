@@ -1,0 +1,22 @@
+schema_version: "1"
+binary: aps
+binary_version: e47cf73
+recorder: xrr
+recorder_version: 0.1.0-alpha.3
+recorded_at: 2026-08-09T12:29:57Z
+scenario_id: aps/error-envelope-correction
+scenario_version: 1.0.0
+story_ref:
+  story_id: aps.conformance.error-envelope-correction
+  story_path: story.yaml
+  content_hash: sha256:07d8c81992f0261c74882dbde773b4bdaeb3315c33c0d1fdf73a8a04c6801107
+steps:
+  - id: unknown_subcommand
+    cassette_dir: steps/unknown_subcommand/cassette
+    captures: steps/unknown_subcommand
+  - id: missing_profile
+    cassette_dir: steps/missing_profile/cassette
+    captures: steps/missing_profile
+  - id: undeclared_format
+    cassette_dir: steps/undeclared_format/cassette
+    captures: steps/undeclared_format

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "doomed",
+    "display_name": "doomed",
+    "roles": "",
+    "capabilities": "",
+    "workspace": "",
+    "email": "",
+    "has_secrets": false,
+    "has_identity": false,
+    "color": "",
+    "avatar": ""
+  }
+]

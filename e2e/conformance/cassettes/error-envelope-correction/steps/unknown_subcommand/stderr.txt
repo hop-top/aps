@@ -1,0 +1,7 @@
+warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled
+{
+  "code": "USAGE",
+  "message": "unknown command \"frobnicate\" for \"aps profile\" — run `aps profile --help` to see available commands",
+  "suggested_fix": "run `aps profile --help` to see available commands",
+  "exit_code": 2
+}

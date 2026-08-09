@@ -1,0 +1,4131 @@
+{
+  "name": "aps",
+  "schema_version": "1.0.0",
+  "commands": [
+    {
+      "name": "a2a",
+      "children": [
+        {
+          "name": "card",
+          "children": [
+            {
+              "name": "fetch",
+              "flags": [
+                {
+                  "name": "--url",
+                  "short": "-u",
+                  "type": "string",
+                  "description": "Agent Card URL (required)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "show",
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "server",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "tasks",
+          "children": [
+            {
+              "name": "cancel",
+              "flags": [
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--target",
+                  "short": "-t",
+                  "type": "string",
+                  "description": "Target profile ID (required)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "list",
+              "flags": [
+                {
+                  "name": "--status",
+                  "type": "string",
+                  "description": "Filter by status (submitted, working, completed, failed, cancelled)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "send",
+              "flags": [
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--message",
+                  "short": "-m",
+                  "type": "string",
+                  "description": "Message text (required)"
+                },
+                {
+                  "name": "--target",
+                  "short": "-t",
+                  "type": "string",
+                  "description": "Target profile ID (required)"
+                },
+                {
+                  "name": "--task-id",
+                  "type": "string",
+                  "description": "Existing task ID (optional, creates new if not specified)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "show",
+              "flags": [
+                {
+                  "name": "--history",
+                  "type": "int",
+                  "description": "Limit message history length"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "stream",
+              "flags": [
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--message",
+                  "short": "-m",
+                  "type": "string",
+                  "description": "Message text"
+                },
+                {
+                  "name": "--target",
+                  "short": "-t",
+                  "type": "string",
+                  "description": "Target profile ID"
+                },
+                {
+                  "name": "--task-id",
+                  "type": "string",
+                  "description": "Existing task ID (optional)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "subscribe",
+              "flags": [
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--target",
+                  "short": "-t",
+                  "type": "string",
+                  "description": "Target profile ID (required)"
+                },
+                {
+                  "name": "--webhook",
+                  "type": "string",
+                  "description": "Webhook URL for push notifications (required)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "toggle",
+          "flags": [
+            {
+              "name": "--enabled",
+              "type": "string",
+              "description": "Enable (on), disable (off), or toggle (omit or blank)"
+            },
+            {
+              "name": "--host",
+              "type": "string",
+              "description": "Listen host"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--port",
+              "type": "string",
+              "description": "Listen port"
+            },
+            {
+              "name": "--protocol",
+              "type": "string",
+              "description": "Protocol binding (jsonrpc, grpc, http)"
+            },
+            {
+              "name": "--url",
+              "type": "string",
+              "description": "Public endpoint URL (defaults to http://{host}:{port})"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "acp",
+      "children": [
+        {
+          "name": "server",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "toggle",
+          "flags": [
+            {
+              "name": "--enabled",
+              "type": "string",
+              "description": "Enable (on), disable (off), or toggle (omit or blank)"
+            },
+            {
+              "name": "--host",
+              "type": "string",
+              "description": "Listen host for network transports"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--port",
+              "type": "string",
+              "description": "Listen port for network transports"
+            },
+            {
+              "name": "--transport",
+              "type": "string",
+              "description": "Transport (stdio, ws, websocket)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "action",
+      "children": [
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Filter by runtime type (sh, py, js)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "run",
+          "flags": [
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--payload-file",
+              "type": "string",
+              "description": "File to send to action stdin"
+            },
+            {
+              "name": "--payload-stdin",
+              "type": "bool",
+              "description": "Read stdin and forward to action"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "adapter",
+      "aliases": [
+        "adapters"
+      ],
+      "children": [
+        {
+          "name": "approve",
+          "flags": [
+            {
+              "name": "--all",
+              "type": "bool",
+              "description": "Approve all pending devices"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "attach",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--role",
+              "type": "string",
+              "description": "Device role: owner, collaborator, viewer"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "channels",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "create",
+          "aliases": [
+            "new"
+          ],
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--strategy",
+              "type": "string",
+              "description": "Loading strategy (subprocess, script, builtin)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "detach",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation prompt"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "exec",
+          "flags": [
+            {
+              "name": "--from",
+              "type": "string",
+              "description": "Explicit From address (overrides profile lookup)"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--input",
+              "short": "-i",
+              "type": "stringArray",
+              "description": "Action input as key=value (repeatable)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "link",
+          "children": [
+            {
+              "name": "add",
+              "flags": [
+                {
+                  "name": "--add-mapping",
+                  "type": "string",
+                  "description": "Add a single channel=action mapping to an existing link"
+                },
+                {
+                  "name": "--default-action",
+                  "type": "string",
+                  "description": "Set default action for unmapped channels"
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--mapping",
+                  "type": "stringSlice",
+                  "description": "Channel=Action mapping (messenger devices only, repeatable)"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                },
+                {
+                  "name": "--remove-mapping",
+                  "type": "string",
+                  "description": "Remove a mapping by channel ID from an existing link"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "delete",
+              "aliases": [
+                "remove",
+                "rm"
+              ],
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "dangerous",
+                "requires_confirmation": true
+              }
+            },
+            {
+              "name": "list",
+              "aliases": [
+                "ls"
+              ],
+              "flags": [
+                {
+                  "name": "--messenger",
+                  "type": "string",
+                  "description": "Filter by messenger device name"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--status",
+              "type": "string",
+              "description": "Filter by runtime status (running, stopped, failed, ...)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Filter by adapter type (messenger, protocol, mobile, ...)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "logs",
+          "flags": [
+            {
+              "name": "--follow",
+              "short": "-f",
+              "type": "bool",
+              "description": "Follow log output (stream)"
+            },
+            {
+              "name": "--since",
+              "type": "string",
+              "description": "Show logs since duration (e.g., 1h, 30m)"
+            },
+            {
+              "name": "--tail",
+              "type": "int",
+              "description": "Number of lines to show"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "messenger",
+          "aliases": [
+            "messengers"
+          ],
+          "children": [
+            {
+              "name": "channels",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "create",
+              "aliases": [
+                "new"
+              ],
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                },
+                {
+                  "name": "--strategy",
+                  "type": "string",
+                  "description": "Loading strategy (subprocess, script, builtin)"
+                },
+                {
+                  "name": "--type",
+                  "type": "string",
+                  "description": "Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "link",
+              "children": [
+                {
+                  "name": "add",
+                  "flags": [
+                    {
+                      "name": "--add-mapping",
+                      "type": "string",
+                      "description": "Add a single channel=action mapping to an existing link"
+                    },
+                    {
+                      "name": "--default-action",
+                      "type": "string",
+                      "description": "Set default action for unmapped channels"
+                    },
+                    {
+                      "name": "--json",
+                      "type": "bool",
+                      "description": "JSON output"
+                    },
+                    {
+                      "name": "--mapping",
+                      "type": "stringSlice",
+                      "description": "Channel=Action mapping (messenger devices only, repeatable)"
+                    },
+                    {
+                      "name": "--note",
+                      "short": "-n",
+                      "type": "string",
+                      "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                    },
+                    {
+                      "name": "--remove-mapping",
+                      "type": "string",
+                      "description": "Remove a mapping by channel ID from an existing link"
+                    }
+                  ],
+                  "safety": {
+                    "level": "safe"
+                  }
+                },
+                {
+                  "name": "delete",
+                  "aliases": [
+                    "remove",
+                    "rm"
+                  ],
+                  "flags": [
+                    {
+                      "name": "--json",
+                      "type": "bool",
+                      "description": "JSON output"
+                    },
+                    {
+                      "name": "--note",
+                      "short": "-n",
+                      "type": "string",
+                      "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                    }
+                  ],
+                  "safety": {
+                    "level": "dangerous",
+                    "requires_confirmation": true
+                  }
+                },
+                {
+                  "name": "list",
+                  "aliases": [
+                    "ls"
+                  ],
+                  "flags": [
+                    {
+                      "name": "--messenger",
+                      "type": "string",
+                      "description": "Filter by messenger device name"
+                    }
+                  ],
+                  "safety": {
+                    "level": "safe"
+                  }
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "list",
+              "flags": [
+                {
+                  "name": "--platform",
+                  "type": "string",
+                  "description": "Filter by messenger platform (telegram, slack, discord, ...)"
+                },
+                {
+                  "name": "--status",
+                  "type": "string",
+                  "description": "Filter by runtime status (running, stopped, failed, ...)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "logs",
+              "flags": [
+                {
+                  "name": "--follow",
+                  "short": "-f",
+                  "type": "bool",
+                  "description": "Follow log output (stream)"
+                },
+                {
+                  "name": "--since",
+                  "type": "string",
+                  "description": "Show logs since duration (e.g., 1h, 30m)"
+                },
+                {
+                  "name": "--tail",
+                  "type": "int",
+                  "description": "Number of lines to show"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "start",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "status",
+              "aliases": [
+                "show"
+              ],
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "stop",
+              "flags": [
+                {
+                  "name": "--force",
+                  "type": "bool",
+                  "description": "Force stop (SIGKILL)"
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "test",
+              "flags": [
+                {
+                  "name": "--channel",
+                  "type": "string",
+                  "description": "Channel ID (defaults to first mapped channel)"
+                },
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--message",
+                  "type": "string",
+                  "description": "Test message content"
+                },
+                {
+                  "name": "--send",
+                  "type": "bool",
+                  "description": "Actually deliver the test message"
+                },
+                {
+                  "name": "--timeout",
+                  "type": "duration",
+                  "description": "Pipeline timeout"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "pair",
+          "flags": [
+            {
+              "name": "--bind-addr",
+              "type": "string",
+              "description": "Bind address (auto-detected if not set)"
+            },
+            {
+              "name": "--capabilities",
+              "type": "stringSlice",
+              "description": "Device capabilities (default: run:stateless,run:streaming,monitor:sessions)"
+            },
+            {
+              "name": "--code-only",
+              "type": "bool",
+              "description": "Show pairing code only, no QR"
+            },
+            {
+              "name": "--expires",
+              "type": "string",
+              "description": "Device token expiry (e.g., 14d, 30d)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--no-qr",
+              "type": "bool",
+              "description": "Skip QR code display (accessibility, screen readers)"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--port",
+              "type": "int",
+              "description": "Server port"
+            },
+            {
+              "name": "--qr-expires",
+              "type": "string",
+              "description": "QR code expiry (e.g., 15m, 30m)"
+            },
+            {
+              "name": "--qr-output",
+              "type": "string",
+              "description": "Save QR code as PNG to file"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "pending",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "permissions",
+          "children": [
+            {
+              "name": "set",
+              "flags": [
+                {
+                  "name": "--can-execute",
+                  "type": "bool",
+                  "description": "Override: allow execute access"
+                },
+                {
+                  "name": "--can-manage",
+                  "type": "bool",
+                  "description": "Override: allow manage access"
+                },
+                {
+                  "name": "--can-write",
+                  "type": "bool",
+                  "description": "Override: allow write access"
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--rate-limit",
+                  "type": "int",
+                  "description": "Rate limit (requests per minute, 0 = unlimited)"
+                },
+                {
+                  "name": "--role",
+                  "type": "string",
+                  "description": "Set role: owner, collaborator, viewer"
+                },
+                {
+                  "name": "--show",
+                  "type": "bool",
+                  "description": "Show current permissions without changes"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "presence",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "reject",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "revoke",
+          "flags": [
+            {
+              "name": "--all",
+              "type": "bool",
+              "description": "Revoke all devices"
+            },
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "start",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "status",
+          "aliases": [
+            "show"
+          ],
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "stop",
+          "flags": [
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Force stop (SIGKILL)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "test",
+          "flags": [
+            {
+              "name": "--channel",
+              "type": "string",
+              "description": "Channel ID (defaults to first mapped channel)"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--message",
+              "type": "string",
+              "description": "Test message content"
+            },
+            {
+              "name": "--send",
+              "type": "bool",
+              "description": "Actually deliver the test message"
+            },
+            {
+              "name": "--timeout",
+              "type": "duration",
+              "description": "Pipeline timeout"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "bundle",
+      "aliases": [
+        "bundles"
+      ],
+      "children": [
+        {
+          "name": "create",
+          "flags": [
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Overwrite existing bundle file"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation prompt"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "edit",
+          "flags": [
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--builtin",
+              "type": "bool",
+              "description": "Show only built-in bundles"
+            },
+            {
+              "name": "--tag",
+              "type": "string",
+              "description": "Filter to bundles carrying this tag"
+            },
+            {
+              "name": "--user",
+              "type": "bool",
+              "description": "Show only user bundles (incl. overrides)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "flags": [
+            {
+              "name": "--resolved",
+              "type": "bool",
+              "description": "Apply inheritance and print merged result"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "validate",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "capability",
+      "aliases": [
+        "cap"
+      ],
+      "children": [
+        {
+          "name": "adopt",
+          "flags": [
+            {
+              "name": "--name",
+              "type": "string",
+              "description": "Name of capability"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip link warning"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "disable",
+          "flags": [
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "enable",
+          "flags": [
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "install",
+          "flags": [
+            {
+              "name": "--name",
+              "type": "string",
+              "description": "Name of the capability"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "link",
+          "flags": [
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--target",
+              "type": "string",
+              "description": "Target path for symlink"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--builtin",
+              "type": "bool",
+              "description": "Show only builtin capabilities"
+            },
+            {
+              "name": "--enabled-on",
+              "type": "string",
+              "description": "Show only capabilities linked to the given profile id"
+            },
+            {
+              "name": "--external",
+              "type": "bool",
+              "description": "Show only external (installed) capabilities"
+            },
+            {
+              "name": "--tag",
+              "type": "string",
+              "description": "Filter to capabilities carrying this tag"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "patterns",
+          "children": [
+            {
+              "name": "list",
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "watch",
+          "flags": [
+            {
+              "name": "--name",
+              "type": "string",
+              "description": "Name of capability"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--tool",
+              "type": "string",
+              "description": "Smart tool name (e.g. windsurf)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "chat",
+      "flags": [
+        {
+          "name": "--attach",
+          "type": "string",
+          "description": "Attach to an existing chat session"
+        },
+        {
+          "name": "--invite",
+          "type": "stringSlice",
+          "description": "Invite additional profile IDs (comma-separated or repeatable)"
+        },
+        {
+          "name": "--max-auto-turns",
+          "type": "int",
+          "description": "Maximum autonomous turns before returning control to the human"
+        },
+        {
+          "name": "--model",
+          "type": "string",
+          "description": "Override the configured chat model"
+        },
+        {
+          "name": "--no-stream",
+          "type": "bool",
+          "description": "Disable streaming responses"
+        },
+        {
+          "name": "--once",
+          "type": "string",
+          "description": "Send one prompt, print the assistant response, and exit"
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "contact",
+      "aliases": [
+        "contacts"
+      ],
+      "children": [
+        {
+          "name": "add",
+          "flags": [
+            {
+              "name": "--addressbook",
+              "type": "string",
+              "description": "Addressbook ID"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--name",
+              "type": "string",
+              "description": "Contact name"
+            },
+            {
+              "name": "--note",
+              "type": "string",
+              "description": "Note"
+            },
+            {
+              "name": "--org",
+              "type": "string",
+              "description": "Organization"
+            },
+            {
+              "name": "--phone",
+              "type": "string",
+              "description": "Phone number"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "find",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--addressbook",
+              "type": "string",
+              "description": "Addressbook ID"
+            },
+            {
+              "name": "--has-email",
+              "type": "bool",
+              "description": "Filter on whether the contact has an email"
+            },
+            {
+              "name": "--org",
+              "type": "string",
+              "description": "Filter to a single ORG value"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "note",
+          "flags": [
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "update",
+          "flags": [
+            {
+              "name": "--email",
+              "type": "string",
+              "description": "Email address"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--name",
+              "type": "string",
+              "description": "Contact name"
+            },
+            {
+              "name": "--note",
+              "type": "string",
+              "description": "Note"
+            },
+            {
+              "name": "--org",
+              "type": "string",
+              "description": "Organization"
+            },
+            {
+              "name": "--phone",
+              "type": "string",
+              "description": "Phone number"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "directory",
+      "aliases": [
+        "dir"
+      ],
+      "children": [
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "discover",
+          "flags": [
+            {
+              "name": "--capability",
+              "type": "string",
+              "description": "Capability to search for (required)"
+            },
+            {
+              "name": "--endpoint",
+              "type": "string",
+              "description": "Directory endpoint URL (default: https://dir.agntcy.org)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "register",
+          "flags": [
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "identity",
+      "aliases": [
+        "id"
+      ],
+      "children": [
+        {
+          "name": "badge",
+          "children": [
+            {
+              "name": "issue",
+              "flags": [
+                {
+                  "name": "--capability",
+                  "type": "string",
+                  "description": "Capability to attest (required)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "verify",
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "init",
+          "flags": [
+            {
+              "name": "--method",
+              "type": "string",
+              "description": "DID method (did:key, did:web)"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "verify",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "listen",
+      "flags": [
+        {
+          "name": "--exit-after-events",
+          "type": "int",
+          "description": "Exit cleanly after N events received (0 = run until signal)"
+        },
+        {
+          "name": "--topics",
+          "type": "string",
+          "description": "Comma-separated topic patterns to subscribe to (kit/bus glob: * = one segment, # = trailing)"
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "observability",
+      "aliases": [
+        "otel",
+        "o11y"
+      ],
+      "children": [
+        {
+          "name": "toggle",
+          "flags": [
+            {
+              "name": "--enabled",
+              "type": "string",
+              "description": "Enable (on), disable (off), or toggle (omit)"
+            },
+            {
+              "name": "--endpoint",
+              "type": "string",
+              "description": "OTLP collector endpoint (e.g. localhost:4317)"
+            },
+            {
+              "name": "--exporter",
+              "type": "string",
+              "description": "Exporter type (otlp, stdout, none)"
+            },
+            {
+              "name": "--sampling-rate",
+              "type": "float64",
+              "description": "Trace sampling rate (0.0–1.0)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "org",
+      "children": [
+        {
+          "name": "check",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "flags": [
+            {
+              "name": "--depth",
+              "type": "int",
+              "description": "Levels of transitive reports to include (0 = unlimited)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "snapshot",
+          "flags": [
+            {
+              "name": "--all",
+              "type": "bool",
+              "description": "Snapshot every profile on disk (default scope)"
+            },
+            {
+              "name": "--root",
+              "type": "string",
+              "description": "Snapshot a profile and its transitive reports"
+            },
+            {
+              "name": "--snapshot-format",
+              "type": "string",
+              "description": "Snapshot rendering (json|yaml|tree|mermaid)"
+            },
+            {
+              "name": "--squad",
+              "type": "string",
+              "description": "Snapshot the members of a squad"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "policy",
+      "aliases": [
+        "policies"
+      ],
+      "children": [
+        {
+          "name": "list",
+          "aliases": [
+            "ls"
+          ],
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "set",
+          "flags": [
+            {
+              "name": "--add-allow",
+              "type": "stringSlice",
+              "description": "Add devices to allow list"
+            },
+            {
+              "name": "--add-deny",
+              "type": "stringSlice",
+              "description": "Add devices to deny list"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--mode",
+              "type": "string",
+              "description": "Policy mode: allow-all, allow-list, deny-list"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--remove-allow",
+              "type": "stringSlice",
+              "description": "Remove devices from allow list"
+            },
+            {
+              "name": "--remove-deny",
+              "type": "stringSlice",
+              "description": "Remove devices from deny list"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "trust",
+          "children": [
+            {
+              "name": "set",
+              "flags": [
+                {
+                  "name": "--allowed-issuers",
+                  "type": "string",
+                  "description": "Comma-separated list of allowed DIDs"
+                },
+                {
+                  "name": "--require-identity",
+                  "type": "bool",
+                  "description": "Require X-Agent-DID header on inbound requests"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "show",
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "profile",
+      "children": [
+        {
+          "name": "capability",
+          "children": [
+            {
+              "name": "add",
+              "flags": [
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "remove",
+              "flags": [
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "dangerous",
+                "requires_confirmation": true
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "create",
+          "flags": [
+            {
+              "name": "--auto-avatar",
+              "type": "bool",
+              "description": "Generate a deterministic avatar via the configured provider (overrides config)"
+            },
+            {
+              "name": "--auto-color",
+              "type": "bool",
+              "description": "Generate a deterministic palette color (overrides config)"
+            },
+            {
+              "name": "--avatar",
+              "type": "string",
+              "description": "URL or local path to profile image"
+            },
+            {
+              "name": "--avatar-format",
+              "type": "string",
+              "description": "Avatar format: svg, png, webp (provider-dependent)"
+            },
+            {
+              "name": "--avatar-provider",
+              "type": "string",
+              "description": "Avatar provider name (default: kit/avatar's default — dicebear)"
+            },
+            {
+              "name": "--avatar-size",
+              "type": "int",
+              "description": "Avatar size in pixels (0 = provider default)"
+            },
+            {
+              "name": "--avatar-style",
+              "type": "string",
+              "description": "Provider-specific style (e.g. dicebear: shapes, bottts, identicon)"
+            },
+            {
+              "name": "--color",
+              "type": "string",
+              "description": "Hex color (e.g. #3b82f6) for UI rendering"
+            },
+            {
+              "name": "--display-name",
+              "type": "string",
+              "description": "Display name for the profile"
+            },
+            {
+              "name": "--email",
+              "type": "string",
+              "description": "Email for profile and git config"
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Overwrite existing profile"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--reports-to",
+              "type": "string",
+              "description": "Profile id this profile reports to (must exist; no self-reference or cycles)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Profile type: agent or human (empty means agent)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "aliases": [
+            "rm",
+            "remove"
+          ],
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--yes",
+              "short": "-y",
+              "type": "bool",
+              "description": "Skip interactive confirmation"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "edit",
+          "flags": [
+            {
+              "name": "--auto-avatar",
+              "type": "bool",
+              "description": "Generate and apply a deterministic avatar via the configured provider"
+            },
+            {
+              "name": "--auto-color",
+              "type": "bool",
+              "description": "Generate and apply a deterministic palette color"
+            },
+            {
+              "name": "--avatar",
+              "type": "string",
+              "description": "URL or local path to profile image (pass empty string to clear)"
+            },
+            {
+              "name": "--avatar-format",
+              "type": "string",
+              "description": "Avatar format for --auto-avatar"
+            },
+            {
+              "name": "--avatar-provider",
+              "type": "string",
+              "description": "Avatar provider name for --auto-avatar"
+            },
+            {
+              "name": "--avatar-size",
+              "type": "int",
+              "description": "Avatar size in pixels for --auto-avatar"
+            },
+            {
+              "name": "--avatar-style",
+              "type": "string",
+              "description": "Provider-specific style for --auto-avatar"
+            },
+            {
+              "name": "--color",
+              "type": "string",
+              "description": "Hex color (e.g. #3b82f6) for UI rendering (pass empty string to clear)"
+            },
+            {
+              "name": "--display-name",
+              "type": "string",
+              "description": "Display name for the profile"
+            },
+            {
+              "name": "--email",
+              "type": "string",
+              "description": "Email for profile and git config"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--reports-to",
+              "type": "string",
+              "description": "Profile id this profile reports to (pass empty string to clear; must exist; no self-reference or cycles)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Profile type: agent or human (pass empty string to clear back to the agent default)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "export",
+          "flags": [
+            {
+              "name": "--manifest-format",
+              "type": "string",
+              "description": "Manifest format: agentco (agent role manifest); omit for native yaml"
+            },
+            {
+              "name": "--out",
+              "type": "string",
+              "description": "Write to a file instead of stdout"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "import",
+          "flags": [
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)"
+            },
+            {
+              "name": "--id",
+              "type": "string",
+              "description": "Override profile ID from bundle"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--capability",
+              "type": "string",
+              "description": "Filter by capability membership"
+            },
+            {
+              "name": "--has-identity",
+              "type": "bool",
+              "description": "Filter to profiles with (true) or without (false) a DID identity"
+            },
+            {
+              "name": "--has-secrets",
+              "type": "bool",
+              "description": "Filter to profiles with (true) or without (false) at least one secret"
+            },
+            {
+              "name": "--role",
+              "type": "string",
+              "description": "Filter by role membership (owner, assignee, evaluator, auditor)"
+            },
+            {
+              "name": "--squad",
+              "type": "string",
+              "description": "Filter by squad membership"
+            },
+            {
+              "name": "--tone",
+              "type": "string",
+              "description": "Filter by persona tone"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "share",
+          "flags": [
+            {
+              "name": "--out",
+              "type": "string",
+              "description": "Output path for the bundle"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "status",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "trust",
+          "flags": [
+            {
+              "name": "--domain",
+              "type": "string",
+              "description": "Filter by trust domain"
+            },
+            {
+              "name": "--history",
+              "type": "bool",
+              "description": "Show trust history entries"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "workspace",
+          "children": [
+            {
+              "name": "set",
+              "flags": [
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "run",
+      "flags": [
+        {
+          "name": "--env",
+          "type": "stringArray",
+          "description": "Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys"
+        },
+        {
+          "name": "--env-file",
+          "type": "stringSlice",
+          "description": "Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys"
+        },
+        {
+          "name": "--idempotency-key",
+          "type": "string",
+          "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "serve",
+      "flags": [
+        {
+          "name": "--addr",
+          "type": "string",
+          "description": "Address to listen on"
+        },
+        {
+          "name": "--auth-token",
+          "type": "string",
+          "description": "Bearer token for authentication (optional)"
+        },
+        {
+          "name": "--log-level",
+          "type": "string",
+          "description": "Log level (debug, info, warn, error)"
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "service",
+      "children": [
+        {
+          "name": "add",
+          "flags": [
+            {
+              "name": "--adapter",
+              "type": "string",
+              "description": "Concrete adapter when --type is canonical"
+            },
+            {
+              "name": "--allowed-channel",
+              "type": "stringArray",
+              "description": "Allowed message channel ID, repeatable"
+            },
+            {
+              "name": "--allowed-chat",
+              "type": "stringArray",
+              "description": "Allowed Telegram chat ID, repeatable"
+            },
+            {
+              "name": "--allowed-guild",
+              "type": "stringArray",
+              "description": "Allowed Discord guild ID, repeatable"
+            },
+            {
+              "name": "--allowed-number",
+              "type": "stringArray",
+              "description": "Allowed phone number, repeatable"
+            },
+            {
+              "name": "--bot-user-id",
+              "type": "string",
+              "description": "Slack bot user ID used for mention-only routing"
+            },
+            {
+              "name": "--dedup-ttl",
+              "type": "string",
+              "description": "Slack Events API duplicate event retention duration"
+            },
+            {
+              "name": "--default-action",
+              "type": "string",
+              "description": "Default profile action for routed messages or tickets"
+            },
+            {
+              "name": "--description",
+              "type": "string",
+              "description": "Human-readable description"
+            },
+            {
+              "name": "--env",
+              "type": "stringArray",
+              "description": "Environment binding KEY=VALUE, repeatable"
+            },
+            {
+              "name": "--events",
+              "type": "string",
+              "description": "Comma-separated ticket events to receive"
+            },
+            {
+              "name": "--from",
+              "type": "string",
+              "description": "Sender phone number or provider identity"
+            },
+            {
+              "name": "--group",
+              "type": "string",
+              "description": "GitLab group path or ID"
+            },
+            {
+              "name": "--jql",
+              "type": "string",
+              "description": "Jira issue query"
+            },
+            {
+              "name": "--label",
+              "type": "stringArray",
+              "description": "Metadata label KEY=VALUE, repeatable"
+            },
+            {
+              "name": "--language-code",
+              "type": "string",
+              "description": "WhatsApp template language code"
+            },
+            {
+              "name": "--linear-workspace",
+              "type": "string",
+              "description": "Linear workspace key or ID"
+            },
+            {
+              "name": "--phone-number-id",
+              "type": "string",
+              "description": "WhatsApp phone number ID"
+            },
+            {
+              "name": "--project",
+              "type": "string",
+              "description": "Ticket adapter project key, ID, or path"
+            },
+            {
+              "name": "--provider",
+              "type": "string",
+              "description": "Message provider, such as twilio or whatsapp-cloud"
+            },
+            {
+              "name": "--receive",
+              "type": "string",
+              "description": "Message receive mode: polling or webhook"
+            },
+            {
+              "name": "--reply",
+              "type": "string",
+              "description": "Reply behavior: text, comment, status, auto, or none"
+            },
+            {
+              "name": "--require-bot-mention",
+              "type": "bool",
+              "description": "Require Slack channel messages to mention the bot"
+            },
+            {
+              "name": "--signing-secret-env",
+              "type": "string",
+              "description": "Message provider signing secret environment variable"
+            },
+            {
+              "name": "--site",
+              "type": "string",
+              "description": "Ticket adapter site or base URL"
+            },
+            {
+              "name": "--team",
+              "type": "string",
+              "description": "Linear team key or ID"
+            },
+            {
+              "name": "--template-name",
+              "type": "string",
+              "description": "WhatsApp template name for business-initiated replies"
+            },
+            {
+              "name": "--template-required",
+              "type": "bool",
+              "description": "Require WhatsApp outbound delivery to use a template"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Service type or adapter alias"
+            },
+            {
+              "name": "--verify-token",
+              "type": "string",
+              "description": "WhatsApp Cloud webhook verification token"
+            },
+            {
+              "name": "--verify-token-env",
+              "type": "string",
+              "description": "Environment variable holding WhatsApp Cloud verification token"
+            },
+            {
+              "name": "--webhook-secret-token",
+              "type": "string",
+              "description": "Telegram webhook secret token"
+            },
+            {
+              "name": "--webhook-secret-token-env",
+              "type": "string",
+              "description": "Environment variable holding Telegram webhook secret token"
+            },
+            {
+              "name": "--webhook-url",
+              "type": "string",
+              "description": "Public provider webhook URL used for signature validation"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "routes",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "start",
+          "flags": [
+            {
+              "name": "--addr",
+              "type": "string",
+              "description": "Address to listen on"
+            },
+            {
+              "name": "--base-url",
+              "type": "string",
+              "description": "Public base URL used to report reachable webhook URLs"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "status",
+          "flags": [
+            {
+              "name": "--base-url",
+              "type": "string",
+              "description": "Public base URL used to report reachable webhook URLs"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "stop",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "test",
+          "flags": [
+            {
+              "name": "--base-url",
+              "type": "string",
+              "description": "Public base URL to probe"
+            },
+            {
+              "name": "--probe",
+              "type": "bool",
+              "description": "POST a synthetic message payload to the webhook URL"
+            },
+            {
+              "name": "--timeout",
+              "type": "duration",
+              "description": "Webhook probe timeout"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "session",
+      "children": [
+        {
+          "name": "attach",
+          "flags": [
+            {
+              "name": "--latest",
+              "short": "-l",
+              "type": "bool",
+              "description": "Attach to the most recent session"
+            },
+            {
+              "name": "--mode",
+              "short": "-m",
+              "type": "string",
+              "description": "Attachment mode (view|control)"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Force delete without confirmation"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "detach",
+          "flags": [
+            {
+              "name": "--all",
+              "short": "-a",
+              "type": "bool",
+              "description": "Detach from all sessions"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "inspect",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output in JSON format"
+            },
+            {
+              "name": "--pretty",
+              "type": "bool",
+              "description": "Pretty-print JSON output"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--status",
+              "type": "string",
+              "description": "Filter sessions by status (active, inactive, errored)"
+            },
+            {
+              "name": "--tier",
+              "type": "string",
+              "description": "Filter sessions by tier (basic, standard, premium)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Filter sessions by type (standard, voice); default = all"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "logs",
+          "flags": [
+            {
+              "name": "--follow",
+              "short": "-f",
+              "type": "bool",
+              "description": "Follow log output"
+            },
+            {
+              "name": "--tail",
+              "type": "string",
+              "description": "Number of lines to show from the end (\"all\" for entire buffer)"
+            },
+            {
+              "name": "--timestamps",
+              "type": "bool",
+              "description": "Show timestamps"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "terminate",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Force terminate without graceful shutdown"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--timeout",
+              "type": "int",
+              "description": "Graceful shutdown timeout in seconds"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "skill",
+      "children": [
+        {
+          "name": "install",
+          "flags": [
+            {
+              "name": "--global",
+              "type": "bool",
+              "description": "Install to global skills directory"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--source",
+              "type": "string",
+              "description": "Filter by source label (Profile, Global, User, Claude Code, Cursor, Zed, VS Code, Windsurf)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "run",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "stats",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "suggest",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "validate",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "squad",
+      "aliases": [
+        "squads"
+      ],
+      "children": [
+        {
+          "name": "check",
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "create",
+          "flags": [
+            {
+              "name": "--description",
+              "type": "string",
+              "description": "Squad description"
+            },
+            {
+              "name": "--domain",
+              "type": "string",
+              "description": "Domain boundary"
+            },
+            {
+              "name": "--members",
+              "type": "stringSlice",
+              "description": "Comma-separated profile IDs"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--type",
+              "type": "string",
+              "description": "Squad type (stream-aligned, enabling, complicated-subsystem, platform)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "delete",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--member",
+              "type": "string",
+              "description": "Filter to squads containing this profile ID"
+            },
+            {
+              "name": "--role",
+              "type": "string",
+              "description": "Filter by squad type (stream-aligned, enabling, complicated-subsystem, platform)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "members",
+          "children": [
+            {
+              "name": "add",
+              "flags": [
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "remove",
+              "flags": [
+                {
+                  "name": "--confirm-token",
+                  "type": "string",
+                  "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+                },
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "dangerous",
+                "requires_confirmation": true
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "voice",
+      "children": [
+        {
+          "name": "service",
+          "children": [
+            {
+              "name": "start",
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "status",
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "stop",
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "start",
+          "flags": [
+            {
+              "name": "--channel",
+              "type": "string",
+              "description": "Channel: web | tui | telegram | twilio"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "webhook",
+      "children": [
+        {
+          "name": "server",
+          "flags": [
+            {
+              "name": "--addr",
+              "type": "string",
+              "description": "Address to listen on"
+            },
+            {
+              "name": "--allow-event",
+              "type": "stringSlice",
+              "description": "Allowed event types"
+            },
+            {
+              "name": "--event-map",
+              "type": "stringSlice",
+              "description": "Map event to action (event=profile:action)"
+            },
+            {
+              "name": "--secret",
+              "type": "string",
+              "description": "Shared secret for HMAC validation"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "toggle",
+          "flags": [
+            {
+              "name": "--enabled",
+              "type": "string",
+              "description": "Enable (on), disable (off), or toggle (omit or blank)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    },
+    {
+      "name": "workspace",
+      "aliases": [
+        "ws"
+      ],
+      "children": [
+        {
+          "name": "activity",
+          "flags": [
+            {
+              "name": "--device",
+              "type": "string",
+              "description": "Filter by device ID"
+            },
+            {
+              "name": "--exclude",
+              "type": "string",
+              "description": "Exclude event type category"
+            },
+            {
+              "name": "--follow",
+              "short": "-f",
+              "type": "bool",
+              "description": "Follow the activity log (live tail)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--limit",
+              "short": "-n",
+              "type": "int",
+              "description": "Maximum number of events to display"
+            },
+            {
+              "name": "--since",
+              "type": "string",
+              "description": "Show events since duration (e.g. 1h, 30m, 7d)"
+            },
+            {
+              "name": "--type",
+              "short": "-t",
+              "type": "string",
+              "description": "Filter by event type: profile, action, device, workspace, conflict"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "agents",
+          "flags": [
+            {
+              "name": "--cap",
+              "type": "string",
+              "description": "Capability name to match"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--task",
+              "type": "string",
+              "description": "Task description for fuzzy matching"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "archive",
+          "flags": [
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "audit",
+          "flags": [
+            {
+              "name": "--actor",
+              "type": "string",
+              "description": "Filter by actor (agent ID)"
+            },
+            {
+              "name": "--event",
+              "type": "string",
+              "description": "Filter by event type (supports glob, e.g. task.*)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--limit",
+              "type": "int",
+              "description": "Maximum results"
+            },
+            {
+              "name": "--since",
+              "type": "string",
+              "description": "Show events since duration (e.g. 1h, 24h)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "caps",
+          "aliases": [
+            "capabilities"
+          ],
+          "flags": [
+            {
+              "name": "--agent",
+              "type": "string",
+              "description": "Filter by agent profile ID"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "conflicts",
+          "aliases": [
+            "conflict"
+          ],
+          "children": [
+            {
+              "name": "list",
+              "aliases": [
+                "ls"
+              ],
+              "flags": [
+                {
+                  "name": "--unresolved",
+                  "type": "bool",
+                  "description": "Show only conflicts not yet fully resolved"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "resolve",
+              "flags": [
+                {
+                  "name": "--choice",
+                  "type": "string",
+                  "description": "Event ID to choose as winner (for manual strategy)"
+                },
+                {
+                  "name": "--force",
+                  "type": "bool",
+                  "description": "Skip confirmation prompt"
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                },
+                {
+                  "name": "--strategy",
+                  "type": "string",
+                  "description": "Resolution strategy: lww, manual"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "show",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "JSON output"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "create",
+          "flags": [
+            {
+              "name": "--description",
+              "type": "string",
+              "description": "Workspace description"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--resolution-policy",
+              "type": "string",
+              "description": "Conflict resolution policy"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "ctx",
+          "aliases": [
+            "context"
+          ],
+          "children": [
+            {
+              "name": "delete",
+              "flags": [
+                {
+                  "name": "--confirm-token",
+                  "type": "string",
+                  "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+                },
+                {
+                  "name": "--force",
+                  "type": "bool",
+                  "description": "Skip confirmation"
+                },
+                {
+                  "name": "--idempotency-key",
+                  "type": "string",
+                  "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+                },
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "Output as JSON"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                }
+              ],
+              "safety": {
+                "level": "dangerous",
+                "requires_confirmation": true
+              }
+            },
+            {
+              "name": "get",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "Output as JSON"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "history",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "Output as JSON"
+                },
+                {
+                  "name": "--limit",
+                  "type": "int",
+                  "description": "Maximum results"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "list",
+              "flags": [
+                {
+                  "name": "--key-prefix",
+                  "type": "string",
+                  "description": "Filter to keys with this prefix (set membership)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            },
+            {
+              "name": "set",
+              "flags": [
+                {
+                  "name": "--json",
+                  "type": "bool",
+                  "description": "Output as JSON"
+                },
+                {
+                  "name": "--note",
+                  "short": "-n",
+                  "type": "string",
+                  "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+                },
+                {
+                  "name": "--private",
+                  "type": "bool",
+                  "description": "Scope variable to the current profile (default: shared workspace-wide)"
+                }
+              ],
+              "safety": {
+                "level": "safe"
+              }
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "join",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "leave",
+          "flags": [
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "list",
+          "flags": [
+            {
+              "name": "--archived",
+              "type": "bool",
+              "description": "Filter to archived (true) or non-archived (false) workspaces"
+            },
+            {
+              "name": "--limit",
+              "type": "int",
+              "description": "Maximum results"
+            },
+            {
+              "name": "--member",
+              "type": "string",
+              "description": "Filter to workspaces containing this profile ID"
+            },
+            {
+              "name": "--owner",
+              "type": "string",
+              "description": "Filter by workspace owner profile ID"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "members",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "policy",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--key",
+              "type": "string",
+              "description": "Resource key for override (use with --set)"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--set",
+              "type": "string",
+              "description": "Set default resolution strategy"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "remove",
+          "flags": [
+            {
+              "name": "--confirm-token",
+              "type": "string",
+              "description": "Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands."
+            },
+            {
+              "name": "--force",
+              "type": "bool",
+              "description": "Skip confirmation"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "dangerous",
+            "requires_confirmation": true
+          }
+        },
+        {
+          "name": "role",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "send",
+          "flags": [
+            {
+              "name": "--action",
+              "type": "string",
+              "description": "Task action (required)"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--input",
+              "type": "string",
+              "description": "Task input (JSON string, @file, or - for stdin)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            },
+            {
+              "name": "--set",
+              "type": "stringSlice",
+              "description": "Set key=value input pairs"
+            },
+            {
+              "name": "--timeout",
+              "type": "string",
+              "description": "Task timeout (e.g. 5m, 1h)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "show",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "sync",
+          "flags": [
+            {
+              "name": "--device",
+              "type": "string",
+              "description": "Device ID to sync (defaults to current device)"
+            },
+            {
+              "name": "--idempotency-key",
+              "type": "string",
+              "description": "Idempotency key for replay. Same key + same tool replays the recorded output."
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "JSON output"
+            },
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "task",
+          "flags": [
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "tasks",
+          "flags": [
+            {
+              "name": "--agent",
+              "type": "string",
+              "description": "Filter by agent (sender or recipient)"
+            },
+            {
+              "name": "--json",
+              "type": "bool",
+              "description": "Output as JSON"
+            },
+            {
+              "name": "--limit",
+              "type": "int",
+              "description": "Maximum results"
+            },
+            {
+              "name": "--status",
+              "type": "string",
+              "description": "Filter by status (submitted, working, completed, failed, cancelled)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        },
+        {
+          "name": "use",
+          "flags": [
+            {
+              "name": "--note",
+              "short": "-n",
+              "type": "string",
+              "description": "Audit note (recorded against the bus event payload and exposed to policy engine via context.note)"
+            }
+          ],
+          "safety": {
+            "level": "safe"
+          }
+        }
+      ],
+      "safety": {
+        "level": "safe"
+      }
+    }
+  ],
+  "flags": [
+    {
+      "name": "--api-version",
+      "type": "string",
+      "description": "Request a specific CLI schema version (MAJOR.MINOR) for compatibility-mode filtering."
+    },
+    {
+      "name": "--chdir",
+      "short": "-C",
+      "type": "string",
+      "description": "Change directory before running (path or tool-specific target)"
+    },
+    {
+      "name": "--cols",
+      "type": "stringSlice",
+      "description": "Restrict columns to this comma-separated list (repeatable)"
+    },
+    {
+      "name": "--columns",
+      "type": "stringSlice",
+      "description": "Alias for --cols"
+    },
+    {
+      "name": "--config",
+      "short": "-c",
+      "type": "stringArray",
+      "description": "Layer extra config (repeatable). key=value overrides a single value (dotted keys for nesting; value parses as YAML, falls back to literal). A bare path loads an additional config file after the discovered ones. -c tokens win over file layers."
+    },
+    {
+      "name": "--confirm",
+      "type": "string",
+      "description": "Confirmation policy for destructive commands (auto|yes|no|prompt). Default: prompt on a TTY, no otherwise."
+    },
+    {
+      "name": "--dry-run",
+      "type": "bool",
+      "description": "Preview side effects without applying them (must be supported by the command)."
+    },
+    {
+      "name": "--format",
+      "type": "string",
+      "description": "Output format (csv, human, json, table, text, yaml)"
+    },
+    {
+      "name": "--format-help",
+      "type": "bool",
+      "description": "Show available formats and their options (use --format \u003ckey\u003e --format-help for one)"
+    },
+    {
+      "name": "--format-opt",
+      "type": "stringSlice",
+      "description": "Per-format option as key=value (repeatable; bool keys may omit =value)"
+    },
+    {
+      "name": "--instance",
+      "type": "string",
+      "description": "backend instance to target (defaults to config)"
+    },
+    {
+      "name": "--max-ops",
+      "type": "int",
+      "description": "Cap mutating operations per invocation. 0 = unlimited."
+    },
+    {
+      "name": "--no-color",
+      "type": "bool",
+      "description": "Disable ANSI color"
+    },
+    {
+      "name": "--no-hints",
+      "type": "bool",
+      "description": "Suppress next-step hints after command output"
+    },
+    {
+      "name": "--no-redact",
+      "type": "bool",
+      "description": "disable redaction of secrets/PII in logs and output (DEBUG ONLY)"
+    },
+    {
+      "name": "--offline",
+      "type": "string",
+      "description": "disable all network calls"
+    },
+    {
+      "name": "--output",
+      "short": "-o",
+      "type": "string",
+      "description": "Write output to path (use - or empty for stdout)"
+    },
+    {
+      "name": "--policy",
+      "type": "string",
+      "description": "Named delegation policy (loaded from $XDG_CONFIG_HOME/\u003ctool\u003e/policies/\u003cname\u003e.yaml)."
+    },
+    {
+      "name": "--profile",
+      "short": "-p",
+      "type": "string",
+      "description": "profile id (defaults to active profile)"
+    },
+    {
+      "name": "--progress-format",
+      "type": "string",
+      "description": "Progress output format (human or json). Defaults to json when --format=json unless explicitly set."
+    },
+    {
+      "name": "--quiet",
+      "type": "bool",
+      "description": "Suppress non-essential output"
+    },
+    {
+      "name": "--template",
+      "type": "string",
+      "description": "Go text/template applied to results (mutually exclusive with --cols)"
+    },
+    {
+      "name": "--verbose",
+      "short": "-V",
+      "type": "count",
+      "description": "Increase log verbosity (-V=debug, -VV=trace)"
+    },
+    {
+      "name": "--workspace",
+      "type": "string",
+      "description": "workspace id (defaults to active workspace)"
+    }
+  ],
+  "error_patterns": [
+    {
+      "pattern": "unknown command or profile",
+      "fix": "run `aps profile list` to see valid ids; verify spelling",
+      "cause": "first positional arg is neither a registered subcommand nor an existing profile id"
+    },
+    {
+      "pattern": "profile.*not found",
+      "fix": "create with `aps profile add \u003cid\u003e` or list existing with `aps profile list`",
+      "cause": "profile id does not exist in $APS_DATA_PATH/profiles"
+    },
+    {
+      "pattern": "capability '.*' not found on profile",
+      "fix": "register with `aps capability add \u003cprofile\u003e \u003ccapability\u003e` first",
+      "cause": "profile has no record of the requested capability"
+    },
+    {
+      "pattern": "invalid isolation level",
+      "fix": "use one of: none, env, worktree (see `aps profile show \u003cid\u003e`)",
+      "cause": "profile.yaml specifies an unknown isolation.level value"
+    },
+    {
+      "pattern": "bundle .* not found",
+      "fix": "list with `aps bundle list`; create with `aps bundle create`",
+      "cause": "named bundle missing from registry"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "create-and-launch-profile",
+      "steps": [
+        "aps profile add \u003cid\u003e",
+        "aps capability add \u003cid\u003e \u003ccapability\u003e",
+        "aps \u003cid\u003e"
+      ]
+    },
+    {
+      "name": "run-command-as-profile",
+      "steps": [
+        "aps profile list",
+        "aps \u003cprofile-id\u003e \u003ccommand\u003e [args...]"
+      ]
+    },
+    {
+      "name": "register-adapter",
+      "steps": [
+        "aps adapter list",
+        "aps adapter register \u003cname\u003e",
+        "aps adapter exec \u003cname\u003e \u003caction\u003e"
+      ]
+    },
+    {
+      "name": "upgrade-self",
+      "steps": [
+        "aps upgrade --quiet",
+        "aps upgrade --auto"
+      ]
+    }
+  ],
+  "state_introspection": {
+    "config_commands": [
+      "aps env",
+      "aps version"
+    ],
+    "env_vars": [
+      "APS_DATA_PATH"
+    ]
+  }
+}

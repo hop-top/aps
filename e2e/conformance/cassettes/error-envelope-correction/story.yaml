@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/hop-top/kit/main/contracts/story-schema.json
+schema_version: "1"
+story_id: aps.conformance.error-envelope-correction
+title: Branch on failure class without parsing error prose
+binary: aps
+intent: |
+  Flawed invocations reach aps constantly: a mistyped subcommand, a
+  profile that was never created, an output format the tool does not
+  serve. Each one carries a distinct class, so an agent picks its
+  recovery from the process status before it reads a single byte of
+  prose — create the missing profile, correct the typo, choose a
+  declared format. Each diagnostic echoes the input that failed and
+  names the command that fixes it.
+steps:
+  - id: unknown_subcommand
+    intent: |
+      Name a subcommand that does not exist under a real group and read
+      the usage refusal.
+    invoke: ["aps", "profile", "frobnicate", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: missing_profile
+    intent: |
+      Inspect a profile that was never created and read the not-found
+      diagnostic naming the id.
+    invoke: ["aps", "profile", "show", "ghost", "--format", "json"]
+    capture: [exit_code, stdout, stderr]
+  - id: undeclared_format
+    intent: |
+      Ask for an output format outside the declared registry and read
+      the refusal listing the accepted values.
+    invoke: ["aps", "status", "--format", "xml"]
+    capture: [exit_code, stdout, stderr]
