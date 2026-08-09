@@ -17,6 +17,9 @@
   <a href="https://codecov.io/gh/hop-top/aps">
     <img src="https://codecov.io/gh/hop-top/aps/branch/main/graph/badge.svg" alt="Coverage">
   </a>
+  <a href="https://github.com/hop-top/aps/blob/main/e2e/conformance/README.md">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/aps/main/.12fc.json" alt="12-factor AI-CLI conformance">
+  </a>
 </p>
 
 # APS (Agent Profile System)

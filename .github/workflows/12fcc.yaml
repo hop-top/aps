@@ -1,0 +1,111 @@
+name: 12fcc
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: no job in this workflow writes repo contents. The
+# committed `.12fc.json` badge is the source of truth and is refreshed
+# by the local record/grade/badge pipeline, not by CI — see the push
+# job note below and e2e/conformance/README.md.
+permissions:
+  contents: read
+
+jobs:
+  # PR runs: annotate + comment, no repo write. Scoped to e2e/stories/
+  # (the structured story documents). The repo root is excluded: it
+  # holds runtime YAML (goreleaser, workflows, compose files) that
+  # verify-stories would mis-parse as story docs, and e2e/conformance/
+  # holds the graded rubrics plus recorded cassettes, which are
+  # scenario artifacts rather than story docs.
+  #
+  # Cassette grading (F3-F8, F11) is intentionally not wired here: no
+  # released kit ships a grading-capable conformance service yet.
+  # Those factors report skip in this job; the graded truth lives in
+  # e2e/conformance/ (recorded cassettes + tier-3 verdicts, refreshed
+  # locally — see its README).
+  conformance:
+    name: 12-factor AI-CLI conformance
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read           # checkout
+      pull-requests: write     # sticky PR comment
+      security-events: write   # SARIF upload to code-scanning
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # full history so --diff=auto resolves base
+
+      # spec-12fc has no release tag yet (@v1 does not resolve); track
+      # main until the first release ships, then pin the @v1 tag SHA.
+      - uses: hop-top/spec-12fc@main
+        with:
+          command: all
+          paths: e2e/stories
+          diff: ""            # scan paths, not PR diff; --diff+--paths are mutually exclusive
+          fail-on: 2,3,5
+          upload-sarif: true
+          pr-comment: true
+          commit-badge: false
+
+  # Push-to-main: the same check as the PR job, as a gate only. It must
+  # NOT refresh the committed badge. `.12fc.json` on main is rendered
+  # from the full local pipeline (verify-no-leak + verify-stories +
+  # tier-3 cassette grading — all 12 factors measured), while this job
+  # can only run the story and leak leaves (5 factors measured, 7
+  # skipped). The badge counts measured factors only, so a CI refresh
+  # would replace a truthful "12/12 pass" with a degraded "5/5 pass".
+  # Refresh recipe: e2e/conformance/README.md.
+  #
+  # To re-enable in-CI badge refresh, ALL of the following must hold —
+  # otherwise the badge regresses as described above:
+  #   1. a released hop.top/kit whose `conformance svc serve` grades
+  #      uploads with the real scenario grader;
+  #   2. a step before the action that installs that kit, mints a
+  #      grade token, and serves this repo's scenario library on
+  #      loopback, mirroring scripts/12fcc-grade.sh:
+  #        kit conformance svc token mint --claims-db <tmp> --scope grade:aps --tier-max 3
+  #        kit conformance svc serve --claims-db <tmp> --scenarios-root e2e/conformance --addr 127.0.0.1 --port <p> &
+  #   3. these inputs on the action step below:
+  #        kit-version: <that release tag>
+  #        cassette-dir: e2e/conformance/cassettes
+  #        grade-service: http://127.0.0.1:<p>
+  #        grade-token: <minted token>
+  #        commit-badge: true
+  #      plus `contents: write` restored on this job's permissions.
+  conformance-push:
+    name: 12-factor AI-CLI conformance (push)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read           # checkout only; badge is never committed from CI
+      security-events: write   # SARIF upload to code-scanning
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: hop-top/spec-12fc@main
+        with:
+          command: all
+          paths: e2e/stories
+          diff: ""            # scan paths, not PR diff; --diff+--paths are mutually exclusive
+          fail-on: 2,3,5
+          upload-sarif: true
+          pr-comment: false
+          commit-badge: false # committed .12fc.json is the source of truth; see job note
+
+  # Guards the committed cassettes against leaked credentials and
+  # personal paths on every change. Cheap, no kit dependency, and it
+  # fails the PR rather than letting a secret reach the default branch.
+  cassette-secrets:
+    name: cassette secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan recorded cassettes
+        run: ./scripts/12fcc-scan-cassettes.sh
