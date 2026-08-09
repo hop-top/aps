@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"hop.top/kit/go/console/output"
 
+	"hop.top/aps/internal/cli/exit"
 	"hop.top/aps/internal/styles"
 )
 
@@ -150,6 +151,40 @@ func renderPreDispatchError(err error) {
 		}
 	}
 	fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))
+}
+
+// classifyLeafErrors walks the tree and wraps every RunE so a returned
+// domain error carries the envelope its class implies.
+//
+// Kit's own middleware flattens any error that does not already
+// implement AsCLIError into GENERIC/ExitCode=1, which made
+// `aps profile create <dup>` exit 1 despite raising domain.ErrConflict
+// (spec: 4) and a missing profile exit 1 instead of the not-found
+// class (spec: 3). Running this pass before kit's WrapRunE means kit
+// sees an already-classified error and preserves it.
+//
+// Idempotent: the annotation keeps the wrapper single-shot per leaf.
+func classifyLeafErrors(root *cobra.Command) {
+	const classifiedAnnotation = "aps/errors-classified"
+
+	var walk func(*cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		for _, c := range cmd.Commands() {
+			walk(c)
+		}
+		if cmd.RunE == nil || cmd.Annotations[classifiedAnnotation] == "true" {
+			return
+		}
+		inner := cmd.RunE
+		cmd.RunE = func(c *cobra.Command, args []string) error {
+			return exit.Envelope(inner(c, args))
+		}
+		if cmd.Annotations == nil {
+			cmd.Annotations = map[string]string{}
+		}
+		cmd.Annotations[classifiedAnnotation] = "true"
+	}
+	walk(root)
 }
 
 // rejectUnknownSubcommand returns the usage envelope for args that name

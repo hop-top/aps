@@ -359,6 +359,12 @@ func Execute() error {
 		renderPreDispatchError(err)
 		return err
 	}
+	// Attach the envelope implied by each domain error's class before
+	// kit wraps the leaves: kit flattens anything that does not already
+	// implement AsCLIError into GENERIC/exit 1, which otherwise
+	// collapsed conflict (4) and not-found (3) into an
+	// indistinguishable 1.
+	classifyLeafErrors(rootCmd)
 	// Drain in-flight bus events before returning so short-lived CLI
 	// invocations don't exit before async network forwarders flush
 	// their writes to the hub. drainBus is a no-op when the bus is
