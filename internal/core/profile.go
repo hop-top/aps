@@ -88,39 +88,48 @@ const (
 )
 
 // Profile represents an agent profile configuration
+// Profile is the stored agent-profile record.
+//
+// Every field carries a json tag mirroring its yaml tag. Without them
+// the JSON encoder falls back to Go field names, so `--format json`
+// emitted "ID"/"DisplayName" while `--format yaml` emitted
+// "id"/"display_name" for the same record, and omitempty was not
+// honored — the same command described the same profile with two
+// different schemas depending on the format flag. Keep the two tags in
+// sync when adding a field.
 type Profile struct {
-	ID            string               `yaml:"id"`
-	DisplayName   string               `yaml:"display_name"`
-	Type          string               `yaml:"type,omitempty"`        // "human" or "agent"; empty means agent
-	Description   string               `yaml:"description,omitempty"` // one-line role summary
-	ReportsTo     string               `yaml:"reports_to,omitempty"`  // profile id of the supervising role
-	Email         string               `yaml:"email,omitempty"`
-	Avatar        string               `yaml:"avatar,omitempty"` // URL or local path to profile image
-	Color         string               `yaml:"color,omitempty"`  // hex color (e.g. "#3b82f6") for UI rendering
-	Persona       Persona              `yaml:"persona,omitempty"`
-	Capabilities  []string             `yaml:"capabilities,omitempty"`
-	Accounts      map[string]Account   `yaml:"accounts,omitempty"`
-	Preferences   Preferences          `yaml:"preferences,omitempty"`
-	Limits        Limits               `yaml:"limits,omitempty"`
-	Git           GitConfig            `yaml:"git,omitempty"`
-	SSH           SSHConfig            `yaml:"ssh,omitempty"`
-	Webhooks      WebhookConfig        `yaml:"webhooks,omitempty"`
-	Isolation     IsolationConfig      `yaml:"isolation,omitempty"`
-	A2A           *A2AConfig           `yaml:"a2a,omitempty"`
-	ACP           *ACPConfig           `yaml:"acp,omitempty"`
-	Mobile        *MobileAdapterConfig `yaml:"mobile,omitempty"`
-	Workspace     *WorkspaceLink       `yaml:"workspace,omitempty"`
-	Observability *ObservabilityConfig `yaml:"observability,omitempty"`
-	Directory     *DirectoryConfig     `yaml:"directory,omitempty"`
-	Identity      *IdentityConfig      `yaml:"identity,omitempty"`
-	Trust         *TrustConfig         `yaml:"trust,omitempty"`
-	Voice         *VoiceConfig         `yaml:"voice,omitempty"`
-	LLM           *LLMConfig           `yaml:"llm,omitempty"`
-	Knowledge     *KnowledgeConfig     `yaml:"knowledge,omitempty"`
-	Squads        []string             `yaml:"squads,omitempty"` // squad IDs this profile belongs to
-	Scope         *ScopeConfig         `yaml:"scope,omitempty"`
-	Roles         []string             `yaml:"roles,omitempty"` // owner, assignee, evaluator, auditor
-	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty"`
+	ID            string               `yaml:"id" json:"id"`
+	DisplayName   string               `yaml:"display_name" json:"display_name"`
+	Type          string               `yaml:"type,omitempty" json:"type,omitempty"`               // "human" or "agent"; empty means agent
+	Description   string               `yaml:"description,omitempty" json:"description,omitempty"` // one-line role summary
+	ReportsTo     string               `yaml:"reports_to,omitempty" json:"reports_to,omitempty"`   // profile id of the supervising role
+	Email         string               `yaml:"email,omitempty" json:"email,omitempty"`
+	Avatar        string               `yaml:"avatar,omitempty" json:"avatar,omitempty"` // URL or local path to profile image
+	Color         string               `yaml:"color,omitempty" json:"color,omitempty"`   // hex color (e.g. "#3b82f6") for UI rendering
+	Persona       Persona              `yaml:"persona,omitempty" json:"persona,omitempty"`
+	Capabilities  []string             `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
+	Accounts      map[string]Account   `yaml:"accounts,omitempty" json:"accounts,omitempty"`
+	Preferences   Preferences          `yaml:"preferences,omitempty" json:"preferences,omitempty"`
+	Limits        Limits               `yaml:"limits,omitempty" json:"limits,omitempty"`
+	Git           GitConfig            `yaml:"git,omitempty" json:"git,omitempty"`
+	SSH           SSHConfig            `yaml:"ssh,omitempty" json:"ssh,omitempty"`
+	Webhooks      WebhookConfig        `yaml:"webhooks,omitempty" json:"webhooks,omitempty"`
+	Isolation     IsolationConfig      `yaml:"isolation,omitempty" json:"isolation,omitempty"`
+	A2A           *A2AConfig           `yaml:"a2a,omitempty" json:"a2a,omitempty"`
+	ACP           *ACPConfig           `yaml:"acp,omitempty" json:"acp,omitempty"`
+	Mobile        *MobileAdapterConfig `yaml:"mobile,omitempty" json:"mobile,omitempty"`
+	Workspace     *WorkspaceLink       `yaml:"workspace,omitempty" json:"workspace,omitempty"`
+	Observability *ObservabilityConfig `yaml:"observability,omitempty" json:"observability,omitempty"`
+	Directory     *DirectoryConfig     `yaml:"directory,omitempty" json:"directory,omitempty"`
+	Identity      *IdentityConfig      `yaml:"identity,omitempty" json:"identity,omitempty"`
+	Trust         *TrustConfig         `yaml:"trust,omitempty" json:"trust,omitempty"`
+	Voice         *VoiceConfig         `yaml:"voice,omitempty" json:"voice,omitempty"`
+	LLM           *LLMConfig           `yaml:"llm,omitempty" json:"llm,omitempty"`
+	Knowledge     *KnowledgeConfig     `yaml:"knowledge,omitempty" json:"knowledge,omitempty"`
+	Squads        []string             `yaml:"squads,omitempty" json:"squads,omitempty"` // squad IDs this profile belongs to
+	Scope         *ScopeConfig         `yaml:"scope,omitempty" json:"scope,omitempty"`
+	Roles         []string             `yaml:"roles,omitempty" json:"roles,omitempty"` // owner, assignee, evaluator, auditor
+	TrustLedger   *TrustLedger         `yaml:"trust_ledger,omitempty" json:"trust_ledger,omitempty"`
 }
 
 // KnowledgeConfig references external knowledge sources for a profile.

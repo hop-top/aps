@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -490,60 +491,80 @@ prints a human-friendly render. Idempotent.`,
 		if err != nil {
 			return fmt.Errorf("loading profile: %w", err)
 		}
-
-		data, err := yaml.Marshal(profile)
-		if err != nil {
-			return fmt.Errorf("marshaling profile: %w", err)
-		}
-		fmt.Println(string(data))
-
-		// Workspace link
-		if profile.Workspace != nil {
-			fmt.Printf("\nWorkspace: %s (%s)\n",
-				styles.Bold.Render(profile.Workspace.Name),
-				profile.Workspace.Scope)
-		}
-
-		// Rich capabilities section
-		if len(profile.Capabilities) > 0 {
-			fmt.Println("capabilities:")
-			for _, capName := range profile.Capabilities {
-				dot := styles.StatusDot(true)
-				kind := "external"
-				desc := ""
-				if b, e := capability.GetBuiltin(capName); e == nil {
-					kind = "builtin"
-					desc = b.Description
-				} else if ext, e := capability.LoadCapability(capName); e == nil {
-					if ext.Description != "" {
-						desc = ext.Description
-					} else {
-						desc = ext.Path
-					}
-				}
-				badge := styles.KindBadge(kind)
-				line := fmt.Sprintf("  %s %-18s %s", dot, capName, badge)
-				if desc != "" {
-					line += "  " + styles.Dim.Render(desc)
-				}
-				fmt.Println(line)
-			}
-		}
-
-		// Show modules status
-		fmt.Println("\nModules:")
-		dir, _ := core.GetProfileDir(id)
-		if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
-			fmt.Println("- Secrets: present")
-			secrets, _ := core.LoadProfileSecrets(id)
-			for k := range secrets {
-				fmt.Printf("  - %s: ***redacted***\n", k)
-			}
-		} else {
-			fmt.Println("- Secrets: missing")
-		}
-		return nil
+		return writeProfileShow(cmd.OutOrStdout(), globals.Format(), profile)
 	},
+}
+
+// writeProfileShow renders a profile record to w in the requested
+// format.
+//
+// The machine formats emit the profile record and nothing else, so
+// stdout parses as a single document: this command used to print YAML
+// followed by an ANSI-styled human block no matter what --format
+// asked for, which meant an agent requesting JSON got bytes no JSON
+// parser accepts. The human view keeps the rich render — the
+// annotated capability list and module status operators rely on.
+func writeProfileShow(w io.Writer, format string, profile *core.Profile) error {
+	switch strings.ToLower(format) {
+	case output.JSON, output.YAML:
+		return output.Render(w, strings.ToLower(format), profile)
+	}
+	return writeProfileShowHuman(w, profile)
+}
+
+// writeProfileShowHuman renders the operator-facing view: the record
+// as YAML, then the workspace link, the capability list annotated with
+// builtin/external provenance, and module status.
+func writeProfileShowHuman(w io.Writer, profile *core.Profile) error {
+	data, err := yaml.Marshal(profile)
+	if err != nil {
+		return fmt.Errorf("marshaling profile: %w", err)
+	}
+	fmt.Fprintln(w, string(data))
+
+	if profile.Workspace != nil {
+		fmt.Fprintf(w, "\nWorkspace: %s (%s)\n",
+			styles.Bold.Render(profile.Workspace.Name),
+			profile.Workspace.Scope)
+	}
+
+	if len(profile.Capabilities) > 0 {
+		fmt.Fprintln(w, "capabilities:")
+		for _, capName := range profile.Capabilities {
+			dot := styles.StatusDot(true)
+			kind := "external"
+			desc := ""
+			if b, e := capability.GetBuiltin(capName); e == nil {
+				kind = "builtin"
+				desc = b.Description
+			} else if ext, e := capability.LoadCapability(capName); e == nil {
+				if ext.Description != "" {
+					desc = ext.Description
+				} else {
+					desc = ext.Path
+				}
+			}
+			badge := styles.KindBadge(kind)
+			line := fmt.Sprintf("  %s %-18s %s", dot, capName, badge)
+			if desc != "" {
+				line += "  " + styles.Dim.Render(desc)
+			}
+			fmt.Fprintln(w, line)
+		}
+	}
+
+	fmt.Fprintln(w, "\nModules:")
+	dir, _ := core.GetProfileDir(profile.ID)
+	if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
+		fmt.Fprintln(w, "- Secrets: present")
+		secrets, _ := core.LoadProfileSecrets(profile.ID)
+		for k := range secrets {
+			fmt.Fprintf(w, "  - %s: ***redacted***\n", k)
+		}
+	} else {
+		fmt.Fprintln(w, "- Secrets: missing")
+	}
+	return nil
 }
 
 // profileCapabilityCmd is the `aps profile capability` mid-level
