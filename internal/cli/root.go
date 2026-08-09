@@ -47,6 +47,13 @@ var noRedactFlag bool
 // the parsed flag pointer (noRedactFlag) and the cmd-tree's root
 // flags directly, neither of which is on the cycle.
 func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
+	// The declared output contract is closed: a --format value outside
+	// kit's formatter registry is refused as a usage error rather than
+	// reaching dispatch, where kit would surface it as a generic
+	// failure indistinguishable from the command breaking.
+	if err := validateFormatFlag(cmd); err != nil {
+		return err
+	}
 	logging.SetRedactEnabled(!noRedactFlag)
 	// T-0583 — install parsed -c/--config tokens before any subcommand
 	// (or kit-installed hook downstream) calls core.LoadConfig. kit/cli

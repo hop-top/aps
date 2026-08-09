@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -151,6 +152,42 @@ func renderPreDispatchError(err error) {
 		}
 	}
 	fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))
+}
+
+// validateFormatFlag refuses a --format value outside kit's formatter
+// registry with a usage envelope.
+//
+// kit's dispatch returns a plain error for an unknown format, which
+// its middleware wraps GENERIC/exit 1 — indistinguishable from an
+// internal failure, so an agent could not tell "you do not serve this
+// format" (fix the invocation) from "the command broke" (retry or
+// escalate). A bad flag value is a usage error under Factor 11.
+//
+// Only an explicitly set flag is checked, so per-leaf defaults are
+// left alone.
+func validateFormatFlag(cmd *cobra.Command) error {
+	f := cmd.Flag("format")
+	if f == nil || !f.Changed {
+		return nil
+	}
+	val := f.Value.String()
+	if val == "" {
+		return nil
+	}
+	keys := output.Default.Keys()
+	if slices.Contains(keys, val) {
+		return nil
+	}
+	sorted := slices.Clone(keys)
+	slices.Sort(sorted)
+	valid := strings.Join(sorted, ", ")
+	fix := "pass one of: " + valid
+	return &output.Error{
+		Code:         output.CodeUsage,
+		Message:      fmt.Sprintf("invalid --format %q (valid: %s)", val, valid),
+		SuggestedFix: fix,
+		ExitCode:     2,
+	}
 }
 
 // classifyLeafErrors walks the tree and wraps every RunE so a returned
