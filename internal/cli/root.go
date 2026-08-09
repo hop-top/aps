@@ -345,6 +345,20 @@ func Execute() error {
 	// renders help (root.Execute calls applyGroupVisibility internally
 	// after our hook has run).
 	applyCommandGroups()
+	// A mistyped subcommand under a group node (`aps profile
+	// frobnicate`) exits 0 with help under stock cobra — see
+	// findUnknownSubcommand for why neither cmd.Args nor a RunE shim
+	// can fix that without reshaping the tree past kit's strict gates.
+	// Resolve it before dispatch and surface a USAGE envelope instead.
+	//
+	// The envelope renders through kit's own error renderer so
+	// `--format json` yields a parseable document rather than the
+	// styled human line: this path runs ahead of kit's RunE middleware,
+	// so nothing downstream would format it otherwise.
+	if err := rejectUnknownSubcommand(rootCmd, os.Args[1:]); err != nil {
+		renderPreDispatchError(err)
+		return err
+	}
 	// Drain in-flight bus events before returning so short-lived CLI
 	// invocations don't exit before async network forwarders flush
 	// their writes to the hub. drainBus is a no-op when the bus is
