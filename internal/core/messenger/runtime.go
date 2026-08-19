@@ -293,6 +293,9 @@ type RuntimeOptions struct {
 	Hooks       RuntimeHooks
 	Now         func() time.Time
 	Sleep       func(context.Context, time.Duration) error
+	// History, when set, records every successfully delivered reply as an
+	// outbound conversation turn. Inbound turns are owned by the executor.
+	History ConversationStore
 }
 
 // Runtime coordinates provider ingress, routing, execution, delivery, and
@@ -424,7 +427,24 @@ func (r *Runtime) HandleIngress(ctx context.Context, ingress NativeIngress) (*Ru
 		return nil, err
 	}
 	runtimeResult.Delivery = receipt
+	r.recordOutboundTurn(ctx, ingress, route, msg, reply.Text)
 	return runtimeResult, nil
+}
+
+// recordOutboundTurn persists a delivered reply. History failures are
+// logged and do not affect the runtime result.
+func (r *Runtime) recordOutboundTurn(ctx context.Context, ingress NativeIngress, route ExecutionRoute, msg *NormalizedMessage, text string) {
+	if r.options.History == nil || strings.TrimSpace(text) == "" {
+		return
+	}
+	turn := NewOutboundTurn(msg, text, ingress.ServiceID, route.ProfileID, route.ActionName)
+	if _, err := r.options.History.AppendTurn(ctx, turn); err != nil {
+		logging.GetLogger().Error("messenger history: failed to record delivered reply", err,
+			"service_id", ingress.ServiceID,
+			"conversation_id", turn.ConversationID,
+			"message_id", msg.ID,
+		)
+	}
 }
 
 // DefaultRetryPolicy returns conservative retry advice for caller-managed retry

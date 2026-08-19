@@ -172,6 +172,29 @@ aps service add jira-intake \
 This persists `type: ticket`, `adapter: jira`. It is not a chat message
 service and is not mounted at `/services/<id>/webhook`.
 
+## Routing Many Organizations On One Number
+
+One service has one `--default-action`. To dispatch by sender instead, give the
+service a route table and (optionally) a contacts snapshot:
+
+```bash
+aps service add support-line \
+  --type whatsapp \
+  --profile triage \
+  --provider twilio \
+  --from whatsapp:+15550100002 \
+  --route-table routes/support-line.yaml \
+  --contacts contacts/support-line.yaml \
+  --env TWILIO_ACCOUNT_SID=secret:twilio_sid \
+  --env TWILIO_AUTH_TOKEN=secret:twilio_token
+```
+
+Routes match the normalized sender (Twilio `whatsapp:+1555...` and WhatsApp
+Cloud `1555...` compare equal), a contact's `org:`, or a `contact:` id, first
+match wins in file order, and the last route must be `match: unknown` so
+unknown senders always land somewhere (typically triage). Schema and rules:
+[Message routing](../dev/message-routing.md).
+
 ## Testing
 
 Use:
@@ -203,6 +226,22 @@ aps adapter messenger test my-telegram --profile my-agent --channel "-1001234567
 That command exercises the adapter-device mapping pipeline; it does not prove
 that `aps serve` is reachable from Telegram, Slack, Discord, SMS, or WhatsApp.
 
+## Conversation History
+
+Every routed inbound message and every delivered reply is recorded as a turn,
+keyed by the conversation identity (service, platform, channel, sender, and
+platform thread). The routed action receives the newest turns of the same
+session as `prior_turns` on stdin (default 20; set per service with
+`--history-turns N`), plus a `conversation` object with the identity keys.
+
+Inspect what a profile has seen:
+
+```bash
+aps service conversation list --service support-bot
+aps service conversation show <conversation-id>
+aps service conversation show <conversation-id> --limit 5 --format json
+```
+
 ## Legacy Adapter Devices
 
 Use adapter devices only when you need an external subprocess or existing
@@ -224,7 +263,8 @@ aps adapter messenger logs my-telegram -f
 | --- | --- |
 | Service route missing | `aps service routes <service-id>` and `aps serve` |
 | Alias resolved unexpectedly | `aps service add <id> --type <alias> --profile <profile> --dry-run` |
-| Message not routed | Confirm `--default-action` or legacy channel mapping matches the incoming channel ID |
+| Message not routed | Confirm `--default-action`, `--route-table`, or legacy channel mapping matches the incoming channel/sender |
+| Route table rejected | `aps service show <id>` prints `routing_error:`; every table must end with `match: unknown` |
 | Platform cannot reach APS | Check tunnel, DNS, auth token, and `aps serve --addr` binding |
 | SMS provider posts forms | Add a relay that converts form fields to JSON before POSTing to APS |
 

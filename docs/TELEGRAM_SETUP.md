@@ -121,8 +121,9 @@ Your action receives a JSON payload like:
 
 ## Multiple Channels
 
-The service form currently has one `default_action`. Use separate services for
-simple separation:
+The service form has one `default_action`. Use separate services for simple
+separation, or a sender route table (`--route-table`, see
+[Message routing](dev/message-routing.md)) to branch on who is writing:
 
 ```bash
 aps service add telegram-alerts \

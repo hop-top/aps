@@ -281,3 +281,55 @@ func (e *stubExecutor) ExecuteMessage(_ context.Context, handoff ExecutionHandof
 	}
 	return e.result, nil
 }
+
+func TestRuntimeHandleIngress_RecordsDeliveredReplyAsOutboundTurn(t *testing.T) {
+	ctx := context.Background()
+	store := newTestConversationStore(t, ConversationStoreOptions{})
+	msg := &NormalizedMessage{
+		ID:       "msg-1",
+		Platform: "slack",
+		Sender:   Sender{ID: "U123"},
+		Channel:  Channel{ID: "C123"},
+		Text:     "hello",
+	}
+	provider := &stubProvider{message: msg, receipt: &DeliveryReceipt{DeliveryID: "delivery-1", Status: "sent"}}
+	router := &stubRouter{route: ExecutionRoute{ProfileID: "assistant", ActionName: "triage"}}
+	executor := &stubExecutor{result: &ExecutionResult{Status: "completed", Reply: &DeliveryRequest{Text: "ack"}}}
+
+	runtime, err := NewRuntime(provider, router, executor, RuntimeOptions{ServiceID: "support-bot", History: store})
+	require.NoError(t, err)
+	_, err = runtime.HandleIngress(ctx, NativeIngress{ServiceID: "support-bot", Provider: "slack", Mode: IngressModeWebhook})
+	require.NoError(t, err)
+
+	turns, err := store.RecentTurns(ctx, ConversationQuery{ConversationID: msg.ConversationState().ConversationID})
+	require.NoError(t, err)
+	require.Len(t, turns, 1, "runtime records the delivered reply; the executor owns the inbound turn")
+	assert.Equal(t, TurnDirectionOutbound, turns[0].Direction)
+	assert.Equal(t, "ack", turns[0].Text)
+	assert.Equal(t, "assistant", turns[0].ProfileID)
+	assert.Equal(t, "triage", turns[0].ActionName)
+	assert.Equal(t, "support-bot", turns[0].ServiceID)
+	assert.Equal(t, "msg-1", turns[0].MessageID)
+}
+
+func TestRuntimeHandleIngress_FailedDeliveryIsNotATurn(t *testing.T) {
+	ctx := context.Background()
+	store := newTestConversationStore(t, ConversationStoreOptions{})
+	msg := &NormalizedMessage{ID: "msg-1", Platform: "slack", Sender: Sender{ID: "U123"}, Channel: Channel{ID: "C123"}, Text: "hello"}
+	provider := &stubProvider{message: msg, deliverErr: errors.New("boom")}
+	router := &stubRouter{route: ExecutionRoute{ProfileID: "assistant", ActionName: "triage"}}
+	executor := &stubExecutor{result: &ExecutionResult{Status: "completed", Reply: &DeliveryRequest{Text: "ack"}}}
+
+	runtime, err := NewRuntime(provider, router, executor, RuntimeOptions{
+		ServiceID:   "support-bot",
+		History:     store,
+		RetryPolicy: RetryPolicy{MaxAttempts: 1},
+	})
+	require.NoError(t, err)
+	_, err = runtime.HandleIngress(ctx, NativeIngress{ServiceID: "support-bot", Provider: "slack", Mode: IngressModeWebhook})
+	require.Error(t, err)
+
+	turns, err := store.RecentTurns(ctx, ConversationQuery{ConversationID: msg.ConversationState().ConversationID})
+	require.NoError(t, err)
+	assert.Empty(t, turns)
+}

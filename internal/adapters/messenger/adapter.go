@@ -14,8 +14,9 @@ import (
 )
 
 type Adapter struct {
-	status string
-	mu     sync.RWMutex
+	status  string
+	mu      sync.RWMutex
+	history *coremessenger.LazyConversationStore
 }
 
 var _ protocol.ProtocolServer = (*Adapter)(nil)
@@ -61,6 +62,11 @@ func (a *Adapter) Stop() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.status = "stopped"
+	if a.history != nil {
+		if err := a.history.Close(); err != nil {
+			return fmt.Errorf("close messenger conversation store: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -72,7 +78,8 @@ func (a *Adapter) Status() string {
 
 func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) error {
 	normalizer := NewNormalizer()
-	router := NewMessageRouterWithExecutor(&serviceRouteResolver{base: coremessenger.NewManager()}, normalizer, apsCore)
+	router := NewMessageRouterWithExecutor(&serviceRouteResolver{base: coremessenger.NewManager()}, normalizer, apsCore,
+		WithConversationStore(a.conversationStore()))
 	handler := NewHandler(router, normalizer, nil)
 
 	mux.Handle("POST /messengers/{platform}/webhook", handler)
@@ -96,26 +103,112 @@ func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) e
 	return nil
 }
 
+// conversationStore returns the adapter-owned thread history store. It opens
+// lazily under the APS data dir on the first recorded turn, so registering
+// routes never touches disk; open failures are logged per call by the
+// router and never block message handling.
+func (a *Adapter) conversationStore() coremessenger.ConversationStore {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.history == nil {
+		a.history = coremessenger.NewLazyConversationStore(func() (coremessenger.ConversationStore, error) {
+			return coremessenger.OpenDefaultConversationStore(coremessenger.ConversationStoreOptions{})
+		})
+	}
+	return a.history
+}
+
+// serviceRouteResolver layers message-service dispatch on top of the legacy
+// link store: explicit channel mappings win, then the service's route table
+// (sender-keyed) when declared, else the service default_action.
 type serviceRouteResolver struct {
 	base RouteResolver
 }
 
+var (
+	_ RouteResolver        = (*serviceRouteResolver)(nil)
+	_ MessageRouteResolver = (*serviceRouteResolver)(nil)
+)
+
+// ResolveChannelRoute keeps the channel-only contract for callers without a
+// message in hand. Services that declare a route table cannot be resolved
+// here because the sender is unknown; they report a routing failure.
 func (r *serviceRouteResolver) ResolveChannelRoute(messengerName, channelID string) (*coremessenger.ProfileMessengerLink, string, error) {
+	return r.resolve(messengerName, channelID, nil)
+}
+
+// ResolveRouteForMessage resolves with the sender in hand: explicit channel
+// mapping, then route table (stamping the decision on platform_metadata
+// .routing), then default_action.
+func (r *serviceRouteResolver) ResolveRouteForMessage(_ context.Context, messengerName string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
+	if msg == nil {
+		return nil, "", fmt.Errorf("message is nil")
+	}
+	return r.resolve(messengerName, msg.Channel.ID, msg)
+}
+
+func (r *serviceRouteResolver) resolve(messengerName, channelID string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
 	link, action, err := r.base.ResolveChannelRoute(messengerName, channelID)
 	if err == nil {
 		return link, action, nil
 	}
 	if !coremessenger.IsUnknownChannel(err) {
+		return nil, "", fmt.Errorf("resolve channel %s on %s: %w", channelID, messengerName, err)
+	}
+	service, ok := loadMessageService(messengerName)
+	if !ok {
 		return nil, "", err
 	}
+	if !core.HasRouteTable(service) {
+		return defaultActionRoute(service, err)
+	}
+	if msg == nil {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID,
+			coremessenger.ErrRoutingFailed("", fmt.Errorf("sender route table needs the message; channel-only resolution cannot pick a route")))
+	}
+	return routeTableRoute(service, msg)
+}
 
-	service, loadErr := core.LoadService(messengerName)
-	if loadErr != nil || service.Type != "message" || service.Profile == "" {
-		return nil, "", err
+// routeTableRoute compiles the service route table, resolves the sender, and
+// stamps the decision on the message. Load failures fail closed.
+func routeTableRoute(service *core.ServiceConfig, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
+	table, err := core.LoadServiceRouteTable(service)
+	if err != nil {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, err))
 	}
-	defaultAction := strings.TrimSpace(service.Options["default_action"])
+	decision := table.Resolve(msg.Sender.ID)
+	mapping := decision.Mapping()
+	if mapping == "" {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, fmt.Errorf("route table produced no target")))
+	}
+	if msg.PlatformMetadata == nil {
+		msg.PlatformMetadata = map[string]any{}
+	}
+	msg.PlatformMetadata["routing"] = decision.Metadata()
+	return &coremessenger.ProfileMessengerLink{
+		ProfileID:     decision.Route.Profile,
+		MessengerName: service.ID,
+		Enabled:       true,
+		DefaultAction: mapping,
+	}, mapping, nil
+}
+
+// loadMessageService returns the persisted message service behind a route
+// key, or false when the key is not a message service with a profile.
+func loadMessageService(messengerName string) (*core.ServiceConfig, bool) {
+	service, err := core.LoadService(messengerName)
+	if err != nil || service.Type != "message" || service.Profile == "" {
+		return nil, false
+	}
+	return service, true
+}
+
+// defaultActionRoute expands option default_action into a profile=action
+// mapping. unknownErr is returned when the option is absent.
+func defaultActionRoute(service *core.ServiceConfig, unknownErr error) (*coremessenger.ProfileMessengerLink, string, error) {
+	defaultAction := strings.TrimSpace(service.Options[core.OptionDefaultAction])
 	if defaultAction == "" {
-		return nil, "", err
+		return nil, "", unknownErr
 	}
 	actionMapping := defaultAction
 	if !strings.Contains(defaultAction, "=") && !strings.Contains(defaultAction, ":") {
