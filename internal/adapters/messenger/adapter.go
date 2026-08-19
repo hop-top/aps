@@ -134,6 +134,20 @@ var (
 // message in hand. Services that declare a route table cannot be resolved
 // here because the sender is unknown; they report a routing failure.
 func (r *serviceRouteResolver) ResolveChannelRoute(messengerName, channelID string) (*coremessenger.ProfileMessengerLink, string, error) {
+	return r.resolve(messengerName, channelID, nil)
+}
+
+// ResolveRouteForMessage resolves with the sender in hand: explicit channel
+// mapping, then route table (stamping the decision on platform_metadata
+// .routing), then default_action.
+func (r *serviceRouteResolver) ResolveRouteForMessage(_ context.Context, messengerName string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
+	if msg == nil {
+		return nil, "", fmt.Errorf("message is nil")
+	}
+	return r.resolve(messengerName, msg.Channel.ID, msg)
+}
+
+func (r *serviceRouteResolver) resolve(messengerName, channelID string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
 	link, action, err := r.base.ResolveChannelRoute(messengerName, channelID)
 	if err == nil {
 		return link, action, nil
@@ -145,37 +159,22 @@ func (r *serviceRouteResolver) ResolveChannelRoute(messengerName, channelID stri
 	if !ok {
 		return nil, "", err
 	}
-	if core.HasRouteTable(service) {
-		return nil, "", fmt.Errorf("service %s: %w", service.ID,
-			coremessenger.ErrRoutingFailed("", fmt.Errorf("sender route table needs the message; channel-only resolution cannot pick a route")))
-	}
-	return defaultActionRoute(service, err)
-}
-
-// ResolveRouteForMessage resolves with the sender in hand: explicit channel
-// mapping, then route table (stamping the decision on platform_metadata
-// .routing), then default_action.
-func (r *serviceRouteResolver) ResolveRouteForMessage(_ context.Context, messengerName string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
-	if msg == nil {
-		return nil, "", fmt.Errorf("message is nil")
-	}
-	link, action, err := r.base.ResolveChannelRoute(messengerName, msg.Channel.ID)
-	if err == nil {
-		return link, action, nil
-	}
-	if !coremessenger.IsUnknownChannel(err) {
-		return nil, "", fmt.Errorf("resolve channel %s on %s: %w", msg.Channel.ID, messengerName, err)
-	}
-	service, ok := loadMessageService(messengerName)
-	if !ok {
-		return nil, "", err
-	}
 	if !core.HasRouteTable(service) {
 		return defaultActionRoute(service, err)
 	}
-	table, loadErr := core.LoadServiceRouteTable(service)
-	if loadErr != nil {
-		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, loadErr))
+	if msg == nil {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID,
+			coremessenger.ErrRoutingFailed("", fmt.Errorf("sender route table needs the message; channel-only resolution cannot pick a route")))
+	}
+	return routeTableRoute(service, msg)
+}
+
+// routeTableRoute compiles the service route table, resolves the sender, and
+// stamps the decision on the message. Load failures fail closed.
+func routeTableRoute(service *core.ServiceConfig, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
+	table, err := core.LoadServiceRouteTable(service)
+	if err != nil {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, err))
 	}
 	decision := table.Resolve(msg.Sender.ID)
 	mapping := decision.Mapping()

@@ -285,3 +285,16 @@ func TestHandler_ServiceWebhookRouteTableDispatchesBySender(t *testing.T) {
 	assert.Equal(t, "triage", executor.input.ActionID)
 	assert.Contains(t, string(executor.input.Payload), `"terminal":true`)
 }
+
+func TestServiceRouteResolver_ChannelOnlyResolutionRejectsRouteTableServices(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	saveRoutedWhatsAppService(t, acmeRouting(), nil)
+	resolver := &serviceRouteResolver{base: emptyBaseResolver()}
+
+	link, mapping, err := resolver.ResolveChannelRoute("support-line", "+15550100002")
+	require.Error(t, err)
+	assert.Nil(t, link)
+	assert.Empty(t, mapping)
+	assert.False(t, coremessenger.IsUnknownChannel(err))
+	assert.Contains(t, err.Error(), "needs the message")
+}
