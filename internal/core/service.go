@@ -10,9 +10,15 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"hop.top/aps/internal/core/msgroute"
 	"hop.top/aps/internal/logging"
 	kitalias "hop.top/kit/go/console/alias"
 )
+
+// OptionDefaultAction is the message/ticket service option naming the single
+// profile action every inbound event dispatches to. Message services may
+// declare a routing block instead (see msgroute).
+const OptionDefaultAction = "default_action"
 
 // ServiceConfig is the persisted profile-facing service definition.
 type ServiceConfig struct {
@@ -24,6 +30,7 @@ type ServiceConfig struct {
 	Env          map[string]string `yaml:"env,omitempty"`
 	Labels       map[string]string `yaml:"labels,omitempty"`
 	Options      map[string]string `yaml:"options,omitempty"`
+	Routing      *msgroute.Config  `yaml:"routing,omitempty"`
 	Delivery     *ServiceDelivery  `yaml:"delivery,omitempty"`
 	LastInbound  *ServiceEventMeta `yaml:"last_inbound,omitempty"`
 	LastOutbound *ServiceEventMeta `yaml:"last_outbound,omitempty"`
@@ -48,6 +55,7 @@ type ServiceRuntimeMetadata struct {
 	Handoff       string
 	Delivery      string
 	Retry         string
+	Routing       string
 	ErrorHooks    []string
 	ReceiveMode   string
 	DeliveryModes []string
@@ -468,9 +476,15 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 				replyMode = value
 			}
 		}
+		executes := "normalized message execution handoff"
+		routing := OptionDefaultAction
+		if HasRouteTable(service) {
+			executes = "sender route table -> profile action"
+			routing = "sender route table"
+		}
 		return ServiceRuntimeInfo{
 			Receives: "HTTP POST " + route,
-			Executes: "normalized message execution handoff",
+			Executes: executes,
 			Replies:  provider + " " + replyMode,
 			Maturity: "ready",
 			Routes:   []string{route},
@@ -481,6 +495,7 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 				Handoff:     "normalized message execution handoff",
 				Delivery:    "provider delivery interface",
 				Retry:       "provider delivery retry policy max_attempts=3 base_delay=1s max_delay=30s",
+				Routing:     routing,
 				ErrorHooks:  []string{"ingress", "normalize", "route", "execute", "deliver", "retry"},
 				ReceiveMode: receiveMode,
 				DeliveryModes: []string{
@@ -537,7 +552,13 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 	}
 	options := service.Options
 	env := service.Env
-	if strings.TrimSpace(options["default_action"]) == "" {
+	switch {
+	case HasRouteTable(service):
+		if strings.TrimSpace(options[OptionDefaultAction]) != "" {
+			result.Issues = append(result.Issues, "message service declares both routing and option default_action; remove default_action (routing wins at runtime)")
+		}
+		validateServiceRouting(service, result)
+	case strings.TrimSpace(options[OptionDefaultAction]) == "":
 		result.Issues = append(result.Issues, "message service requires option default_action to dispatch inbound messages")
 	}
 	validateMessageReceiveMode(options["receive"], result)
