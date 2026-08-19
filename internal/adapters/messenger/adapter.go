@@ -14,8 +14,9 @@ import (
 )
 
 type Adapter struct {
-	status string
-	mu     sync.RWMutex
+	status  string
+	mu      sync.RWMutex
+	history *coremessenger.LazyConversationStore
 }
 
 var _ protocol.ProtocolServer = (*Adapter)(nil)
@@ -61,6 +62,11 @@ func (a *Adapter) Stop() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.status = "stopped"
+	if a.history != nil {
+		if err := a.history.Close(); err != nil {
+			return fmt.Errorf("close messenger conversation store: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -72,7 +78,8 @@ func (a *Adapter) Status() string {
 
 func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) error {
 	normalizer := NewNormalizer()
-	router := NewMessageRouterWithExecutor(&serviceRouteResolver{base: coremessenger.NewManager()}, normalizer, apsCore)
+	router := NewMessageRouterWithExecutor(&serviceRouteResolver{base: coremessenger.NewManager()}, normalizer, apsCore,
+		WithConversationStore(a.conversationStore()))
 	handler := NewHandler(router, normalizer, nil)
 
 	mux.Handle("POST /messengers/{platform}/webhook", handler)
@@ -94,6 +101,21 @@ func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) e
 		handler.ServeServiceWebhook(w, r, service.ID, service.Adapter)
 	})
 	return nil
+}
+
+// conversationStore returns the adapter-owned thread history store. It opens
+// lazily under the APS data dir on the first recorded turn, so registering
+// routes never touches disk; open failures are logged per call by the
+// router and never block message handling.
+func (a *Adapter) conversationStore() coremessenger.ConversationStore {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.history == nil {
+		a.history = coremessenger.NewLazyConversationStore(func() (coremessenger.ConversationStore, error) {
+			return coremessenger.OpenDefaultConversationStore(coremessenger.ConversationStoreOptions{})
+		})
+	}
+	return a.history
 }
 
 type serviceRouteResolver struct {

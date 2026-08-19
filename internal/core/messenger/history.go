@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"hop.top/aps/internal/core"
@@ -164,4 +165,95 @@ func DefaultConversationStorePath() (string, error) {
 		return "", fmt.Errorf("resolve data dir: %w", err)
 	}
 	return filepath.Join(dataDir, ConversationsDir, ConversationStoreFile), nil
+}
+
+// LazyConversationStore defers opening the underlying store until the first
+// call, so wiring history into a server never touches disk (or fails) at
+// route registration time. Open errors surface on every call until an open
+// succeeds; Close is a no-op when nothing was opened.
+type LazyConversationStore struct {
+	open  func() (ConversationStore, error)
+	mu    sync.Mutex
+	store ConversationStore
+}
+
+var _ ConversationStore = (*LazyConversationStore)(nil)
+
+// NewLazyConversationStore wraps open in a store that opens on first use.
+func NewLazyConversationStore(open func() (ConversationStore, error)) *LazyConversationStore {
+	return &LazyConversationStore{open: open}
+}
+
+func (l *LazyConversationStore) resolve() (ConversationStore, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.store != nil {
+		return l.store, nil
+	}
+	if l.open == nil {
+		return nil, fmt.Errorf("conversation store opener is not configured")
+	}
+	store, err := l.open()
+	if err != nil {
+		return nil, fmt.Errorf("open conversation store: %w", err)
+	}
+	if store == nil {
+		return nil, fmt.Errorf("conversation store opener returned nil")
+	}
+	l.store = store
+	return store, nil
+}
+
+// AppendTurn opens the store on first use and appends the turn.
+func (l *LazyConversationStore) AppendTurn(ctx context.Context, turn ConversationTurn) (ConversationTurn, error) {
+	store, err := l.resolve()
+	if err != nil {
+		return ConversationTurn{}, err
+	}
+	appended, err := store.AppendTurn(ctx, turn)
+	if err != nil {
+		return ConversationTurn{}, fmt.Errorf("lazy conversation store: %w", err)
+	}
+	return appended, nil
+}
+
+// RecentTurns opens the store on first use and queries prior turns.
+func (l *LazyConversationStore) RecentTurns(ctx context.Context, query ConversationQuery) ([]ConversationTurn, error) {
+	store, err := l.resolve()
+	if err != nil {
+		return nil, err
+	}
+	turns, err := store.RecentTurns(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("lazy conversation store: %w", err)
+	}
+	return turns, nil
+}
+
+// ListConversations opens the store on first use and lists conversations.
+func (l *LazyConversationStore) ListConversations(ctx context.Context, filter ConversationFilter) ([]ConversationSummary, error) {
+	store, err := l.resolve()
+	if err != nil {
+		return nil, err
+	}
+	summaries, err := store.ListConversations(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("lazy conversation store: %w", err)
+	}
+	return summaries, nil
+}
+
+// Close closes the underlying store when it was opened. Idempotent.
+func (l *LazyConversationStore) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.store == nil {
+		return nil
+	}
+	err := l.store.Close()
+	l.store = nil
+	if err != nil {
+		return fmt.Errorf("lazy conversation store: %w", err)
+	}
+	return nil
 }

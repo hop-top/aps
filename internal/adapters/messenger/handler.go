@@ -10,11 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"hop.top/aps/internal/core"
 	msgtypes "hop.top/aps/internal/core/messenger"
+	"hop.top/aps/internal/core/protocol"
 	"hop.top/aps/internal/logging"
 )
 
@@ -256,7 +258,7 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Route and execute the action.
-	result, err := h.router.HandleMessage(r.Context(), msg)
+	result, err := h.router.HandleMessage(r.Context(), msg, PriorTurnLimit(serviceHistoryTurns(service)))
 	if err != nil {
 		// Log the failure if possible.
 		if h.logger != nil {
@@ -309,6 +311,10 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 
 	response["message_id"] = msg.ID
 	response["timestamp"] = time.Now().UTC().Format(time.RFC3339)
+	// The webhook response body is the reply channel on this path (TwiML for
+	// Twilio, provider reply JSON otherwise), so a successful reply is the
+	// conversation's outbound turn.
+	h.recordWebhookReplyTurn(r.Context(), msg, service, result)
 	if messengerName != "" {
 		_ = core.RecordServiceOutboundEvent(messengerName, core.ServiceEventMeta{
 			MessageID: msg.ID,
@@ -356,7 +362,7 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 		validatingProvider,
 		h.router,
 		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
-		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts, h.router.ConversationStore()),
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("telegram runtime failed: %v", err))
@@ -448,7 +454,7 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 		validatingProvider,
 		h.router,
 		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
-		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts, h.router.ConversationStore()),
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("slack runtime failed: %v", err))
@@ -556,7 +562,7 @@ func (h *Handler) handleWhatsAppServiceWebhook(w http.ResponseWriter, r *http.Re
 		validatingProvider,
 		h.router,
 		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
-		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts),
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts, h.router.ConversationStore()),
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("whatsapp runtime failed: %v", err))
@@ -661,9 +667,13 @@ type serviceRuntimeExecutor struct {
 
 func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error) {
 	if serviceExecutionMode(e.service) == "chat" {
+		// The chat runtime keeps its own transcript; the conversation store
+		// still records the inbound turn so the query surface stays complete.
+		e.router.recordInboundTurn(ctx, handoff.Message, handoff.ProfileID, handoff.ActionName)
 		return NewChatMessageExecutor(e.chatRunner, e.service).ExecuteMessage(ctx, handoff)
 	}
-	actionResult, err := e.router.ExecuteAction(ctx, handoff.ProfileID, handoff.ActionName, handoff.Message)
+	actionResult, err := e.router.ExecuteAction(ctx, handoff.ProfileID, handoff.ActionName, handoff.Message,
+		PriorTurnLimit(serviceHistoryTurns(e.service)))
 	if err != nil {
 		return nil, err
 	}
@@ -681,11 +691,12 @@ func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msg
 	return result, nil
 }
 
-func runtimeOptionsWithDeliveryAttempts(serviceID string, attempts *[]msgtypes.DeliveryAttempt) msgtypes.RuntimeOptions {
+func runtimeOptionsWithDeliveryAttempts(serviceID string, attempts *[]msgtypes.DeliveryAttempt, history msgtypes.ConversationStore) msgtypes.RuntimeOptions {
 	policy := msgtypes.DefaultRetryPolicy()
 	return msgtypes.RuntimeOptions{
 		ServiceID:   serviceID,
 		RetryPolicy: policy,
+		History:     history,
 		Hooks: msgtypes.RuntimeHooks{
 			OnDeliveryAttempt: func(_ context.Context, attempt msgtypes.DeliveryAttempt) error {
 				if attempts != nil {
@@ -825,6 +836,34 @@ func replyMetadata(msg *msgtypes.NormalizedMessage, service *core.ServiceConfig)
 		}
 	}
 	return metadata
+}
+
+// serviceHistoryTurns reads the per-service "history_turns" option: the
+// number of prior turns attached to each action run. 0 means "use the
+// router default" (msgtypes.DefaultPriorTurnLimit).
+func serviceHistoryTurns(service *core.ServiceConfig) int {
+	value := serviceOption(service, "history_turns")
+	if value == "" {
+		return 0
+	}
+	limit, err := strconv.Atoi(value)
+	if err != nil || limit < 0 {
+		return 0
+	}
+	return limit
+}
+
+// recordWebhookReplyTurn persists the reply embedded in a legacy webhook
+// response as an outbound turn when a reply was actually produced.
+func (h *Handler) recordWebhookReplyTurn(ctx context.Context, msg *msgtypes.NormalizedMessage, service *core.ServiceConfig, result *ActionResult) {
+	if h.router == nil || msg == nil || result == nil || result.Status != "success" || replyMode(service) == "none" {
+		return
+	}
+	profileID, actionName := msg.ProfileID, ""
+	if state, ok := result.OutputData.(*protocol.RunState); ok && state != nil {
+		profileID, actionName = state.ProfileID, state.ActionID
+	}
+	h.router.recordOutboundTurn(ctx, msg, strings.TrimSpace(result.Output), profileID, actionName)
 }
 
 func replyMode(service *core.ServiceConfig) string {

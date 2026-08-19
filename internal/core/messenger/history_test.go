@@ -2,6 +2,8 @@ package messenger
 
 import (
 	"context"
+	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -295,4 +297,41 @@ func turnTexts(turns []ConversationTurn) []string {
 		out = append(out, turn.Text)
 	}
 	return out
+}
+
+func TestLazyConversationStore_OpensOnFirstUseAndCloses(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "lazy", "conversations.db")
+	opens := 0
+	store := NewLazyConversationStore(func() (ConversationStore, error) {
+		opens++
+		return OpenConversationStore(path, ConversationStoreOptions{})
+	})
+	assert.Equal(t, 0, opens, "constructing the lazy store must not touch disk")
+	_, statErr := os.Stat(path)
+	require.True(t, os.IsNotExist(statErr))
+
+	msg := smsMessage("m1", "+15559990000", "hello")
+	_, err := store.AppendTurn(context.Background(), NewInboundTurn(msg, "svc", "p", "a"))
+	require.NoError(t, err)
+	turns, err := store.RecentTurns(context.Background(), ConversationQuery{ConversationID: msg.ConversationState().ConversationID})
+	require.NoError(t, err)
+	assert.Len(t, turns, 1)
+	summaries, err := store.ListConversations(context.Background(), ConversationFilter{})
+	require.NoError(t, err)
+	assert.Len(t, summaries, 1)
+	assert.Equal(t, 1, opens, "the underlying store is opened once")
+	require.NoError(t, store.Close())
+	require.NoError(t, store.Close(), "close is idempotent")
+}
+
+func TestLazyConversationStore_OpenFailureSurfacesOnEveryCall(t *testing.T) {
+	store := NewLazyConversationStore(func() (ConversationStore, error) {
+		return nil, errors.New("no disk")
+	})
+	msg := smsMessage("m1", "+15559990000", "hello")
+	_, err := store.AppendTurn(context.Background(), NewInboundTurn(msg, "svc", "p", "a"))
+	require.ErrorContains(t, err, "no disk")
+	_, err = store.RecentTurns(context.Background(), ConversationQuery{ConversationID: "c"})
+	require.ErrorContains(t, err, "no disk")
+	require.NoError(t, store.Close(), "closing a store that never opened is a no-op")
 }
