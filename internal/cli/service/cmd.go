@@ -15,6 +15,7 @@ func NewServiceCmd() *cobra.Command {
 	cmd.AddCommand(newTestCmd())
 	cmd.AddCommand(newStartCmd())
 	cmd.AddCommand(newStopCmd())
+	cmd.AddCommand(newConversationCmd())
 
 	return cmd
 }

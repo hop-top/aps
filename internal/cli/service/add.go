@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -62,6 +63,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.dedupTTL, "dedup-ttl", "", "Slack Events API duplicate event retention duration")
 	cmd.Flags().StringVar(&opts.defaultAction, "default-action", "", "Default profile action for routed messages or tickets")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
+	cmd.Flags().IntVar(&opts.historyTurns, "history-turns", 0, "Prior conversation turns attached to each routed action run (0 = default 20)")
 
 	// --dry-run and --profile are inherited from the persistent
 	// globals (kit/cli auto-registers --dry-run; --profile is in
@@ -132,6 +134,7 @@ type addOptions struct {
 	dedupTTL              string
 	defaultAction         string
 	reply                 string
+	historyTurns          int
 	dryRun                bool
 }
 
@@ -224,6 +227,9 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "dedup_ttl", opts.dedupTTL)
 	addOption(options, "default_action", opts.defaultAction)
 	addOption(options, "reply", opts.reply)
+	if opts.historyTurns > 0 {
+		addOption(options, "history_turns", strconv.Itoa(opts.historyTurns))
+	}
 	if len(options) == 0 {
 		return nil
 	}

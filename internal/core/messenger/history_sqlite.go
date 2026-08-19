@@ -174,13 +174,16 @@ func (s *SQLiteConversationStore) ListConversations(ctx context.Context, filter 
 	if limit <= 0 {
 		limit = -1 // sqlite: negative LIMIT means no limit
 	}
+	// First/last are by append order (seq), not by provider timestamps,
+	// which may be skewed across providers.
 	rows, err := s.db.QueryContext(ctx, `SELECT last.conversation_id, last.service_id, last.platform, last.channel_id,
-		agg.turn_count, agg.first_at, last.created_at, last.direction, last.text
+		agg.turn_count, first.created_at, last.created_at, last.direction, last.text
 	FROM message_turns last
 	JOIN (
-		SELECT conversation_id, COUNT(*) AS turn_count, MIN(created_at) AS first_at, MAX(seq) AS last_seq
+		SELECT conversation_id, COUNT(*) AS turn_count, MIN(seq) AS first_seq, MAX(seq) AS last_seq
 		FROM message_turns GROUP BY conversation_id
 	) agg ON agg.conversation_id = last.conversation_id AND agg.last_seq = last.seq
+	JOIN message_turns first ON first.seq = agg.first_seq
 	WHERE (? = '' OR last.service_id = ?) AND (? = '' OR last.platform = ?)
 	ORDER BY last.seq DESC LIMIT ?`,
 		filter.ServiceID, filter.ServiceID, filter.Platform, filter.Platform, limit)

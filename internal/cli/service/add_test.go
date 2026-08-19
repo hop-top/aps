@@ -709,6 +709,7 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--from", "+15559870002",
 				"--allowed-number", "+15551230001",
 				"--reply", "text",
+				"--history-turns", "8",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -717,6 +718,7 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"from: +15559870002",
 				"allowed_numbers: +15551230001",
 				"reply: text",
+				"history_turns: 8",
 			},
 		},
 		{
