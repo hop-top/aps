@@ -22,6 +22,14 @@ type RouteResolver interface {
 	ResolveChannelRoute(messengerName, channelID string) (*msgtypes.ProfileMessengerLink, string, error)
 }
 
+// MessageRouteResolver is an optional RouteResolver extension that sees the
+// whole normalized message, so a resolver can branch on sender identity
+// (route tables) instead of channel alone. MessageRouter prefers it when the
+// configured resolver implements it.
+type MessageRouteResolver interface {
+	ResolveRouteForMessage(ctx context.Context, messengerName string, msg *msgtypes.NormalizedMessage) (*msgtypes.ProfileMessengerLink, string, error)
+}
+
 type ActionExecutor interface {
 	ExecuteRun(ctx context.Context, input protocol.RunInput, stream protocol.StreamWriter) (*protocol.RunState, error)
 }
@@ -162,7 +170,7 @@ func (r *MessageRouter) Route(ctx context.Context, msg *msgtypes.NormalizedMessa
 		}
 	}
 
-	link, actionMapping, err := r.resolver.ResolveChannelRoute(messengerName, msg.Channel.ID)
+	link, actionMapping, err := r.resolveRoute(ctx, messengerName, msg)
 	if err != nil {
 		if msgtypes.IsUnknownChannel(err) {
 			result.Status = "unknown_channel"
@@ -199,6 +207,25 @@ func (r *MessageRouter) Route(ctx context.Context, msg *msgtypes.NormalizedMessa
 	msg.ProfileID = target.ProfileID
 
 	return result, nil
+}
+
+// resolveRoute prefers a sender-aware resolver and falls back to the
+// channel-only contract.
+func (r *MessageRouter) resolveRoute(ctx context.Context, messengerName string, msg *msgtypes.NormalizedMessage) (*msgtypes.ProfileMessengerLink, string, error) {
+	var (
+		link    *msgtypes.ProfileMessengerLink
+		mapping string
+		err     error
+	)
+	if senderAware, ok := r.resolver.(MessageRouteResolver); ok {
+		link, mapping, err = senderAware.ResolveRouteForMessage(ctx, messengerName, msg)
+	} else {
+		link, mapping, err = r.resolver.ResolveChannelRoute(messengerName, msg.Channel.ID)
+	}
+	if err != nil {
+		return nil, "", fmt.Errorf("resolve route for %s: %w", messengerName, err)
+	}
+	return link, mapping, nil
 }
 
 func (r *MessageRouter) ResolveMessageRoute(ctx context.Context, msg *msgtypes.NormalizedMessage) (msgtypes.ExecutionRoute, error) {

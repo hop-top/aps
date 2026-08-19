@@ -118,26 +118,98 @@ func (a *Adapter) conversationStore() coremessenger.ConversationStore {
 	return a.history
 }
 
+// serviceRouteResolver layers message-service dispatch on top of the legacy
+// link store: explicit channel mappings win, then the service's route table
+// (sender-keyed) when declared, else the service default_action.
 type serviceRouteResolver struct {
 	base RouteResolver
 }
 
+var (
+	_ RouteResolver        = (*serviceRouteResolver)(nil)
+	_ MessageRouteResolver = (*serviceRouteResolver)(nil)
+)
+
+// ResolveChannelRoute keeps the channel-only contract for callers without a
+// message in hand. Services that declare a route table cannot be resolved
+// here because the sender is unknown; they report a routing failure.
 func (r *serviceRouteResolver) ResolveChannelRoute(messengerName, channelID string) (*coremessenger.ProfileMessengerLink, string, error) {
 	link, action, err := r.base.ResolveChannelRoute(messengerName, channelID)
 	if err == nil {
 		return link, action, nil
 	}
 	if !coremessenger.IsUnknownChannel(err) {
+		return nil, "", fmt.Errorf("resolve channel %s on %s: %w", channelID, messengerName, err)
+	}
+	service, ok := loadMessageService(messengerName)
+	if !ok {
 		return nil, "", err
 	}
+	if core.HasRouteTable(service) {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID,
+			coremessenger.ErrRoutingFailed("", fmt.Errorf("sender route table needs the message; channel-only resolution cannot pick a route")))
+	}
+	return defaultActionRoute(service, err)
+}
 
-	service, loadErr := core.LoadService(messengerName)
-	if loadErr != nil || service.Type != "message" || service.Profile == "" {
+// ResolveRouteForMessage resolves with the sender in hand: explicit channel
+// mapping, then route table (stamping the decision on platform_metadata
+// .routing), then default_action.
+func (r *serviceRouteResolver) ResolveRouteForMessage(_ context.Context, messengerName string, msg *coremessenger.NormalizedMessage) (*coremessenger.ProfileMessengerLink, string, error) {
+	if msg == nil {
+		return nil, "", fmt.Errorf("message is nil")
+	}
+	link, action, err := r.base.ResolveChannelRoute(messengerName, msg.Channel.ID)
+	if err == nil {
+		return link, action, nil
+	}
+	if !coremessenger.IsUnknownChannel(err) {
+		return nil, "", fmt.Errorf("resolve channel %s on %s: %w", msg.Channel.ID, messengerName, err)
+	}
+	service, ok := loadMessageService(messengerName)
+	if !ok {
 		return nil, "", err
 	}
-	defaultAction := strings.TrimSpace(service.Options["default_action"])
+	if !core.HasRouteTable(service) {
+		return defaultActionRoute(service, err)
+	}
+	table, loadErr := core.LoadServiceRouteTable(service)
+	if loadErr != nil {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, loadErr))
+	}
+	decision := table.Resolve(msg.Sender.ID)
+	mapping := decision.Mapping()
+	if mapping == "" {
+		return nil, "", fmt.Errorf("service %s: %w", service.ID, coremessenger.ErrRoutingFailed(msg.ID, fmt.Errorf("route table produced no target")))
+	}
+	if msg.PlatformMetadata == nil {
+		msg.PlatformMetadata = map[string]any{}
+	}
+	msg.PlatformMetadata["routing"] = decision.Metadata()
+	return &coremessenger.ProfileMessengerLink{
+		ProfileID:     decision.Route.Profile,
+		MessengerName: service.ID,
+		Enabled:       true,
+		DefaultAction: mapping,
+	}, mapping, nil
+}
+
+// loadMessageService returns the persisted message service behind a route
+// key, or false when the key is not a message service with a profile.
+func loadMessageService(messengerName string) (*core.ServiceConfig, bool) {
+	service, err := core.LoadService(messengerName)
+	if err != nil || service.Type != "message" || service.Profile == "" {
+		return nil, false
+	}
+	return service, true
+}
+
+// defaultActionRoute expands option default_action into a profile=action
+// mapping. unknownErr is returned when the option is absent.
+func defaultActionRoute(service *core.ServiceConfig, unknownErr error) (*coremessenger.ProfileMessengerLink, string, error) {
+	defaultAction := strings.TrimSpace(service.Options[core.OptionDefaultAction])
 	if defaultAction == "" {
-		return nil, "", err
+		return nil, "", unknownErr
 	}
 	actionMapping := defaultAction
 	if !strings.Contains(defaultAction, "=") && !strings.Contains(defaultAction, ":") {
