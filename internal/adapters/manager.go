@@ -10,6 +10,7 @@ import (
 
 	"hop.top/aps/internal/adapters/agentprotocol"
 	"hop.top/aps/internal/adapters/messenger"
+	"hop.top/aps/internal/adapters/ticket"
 	"hop.top/aps/internal/core/protocol"
 	"hop.top/kit/go/ai/ext"
 )
@@ -88,11 +89,13 @@ func (m *Manager) RegisterRoutes(mux *http.ServeMux, core protocol.APSCore) erro
 }
 
 // DefaultManager returns a Manager pre-populated with the default aps
-// adapter set (currently just agent-protocol). Callers running the HTTP
-// server should InitAll before RegisterRoutes.
+// adapter set: agent-protocol, message service webhooks, and ticket service
+// webhooks. Callers running the HTTP server should InitAll before
+// RegisterRoutes.
 func DefaultManager() *Manager {
 	m := NewManager()
 	m.Add(agentprotocol.NewAgentProtocolAdapter())
 	m.Add(messenger.NewAdapter())
+	m.Add(ticket.NewAdapter())
 	return m
 }
