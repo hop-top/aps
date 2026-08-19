@@ -126,13 +126,13 @@ func firstPositional(target *cobra.Command, args []string) (string, bool) {
 func scanArgsForFormat(args []string) string {
 	for i, a := range args {
 		switch {
-		case a == "--format", a == "-f":
+		case a == "--"+formatFlagName, a == "-f":
 			if i+1 < len(args) {
 				return args[i+1]
 			}
 			return ""
-		case strings.HasPrefix(a, "--format="):
-			return strings.TrimPrefix(a, "--format=")
+		case strings.HasPrefix(a, "--"+formatFlagName+"="):
+			return strings.TrimPrefix(a, "--"+formatFlagName+"=")
 		}
 	}
 	return ""
@@ -166,7 +166,7 @@ func renderPreDispatchError(err error) {
 // Only an explicitly set flag is checked, so per-leaf defaults are
 // left alone.
 func validateFormatFlag(cmd *cobra.Command) error {
-	f := cmd.Flag("format")
+	f := cmd.Flag(formatFlagName)
 	if f == nil || !f.Changed {
 		return nil
 	}
