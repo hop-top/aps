@@ -36,6 +36,7 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 		headers       func([]byte) http.Header
 		wantMessageID string
 		wantRoute     string
+		wantBody      string
 		xrrDelivery   func(t *testing.T) []func(*Handler)
 	}{
 		{
@@ -125,8 +126,10 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 				require.NoError(t, err)
 				return http.Header{msgtypes.TwilioSignatureHeader: {msgtypes.TwilioSignature("twilio-token", "https://hooks.example.test/services/sms-alerts/webhook", form)}}
 			},
-			wantMessageID: "SM123",
-			wantRoute:     "",
+			// Twilio consumes the webhook response as TwiML; the reply
+			// rides <Response><Message> instead of a JSON envelope.
+			wantRoute: "",
+			wantBody:  "<Response><Message>reply from action</Message></Response>",
 		},
 		{
 			name:        "whatsapp",
@@ -171,6 +174,9 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			}
 			if tt.wantRoute != "" {
 				assert.Contains(t, resp.Body, tt.wantRoute)
+			}
+			if tt.wantBody != "" {
+				assert.Contains(t, resp.Body, tt.wantBody)
 			}
 			assert.Equal(t, "assistant", executor.input.ProfileID)
 			assert.Equal(t, strings.TrimPrefix(tt.service.Options["default_action"], "assistant="), executor.input.ActionID)

@@ -3,6 +3,7 @@ package messenger
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -319,7 +320,25 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 		})
 	}
 
+	// Twilio delivers the webhook response to the sender only when it is
+	// TwiML; a JSON body is discarded (error 12300) and no reply SMS goes
+	// out. Other SMS providers keep the JSON contract.
+	if platform == string(msgtypes.PlatformSMS) && serviceProvider(service, "") == "twilio" {
+		writeTwiML(w, twilioSMSReply(service, result))
+		return
+	}
+
 	writeJSON(w, http.StatusOK, response)
+}
+
+// twilioSMSReply returns the reply text to embed in the TwiML response.
+// Empty when the action did not succeed, replies are disabled, or the
+// action produced no output.
+func twilioSMSReply(service *core.ServiceConfig, result *ActionResult) string {
+	if result == nil || result.Status != "success" || replyMode(service) == "none" {
+		return ""
+	}
+	return strings.TrimSpace(result.Output)
 }
 
 func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Request, rawBody []byte, serviceID string, service *core.ServiceConfig) {
@@ -987,6 +1006,21 @@ func writeError(w http.ResponseWriter, status int, message string) {
 		return
 	}
 	_, _ = w.Write(logging.ApplyBytes(body))
+}
+
+// writeTwiML writes the reply as a TwiML document so Twilio relays it to
+// the sender as an SMS. An empty reply produces an empty <Response/>,
+// which acknowledges the webhook without sending a message.
+func writeTwiML(w http.ResponseWriter, reply string) {
+	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	body := xml.Header + "<Response/>"
+	if reply != "" {
+		var escaped strings.Builder
+		_ = xml.EscapeText(&escaped, []byte(reply))
+		body = xml.Header + "<Response><Message>" + escaped.String() + "</Message></Response>"
+	}
+	_, _ = w.Write(logging.ApplyBytes([]byte(body)))
 }
 
 func writeText(w http.ResponseWriter, status int, body string) {
