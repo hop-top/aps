@@ -296,3 +296,74 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+func TestErrorCheckers_SeeThroughWrapping(t *testing.T) {
+	tests := []struct {
+		name    string
+		err     error
+		checker func(error) bool
+		want    bool
+	}{
+		{
+			name:    "IsUnknownChannel through fmt.Errorf %w",
+			err:     fmt.Errorf("service support-line: %w", ErrUnknownChannel("support-line", "C01")),
+			checker: IsUnknownChannel,
+			want:    true,
+		},
+		{
+			name:    "IsSenderNotAllowed through two wrappers",
+			err:     fmt.Errorf("outer: %w", fmt.Errorf("inner: %w", ErrSenderNotAllowed("svc", "blocked"))),
+			checker: IsSenderNotAllowed,
+			want:    true,
+		},
+		{
+			name:    "IsAuthFailed through wrapper",
+			err:     fmt.Errorf("validate: %w", ErrReplayRejected("svc", "seen")),
+			checker: IsAuthFailed,
+			want:    true,
+		},
+		{
+			name:    "outermost messenger error wins",
+			err:     ErrRoutingFailed("msg-1", ErrUnknownChannel("svc", "C01")),
+			checker: IsUnknownChannel,
+			want:    false,
+		},
+		{
+			name:    "IsLinkNotFound wrapped",
+			err:     fmt.Errorf("store: %w", ErrLinkNotFound("tg", "dev")),
+			checker: IsLinkNotFound,
+			want:    true,
+		},
+		{
+			name:    "IsMappingConflict wrapped",
+			err:     fmt.Errorf("store: %w", ErrMappingConflict("c", "p", "a")),
+			checker: IsMappingConflict,
+			want:    true,
+		},
+		{
+			name:    "IsIsolationViolation wrapped",
+			err:     fmt.Errorf("x: %w", ErrIsolationViolation("c", "p1", "p2")),
+			checker: IsIsolationViolation,
+			want:    true,
+		},
+		{
+			name:    "IsActionNotFound wrapped",
+			err:     fmt.Errorf("x: %w", ErrActionNotFound("p", "a")),
+			checker: IsActionNotFound,
+			want:    true,
+		},
+		{
+			name:    "nil error",
+			err:     nil,
+			checker: IsUnknownChannel,
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.checker(tt.err); got != tt.want {
+				t.Fatalf("checker(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}

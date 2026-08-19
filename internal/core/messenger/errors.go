@@ -1,6 +1,9 @@
 package messenger
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // ErrorCode identifies messenger error categories.
 type ErrorCode string
@@ -158,53 +161,46 @@ func ErrSenderNotAllowed(messengerName, reason string) error {
 	}
 }
 
-// Error type checkers
+// Error type checkers. Each classifies by the outermost *MessengerError in
+// the chain (errors.As), so callers may wrap with fmt.Errorf %w freely.
 
 func IsMappingConflict(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeMappingConflict
-	}
-	return false
+	return hasCode(err, ErrCodeMappingConflict)
 }
 
 func IsLinkNotFound(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeLinkNotFound
-	}
-	return false
+	return hasCode(err, ErrCodeLinkNotFound)
 }
 
 func IsUnknownChannel(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeUnknownChannel
-	}
-	return false
+	return hasCode(err, ErrCodeUnknownChannel)
 }
 
 func IsIsolationViolation(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeIsolationViolation
-	}
-	return false
+	return hasCode(err, ErrCodeIsolationViolation)
 }
 
 func IsActionNotFound(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeActionNotFound
-	}
-	return false
+	return hasCode(err, ErrCodeActionNotFound)
 }
 
 func IsAuthFailed(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeAuthFailed || e.Code == ErrCodeReplayRejected
-	}
-	return false
+	return hasCode(err, ErrCodeAuthFailed, ErrCodeReplayRejected)
 }
 
 func IsSenderNotAllowed(err error) bool {
-	if e, ok := err.(*MessengerError); ok {
-		return e.Code == ErrCodeSenderNotAllowed
+	return hasCode(err, ErrCodeSenderNotAllowed)
+}
+
+func hasCode(err error, codes ...ErrorCode) bool {
+	var me *MessengerError
+	if !errors.As(err, &me) {
+		return false
+	}
+	for _, code := range codes {
+		if me.Code == code {
+			return true
+		}
 	}
 	return false
 }
