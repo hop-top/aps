@@ -3,7 +3,7 @@
 Last updated: 2026-05-11
 
 APS message services let profiles receive chat-like messages from Telegram,
-Slack, Discord, SMS, and WhatsApp through one service webhook shape.
+Slack, Discord, SMS, WhatsApp, and email through one service webhook shape.
 
 Use exact commands below. Replace IDs, profiles, numbers, and secret names with
 operator-owned values.
@@ -17,8 +17,11 @@ operator-owned values.
 | Discord | `discord` | `--allowed-channel`, `--allowed-guild` | Message JSON or relay | Interactions Ed25519 only |
 | SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
 | WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
+| Email | `--type message --adapter email` | `--allowed-sender` | Bridge-posted `{from,to,subject,body}` JSON | Generic webhook auth (`auth_scheme` bearer/token/hmac-sha256/ed25519) |
 
-Ticket and work-item platforms use ticket services instead:
+The `email` alias resolves to the ticket adapter; the email *message* adapter
+has no alias and is always addressed in canonical form (see
+[Email](#email)). Ticket and work-item platforms use ticket services instead:
 
 | Alias | Canonical service |
 | --- | --- |
@@ -413,6 +416,82 @@ Controls and limits:
 - Twilio compatibility sends WhatsApp messages through Twilio's Messages API
   with `whatsapp:` sender/recipient prefixes.
 
+### Email
+
+APS does not poll a mailbox itself. An email bridge (IMAP poller, MTA hook,
+or inbound-parse webhook) POSTs one JSON object per message to the service
+URL:
+
+```json
+{"from": "alice@example.com", "to": "inbox@example.com", "subject": "Quote", "body": "..."}
+```
+
+Normalization maps `from` to the sender, `to` to the channel, and `subject`
+to the thread; replies denormalize back to the same shape for the bridge to
+send.
+
+APS setup:
+
+```bash
+aps service add mail-inbox \
+  --type message \
+  --adapter email \
+  --profile assistant \
+  --allowed-sender alice@example.com \
+  --allowed-sender '*@partner.org' \
+  --default-action handle-email \
+  --reply text \
+  --auth-scheme bearer \
+  --auth-token-env MAIL_BRIDGE_TOKEN
+```
+
+- `--allowed-sender` takes an exact address or a `*@domain` glob. Matching is
+  case-insensitive on the whole address and ignores a display name
+  (`Alice <alice@example.com>` matches `alice@example.com`). The glob matches
+  the whole domain only (`*@partner.org` does not match `x@notpartner.org`).
+  With no entries, any sender routes and validation warns.
+- There is no provider signature for email, so the bridge authenticates with
+  the generic webhook auth flags. Set `--auth-scheme bearer` or `token` with
+  `--auth-token-env`, or `hmac-sha256`/`ed25519` with
+  `--signature-secret-env` (see [Generic webhook auth](#generic-webhook-auth)).
+  With none configured the config is still valid but validation warns that any
+  client reaching the route can inject mail; rely on `aps serve --auth-token`
+  or network policy in that case.
+
+### Generic Webhook Auth
+
+Every message service route runs the messenger request validator. Provider
+hooks (Telegram secret token, Slack signing secret, Twilio signature,
+WhatsApp Cloud `X-Hub-Signature-256`, Discord Ed25519) apply automatically
+from the adapter/provider. The generic scheme covers the rest and can be set
+from `service add` without editing yaml:
+
+```bash
+aps service add relay-sms \
+  --type sms --provider generic --from +15550100002 \
+  --profile assistant --default-action handle-sms \
+  --auth-scheme hmac-sha256 \
+  --signature-secret-env RELAY_HMAC_SECRET \
+  --option timestamp_header=X-Relay-Timestamp \
+  --option require_replay_check=true
+```
+
+| Flag | Option | Header checked |
+| --- | --- | --- |
+| `--auth-scheme bearer` + `--auth-token-env` | `auth_scheme`, `auth_token_env` | `Authorization: Bearer <token>` |
+| `--auth-scheme token` + `--auth-token-env` | `auth_scheme`, `auth_token_env` | `X-APS-Token: <token>` |
+| `--auth-scheme hmac-sha256` + `--signature-secret-env` | `auth_scheme`, `signature_secret_env` | `X-APS-Signature: sha256=<hex hmac of raw body>` |
+| `--auth-scheme ed25519` + `--signature-secret-env` | `auth_scheme`, `signature_secret_env` (hex public key) | `X-Signature-Ed25519` over `timestamp + body`, `X-Signature-Timestamp` |
+| `--option auth_header=...` | `auth_header` | override the header name |
+| `--option timestamp_header=...` / `--option require_timestamp=true` | `timestamp_header` | RFC3339 or unix seconds, `timestamp_tolerance` default 5m |
+| `--option replay_id_header=...` / `--option require_replay_check=true` | `replay_id_header` | duplicate delivery IDs rejected within the tolerance window |
+
+Validation rejects a scheme without its secret source (`auth_scheme bearer
+requires auth_token or auth_token_env`) and unknown schemes. `aps service
+show <id>` prints the effective auth under `auth:`. The env-var flags are the
+only CLI surface; literal `auth_token`/`signature_secret` stay yaml-only so
+secrets never land in shell history.
+
 ## Normalized Message Format
 
 Profile actions receive normalized message JSON. Example shape:
@@ -420,7 +499,7 @@ Profile actions receive normalized message JSON. Example shape:
 ```json
 {
   "id": "msg_unique_id",
-  "platform": "telegram|discord|slack|sms|whatsapp",
+  "platform": "telegram|discord|slack|sms|whatsapp|email",
   "profile_id": "assistant",
   "timestamp": "2026-05-11T10:30:00Z",
   "sender": {
@@ -464,6 +543,7 @@ Allowed-source checks run after normalization:
 | `--allowed-channel` | Slack, Discord | `channel.id`, `channel.platform_id` |
 | `--allowed-guild` | Discord | `workspace_id` |
 | `--allowed-number` | SMS, WhatsApp | `sender.id`, `sender.platform_id`, `channel.id`, `channel.platform_id` |
+| `--allowed-sender` | Email | `sender.id`, `sender.platform_id`, `sender.platform_handle` (exact or `*@domain`, case-insensitive) |
 
 Routing currently uses one service-level `--default-action`. Use separate
 services for simple channel separation. Use legacy adapter-device links only
@@ -473,7 +553,7 @@ when one subprocess device needs many channel-to-action mappings.
 
 | Problem | Check |
 | --- | --- |
-| Alias resolved to ticket | Use `telegram`, `slack`, `discord`, `sms`, or `whatsapp` for message services. |
+| Alias resolved to ticket | Use `telegram`, `slack`, `discord`, `sms`, or `whatsapp` for message services; for email messages use `--type message --adapter email`. |
 | Service invalid | Run `aps service test <id>` and fix `config_issue` output. |
 | Route unknown | Run `aps service routes <id>` and `aps service status <id> --base-url <url>`. |
 | Platform cannot connect | Check public HTTPS, DNS, tunnel, proxy, firewall, and APS bind address. |

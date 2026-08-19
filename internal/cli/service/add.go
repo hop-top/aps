@@ -55,7 +55,12 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringArrayVar(&opts.allowedGuilds, "allowed-guild", nil, "Allowed Discord guild ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
-	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Message provider signing secret environment variable")
+	cmd.Flags().StringArrayVar(&opts.allowedSenders, "allowed-sender", nil, "Allowed email sender: exact address or *@domain glob (case-insensitive), repeatable")
+	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Slack/WhatsApp provider signing secret environment variable (provider-native signature; for generic webhook auth use --signature-secret-env)")
+	cmd.Flags().StringVar(&opts.authScheme, "auth-scheme", "", "Generic webhook auth scheme: "+strings.Join(core.AuthSchemes, ", ")+" (bearer/token read --auth-token-env; hmac-sha256/ed25519 read --signature-secret-env)")
+	cmd.Flags().StringVar(&opts.authTokenEnv, "auth-token-env", "", "Environment variable holding the generic webhook bearer/token secret")
+	cmd.Flags().StringVar(&opts.signatureSecretEnv, "signature-secret-env", "", "Environment variable holding the generic webhook HMAC secret or Ed25519 public key")
+	cmd.Flags().StringArrayVar(&opts.options, "option", nil, "Raw service option KEY=VALUE, repeatable; escape hatch for options without a flag (named flags win on the same key)")
 	cmd.Flags().StringVar(&opts.templateName, "template-name", "", "WhatsApp template name for business-initiated replies")
 	cmd.Flags().StringVar(&opts.languageCode, "language-code", "", "WhatsApp template language code")
 	cmd.Flags().BoolVar(&opts.templateRequired, "template-required", false, "Require WhatsApp outbound delivery to use a template")
@@ -67,6 +72,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.contacts, "contacts", "", "Contacts snapshot YAML consulted by --route-table (org:/contact: selectors)")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
 	cmd.Flags().IntVar(&opts.historyTurns, "history-turns", 0, "Prior conversation turns attached to each routed action run (0 = default 20)")
+	cmd.Flags().BoolVar(&opts.force, "force", false, "Overwrite an existing service with the same ID")
 
 	// --dry-run and --profile are inherited from the persistent
 	// globals (kit/cli auto-registers --dry-run; --profile is in
@@ -128,7 +134,12 @@ type addOptions struct {
 	allowedGuilds         []string
 	allowedChats          []string
 	allowedNumbers        []string
+	allowedSenders        []string
 	signingSecretEnv      string
+	authScheme            string
+	authTokenEnv          string
+	signatureSecretEnv    string
+	options               []string
 	templateName          string
 	languageCode          string
 	templateRequired      bool
@@ -140,6 +151,7 @@ type addOptions struct {
 	contacts              string
 	reply                 string
 	historyTurns          int
+	force                 bool
 	dryRun                bool
 }
 
@@ -165,6 +177,10 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	if err != nil {
 		return err
 	}
+	rawOptions, err := parseKeyValues(opts.options, "--option")
+	if err != nil {
+		return err
+	}
 
 	service := &core.ServiceConfig{
 		ID:          id,
@@ -174,22 +190,28 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Description: opts.description,
 		Env:         env,
 		Labels:      labels,
-		Options:     serviceOptions(opts),
+		Options:     serviceOptions(opts, rawOptions),
 		Routing:     routing,
 	}
 
 	printResolved(cmd, resolved)
 	validation := core.ValidateServiceConfig(service)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_valid: %t\n", validation.Valid)
-	for _, issue := range validation.Issues {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_issue: %s\n", issue)
-	}
-	for _, warning := range validation.Warnings {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_warning: %s\n", warning)
-	}
+	renderValidation(cmd, validation)
 	if opts.dryRun {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "dry_run: true")
+		if err := refuseExisting(id, opts.force); err != nil {
+			return err
+		}
 		return nil
+	}
+	if err := refuseExisting(id, opts.force); err != nil {
+		return err
+	}
+	// Validate the in-memory config before anything touches disk: an
+	// invalid record must never be persisted (it would mount a webhook
+	// route for a service that cannot dispatch).
+	if !validation.Valid {
+		return fmt.Errorf("service config is invalid")
 	}
 
 	if err := core.SaveService(service); err != nil {
@@ -203,8 +225,28 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	return nil
 }
 
-func serviceOptions(opts addOptions) map[string]string {
+// refuseExisting rejects re-adding an existing service ID unless --force
+// was given; add has no update/remove verbs, so silent overwrite would be
+// the only way to lose a working config.
+func refuseExisting(id string, force bool) error {
+	exists, err := core.ServiceExists(id)
+	if err != nil {
+		return fmt.Errorf("check existing service: %w", err)
+	}
+	if exists && !force {
+		return fmt.Errorf("service %q already exists; pass --force to overwrite it", id)
+	}
+	return nil
+}
+
+// serviceOptions assembles the option map: --option KEY=VALUE entries seed
+// it, then named flags overwrite the same keys so the documented flag is
+// always the one that wins.
+func serviceOptions(opts addOptions, raw map[string]string) map[string]string {
 	options := map[string]string{}
+	for key, value := range raw {
+		addOption(options, key, value)
+	}
 	addOption(options, "site", opts.site)
 	addOption(options, "project", opts.project)
 	addOption(options, "jql", opts.jql)
@@ -225,7 +267,11 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "allowed_guilds", joinValues(opts.allowedGuilds))
 	addOption(options, "allowed_chats", joinValues(opts.allowedChats))
 	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
+	addOption(options, core.OptionAllowedSenders, joinValues(opts.allowedSenders))
 	addOption(options, "signing_secret_env", opts.signingSecretEnv)
+	addOption(options, core.OptionAuthScheme, opts.authScheme)
+	addOption(options, core.OptionAuthTokenEnv, opts.authTokenEnv)
+	addOption(options, core.OptionSignatureSecretEnv, opts.signatureSecretEnv)
 	addOption(options, "template_name", opts.templateName)
 	addOption(options, "language_code", opts.languageCode)
 	if opts.templateRequired {

@@ -358,3 +358,86 @@ func slackSignature(secret, timestamp string, body []byte) string {
 	_, _ = mac.Write(body)
 	return hex.EncodeToString(mac.Sum(nil))
 }
+
+func TestServiceValidator_EmailAllowedSenders(t *testing.T) {
+	validator := NewServiceValidator()
+	service := ServiceValidationConfig{
+		ID:      "mail-inbox",
+		Adapter: "email",
+		Options: map[string]string{
+			"allowed_senders": "Alice@Example.com, *@partner.org",
+		},
+	}
+	msg := &NormalizedMessage{
+		ID:       "msg-1",
+		Platform: "email",
+		Sender:   Sender{ID: "mallory@evil.example", PlatformID: "mallory@evil.example"},
+		Channel:  Channel{ID: "inbox@example.com"},
+	}
+	if err := validator.ValidateMessage(service, msg); !IsSenderNotAllowed(err) {
+		t.Fatalf("blocked sender error = %v, want sender not allowed", err)
+	}
+
+	// Exact address, case-insensitive.
+	msg.Sender = Sender{ID: "alice@example.COM", PlatformID: "alice@example.COM"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage exact sender: %v", err)
+	}
+
+	// Domain glob, case-insensitive.
+	msg.Sender = Sender{ID: "Bob@Partner.ORG", PlatformID: "Bob@Partner.ORG"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage domain glob sender: %v", err)
+	}
+
+	// Glob matches the whole domain only, not a suffix.
+	msg.Sender = Sender{ID: "bob@notpartner.org", PlatformID: "bob@notpartner.org"}
+	if err := validator.ValidateMessage(service, msg); !IsSenderNotAllowed(err) {
+		t.Fatalf("suffix sender error = %v, want sender not allowed", err)
+	}
+
+	// Display-name form "Name <addr>" is matched on the address.
+	msg.Sender = Sender{ID: "Alice Liddell <alice@example.com>", PlatformID: "Alice Liddell <alice@example.com>"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage display-name sender: %v", err)
+	}
+}
+
+func TestServiceValidator_DescribeAuth(t *testing.T) {
+	validator := NewServiceValidator()
+
+	generic := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "mail-inbox",
+		Adapter: "email",
+		Options: map[string]string{"auth_scheme": "bearer", "auth_token_env": "MAIL_BRIDGE_TOKEN"},
+	})
+	if generic.Provider != "" || generic.ProviderValidated {
+		t.Fatalf("generic auth provider = %q validated=%v, want none", generic.Provider, generic.ProviderValidated)
+	}
+	if generic.Requirements.Scheme != AuthSchemeBearer || generic.Requirements.Header != "Authorization" || generic.Requirements.TokenEnv != "MAIL_BRIDGE_TOKEN" {
+		t.Fatalf("generic requirements = %+v", generic.Requirements)
+	}
+
+	slack := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "slack-support",
+		Adapter: "slack",
+		Env:     map[string]string{"SLACK_SIGNING_SECRET": "secret:SLACK_SIGNING_SECRET"},
+	})
+	if slack.Provider != "slack" || slack.Requirements.Scheme != AuthSchemeSlack || slack.Requirements.Header != "X-Slack-Signature" {
+		t.Fatalf("slack summary = %+v", slack)
+	}
+
+	twilio := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "sms-alerts",
+		Adapter: "sms",
+		Options: map[string]string{"provider": "twilio"},
+	})
+	if twilio.Provider != "twilio" || !twilio.ProviderValidated || twilio.Requirements.Scheme != AuthSchemeNone {
+		t.Fatalf("twilio summary = %+v", twilio)
+	}
+
+	none := validator.DescribeAuth(ServiceValidationConfig{ID: "mail-open", Adapter: "email"})
+	if none.Provider != "" || none.ProviderValidated || none.Requirements.Scheme != AuthSchemeNone {
+		t.Fatalf("open summary = %+v", none)
+	}
+}

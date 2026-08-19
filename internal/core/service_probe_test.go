@@ -96,6 +96,6 @@ func TestSyntheticMessageWebhookPayload_Errors(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "allowed_chats")
 
-	_, _, err = SyntheticMessageWebhookPayload("email", nil)
+	_, _, err = SyntheticMessageWebhookPayload("pager", nil)
 	require.Error(t, err)
 }

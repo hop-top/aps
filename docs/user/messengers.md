@@ -12,9 +12,10 @@ profile actions.
 | `discord` | numeric channel ID | Discord Developer Portal | JSON webhook route through `aps serve` |
 | `sms` | receiving phone number, for example `+15551234567` | SMS provider such as Twilio | JSON relay route through `aps serve` |
 | `whatsapp` | phone number ID or receiving number | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
+| `--type message --adapter email` | receiving address, for example `inbox@example.com` | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
 
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
-not message aliases.
+not message aliases; the email message adapter is addressed in canonical form.
 
 ## Create A Message Service
 
@@ -48,8 +49,18 @@ Use the canonical form when you want to be explicit:
 aps service add support-bot \
   --type message \
   --adapter telegram \
-  --profile my-agent
+  --profile my-agent \
+  --default-action handle-telegram \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 ```
+
+`aps service add` validates the assembled config before anything is written.
+An invalid config (for example `--type sms` without `--provider`/`--from`)
+prints `config_valid: false` plus each `config_issue:` line, exits 1, and
+leaves nothing on disk -- no service file, no webhook route. Re-adding an ID
+that already exists is refused; pass `--force` to overwrite the stored record
+deliberately. `--dry-run` prints the same resolution and validation report
+without writing.
 
 ## Run The Route
 
@@ -157,6 +168,30 @@ For Twilio WhatsApp, use `--provider twilio`, `--from whatsapp:+1555...`,
 `--webhook-url` matching the Twilio console URL, and the Twilio account SID/auth
 token env bindings. Twilio form posts and JSON-style relays are both accepted.
 
+### Email
+
+```bash
+aps service add mail-inbox \
+  --type message \
+  --adapter email \
+  --profile assistant \
+  --allowed-sender alice@example.com \
+  --allowed-sender '*@partner.org' \
+  --default-action handle-email \
+  --reply text \
+  --auth-scheme bearer \
+  --auth-token-env MAIL_BRIDGE_TOKEN
+```
+
+An email bridge POSTs `{"from","to","subject","body"}` JSON to the service
+URL. `--allowed-sender` accepts exact addresses or `*@domain` globs,
+case-insensitive; with none set any sender routes (validation warns). The
+bridge authenticates with the generic webhook auth flags (`--auth-scheme`
+plus `--auth-token-env` or `--signature-secret-env`); without them the config
+is valid but validation warns that the route is open. Details:
+[Email](../MESSENGERS_OVERVIEW.md#email) and
+[Generic webhook auth](../MESSENGERS_OVERVIEW.md#generic-webhook-auth).
+
 ### Ticket Alias Contrast
 
 ```bash
@@ -194,6 +229,29 @@ Cloud `1555...` compare equal), a contact's `org:`, or a `contact:` id, first
 match wins in file order, and the last route must be `match: unknown` so
 unknown senders always land somewhere (typically triage). Schema and rules:
 [Message routing](../dev/message-routing.md).
+
+## Generic Webhook Auth
+
+Providers with a native signature (Slack, Telegram, Twilio, WhatsApp Cloud,
+Discord interactions) are validated by their provider hook. For everything
+else -- the email bridge, an SMS/WhatsApp `--provider generic` relay, or any
+provider you want to wrap behind your own HMAC -- set the generic scheme on
+`service add`:
+
+| Flag | Option written | Meaning |
+| --- | --- | --- |
+| `--auth-scheme` | `auth_scheme` | `bearer`, `token`, `hmac-sha256`, `ed25519`, or `slack-signing-secret` |
+| `--auth-token-env` | `auth_token_env` | env var holding the bearer/token secret (`Authorization: Bearer ...` or `X-APS-Token`) |
+| `--signature-secret-env` | `signature_secret_env` | env var holding the HMAC secret (`X-APS-Signature: sha256=<hex>`) or Ed25519 public key |
+| `--option KEY=VALUE` | any | escape hatch for options without a flag, e.g. `timestamp_header`, `require_replay_check=true`, `auth_header`; repeatable; a named flag wins over `--option` on the same key |
+
+Secrets never go on the command line: the flags name environment variables.
+The literal `auth_token` / `signature_secret` options remain yaml-only.
+`--signing-secret-env` is different: it feeds the Slack and WhatsApp
+provider-native signature checks, not generic auth.
+
+`aps service show <id>` prints the effective result under `auth:` (scheme,
+header, env names, timestamp/replay headers) or `auth: none`.
 
 ## Testing
 
@@ -263,6 +321,8 @@ aps adapter messenger logs my-telegram -f
 | --- | --- |
 | Service route missing | `aps service routes <service-id>` and `aps serve` |
 | Alias resolved unexpectedly | `aps service add <id> --type <alias> --profile <profile> --dry-run` |
+| `service config is invalid` on add | Nothing was saved; fix each `config_issue:` line and re-run |
+| `already exists` on add | Re-run with `--force` to overwrite the stored service deliberately |
 | Message not routed | Confirm `--default-action`, `--route-table`, or legacy channel mapping matches the incoming channel/sender |
 | Route table rejected | `aps service show <id>` prints `routing_error:`; every table must end with `match: unknown` |
 | Platform cannot reach APS | Check tunnel, DNS, auth token, and `aps serve --addr` binding |

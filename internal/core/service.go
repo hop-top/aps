@@ -14,10 +14,39 @@ import (
 	kitalias "hop.top/kit/go/console/alias"
 )
 
+// ServiceTypeMessage is the canonical type of chat-like message services
+// (telegram, slack, discord, sms, whatsapp, email adapters).
+const ServiceTypeMessage = "message"
+
 // OptionDefaultAction is the message/ticket service option naming the single
 // profile action every inbound event dispatches to. Message services may
 // declare a routing block instead (see msgroute).
 const OptionDefaultAction = "default_action"
+
+// Generic webhook auth options read by the messenger ServiceValidator for
+// message services without a provider-native signature (and as an override
+// for those that have one). Secrets stay in env: the *_env options name the
+// variable; the literal forms are yaml-only escape hatches.
+const (
+	OptionAuthScheme         = "auth_scheme"
+	OptionAuthToken          = "auth_token"
+	OptionAuthTokenEnv       = "auth_token_env"   //nolint:gosec // option key, not a credential
+	OptionSignatureSecret    = "signature_secret" //nolint:gosec // option key, not a credential
+	OptionSignatureSecretEnv = "signature_secret_env"
+)
+
+// Generic webhook auth schemes accepted by auth_scheme.
+const (
+	AuthSchemeBearer     = "bearer"
+	AuthSchemeToken      = "token"
+	AuthSchemeHMACSHA256 = "hmac-sha256"
+	AuthSchemeEd25519    = "ed25519"
+	AuthSchemeSlack      = "slack-signing-secret"
+)
+
+// AuthSchemes lists the generic webhook auth schemes accepted by
+// auth_scheme, in the order surfaced by help and validation text.
+var AuthSchemes = []string{AuthSchemeBearer, AuthSchemeToken, AuthSchemeHMACSHA256, AuthSchemeEd25519, AuthSchemeSlack}
 
 // ServiceConfig is the persisted profile-facing service definition.
 type ServiceConfig struct {
@@ -316,6 +345,23 @@ func SaveService(service *ServiceConfig) error {
 	return nil
 }
 
+// ServiceExists reports whether a service record with the given ID is
+// already persisted. Path resolution errors (invalid IDs) are returned so
+// callers fail loudly instead of treating them as "absent".
+func ServiceExists(id string) (bool, error) {
+	path, err := GetServicePath(id)
+	if err != nil {
+		return false, err
+	}
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to stat service %s: %w", id, err)
+	}
+	return true, nil
+}
+
 func LoadService(id string) (*ServiceConfig, error) {
 	path, err := GetServicePath(id)
 	if err != nil {
@@ -562,7 +608,10 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 	}
 	validateMessageReceiveMode(options["receive"], result)
 	validateMessageReplyMode(options["reply"], result)
+	validateGenericWebhookAuth(options, result)
 	switch adapter {
+	case "email":
+		validateEmailMessageService(options, result)
 	case "telegram":
 		requireEnv(env, result, "TELEGRAM_BOT_TOKEN")
 		validateTelegramWebhookSecret(options, result)
@@ -629,6 +678,77 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 	}
 }
 
+// validateEmailMessageService checks the email message adapter. The email
+// bridge (IMAP poller or MTA hook) POSTs {from,to,subject,body} to the
+// service webhook and authenticates through the generic webhook auth
+// options; there is no provider-signed payload, so missing auth is a
+// warning (aps serve --auth-token may still guard the route), not an issue.
+func validateEmailMessageService(options map[string]string, result *ServiceValidationResult) {
+	senders := strings.TrimSpace(options[OptionAllowedSenders])
+	if senders == "" {
+		result.Warnings = append(result.Warnings, "email service has no allowed senders; any sender can route inbound messages")
+	} else {
+		for _, pattern := range strings.Split(senders, ",") {
+			if strings.TrimSpace(pattern) == "" {
+				continue
+			}
+			if err := ValidateAllowedSenderPattern(pattern); err != nil {
+				result.Issues = append(result.Issues, err.Error())
+			}
+		}
+	}
+	if !hasGenericWebhookAuth(options) {
+		result.Warnings = append(result.Warnings, "email service has no webhook auth; any client reaching the route can inject mail (set "+OptionAuthScheme+" with "+OptionAuthTokenEnv+" or "+OptionSignatureSecretEnv+")")
+	}
+}
+
+// validateGenericWebhookAuth checks the generic webhook auth options read
+// by the messenger ServiceValidator (auth_scheme, auth_token[_env],
+// signature_secret[_env]). Only fires when auth_scheme is set; provider
+// hooks (Slack, Telegram, ...) keep their own native schemes otherwise.
+func validateGenericWebhookAuth(options map[string]string, result *ServiceValidationResult) {
+	scheme := strings.TrimSpace(strings.ToLower(options[OptionAuthScheme]))
+	if scheme == "" {
+		return
+	}
+	hasToken := strings.TrimSpace(options[OptionAuthToken]) != "" || strings.TrimSpace(options[OptionAuthTokenEnv]) != ""
+	hasSignature := strings.TrimSpace(options[OptionSignatureSecret]) != "" || strings.TrimSpace(options[OptionSignatureSecretEnv]) != ""
+	switch scheme {
+	case AuthSchemeBearer, AuthSchemeToken:
+		if !hasToken {
+			result.Issues = append(result.Issues, OptionAuthScheme+" "+scheme+" requires "+OptionAuthToken+" or "+OptionAuthTokenEnv)
+		}
+	case AuthSchemeHMACSHA256, AuthSchemeEd25519:
+		if !hasSignature {
+			result.Issues = append(result.Issues, OptionAuthScheme+" "+scheme+" requires "+OptionSignatureSecret+" or "+OptionSignatureSecretEnv)
+		}
+	case AuthSchemeSlack:
+		// Secret comes from the Slack hook (SLACK_SIGNING_SECRET env binding
+		// or signing_secret[_env]); nothing generic to require here.
+	default:
+		result.Issues = append(result.Issues, fmt.Sprintf("unsupported %s %q; use %s", OptionAuthScheme, options[OptionAuthScheme], joinSchemes(AuthSchemes)))
+	}
+}
+
+// joinSchemes renders "a, b, c, or d" for validation and help text.
+func joinSchemes(schemes []string) string {
+	if len(schemes) < 2 {
+		return strings.Join(schemes, "")
+	}
+	return strings.Join(schemes[:len(schemes)-1], ", ") + ", or " + schemes[len(schemes)-1]
+}
+
+// hasGenericWebhookAuth mirrors the messenger validator's detection of
+// generic auth options: any of them switches the route to generic auth.
+func hasGenericWebhookAuth(options map[string]string) bool {
+	for _, key := range []string{OptionAuthScheme, OptionAuthToken, OptionAuthTokenEnv, OptionSignatureSecret, OptionSignatureSecretEnv} {
+		if strings.TrimSpace(options[key]) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func validateTelegramWebhookSecret(options map[string]string, result *ServiceValidationResult) {
 	token := strings.TrimSpace(options["webhook_secret_token"])
 	tokenEnv := strings.TrimSpace(options["webhook_secret_token_env"])
@@ -650,6 +770,7 @@ var knownMessageAdapters = map[string]bool{
 	"discord":  true,
 	"sms":      true,
 	"whatsapp": true,
+	"email":    true,
 }
 
 func validateMessageReceiveMode(value string, result *ServiceValidationResult) {

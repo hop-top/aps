@@ -633,3 +633,98 @@ func TestDescribeServiceRuntime_MessageRuntimeMetadata(t *testing.T) {
 	assert.Equal(t, "webhook", got.Metadata.ReceiveMode)
 	assert.Equal(t, []string{"text", "reaction", "file"}, got.Metadata.DeliveryModes)
 }
+
+func TestValidateServiceConfig_EmailAdapterConfig(t *testing.T) {
+	valid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":  "triage",
+			"allowed_senders": "alice@example.com, *@Example.org",
+			"auth_scheme":     "bearer",
+			"auth_token_env":  "MAIL_BRIDGE_TOKEN",
+			"reply":           "text",
+		},
+	})
+	assert.True(t, valid.Valid, valid.Issues)
+	assert.Empty(t, valid.Issues)
+	assert.NotContains(t, valid.Warnings, "email service has no allowed senders; any sender can route inbound messages")
+	assert.NotContains(t, valid.Warnings, "email service has no webhook auth; any client reaching the route can inject mail (set auth_scheme with auth_token_env or signature_secret_env)")
+
+	open := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{"default_action": "triage"},
+	})
+	assert.True(t, open.Valid, open.Issues)
+	assert.Contains(t, open.Warnings, "email service has no allowed senders; any sender can route inbound messages")
+	assert.Contains(t, open.Warnings, "email service has no webhook auth; any client reaching the route can inject mail (set auth_scheme with auth_token_env or signature_secret_env)")
+
+	invalid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":  "triage",
+			"allowed_senders": "alice@*,bob,*@example.com",
+			"auth_scheme":     "hmac-sha256",
+		},
+	})
+	assert.False(t, invalid.Valid)
+	assert.Contains(t, invalid.Issues, `allowed_senders entry "alice@*" must be an exact address or a *@domain glob`)
+	assert.Contains(t, invalid.Issues, `allowed_senders entry "bob" must be an exact address or a *@domain glob`)
+	assert.Contains(t, invalid.Issues, "auth_scheme hmac-sha256 requires signature_secret or signature_secret_env")
+
+	badScheme := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "triage",
+			"auth_scheme":    "basic",
+			"auth_token_env": "MAIL_BRIDGE_TOKEN",
+		},
+	})
+	assert.False(t, badScheme.Valid)
+	assert.Contains(t, badScheme.Issues, `unsupported auth_scheme "basic"; use bearer, token, hmac-sha256, ed25519, or slack-signing-secret`)
+
+	tokenOnly := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "triage",
+			"auth_scheme":    "token",
+		},
+	})
+	assert.False(t, tokenOnly.Valid)
+	assert.Contains(t, tokenOnly.Issues, "auth_scheme token requires auth_token or auth_token_env")
+}
+
+func TestSyntheticMessageWebhookPayload_Email(t *testing.T) {
+	payload, identity, err := SyntheticMessageWebhookPayload("email", nil)
+	assert.NoError(t, err)
+	assert.Contains(t, string(payload), `"from"`)
+	assert.Contains(t, string(payload), `"to"`)
+	assert.Contains(t, string(payload), `"subject"`)
+	assert.Contains(t, string(payload), `"body"`)
+	assert.Equal(t, "synthetic", identity.SenderSource)
+
+	payload, identity, err = SyntheticMessageWebhookPayload("email", map[string]string{
+		OptionAllowedSenders: "*@example.org, ops@example.org",
+		"from":               "inbox@example.org",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "ops@example.org", identity.Sender)
+	assert.Equal(t, OptionAllowedSenders, identity.SenderSource)
+	assert.Equal(t, "inbox@example.org", identity.Channel)
+	assert.Contains(t, string(payload), `"from":"ops@example.org"`)
+	assert.Contains(t, string(payload), `"to":"inbox@example.org"`)
+}

@@ -48,6 +48,7 @@ const (
 	probeAdapterDiscord  = "discord"
 	probeAdapterSMS      = "sms"
 	probeAdapterWhatsApp = "whatsapp"
+	probeAdapterEmail    = "email"
 )
 
 // SyntheticMessageWebhookPayload builds the adapter-shaped inbound payload
@@ -77,6 +78,8 @@ func SyntheticMessageWebhookPayload(adapter string, options map[string]string) (
 		payload, identity = syntheticDiscordProbe(options)
 	case probeAdapterSMS:
 		payload, identity = syntheticPhoneProbe(options)
+	case probeAdapterEmail:
+		payload, identity = syntheticEmailProbe(options)
 	case probeAdapterWhatsApp:
 		if strings.EqualFold(strings.TrimSpace(options[probeOptionProvider]), "twilio") {
 			payload, identity = syntheticPhoneProbe(options)
@@ -346,6 +349,50 @@ func syntheticWhatsAppCloudProbe(options map[string]string) (whatsAppCloudProbe,
 			}},
 		}},
 	}, identity
+}
+
+type emailProbeMessage struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
+// syntheticEmailProbe impersonates the first literal (non-glob) entry of
+// allowed_senders so an address-allowlisted email service accepts the
+// probe; glob-only allowlists fall back to the synthetic sender, which a
+// `*@domain` pattern cannot match, so the 403 stays honest.
+func syntheticEmailProbe(options map[string]string) (emailProbeMessage, SyntheticProbeIdentity) {
+	identity := SyntheticProbeIdentity{
+		Sender: "aps@example.com", SenderSource: probeIdentitySourceSynthetic,
+		Channel: "inbox@example.com", ChannelSource: probeIdentitySourceSynthetic,
+	}
+	if allowed := firstLiteralCSVOption(options, OptionAllowedSenders); allowed != "" {
+		identity.Sender, identity.SenderSource = allowed, OptionAllowedSenders
+	}
+	if from := strings.TrimSpace(options[probeOptionFrom]); from != "" {
+		identity.Channel, identity.ChannelSource = from, probeOptionFrom
+	}
+	return emailProbeMessage{
+		From:    identity.Sender,
+		To:      identity.Channel,
+		Subject: probeText,
+		Body:    probeText,
+	}, identity
+}
+
+// firstLiteralCSVOption is firstCSVOption restricted to entries without
+// glob metacharacters, for allowlists that accept patterns.
+func firstLiteralCSVOption(options map[string]string, key string) string {
+	if options == nil {
+		return ""
+	}
+	for _, part := range strings.Split(options[key], ",") {
+		if part = strings.TrimSpace(part); part != "" && !strings.Contains(part, "*") {
+			return part
+		}
+	}
+	return ""
 }
 
 // firstCSVOption returns the first non-empty comma-separated entry of a

@@ -56,6 +56,7 @@ Message adapter aliases:
 | `discord` | `type: message`, `adapter: discord` |
 | `sms` | `type: message`, `adapter: sms` |
 | `whatsapp` | `type: message`, `adapter: whatsapp` |
+| (none) | `type: message`, `adapter: email` -- pass `--type message --adapter email` |
 
 Ticket aliases, not message aliases:
 
