@@ -5,21 +5,28 @@ package version
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
-// Build-time variables (set via ldflags)
+// devVersion is the placeholder used when no version was injected at build time.
+const devVersion = "dev"
+
+// Build-time variables (set via ldflags).
 var (
-	// Version is the semantic version (e.g., "1.0.0-alpha.1")
-	Version = "dev"
-	// Commit is the git commit SHA
+	// Version is the raw injected version. Accepts a bare semver ("0.6.0"),
+	// a v-prefixed one ("v0.6.0"), or a monorepo `git describe` string with a
+	// tag prefix ("aps/v0.6.0-alpha.0-70-g7a18b94"). Read it through Short()
+	// or Get(), which normalize; never format it directly.
+	Version = devVersion
+	// Commit is the git commit SHA.
 	Commit = "none"
-	// Date is the build date
+	// Date is the build date.
 	Date = "unknown"
-	// BuiltBy is the build system (e.g., "goreleaser")
+	// BuiltBy is the build system (e.g., "goreleaser").
 	BuiltBy = "manual"
 )
 
-// Info represents complete version information
+// Info represents complete version information.
 type Info struct {
 	Version   string `json:"version"`
 	Commit    string `json:"commit"`
@@ -30,10 +37,24 @@ type Info struct {
 	Arch      string `json:"arch"`
 }
 
-// Get returns the complete version information
+// Normalize reduces an injected version string to a bare semver-ish value:
+// it strips a monorepo tag prefix (everything up to and including the last
+// "/") and a leading "v". Empty input yields "dev".
+func Normalize(v string) string {
+	if i := strings.LastIndex(v, "/"); i >= 0 {
+		v = v[i+1:]
+	}
+	v = strings.TrimPrefix(v, "v")
+	if v == "" {
+		return devVersion
+	}
+	return v
+}
+
+// Get returns the complete version information.
 func Get() Info {
 	return Info{
-		Version:   Version,
+		Version:   Short(),
 		Commit:    Commit,
 		Date:      Date,
 		BuiltBy:   BuiltBy,
@@ -43,16 +64,20 @@ func Get() Info {
 	}
 }
 
-// String returns a human-readable version string
+// String returns a human-readable version string.
 func (i Info) String() string {
 	commit := i.Commit
 	if len(commit) > 7 {
 		commit = commit[:7]
 	}
-	return fmt.Sprintf("aps v%s (%s)", i.Version, commit)
+	v := Normalize(i.Version)
+	if v != devVersion {
+		v = "v" + v
+	}
+	return fmt.Sprintf("aps %s (%s)", v, commit)
 }
 
-// Short returns just the version number
+// Short returns just the normalized version number (no "v", no tag prefix).
 func Short() string {
-	return Version
+	return Normalize(Version)
 }
