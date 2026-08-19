@@ -156,6 +156,26 @@ func TestBuildServerHandler_MessageServiceWebhookMounted(t *testing.T) {
 	}
 }
 
+// TestBuildServerHandler_LegacyPlatformWebhookNotMounted verifies the
+// default serve mux does not expose the service-less
+// /messengers/{platform}/webhook entrypoint: it skips request validation
+// entirely, so an unauthenticated caller must get 404, never a normalized
+// pipeline response.
+func TestBuildServerHandler_LegacyPlatformWebhookNotMounted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	handler := newTestHandler(t, "")
+
+	body := `{"from":"attacker@example.test","to":"inbox@example.test","subject":"hi","text":"hello"}`
+	req := httptest.NewRequest(http.MethodPost, "/messengers/email/webhook", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d, want 404 (legacy platform webhook must not be mounted); body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func requireTestProfileAction(t *testing.T, profileID, actionID string) {
 	t.Helper()
 	if err := core.SaveProfile(&core.Profile{
