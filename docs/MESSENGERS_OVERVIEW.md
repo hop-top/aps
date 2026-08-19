@@ -429,15 +429,9 @@ aps service add mail-inbox \
   --allowed-sender alice@example.com \
   --allowed-sender '*@partner.org' \
   --default-action handle-email \
-  --reply text
-```
-
-Then set the bridge auth in the saved service yaml under `options:`:
-
-```yaml
-options:
-  auth_scheme: bearer
-  auth_token_env: MAIL_BRIDGE_TOKEN
+  --reply text \
+  --auth-scheme bearer \
+  --auth-token-env MAIL_BRIDGE_TOKEN
 ```
 
 - `--allowed-sender` takes an exact address or a `*@domain` glob. Matching is
@@ -446,11 +440,46 @@ options:
   the whole domain only (`*@partner.org` does not match `x@notpartner.org`).
   With no entries, any sender routes and validation warns.
 - There is no provider signature for email, so the bridge authenticates with
-  the generic webhook auth options. Set `auth_scheme` to `bearer` or `token`
-  with `auth_token_env`, or `hmac-sha256`/`ed25519` with
-  `signature_secret_env`. With none configured the config is still valid but
-  validation warns that any client reaching the route can inject mail; rely on
-  `aps serve --auth-token` or network policy in that case.
+  the generic webhook auth flags. Set `--auth-scheme bearer` or `token` with
+  `--auth-token-env`, or `hmac-sha256`/`ed25519` with
+  `--signature-secret-env` (see [Generic webhook auth](#generic-webhook-auth)).
+  With none configured the config is still valid but validation warns that any
+  client reaching the route can inject mail; rely on `aps serve --auth-token`
+  or network policy in that case.
+
+### Generic Webhook Auth
+
+Every message service route runs the messenger request validator. Provider
+hooks (Telegram secret token, Slack signing secret, Twilio signature,
+WhatsApp Cloud `X-Hub-Signature-256`, Discord Ed25519) apply automatically
+from the adapter/provider. The generic scheme covers the rest and can be set
+from `service add` without editing yaml:
+
+```bash
+aps service add relay-sms \
+  --type sms --provider generic --from +15550100002 \
+  --profile assistant --default-action handle-sms \
+  --auth-scheme hmac-sha256 \
+  --signature-secret-env RELAY_HMAC_SECRET \
+  --option timestamp_header=X-Relay-Timestamp \
+  --option require_replay_check=true
+```
+
+| Flag | Option | Header checked |
+| --- | --- | --- |
+| `--auth-scheme bearer` + `--auth-token-env` | `auth_scheme`, `auth_token_env` | `Authorization: Bearer <token>` |
+| `--auth-scheme token` + `--auth-token-env` | `auth_scheme`, `auth_token_env` | `X-APS-Token: <token>` |
+| `--auth-scheme hmac-sha256` + `--signature-secret-env` | `auth_scheme`, `signature_secret_env` | `X-APS-Signature: sha256=<hex hmac of raw body>` |
+| `--auth-scheme ed25519` + `--signature-secret-env` | `auth_scheme`, `signature_secret_env` (hex public key) | `X-Signature-Ed25519` over `timestamp + body`, `X-Signature-Timestamp` |
+| `--option auth_header=...` | `auth_header` | override the header name |
+| `--option timestamp_header=...` / `--option require_timestamp=true` | `timestamp_header` | RFC3339 or unix seconds, `timestamp_tolerance` default 5m |
+| `--option replay_id_header=...` / `--option require_replay_check=true` | `replay_id_header` | duplicate delivery IDs rejected within the tolerance window |
+
+Validation rejects a scheme without its secret source (`auth_scheme bearer
+requires auth_token or auth_token_env`) and unknown schemes. `aps service
+show <id>` prints the effective auth under `auth:`. The env-var flags are the
+only CLI surface; literal `auth_token`/`signature_secret` stay yaml-only so
+secrets never land in shell history.
 
 ## Normalized Message Format
 

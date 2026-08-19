@@ -15,6 +15,10 @@ import (
 	kitalias "hop.top/kit/go/console/alias"
 )
 
+// ServiceTypeMessage is the canonical type of chat-like message services
+// (telegram, slack, discord, sms, whatsapp, email adapters).
+const ServiceTypeMessage = "message"
+
 // OptionDefaultAction is the message/ticket service option naming the single
 // profile action every inbound event dispatches to. Message services may
 // declare a routing block instead (see msgroute).

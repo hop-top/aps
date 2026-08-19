@@ -402,3 +402,42 @@ func TestServiceValidator_EmailAllowedSenders(t *testing.T) {
 		t.Fatalf("ValidateMessage display-name sender: %v", err)
 	}
 }
+
+func TestServiceValidator_DescribeAuth(t *testing.T) {
+	validator := NewServiceValidator()
+
+	generic := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "mail-inbox",
+		Adapter: "email",
+		Options: map[string]string{"auth_scheme": "bearer", "auth_token_env": "MAIL_BRIDGE_TOKEN"},
+	})
+	if generic.Provider != "" || generic.ProviderValidated {
+		t.Fatalf("generic auth provider = %q validated=%v, want none", generic.Provider, generic.ProviderValidated)
+	}
+	if generic.Requirements.Scheme != AuthSchemeBearer || generic.Requirements.Header != "Authorization" || generic.Requirements.TokenEnv != "MAIL_BRIDGE_TOKEN" {
+		t.Fatalf("generic requirements = %+v", generic.Requirements)
+	}
+
+	slack := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "slack-support",
+		Adapter: "slack",
+		Env:     map[string]string{"SLACK_SIGNING_SECRET": "secret:SLACK_SIGNING_SECRET"},
+	})
+	if slack.Provider != "slack" || slack.Requirements.Scheme != AuthSchemeSlack || slack.Requirements.Header != "X-Slack-Signature" {
+		t.Fatalf("slack summary = %+v", slack)
+	}
+
+	twilio := validator.DescribeAuth(ServiceValidationConfig{
+		ID:      "sms-alerts",
+		Adapter: "sms",
+		Options: map[string]string{"provider": "twilio"},
+	})
+	if twilio.Provider != "twilio" || !twilio.ProviderValidated || twilio.Requirements.Scheme != AuthSchemeNone {
+		t.Fatalf("twilio summary = %+v", twilio)
+	}
+
+	none := validator.DescribeAuth(ServiceValidationConfig{ID: "mail-open", Adapter: "email"})
+	if none.Provider != "" || none.ProviderValidated || none.Requirements.Scheme != AuthSchemeNone {
+		t.Fatalf("open summary = %+v", none)
+	}
+}

@@ -56,7 +56,11 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedSenders, "allowed-sender", nil, "Allowed email sender: exact address or *@domain glob (case-insensitive), repeatable")
-	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Message provider signing secret environment variable")
+	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Slack/WhatsApp provider signing secret environment variable (provider-native signature; for generic webhook auth use --signature-secret-env)")
+	cmd.Flags().StringVar(&opts.authScheme, "auth-scheme", "", "Generic webhook auth scheme: "+strings.Join(core.AuthSchemes, ", ")+" (bearer/token read --auth-token-env; hmac-sha256/ed25519 read --signature-secret-env)")
+	cmd.Flags().StringVar(&opts.authTokenEnv, "auth-token-env", "", "Environment variable holding the generic webhook bearer/token secret")
+	cmd.Flags().StringVar(&opts.signatureSecretEnv, "signature-secret-env", "", "Environment variable holding the generic webhook HMAC secret or Ed25519 public key")
+	cmd.Flags().StringArrayVar(&opts.options, "option", nil, "Raw service option KEY=VALUE, repeatable; escape hatch for options without a flag (named flags win on the same key)")
 	cmd.Flags().StringVar(&opts.templateName, "template-name", "", "WhatsApp template name for business-initiated replies")
 	cmd.Flags().StringVar(&opts.languageCode, "language-code", "", "WhatsApp template language code")
 	cmd.Flags().BoolVar(&opts.templateRequired, "template-required", false, "Require WhatsApp outbound delivery to use a template")
@@ -132,6 +136,10 @@ type addOptions struct {
 	allowedNumbers        []string
 	allowedSenders        []string
 	signingSecretEnv      string
+	authScheme            string
+	authTokenEnv          string
+	signatureSecretEnv    string
+	options               []string
 	templateName          string
 	languageCode          string
 	templateRequired      bool
@@ -169,6 +177,10 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	if err != nil {
 		return err
 	}
+	rawOptions, err := parseKeyValues(opts.options, "--option")
+	if err != nil {
+		return err
+	}
 
 	service := &core.ServiceConfig{
 		ID:          id,
@@ -178,7 +190,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Description: opts.description,
 		Env:         env,
 		Labels:      labels,
-		Options:     serviceOptions(opts),
+		Options:     serviceOptions(opts, rawOptions),
 		Routing:     routing,
 	}
 
@@ -227,8 +239,14 @@ func refuseExisting(id string, force bool) error {
 	return nil
 }
 
-func serviceOptions(opts addOptions) map[string]string {
+// serviceOptions assembles the option map: --option KEY=VALUE entries seed
+// it, then named flags overwrite the same keys so the documented flag is
+// always the one that wins.
+func serviceOptions(opts addOptions, raw map[string]string) map[string]string {
 	options := map[string]string{}
+	for key, value := range raw {
+		addOption(options, key, value)
+	}
 	addOption(options, "site", opts.site)
 	addOption(options, "project", opts.project)
 	addOption(options, "jql", opts.jql)
@@ -251,6 +269,9 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
 	addOption(options, core.OptionAllowedSenders, joinValues(opts.allowedSenders))
 	addOption(options, "signing_secret_env", opts.signingSecretEnv)
+	addOption(options, core.OptionAuthScheme, opts.authScheme)
+	addOption(options, core.OptionAuthTokenEnv, opts.authTokenEnv)
+	addOption(options, core.OptionSignatureSecretEnv, opts.signatureSecretEnv)
 	addOption(options, "template_name", opts.templateName)
 	addOption(options, "language_code", opts.languageCode)
 	if opts.templateRequired {

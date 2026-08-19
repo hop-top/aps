@@ -178,24 +178,19 @@ aps service add mail-inbox \
   --allowed-sender alice@example.com \
   --allowed-sender '*@partner.org' \
   --default-action handle-email \
-  --reply text
-```
-
-Then set the bridge auth in the saved service yaml under `options:`:
-
-```yaml
-options:
-  auth_scheme: bearer
-  auth_token_env: MAIL_BRIDGE_TOKEN
+  --reply text \
+  --auth-scheme bearer \
+  --auth-token-env MAIL_BRIDGE_TOKEN
 ```
 
 An email bridge POSTs `{"from","to","subject","body"}` JSON to the service
 URL. `--allowed-sender` accepts exact addresses or `*@domain` globs,
 case-insensitive; with none set any sender routes (validation warns). The
-bridge authenticates with the generic webhook auth options (`auth_scheme`
-plus `auth_token_env` or `signature_secret_env`); without them the config is
-valid but validation warns that the route is open. Details:
-[Email](../MESSENGERS_OVERVIEW.md#email).
+bridge authenticates with the generic webhook auth flags (`--auth-scheme`
+plus `--auth-token-env` or `--signature-secret-env`); without them the config
+is valid but validation warns that the route is open. Details:
+[Email](../MESSENGERS_OVERVIEW.md#email) and
+[Generic webhook auth](../MESSENGERS_OVERVIEW.md#generic-webhook-auth).
 
 ### Ticket Alias Contrast
 
@@ -234,6 +229,29 @@ Cloud `1555...` compare equal), a contact's `org:`, or a `contact:` id, first
 match wins in file order, and the last route must be `match: unknown` so
 unknown senders always land somewhere (typically triage). Schema and rules:
 [Message routing](../dev/message-routing.md).
+
+## Generic Webhook Auth
+
+Providers with a native signature (Slack, Telegram, Twilio, WhatsApp Cloud,
+Discord interactions) are validated by their provider hook. For everything
+else -- the email bridge, an SMS/WhatsApp `--provider generic` relay, or any
+provider you want to wrap behind your own HMAC -- set the generic scheme on
+`service add`:
+
+| Flag | Option written | Meaning |
+| --- | --- | --- |
+| `--auth-scheme` | `auth_scheme` | `bearer`, `token`, `hmac-sha256`, `ed25519`, or `slack-signing-secret` |
+| `--auth-token-env` | `auth_token_env` | env var holding the bearer/token secret (`Authorization: Bearer ...` or `X-APS-Token`) |
+| `--signature-secret-env` | `signature_secret_env` | env var holding the HMAC secret (`X-APS-Signature: sha256=<hex>`) or Ed25519 public key |
+| `--option KEY=VALUE` | any | escape hatch for options without a flag, e.g. `timestamp_header`, `require_replay_check=true`, `auth_header`; repeatable; a named flag wins over `--option` on the same key |
+
+Secrets never go on the command line: the flags name environment variables.
+The literal `auth_token` / `signature_secret` options remain yaml-only.
+`--signing-secret-env` is different: it feeds the Slack and WhatsApp
+provider-native signature checks, not generic auth.
+
+`aps service show <id>` prints the effective result under `auth:` (scheme,
+header, env names, timestamp/replay headers) or `auth: none`.
 
 ## Testing
 

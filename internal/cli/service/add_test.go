@@ -912,3 +912,174 @@ func TestAddCmd_ExistingServiceDryRunReportsConflict(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "maintainer", service.Profile)
 }
+
+func TestAddCmd_GenericWebhookAuthFlags(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "mail-inbox",
+		"--type", "message",
+		"--adapter", "email",
+		"--profile", "assistant",
+		"--allowed-sender", "alice@example.com",
+		"--default-action", "assistant=handle_email",
+		"--reply", "text",
+		"--auth-scheme", "bearer",
+		"--auth-token-env", "MAIL_BRIDGE_TOKEN",
+		"--option", "timestamp_header=X-Mail-Timestamp",
+		"--option", "require_replay_check=true",
+	})
+	require.NoError(t, cmd.Execute(), out.String())
+	assert.Contains(t, out.String(), "config_valid: true")
+	assert.NotContains(t, out.String(), "email service has no webhook auth")
+
+	show := newTestServiceCmd()
+	var showOut bytes.Buffer
+	show.SetOut(&showOut)
+	show.SetErr(&showOut)
+	show.SetArgs([]string{"show", "mail-inbox"})
+	require.NoError(t, show.Execute())
+	for _, want := range []string{
+		"  auth_scheme: bearer",
+		"  auth_token_env: MAIL_BRIDGE_TOKEN",
+		"  timestamp_header: X-Mail-Timestamp",
+		"  require_replay_check: true",
+		"auth:",
+		"  scheme: bearer",
+		"  header: Authorization",
+		"  token_env: MAIL_BRIDGE_TOKEN",
+		"  timestamp_header: X-Mail-Timestamp (tolerance 5m0s)",
+		"  replay_id_header: X-APS-Delivery-ID",
+	} {
+		assert.Contains(t, showOut.String(), want)
+	}
+}
+
+func TestAddCmd_SignatureSecretEnvFlagFeedsGenericAuth(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "mail-inbox",
+		"--type", "message",
+		"--adapter", "email",
+		"--profile", "assistant",
+		"--default-action", "assistant=handle_email",
+		"--auth-scheme", "hmac-sha256",
+		"--signature-secret-env", "MAIL_BRIDGE_SECRET",
+	})
+	require.NoError(t, cmd.Execute(), out.String())
+
+	service, err := core.LoadService("mail-inbox")
+	require.NoError(t, err)
+	assert.Equal(t, "hmac-sha256", service.Options["auth_scheme"])
+	assert.Equal(t, "MAIL_BRIDGE_SECRET", service.Options["signature_secret_env"])
+	_, hasSlackOnly := service.Options["signing_secret_env"]
+	assert.False(t, hasSlackOnly, "--signature-secret-env must not land in the Slack-only signing_secret_env option")
+
+	show := newTestServiceCmd()
+	var showOut bytes.Buffer
+	show.SetOut(&showOut)
+	show.SetErr(&showOut)
+	show.SetArgs([]string{"show", "mail-inbox"})
+	require.NoError(t, show.Execute())
+	assert.Contains(t, showOut.String(), "  scheme: hmac-sha256")
+	assert.Contains(t, showOut.String(), "  header: X-APS-Signature")
+	assert.Contains(t, showOut.String(), "  signature_secret_env: MAIL_BRIDGE_SECRET")
+}
+
+func TestAddCmd_OptionFlagRejectsMalformedAndYieldsToNamedFlags(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	bad := newTestServiceCmd()
+	bad.SetArgs([]string{
+		"add", "mail-inbox",
+		"--type", "message",
+		"--adapter", "email",
+		"--profile", "assistant",
+		"--default-action", "assistant=handle_email",
+		"--option", "auth_scheme",
+	})
+	err := bad.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--option must be KEY=VALUE")
+
+	precedence := newTestServiceCmd()
+	precedence.SetArgs([]string{
+		"add", "mail-inbox",
+		"--type", "message",
+		"--adapter", "email",
+		"--profile", "assistant",
+		"--default-action", "assistant=handle_email",
+		"--option", "auth_scheme=token",
+		"--option", "auth_token_env=FROM_OPTION",
+		"--auth-token-env", "FROM_FLAG",
+	})
+	require.NoError(t, precedence.Execute())
+	service, err := core.LoadService("mail-inbox")
+	require.NoError(t, err)
+	assert.Equal(t, "token", service.Options["auth_scheme"])
+	assert.Equal(t, "FROM_FLAG", service.Options["auth_token_env"])
+}
+
+func TestServiceShow_AuthSummaryForProviderHooksAndNone(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "slack-support",
+		Type:    "message",
+		Adapter: "slack",
+		Profile: "assistant",
+		Env: map[string]string{
+			"SLACK_BOT_TOKEN":      "secret:SLACK_BOT_TOKEN",
+			"SLACK_SIGNING_SECRET": "secret:SLACK_SIGNING_SECRET",
+		},
+		Options: map[string]string{"default_action": "assistant=handle_slack"},
+	}))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TWILIO_ACCOUNT_SID": "AC123",
+			"TWILIO_AUTH_TOKEN":  "secret:TWILIO_AUTH_TOKEN",
+		},
+		Options: map[string]string{"default_action": "assistant=handle_sms", "provider": "twilio", "from": "+15550100002"},
+	}))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "mail-open",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{"default_action": "assistant=handle_email"},
+	}))
+
+	show := func(id string) string {
+		cmd := newTestServiceCmd()
+		var out bytes.Buffer
+		cmd.SetOut(&out)
+		cmd.SetErr(&out)
+		cmd.SetArgs([]string{"show", id})
+		require.NoError(t, cmd.Execute())
+		return out.String()
+	}
+
+	slack := show("slack-support")
+	assert.Contains(t, slack, "auth:\n  scheme: slack-signing-secret\n")
+	assert.Contains(t, slack, "  header: X-Slack-Signature")
+	assert.Contains(t, slack, "  signature_secret_env: SLACK_SIGNING_SECRET")
+	assert.Contains(t, slack, "  timestamp_header: X-Slack-Request-Timestamp")
+
+	sms := show("sms-alerts")
+	assert.Contains(t, sms, "auth:\n  scheme: twilio-signature\n")
+
+	open := show("mail-open")
+	assert.Contains(t, open, "auth: none\n")
+}
