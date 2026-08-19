@@ -200,6 +200,38 @@ func TestHandler_ServiceWebhookRejectsDisallowedSMSNumber(t *testing.T) {
 	}
 }
 
+// TestAdapter_RegisterRoutesDoesNotMountLegacyPlatformWebhook pins the HTTP
+// surface: the platform-keyed /messengers/{platform}/webhook entrypoint runs
+// without a service, so ValidateRequest (provider hooks, generic auth,
+// allowlists) never executes. It must not be reachable from the serve mux;
+// only the per-service route is mounted.
+func TestAdapter_RegisterRoutesDoesNotMountLegacyPlatformWebhook(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	mux := http.NewServeMux()
+	if err := NewAdapter().RegisterRoutes(mux, nil); err != nil {
+		t.Fatalf("RegisterRoutes: %v", err)
+	}
+
+	payloads := map[string]string{
+		"email":    `{"from":"attacker@example.test","to":"inbox@example.test","subject":"hi","text":"hello"}`,
+		"telegram": `{"message":{"message_id":1,"from":{"id":456,"first_name":"Alice"},"chat":{"id":-1001234567890,"type":"group"},"text":"hello"}}`,
+		"slack":    `{"event":{"user":"U12345","channel":"C01ABC2DEF","channel_type":"channel","text":"hello"}}`,
+		"discord":  `{"id":"m1","author":{"id":"u1","username":"alice"},"channel_id":"1200000000000000002","content":"hello"}`,
+	}
+	for platform, body := range payloads {
+		req := httptest.NewRequest(http.MethodPost, "/messengers/"+platform+"/webhook", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+
+		mux.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("POST /messengers/%s/webhook status = %d, want %d (legacy route must not be mounted); body: %s",
+				platform, rec.Code, http.StatusNotFound, rec.Body.String())
+		}
+	}
+}
+
 type fixtureHook struct {
 	req coremessenger.AuthRequirements
 }

@@ -82,7 +82,11 @@ func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) e
 		WithConversationStore(a.conversationStore()))
 	handler := NewHandler(router, normalizer, nil)
 
-	mux.Handle("POST /messengers/{platform}/webhook", handler)
+	// Only the per-service route is exposed. The platform-keyed
+	// Handler.ServeHTTP entrypoint has no service, so ValidateRequest
+	// (provider hooks, generic auth, allowlists) never runs on it; mounting
+	// it would hand untrusted callers an unauthenticated parse + routing
+	// surface.
 	mux.HandleFunc("POST /services/{service}/webhook", func(w http.ResponseWriter, r *http.Request) {
 		serviceID := r.PathValue("service")
 		service, err := core.LoadService(serviceID)

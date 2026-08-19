@@ -169,11 +169,11 @@ Message service routes are mounted at:
 POST /services/<service-id>/webhook
 ```
 
-Legacy component routes still exist at:
-
-```text
-POST /messengers/{platform}/webhook
-```
+This is the only messenger HTTP route `aps serve` mounts. The platform-keyed
+`/messengers/{platform}/webhook` entrypoint on `messenger.Handler` is a
+service-less component path: it skips request validation (provider auth
+hooks, generic webhook auth, allowlists), so it is deliberately not exposed
+over HTTP. Reach a platform through a message service.
 
 Use `aps adapter messenger test <device>` only for adapter-device route
 simulation. It is not a service-route test and it does not verify live platform

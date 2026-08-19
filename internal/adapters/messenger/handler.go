@@ -111,7 +111,10 @@ func WithChatTurnRunner(runner ChatTurnRunner) func(*Handler) {
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
 // to end with /messengers/{platform}/webhook. It extracts the platform from
-// the path, validates the request, and dispatches to handleWebhook.
+// the path and dispatches to handleWebhook without a service, so no request
+// validation (provider hooks, generic auth, allowlists) runs. It is not
+// mounted by `aps serve`; the HTTP surface is ServeServiceWebhook via
+// /services/{service}/webhook.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "only POST requests are accepted")
