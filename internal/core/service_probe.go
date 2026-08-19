@@ -352,10 +352,12 @@ func syntheticWhatsAppCloudProbe(options map[string]string) (whatsAppCloudProbe,
 }
 
 type emailProbeMessage struct {
-	From    string `json:"from"`
-	To      string `json:"to"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
+	MessageID string `json:"message_id"`
+	From      string `json:"from"`
+	To        string `json:"to"`
+	Subject   string `json:"subject"`
+	Body      string `json:"body"`
+	Date      string `json:"date"`
 }
 
 // syntheticEmailProbe impersonates the first literal (non-glob) entry of
@@ -364,8 +366,8 @@ type emailProbeMessage struct {
 // `*@domain` pattern cannot match, so the 403 stays honest.
 func syntheticEmailProbe(options map[string]string) (emailProbeMessage, SyntheticProbeIdentity) {
 	identity := SyntheticProbeIdentity{
-		Sender: "aps@example.com", SenderSource: probeIdentitySourceSynthetic,
-		Channel: "inbox@example.com", ChannelSource: probeIdentitySourceSynthetic,
+		Sender: "service-test@aps.local", SenderSource: probeIdentitySourceSynthetic,
+		Channel: "inbox@aps.local", ChannelSource: probeIdentitySourceSynthetic,
 	}
 	if allowed := firstLiteralCSVOption(options, OptionAllowedSenders); allowed != "" {
 		identity.Sender, identity.SenderSource = allowed, OptionAllowedSenders
@@ -373,11 +375,14 @@ func syntheticEmailProbe(options map[string]string) (emailProbeMessage, Syntheti
 	if from := strings.TrimSpace(options[probeOptionFrom]); from != "" {
 		identity.Channel, identity.ChannelSource = from, probeOptionFrom
 	}
+	now := time.Now().UTC()
 	return emailProbeMessage{
-		From:    identity.Sender,
-		To:      identity.Channel,
-		Subject: probeText,
-		Body:    probeText,
+		MessageID: fmt.Sprintf("<aps-service-test-%d@aps.local>", now.UnixNano()),
+		From:      "APS Service Test <" + identity.Sender + ">",
+		To:        identity.Channel,
+		Subject:   probeText,
+		Body:      probeText,
+		Date:      now.Format(time.RFC3339),
 	}, identity
 }
 
@@ -388,7 +393,7 @@ func firstLiteralCSVOption(options map[string]string, key string) string {
 		return ""
 	}
 	for _, part := range strings.Split(options[key], ",") {
-		if part = strings.TrimSpace(part); part != "" && !strings.Contains(part, "*") {
+		if part = strings.TrimSpace(part); part != "" && !strings.ContainsAny(part, "*?[") {
 			return part
 		}
 	}

@@ -10,10 +10,31 @@ const (
 	AdapterJira   = "jira"
 	AdapterLinear = "linear"
 	AdapterGitLab = "gitlab"
+	AdapterEmail  = "email"
 
 	TicketKindIssue        = "issue"
 	TicketKindComment      = "comment"
 	TicketKindMergeRequest = "merge_request"
+	// TicketKindEmail is the thread type of email tickets: the mailbox is the
+	// channel, the thread root Message-ID is the thread.
+	TicketKindEmail = "email"
+
+	// ServiceType is the persisted service type ticket adapters serve.
+	ServiceType = "ticket"
+
+	// StatusSuccess and StatusFailed are the ActionResult.Status values.
+	StatusSuccess = "success"
+	StatusFailed  = "failed"
+
+	optionDefaultAction = "default-action"
+	maturityComponent   = "component"
+
+	// MetadataServiceID is the NormalizedTicket.Metadata key carrying the
+	// ticket service that received the event.
+	MetadataServiceID = "service_id"
+	// MetadataRouting is the NormalizedTicket.Metadata key carrying the route
+	// table decision when the service dispatches by sender.
+	MetadataRouting = "routing"
 )
 
 // AdapterDefinition describes a ticket adapter's user-facing service shape.
@@ -29,33 +50,34 @@ type AdapterDefinition struct {
 }
 
 // NormalizedTicket is the common ticket/work-item shape used by Jira, Linear,
-// and GitLab before routing to a profile action.
+// GitLab, and email before routing to a profile action. It is also the JSON
+// document a routed action reads on stdin (see ActionPayload).
 type NormalizedTicket struct {
-	ID          string
-	Adapter     string
-	Kind        string
-	Action      string
-	WorkspaceID string
-	ProjectID   string
-	ChannelID   string
-	ThreadID    string
-	ThreadType  string
-	Title       string
-	Body        string
-	URL         string
-	State       string
-	Author      Actor
-	Labels      []string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Metadata    map[string]any
+	ID          string         `json:"id"`
+	Adapter     string         `json:"adapter"`
+	Kind        string         `json:"kind"`
+	Action      string         `json:"action,omitempty"`
+	WorkspaceID string         `json:"workspace_id,omitempty"`
+	ProjectID   string         `json:"project_id,omitempty"`
+	ChannelID   string         `json:"channel_id"`
+	ThreadID    string         `json:"thread_id,omitempty"`
+	ThreadType  string         `json:"thread_type,omitempty"`
+	Title       string         `json:"title,omitempty"`
+	Body        string         `json:"body,omitempty"`
+	URL         string         `json:"url,omitempty"`
+	State       string         `json:"state,omitempty"`
+	Author      Actor          `json:"author"`
+	Labels      []string       `json:"labels,omitempty"`
+	CreatedAt   time.Time      `json:"created_at,omitempty"`
+	UpdatedAt   time.Time      `json:"updated_at,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type Actor struct {
-	ID     string
-	Name   string
-	Handle string
-	Email  string
+	ID     string `json:"id"`
+	Name   string `json:"name,omitempty"`
+	Handle string `json:"handle,omitempty"`
+	Email  string `json:"email,omitempty"`
 }
 
 type TargetAction struct {
@@ -136,35 +158,49 @@ func (t TargetAction) String() string {
 	return t.ProfileID + "=" + t.ActionName
 }
 
+// replyBehaviors are the reply modes every ticket adapter understands.
+var replyBehaviors = []string{"comment", "status", "auto", "none"} //nolint:goconst // option catalogue; literals are the data
+
+//nolint:goconst // option catalogue; literals are the data
 var adapterDefinitions = map[string]AdapterDefinition{
+	AdapterEmail: {
+		Name:           AdapterEmail,
+		Options:        []string{optionDefaultAction, "reply", "allowed_senders", "auth_token_env", "signature_secret_env"},
+		Receives:       "inbound email events posted by a mail relay or poller",
+		Executes:       "routed profile action with normalized email payload",
+		Replies:        "reply body when reply=comment or auto; status metadata when reply=status",
+		RouteKeys:      []string{"mailbox", "thread"},
+		ReplyBehaviors: replyBehaviors,
+		Maturity:       maturityComponent,
+	},
 	AdapterJira: {
 		Name:           AdapterJira,
-		Options:        []string{"env:JIRA_TOKEN", "site", "project", "jql", "default-action", "reply"},
+		Options:        []string{"env:JIRA_TOKEN", "site", "project", "jql", optionDefaultAction, "reply"},
 		Receives:       "Jira issue and comment webhooks or queried issues",
 		Executes:       "routed profile action with normalized issue/comment payload",
 		Replies:        "Jira comment body when reply=comment or auto; status metadata when reply=status",
 		RouteKeys:      []string{"project", "issue"},
-		ReplyBehaviors: []string{"comment", "status", "auto", "none"},
-		Maturity:       "component",
+		ReplyBehaviors: replyBehaviors,
+		Maturity:       maturityComponent,
 	},
 	AdapterLinear: {
 		Name:           AdapterLinear,
-		Options:        []string{"env:LINEAR_API_KEY", "workspace", "team", "project", "default-action", "reply"},
+		Options:        []string{"env:LINEAR_API_KEY", "workspace", "team", "project", optionDefaultAction, "reply"},
 		Receives:       "Linear issue and comment webhooks",
 		Executes:       "routed profile action with normalized issue/comment payload",
 		Replies:        "Linear comment body when reply=comment or auto; status metadata when reply=status",
 		RouteKeys:      []string{"team", "project", "issue"},
-		ReplyBehaviors: []string{"comment", "status", "auto", "none"},
-		Maturity:       "component",
+		ReplyBehaviors: replyBehaviors,
+		Maturity:       maturityComponent,
 	},
 	AdapterGitLab: {
 		Name:           AdapterGitLab,
-		Options:        []string{"env:GITLAB_TOKEN", "project", "group", "events", "default-action", "reply"},
+		Options:        []string{"env:GITLAB_TOKEN", "project", "group", "events", optionDefaultAction, "reply"},
 		Receives:       "GitLab issue, merge request, and note webhooks",
 		Executes:       "routed profile action with normalized issue/MR/comment payload",
 		Replies:        "GitLab note body when reply=comment or auto; status metadata when reply=status",
 		RouteKeys:      []string{"project", "group", "issue", "merge_request"},
-		ReplyBehaviors: []string{"comment", "status", "auto", "none"},
-		Maturity:       "component",
+		ReplyBehaviors: replyBehaviors,
+		Maturity:       maturityComponent,
 	},
 }

@@ -57,6 +57,7 @@ func TestAddCmd_PersistsCanonicalConfig(t *testing.T) {
 		"add", "repo-inbox",
 		"--type", "github",
 		"--profile", "maintainer",
+		"--default-action", "triage",
 		"--label", "team=devex",
 	})
 
@@ -600,7 +601,7 @@ func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
 		},
 		{
 			name: "ticket",
-			args: []string{"add", "repo-inbox", "--type", "github", "--profile", "maintainer"},
+			args: []string{"add", "repo-inbox", "--type", "github", "--profile", "maintainer", "--default-action", "triage"},
 			want: []string{
 				"type: ticket",
 				"adapter: github",
@@ -1151,4 +1152,60 @@ func TestServiceShow_AuthSummaryForProviderHooksAndNone(t *testing.T) {
 
 	open := show("mail-open")
 	assert.Contains(t, open, "auth: none\n")
+}
+
+// Ticket services probe their mounted route with the synthetic email payload
+// and carry the service's generic bearer token, so `aps service test --probe`
+// is an end-to-end check of the same auth the route enforces.
+func TestServiceShowAndTest_TicketServiceProbe(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	t.Setenv("SUPPORT_INBOX_TOKEN", "inbox-token")
+	service := &core.ServiceConfig{
+		ID:      "support-inbox",
+		Type:    "ticket",
+		Adapter: "email",
+		Profile: "inbox",
+		Options: map[string]string{
+			"default_action":  "triage",
+			"auth_token_env":  "SUPPORT_INBOX_TOKEN",
+			"allowed_senders": "*@example.com",
+		},
+	}
+	require.NoError(t, core.SaveService(service))
+
+	show := newTestServiceCmd()
+	var showOut bytes.Buffer
+	show.SetOut(&showOut)
+	show.SetErr(&showOut)
+	show.SetArgs([]string{"show", service.ID})
+	require.NoError(t, show.Execute())
+	assert.Contains(t, showOut.String(), "maturity: ready")
+
+	routes := newTestServiceCmd()
+	var routesOut bytes.Buffer
+	routes.SetOut(&routesOut)
+	routes.SetErr(&routesOut)
+	routes.SetArgs([]string{"routes", service.ID})
+	require.NoError(t, routes.Execute())
+	assert.Contains(t, routesOut.String(), "/services/support-inbox/ticket/email")
+
+	previousClient := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir(), assertRequest: func(t *testing.T, req *http.Request, body []byte) {
+		assert.Equal(t, "Bearer inbox-token", req.Header.Get("Authorization"))
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(body, &payload))
+		assert.NotEmpty(t, payload["from"])
+		assert.NotEmpty(t, payload["to"])
+	}}}
+	t.Cleanup(func() { http.DefaultClient = previousClient })
+
+	testCmd := newTestServiceCmd()
+	var testOut bytes.Buffer
+	testCmd.SetOut(&testOut)
+	testCmd.SetErr(&testOut)
+	testCmd.SetArgs([]string{"test", service.ID, "--probe", "--base-url", "https://hooks.example.test"})
+	require.NoError(t, testCmd.Execute())
+	assert.Contains(t, testOut.String(), "config_valid: true")
+	assert.Contains(t, testOut.String(), "webhook_url: https://hooks.example.test/services/support-inbox/ticket/email")
+	assert.Contains(t, testOut.String(), "probe_status: 202")
 }

@@ -18,6 +18,10 @@ import (
 // (telegram, slack, discord, sms, whatsapp, email adapters).
 const ServiceTypeMessage = "message"
 
+// ServiceTypeTicket is the canonical type of ticket/work-item services
+// (email, jira, linear, gitlab, github adapters).
+const ServiceTypeTicket = "ticket"
+
 // OptionDefaultAction is the message/ticket service option naming the single
 // profile action every inbound event dispatches to. Message services may
 // declare a routing block instead (see msgroute).
@@ -425,8 +429,11 @@ func ValidateServiceConfig(service *ServiceConfig) ServiceValidationResult {
 	if strings.TrimSpace(service.Profile) == "" {
 		result.Issues = append(result.Issues, "service profile is required")
 	}
-	if service.Type == "message" {
+	switch service.Type {
+	case "message":
 		validateMessageServiceConfig(service, &result)
+	case "ticket":
+		validateTicketServiceConfig(service, &result)
 	}
 	result.Valid = len(result.Issues) == 0
 	return result
@@ -935,16 +942,58 @@ func serviceID(service *ServiceConfig) string {
 	return service.ID
 }
 
+// SyntheticServiceWebhookPayload returns the probe payload for a persisted
+// service, impersonating identities the service already allows (see
+// SyntheticMessageWebhookPayload).
+func SyntheticServiceWebhookPayload(service *ServiceConfig) ([]byte, SyntheticProbeIdentity, error) {
+	if service == nil {
+		return nil, SyntheticProbeIdentity{}, fmt.Errorf("service is required")
+	}
+	return SyntheticMessageWebhookPayload(service.Adapter, service.Options)
+}
+
+// knownTicketAdapters are the ticket adapters aps serve mounts at
+// /services/<id>/ticket/<adapter>. The value reports whether inbound
+// payloads are normalized (false = route answers but payloads are rejected
+// until a normalizer lands).
+var knownTicketAdapters = map[string]bool{
+	"email":  true,
+	"jira":   true,
+	"linear": true,
+	"gitlab": true,
+	"github": false,
+}
+
 func describeTicketServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 	route := "/services/" + service.ID + "/ticket/" + service.Adapter
+	adapter := strings.TrimSpace(strings.ToLower(service.Adapter))
+	routing := OptionDefaultAction
+	if HasRouteTable(service) {
+		routing = "sender route table"
+	}
 	info := ServiceRuntimeInfo{
 		Receives: "ticket events",
 		Executes: "routed profile action with normalized ticket payload",
 		Replies:  "status metadata",
 		Maturity: "component",
 		Routes:   []string{route},
+		Metadata: ServiceRuntimeMetadata{
+			Runtime:     "ticket-service",
+			Provider:    adapter,
+			Ingress:     "HTTP POST " + route,
+			Handoff:     "normalized ticket on action stdin",
+			Routing:     routing,
+			ErrorHooks:  []string{"auth", "normalize", "route", "execute"},
+			ReceiveMode: "webhook",
+		},
 	}
-	switch service.Adapter {
+	if normalized, known := knownTicketAdapters[adapter]; known && normalized {
+		info.Maturity = "ready"
+	}
+	switch adapter {
+	case "email":
+		info.Receives = "inbound email events (mail relay or poller JSON)"
+		info.Replies = "reply body or status metadata"
 	case "jira":
 		info.Receives = "Jira issue/comment events"
 		info.Replies = "Jira comment body or status metadata"
@@ -956,4 +1005,50 @@ func describeTicketServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		info.Replies = "GitLab note body or status metadata"
 	}
 	return info
+}
+
+// validateTicketServiceConfig reports ticket service problems: unknown
+// adapter, no dispatch target, and (as warnings) missing request auth so an
+// operator sees that the mounted route accepts unauthenticated posts.
+func validateTicketServiceConfig(service *ServiceConfig, result *ServiceValidationResult) {
+	adapter := strings.TrimSpace(strings.ToLower(service.Adapter))
+	if adapter == "" {
+		result.Issues = append(result.Issues, "ticket service requires an adapter")
+		return
+	}
+	normalized, known := knownTicketAdapters[adapter]
+	if !known {
+		result.Issues = append(result.Issues, fmt.Sprintf("unsupported ticket adapter %q", service.Adapter))
+		return
+	}
+	if !normalized {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("ticket adapter %q payloads are not normalized yet; the webhook route rejects them", service.Adapter))
+	}
+	options := service.Options
+	switch {
+	case HasRouteTable(service):
+		if strings.TrimSpace(options[OptionDefaultAction]) != "" {
+			result.Issues = append(result.Issues, "ticket service declares both routing and option default_action; remove default_action (routing wins at runtime)")
+		}
+		validateServiceRouting(service, result)
+	case strings.TrimSpace(options[OptionDefaultAction]) == "":
+		result.Issues = append(result.Issues, "ticket service requires option default_action to dispatch inbound tickets")
+	}
+	if !hasServiceRequestAuth(options) {
+		result.Warnings = append(result.Warnings, "ticket service has no request auth (auth_token, auth_token_env, signature_secret, or signature_secret_env); any caller can post to its webhook route")
+	}
+	if strings.TrimSpace(options["allowed_senders"]) == "" {
+		result.Warnings = append(result.Warnings, "ticket service has no allowed_senders; any sender can route inbound tickets")
+	}
+}
+
+// hasServiceRequestAuth reports whether the generic webhook auth options
+// consulted by the service validator are configured.
+func hasServiceRequestAuth(options map[string]string) bool {
+	for _, key := range []string{OptionAuthScheme, OptionAuthToken, OptionAuthTokenEnv, OptionSignatureSecret, OptionSignatureSecretEnv} {
+		if strings.TrimSpace(options[key]) != "" {
+			return true
+		}
+	}
+	return false
 }

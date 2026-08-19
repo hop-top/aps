@@ -15,7 +15,9 @@ profile actions.
 | `--type message --adapter email` | receiving address, for example `inbox@example.com` | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
 
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
-not message aliases; the email message adapter is addressed in canonical form.
+not message aliases; they mount at `/services/<id>/ticket/<adapter>` — see
+[Ticket services](tickets.md). The email message adapter is addressed in
+canonical form.
 
 ## Create A Message Service
 
@@ -205,7 +207,9 @@ aps service add jira-intake \
 ```
 
 This persists `type: ticket`, `adapter: jira`. It is not a chat message
-service and is not mounted at `/services/<id>/webhook`.
+service and is not mounted at `/services/<id>/webhook`; `aps serve` mounts it
+at `/services/jira-intake/ticket/jira` instead. Setup, auth, payloads, and the
+email adapter: [Ticket services](tickets.md).
 
 ## Routing Many Organizations On One Number
 

@@ -63,3 +63,19 @@ func TestNewManager_ListNames(t *testing.T) {
 		t.Fatalf("Names = %v, want [agent-protocol]", names)
 	}
 }
+
+// TestDefaultManager_RegistersServiceWebhookAdapters pins the default adapter
+// set aps serve mounts: message and ticket service webhooks next to the
+// agent protocol.
+func TestDefaultManager_RegistersServiceWebhookAdapters(t *testing.T) {
+	names := DefaultManager().Names()
+	want := []string{"agent-protocol", "messenger", "ticket"}
+	if len(names) != len(want) {
+		t.Fatalf("Names = %v, want %v", names, want)
+	}
+	for i := range want {
+		if names[i] != want[i] {
+			t.Fatalf("Names = %v, want %v", names, want)
+		}
+	}
+}

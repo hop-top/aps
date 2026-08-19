@@ -62,7 +62,7 @@ Ticket aliases, not message aliases:
 
 | Alias | Canonical config |
 | --- | --- |
-| `email` | `type: ticket`, `adapter: email` |
+| `email` | `type: ticket`, `adapter: email` (mounted at `/services/<id>/ticket/email`; see [tickets](user/tickets.md)) |
 | `github` | `type: ticket`, `adapter: github` |
 | `gitlab` | `type: ticket`, `adapter: gitlab` |
 | `jira` | `type: ticket`, `adapter: jira` |
