@@ -518,7 +518,11 @@ Route/test expectations:
   provider `webhook_url` to register.
 - `aps service test <id>` validates service config; add `--probe --base-url
   <public-origin>` to POST a synthetic provider-shaped payload through the
-  public endpoint.
+  public endpoint. The synthetic inbound impersonates the first configured
+  allowlist entry (`allowed_numbers`, `allowed_chats`, `allowed_channels`,
+  `allowed_guilds`) and the service's own channel identity, and the output
+  reports `probe_sender` / `probe_channel` so a 403 is attributable to the
+  allowlist rather than to a dead endpoint.
 - `aps adapter messenger test <device>` remains a legacy adapter-device
   pipeline simulation. It is not a service route test and does not verify live
   platform delivery.

@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -352,6 +353,74 @@ func TestServiceShowAndTest_FirstClassMessageProvidersUseXRRProbe(t *testing.T) 
 			assert.Contains(t, testOut.String(), "probe_response: {\"status\":\"accepted\"}")
 		})
 	}
+}
+
+func TestServiceTest_ProbeImpersonatesAllowlistedSender(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "sms-alerts",
+		Type:    "message",
+		Adapter: "sms",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":  "assistant=handle_sms",
+			"provider":        "generic",
+			"from":            "+15559990000",
+			"allowed_numbers": "+15550001111,+15550002222",
+			"reply":           "text",
+		},
+	}))
+
+	previousClient := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir(), assertRequest: func(t *testing.T, _ *http.Request, body []byte) {
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(body, &payload))
+		assert.Equal(t, "+15550001111", payload["From"], "probe must send from the first allowlisted number")
+		assert.Equal(t, "+15559990000", payload["To"], "probe must target the service's own number")
+	}}}
+	t.Cleanup(func() { http.DefaultClient = previousClient })
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"test", "sms-alerts", "--probe", "--base-url", "https://hooks.example.test"})
+	require.NoError(t, cmd.Execute())
+
+	assert.Contains(t, out.String(), "probe_sender: +15550001111 (allowed_numbers)")
+	assert.Contains(t, out.String(), "probe_channel: +15559990000 (from)")
+	assert.Contains(t, out.String(), "probe_status: 202")
+	assert.Contains(t, out.String(), "probe_verified: webhook reachable; synthetic inbound accepted")
+}
+
+func TestServiceTest_ProbeWithoutAllowlistReportsSyntheticIdentity(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "discord-support",
+		Type:    "message",
+		Adapter: "discord",
+		Profile: "assistant",
+		Env:     map[string]string{"DISCORD_BOT_TOKEN": "secret:DISCORD_BOT_TOKEN"},
+		Options: map[string]string{
+			"default_action": "assistant=handle_discord",
+			"reply":          "text",
+		},
+	}))
+
+	previousClient := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: xrrProbeRoundTripper{t: t, dir: t.TempDir()}}
+	t.Cleanup(func() { http.DefaultClient = previousClient })
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"test", "discord-support", "--probe", "--base-url", "https://hooks.example.test"})
+	require.NoError(t, cmd.Execute())
+
+	assert.Contains(t, out.String(), "probe_sender: 987654321098765432 (synthetic)")
+	assert.Contains(t, out.String(), "probe_channel: 123456789012345678 (synthetic)")
+	assert.NotContains(t, out.String(), "probe_workspace:")
 }
 
 func TestServiceRoutes_MessageService(t *testing.T) {

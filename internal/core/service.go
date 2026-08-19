@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -813,85 +812,6 @@ func serviceID(service *ServiceConfig) string {
 		return ""
 	}
 	return service.ID
-}
-
-func SyntheticMessageWebhookPayload(adapter string) ([]byte, error) {
-	switch strings.TrimSpace(strings.ToLower(adapter)) {
-	case "telegram":
-		return json.Marshal(map[string]any{
-			"update_id": 1000001,
-			"message": map[string]any{
-				"message_id": 1,
-				"from":       map[string]any{"id": 1001, "first_name": "APS"},
-				"chat":       map[string]any{"id": -1001234567890, "type": "group"},
-				"date":       time.Now().Unix(),
-				"text":       "aps service test",
-			},
-		})
-	case "slack":
-		return json.Marshal(map[string]any{
-			"event": map[string]any{
-				"client_msg_id": "aps-service-test",
-				"user":          "U012TEST",
-				"channel":       "C012TEST",
-				"text":          "aps service test",
-				"ts":            fmt.Sprintf("%d.000000", time.Now().Unix()),
-			},
-		})
-	case "discord":
-		return json.Marshal(map[string]any{
-			"id":         "aps-service-test",
-			"channel_id": "123456789012345678",
-			"content":    "aps service test",
-			"author":     map[string]any{"id": "987654321098765432", "username": "aps"},
-			"timestamp":  time.Now().UTC().Format(time.RFC3339),
-		})
-	case "sms":
-		return json.Marshal(map[string]any{
-			"MessageSid": "SMAPS000000000000000000000000000000",
-			"From":       "+15550100001",
-			"To":         "+15550100002",
-			"Body":       "aps service test",
-		})
-	case "whatsapp":
-		return json.Marshal(map[string]any{
-			"object": "whatsapp_business_account",
-			"entry": []any{
-				map[string]any{
-					"id": "123456789000000",
-					"changes": []any{
-						map[string]any{
-							"field": "messages",
-							"value": map[string]any{
-								"messaging_product": "whatsapp",
-								"metadata": map[string]any{
-									"display_phone_number": "+15550100002",
-									"phone_number_id":      "123456789012345",
-								},
-								"contacts": []any{
-									map[string]any{
-										"profile": map[string]any{"name": "APS"},
-										"wa_id":   "15550100001",
-									},
-								},
-								"messages": []any{
-									map[string]any{
-										"from":      "15550100001",
-										"id":        "wamid.APS000000000000000000000000000001",
-										"timestamp": time.Now().Unix(),
-										"type":      "text",
-										"text":      map[string]any{"body": "aps service test"},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		})
-	default:
-		return nil, fmt.Errorf("no synthetic webhook payload for message adapter %q", adapter)
-	}
 }
 
 func describeTicketServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
