@@ -11,13 +11,20 @@ import (
 	"strings"
 )
 
-// channelPrefixes are transport prefixes providers prepend to a sender
-// address. They are stripped case-insensitively before any other rule.
-var channelPrefixes = []string{"whatsapp:", "sms:", "tel:", "mailto:"}
+// Transport prefixes providers prepend to a sender address.
+const (
+	prefixWhatsApp = "whatsapp:"
+	prefixSMS      = "sms:"
+	prefixTel      = "tel:"
+	prefixMailto   = "mailto:"
+)
+
+// channelPrefixes are stripped case-insensitively before any other rule.
+var channelPrefixes = []string{prefixWhatsApp, prefixSMS, prefixTel, prefixMailto}
 
 // phonePrefixes are the subset of channel prefixes that imply the remaining
 // address is a phone number even on a non-phone platform.
-var phonePrefixes = []string{"whatsapp:", "sms:", "tel:"}
+var phonePrefixes = []string{prefixWhatsApp, prefixSMS, prefixTel}
 
 // Platforms whose sender IDs are phone numbers.
 const (
