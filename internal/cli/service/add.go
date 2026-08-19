@@ -9,6 +9,7 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/core/msgroute"
 )
 
 func newAddCmd() *cobra.Command {
@@ -62,6 +63,8 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().BoolVar(&opts.requireBotMention, "require-bot-mention", false, "Require Slack channel messages to mention the bot")
 	cmd.Flags().StringVar(&opts.dedupTTL, "dedup-ttl", "", "Slack Events API duplicate event retention duration")
 	cmd.Flags().StringVar(&opts.defaultAction, "default-action", "", "Default profile action for routed messages or tickets")
+	cmd.Flags().StringVar(&opts.routeTable, "route-table", "", "Sender route table YAML for message services (replaces --default-action; relative paths resolve against the services directory)")
+	cmd.Flags().StringVar(&opts.contacts, "contacts", "", "Contacts snapshot YAML consulted by --route-table (org:/contact: selectors)")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
 	cmd.Flags().IntVar(&opts.historyTurns, "history-turns", 0, "Prior conversation turns attached to each routed action run (0 = default 20)")
 
@@ -133,6 +136,8 @@ type addOptions struct {
 	requireBotMention     bool
 	dedupTTL              string
 	defaultAction         string
+	routeTable            string
+	contacts              string
 	reply                 string
 	historyTurns          int
 	dryRun                bool
@@ -156,6 +161,11 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return err
 	}
 
+	routing, err := serviceRouting(opts)
+	if err != nil {
+		return err
+	}
+
 	service := &core.ServiceConfig{
 		ID:          id,
 		Type:        resolved.Type,
@@ -165,6 +175,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Env:         env,
 		Labels:      labels,
 		Options:     serviceOptions(opts),
+		Routing:     routing,
 	}
 
 	printResolved(cmd, resolved)
@@ -234,6 +245,25 @@ func serviceOptions(opts addOptions) map[string]string {
 		return nil
 	}
 	return options
+}
+
+// serviceRouting builds the routing block from --route-table/--contacts.
+// Both files are referenced, not copied; the table is compiled at
+// validation and at every inbound message.
+func serviceRouting(opts addOptions) (*msgroute.Config, error) {
+	table := strings.TrimSpace(opts.routeTable)
+	contacts := strings.TrimSpace(opts.contacts)
+	if table == "" {
+		if contacts != "" {
+			return nil, fmt.Errorf("--contacts requires --route-table")
+		}
+		return nil, nil
+	}
+	routing := &msgroute.Config{File: table}
+	if contacts != "" {
+		routing.Contacts = &msgroute.ContactsConfig{Path: contacts}
+	}
+	return routing, nil
 }
 
 func joinValues(values []string) string {
