@@ -55,6 +55,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringArrayVar(&opts.allowedGuilds, "allowed-guild", nil, "Allowed Discord guild ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedChats, "allowed-chat", nil, "Allowed Telegram chat ID, repeatable")
 	cmd.Flags().StringArrayVar(&opts.allowedNumbers, "allowed-number", nil, "Allowed phone number, repeatable")
+	cmd.Flags().StringArrayVar(&opts.allowedSenders, "allowed-sender", nil, "Allowed email sender: exact address or *@domain glob (case-insensitive), repeatable")
 	cmd.Flags().StringVar(&opts.signingSecretEnv, "signing-secret-env", "", "Message provider signing secret environment variable")
 	cmd.Flags().StringVar(&opts.templateName, "template-name", "", "WhatsApp template name for business-initiated replies")
 	cmd.Flags().StringVar(&opts.languageCode, "language-code", "", "WhatsApp template language code")
@@ -129,6 +130,7 @@ type addOptions struct {
 	allowedGuilds         []string
 	allowedChats          []string
 	allowedNumbers        []string
+	allowedSenders        []string
 	signingSecretEnv      string
 	templateName          string
 	languageCode          string
@@ -247,6 +249,7 @@ func serviceOptions(opts addOptions) map[string]string {
 	addOption(options, "allowed_guilds", joinValues(opts.allowedGuilds))
 	addOption(options, "allowed_chats", joinValues(opts.allowedChats))
 	addOption(options, "allowed_numbers", joinValues(opts.allowedNumbers))
+	addOption(options, core.OptionAllowedSenders, joinValues(opts.allowedSenders))
 	addOption(options, "signing_secret_env", opts.signingSecretEnv)
 	addOption(options, "template_name", opts.templateName)
 	addOption(options, "language_code", opts.languageCode)

@@ -760,6 +760,26 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"language_code: en_US",
 			},
 		},
+		{
+			name: "email sender allowlist",
+			args: []string{
+				"add", "mail-inbox",
+				"--type", "message",
+				"--adapter", "email",
+				"--profile", "assistant",
+				"--allowed-sender", "alice@example.com",
+				"--allowed-sender", "*@partner.org",
+				"--default-action", "assistant=handle_email",
+				"--reply", "text",
+			},
+			wantOutput: []string{
+				"type: message",
+				"adapter: email",
+				"allowed_senders: alice@example.com,*@partner.org",
+				"default_action: assistant=handle_email",
+				"replies: email text",
+			},
+		},
 	}
 
 	for _, tt := range tests {

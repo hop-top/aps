@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/core"
 )
 
 type AuthScheme string
@@ -181,6 +183,9 @@ func (v *ServiceValidator) ValidateMessage(service ServiceValidationConfig, msg 
 	}
 	if allowed := splitCSV(opts["allowed_numbers"]); len(allowed) > 0 && !containsAny(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, "phone number is not allowed")
+	}
+	if allowed := splitCSV(opts[core.OptionAllowedSenders]); len(allowed) > 0 && !core.MatchAllowedSender(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Sender.PlatformHandle) {
+		return ErrSenderNotAllowed(service.ID, "sender address is not allowed")
 	}
 	if service.Adapter == string(PlatformWhatsApp) {
 		if phoneNumberID := strings.TrimSpace(opts["phone_number_id"]); phoneNumberID != "" && !containsAny([]string{phoneNumberID}, msg.Channel.ID, msg.Channel.PlatformID) {

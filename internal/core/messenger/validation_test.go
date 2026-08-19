@@ -358,3 +358,47 @@ func slackSignature(secret, timestamp string, body []byte) string {
 	_, _ = mac.Write(body)
 	return hex.EncodeToString(mac.Sum(nil))
 }
+
+func TestServiceValidator_EmailAllowedSenders(t *testing.T) {
+	validator := NewServiceValidator()
+	service := ServiceValidationConfig{
+		ID:      "mail-inbox",
+		Adapter: "email",
+		Options: map[string]string{
+			"allowed_senders": "Alice@Example.com, *@partner.org",
+		},
+	}
+	msg := &NormalizedMessage{
+		ID:       "msg-1",
+		Platform: "email",
+		Sender:   Sender{ID: "mallory@evil.example", PlatformID: "mallory@evil.example"},
+		Channel:  Channel{ID: "inbox@example.com"},
+	}
+	if err := validator.ValidateMessage(service, msg); !IsSenderNotAllowed(err) {
+		t.Fatalf("blocked sender error = %v, want sender not allowed", err)
+	}
+
+	// Exact address, case-insensitive.
+	msg.Sender = Sender{ID: "alice@example.COM", PlatformID: "alice@example.COM"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage exact sender: %v", err)
+	}
+
+	// Domain glob, case-insensitive.
+	msg.Sender = Sender{ID: "Bob@Partner.ORG", PlatformID: "Bob@Partner.ORG"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage domain glob sender: %v", err)
+	}
+
+	// Glob matches the whole domain only, not a suffix.
+	msg.Sender = Sender{ID: "bob@notpartner.org", PlatformID: "bob@notpartner.org"}
+	if err := validator.ValidateMessage(service, msg); !IsSenderNotAllowed(err) {
+		t.Fatalf("suffix sender error = %v, want sender not allowed", err)
+	}
+
+	// Display-name form "Name <addr>" is matched on the address.
+	msg.Sender = Sender{ID: "Alice Liddell <alice@example.com>", PlatformID: "Alice Liddell <alice@example.com>"}
+	if err := validator.ValidateMessage(service, msg); err != nil {
+		t.Fatalf("ValidateMessage display-name sender: %v", err)
+	}
+}

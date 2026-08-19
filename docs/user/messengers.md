@@ -12,9 +12,10 @@ profile actions.
 | `discord` | numeric channel ID | Discord Developer Portal | JSON webhook route through `aps serve` |
 | `sms` | receiving phone number, for example `+15551234567` | SMS provider such as Twilio | JSON relay route through `aps serve` |
 | `whatsapp` | phone number ID or receiving number | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
+| `--type message --adapter email` | receiving address, for example `inbox@example.com` | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
 
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
-not message aliases.
+not message aliases; the email message adapter is addressed in canonical form.
 
 ## Create A Message Service
 
@@ -166,6 +167,35 @@ POSTs. APS validates `hub.verify_token`, echoes `hub.challenge`, validates
 For Twilio WhatsApp, use `--provider twilio`, `--from whatsapp:+1555...`,
 `--webhook-url` matching the Twilio console URL, and the Twilio account SID/auth
 token env bindings. Twilio form posts and JSON-style relays are both accepted.
+
+### Email
+
+```bash
+aps service add mail-inbox \
+  --type message \
+  --adapter email \
+  --profile assistant \
+  --allowed-sender alice@example.com \
+  --allowed-sender '*@partner.org' \
+  --default-action handle-email \
+  --reply text
+```
+
+Then set the bridge auth in the saved service yaml under `options:`:
+
+```yaml
+options:
+  auth_scheme: bearer
+  auth_token_env: MAIL_BRIDGE_TOKEN
+```
+
+An email bridge POSTs `{"from","to","subject","body"}` JSON to the service
+URL. `--allowed-sender` accepts exact addresses or `*@domain` globs,
+case-insensitive; with none set any sender routes (validation warns). The
+bridge authenticates with the generic webhook auth options (`auth_scheme`
+plus `auth_token_env` or `signature_secret_env`); without them the config is
+valid but validation warns that the route is open. Details:
+[Email](../MESSENGERS_OVERVIEW.md#email).
 
 ### Ticket Alias Contrast
 
