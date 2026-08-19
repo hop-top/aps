@@ -67,6 +67,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.contacts, "contacts", "", "Contacts snapshot YAML consulted by --route-table (org:/contact: selectors)")
 	cmd.Flags().StringVar(&opts.reply, "reply", "", "Reply behavior: text, comment, status, auto, or none")
 	cmd.Flags().IntVar(&opts.historyTurns, "history-turns", 0, "Prior conversation turns attached to each routed action run (0 = default 20)")
+	cmd.Flags().BoolVar(&opts.force, "force", false, "Overwrite an existing service with the same ID")
 
 	// --dry-run and --profile are inherited from the persistent
 	// globals (kit/cli auto-registers --dry-run; --profile is in
@@ -140,6 +141,7 @@ type addOptions struct {
 	contacts              string
 	reply                 string
 	historyTurns          int
+	force                 bool
 	dryRun                bool
 }
 
@@ -180,16 +182,22 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 
 	printResolved(cmd, resolved)
 	validation := core.ValidateServiceConfig(service)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_valid: %t\n", validation.Valid)
-	for _, issue := range validation.Issues {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_issue: %s\n", issue)
-	}
-	for _, warning := range validation.Warnings {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "config_warning: %s\n", warning)
-	}
+	renderValidation(cmd, validation)
 	if opts.dryRun {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "dry_run: true")
+		if err := refuseExisting(id, opts.force); err != nil {
+			return err
+		}
 		return nil
+	}
+	if err := refuseExisting(id, opts.force); err != nil {
+		return err
+	}
+	// Validate the in-memory config before anything touches disk: an
+	// invalid record must never be persisted (it would mount a webhook
+	// route for a service that cannot dispatch).
+	if !validation.Valid {
+		return fmt.Errorf("service config is invalid")
 	}
 
 	if err := core.SaveService(service); err != nil {
@@ -200,6 +208,20 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return err
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved: %s\n", path)
+	return nil
+}
+
+// refuseExisting rejects re-adding an existing service ID unless --force
+// was given; add has no update/remove verbs, so silent overwrite would be
+// the only way to lose a working config.
+func refuseExisting(id string, force bool) error {
+	exists, err := core.ServiceExists(id)
+	if err != nil {
+		return fmt.Errorf("check existing service: %w", err)
+	}
+	if exists && !force {
+		return fmt.Errorf("service %q already exists; pass --force to overwrite it", id)
+	}
 	return nil
 }
 

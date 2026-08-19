@@ -48,8 +48,18 @@ Use the canonical form when you want to be explicit:
 aps service add support-bot \
   --type message \
   --adapter telegram \
-  --profile my-agent
+  --profile my-agent \
+  --default-action handle-telegram \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
 ```
+
+`aps service add` validates the assembled config before anything is written.
+An invalid config (for example `--type sms` without `--provider`/`--from`)
+prints `config_valid: false` plus each `config_issue:` line, exits 1, and
+leaves nothing on disk -- no service file, no webhook route. Re-adding an ID
+that already exists is refused; pass `--force` to overwrite the stored record
+deliberately. `--dry-run` prints the same resolution and validation report
+without writing.
 
 ## Run The Route
 
@@ -263,6 +273,8 @@ aps adapter messenger logs my-telegram -f
 | --- | --- |
 | Service route missing | `aps service routes <service-id>` and `aps serve` |
 | Alias resolved unexpectedly | `aps service add <id> --type <alias> --profile <profile> --dry-run` |
+| `service config is invalid` on add | Nothing was saved; fix each `config_issue:` line and re-run |
+| `already exists` on add | Re-run with `--force` to overwrite the stored service deliberately |
 | Message not routed | Confirm `--default-action`, `--route-table`, or legacy channel mapping matches the incoming channel/sender |
 | Route table rejected | `aps service show <id>` prints `routing_error:`; every table must end with `match: unknown` |
 | Platform cannot reach APS | Check tunnel, DNS, auth token, and `aps serve --addr` binding |

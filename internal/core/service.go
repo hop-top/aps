@@ -317,6 +317,23 @@ func SaveService(service *ServiceConfig) error {
 	return nil
 }
 
+// ServiceExists reports whether a service record with the given ID is
+// already persisted. Path resolution errors (invalid IDs) are returned so
+// callers fail loudly instead of treating them as "absent".
+func ServiceExists(id string) (bool, error) {
+	path, err := GetServicePath(id)
+	if err != nil {
+		return false, err
+	}
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to stat service %s: %w", id, err)
+	}
+	return true, nil
+}
+
 func LoadService(id string) (*ServiceConfig, error) {
 	path, err := GetServicePath(id)
 	if err != nil {

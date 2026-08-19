@@ -362,6 +362,8 @@ func TestServiceRoutes_MessageService(t *testing.T) {
 		"add", "support-bot",
 		"--type", "telegram",
 		"--profile", "assistant",
+		"--default-action", "reply",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
 	})
 	require.NoError(t, add.Execute())
 
@@ -514,7 +516,10 @@ func TestServiceShow_SurfaceMaturityLabels(t *testing.T) {
 		},
 		{
 			name: "message",
-			args: []string{"add", "support-bot-matrix", "--type", "telegram", "--profile", "assistant"},
+			args: []string{
+				"add", "support-bot-matrix", "--type", "telegram", "--profile", "assistant",
+				"--default-action", "reply", "--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+			},
 			want: []string{
 				"type: message",
 				"adapter: telegram",
@@ -666,6 +671,8 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--dedup-ttl", "24h",
 				"--default-action", "assistant=handle_slack",
 				"--reply", "text",
+				"--env", "SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN",
+				"--env", "SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -689,6 +696,7 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--allowed-guild", "1300000000000000003",
 				"--default-action", "assistant=handle_discord",
 				"--reply", "text",
+				"--env", "DISCORD_BOT_TOKEN=secret:DISCORD_BOT_TOKEN",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -710,6 +718,9 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--allowed-number", "+15551230001",
 				"--reply", "text",
 				"--history-turns", "8",
+				"--default-action", "assistant=handle_sms",
+				"--env", "TWILIO_ACCOUNT_SID=AC123",
+				"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -734,6 +745,8 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 				"--signing-secret-env", "WHATSAPP_APP_SECRET",
 				"--template-name", "support_update",
 				"--language-code", "en_US",
+				"--default-action", "assistant=handle_whatsapp",
+				"--env", "WHATSAPP_ACCESS_TOKEN=secret:WHATSAPP_ACCESS_TOKEN",
 			},
 			wantOutput: []string{
 				"type: message",
@@ -770,4 +783,112 @@ func TestAddCmd_PersistsMessageAdapterOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddCmd_InvalidConfigIsNotPersisted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "sms-broken",
+		"--type", "sms",
+		"--profile", "assistant",
+		"--default-action", "reply",
+		"--reply", "text",
+	})
+	err := cmd.Execute()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "service config is invalid")
+	assert.Contains(t, out.String(), "config_valid: false")
+	assert.Contains(t, out.String(), "config_issue: sms message service requires option provider")
+	assert.NotContains(t, out.String(), "saved:")
+
+	path, err := core.GetServicePath("sms-broken")
+	require.NoError(t, err)
+	assert.NoFileExists(t, path)
+	_, err = core.LoadService("sms-broken")
+	require.Error(t, err)
+}
+
+func TestAddCmd_ExistingServiceRequiresForce(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	first := newTestServiceCmd()
+	first.SetArgs([]string{
+		"add", "support-bot",
+		"--type", "telegram",
+		"--profile", "assistant",
+		"--default-action", "reply",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+	})
+	require.NoError(t, first.Execute())
+
+	second := newTestServiceCmd()
+	var out bytes.Buffer
+	second.SetOut(&out)
+	second.SetErr(&out)
+	second.SetArgs([]string{
+		"add", "support-bot",
+		"--type", "telegram",
+		"--profile", "other",
+		"--default-action", "triage",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+	})
+	err := second.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `service "support-bot" already exists`)
+	assert.Contains(t, err.Error(), "--force")
+	assert.NotContains(t, out.String(), "saved:")
+
+	service, err := core.LoadService("support-bot")
+	require.NoError(t, err)
+	assert.Equal(t, "assistant", service.Profile)
+	assert.Equal(t, "reply", service.Options["default_action"])
+
+	forced := newTestServiceCmd()
+	var forcedOut bytes.Buffer
+	forced.SetOut(&forcedOut)
+	forced.SetErr(&forcedOut)
+	forced.SetArgs([]string{
+		"add", "support-bot",
+		"--type", "telegram",
+		"--profile", "other",
+		"--default-action", "triage",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+		"--force",
+	})
+	require.NoError(t, forced.Execute())
+	assert.Contains(t, forcedOut.String(), "saved:")
+
+	service, err = core.LoadService("support-bot")
+	require.NoError(t, err)
+	assert.Equal(t, "other", service.Profile)
+	assert.Equal(t, "triage", service.Options["default_action"])
+}
+
+func TestAddCmd_ExistingServiceDryRunReportsConflict(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	require.NoError(t, core.SaveService(&core.ServiceConfig{
+		ID:      "repo-inbox",
+		Type:    "ticket",
+		Adapter: "github",
+		Profile: "maintainer",
+	}))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"add", "repo-inbox", "--type", "github", "--profile", "other", "--dry-run"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `service "repo-inbox" already exists`)
+
+	service, err := core.LoadService("repo-inbox")
+	require.NoError(t, err)
+	assert.Equal(t, "maintainer", service.Profile)
 }
