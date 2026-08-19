@@ -86,6 +86,8 @@ Test strategies and performance benchmarks.
 
 ### 📡 Messenger Architecture
 - [messenger-architecture.md](messenger-architecture.md) - Normalized message format, routing, platform comparison, permission models, and file layout
+- [message-routing.md](message-routing.md) - Sender route tables: schema, sender key normalization, contact snapshot, evaluation order, terminal fail-safe
+- [message-conversation-policy.md](message-conversation-policy.md) - Conversation and session identity for message services
 
 ### 📚 Documentation
 Additional documentation and tools.

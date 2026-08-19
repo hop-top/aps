@@ -100,10 +100,13 @@ APS does not strip mentions, slash-command prefixes, bot usernames, or command
 verbs from `text` during normalization. The routed profile action receives the
 original normalized text and can decide whether a message is addressed to it.
 
-Routing remains channel/service based:
+Routing remains service based:
 
 - The service route or messenger link decides which profile action receives the
-  message.
+  message. A service may declare a sender route table
+  ([message-routing.md](message-routing.md)) that picks the profile action from
+  the normalized sender key or resolved contact; the conversation identity above
+  is unaffected by which route wins.
 - Mentions and command prefixes are action input, not a second routing table.
 - Platform command IDs, callback IDs, and mention entities should be preserved
   in `platform_metadata` when a normalizer supports them.

@@ -38,7 +38,7 @@ POST /services/<service-id>/webhook
 [Normalize provider payload]
         |
         v
-[Resolve service default action or messenger link mapping]
+[Resolve messenger link mapping, sender route table, or default action]
         |
         v
 [Execute profile action]
@@ -68,6 +68,12 @@ aps service add support-bot \
 If `default_action` has no profile separator, APS expands it to
 `<service-profile>=<action>`. Explicit cross-profile routing can still use
 `profile=action`.
+
+When one number or bot serves many organizations, replace `default_action`
+with a sender route table (`--route-table`, optional `--contacts`): routes are
+matched against the normalized sender key or the resolved contact, in declared
+order, and must end with a terminal `match: unknown` fail-safe. See
+[Message routing: sender route tables](message-routing.md).
 
 The older adapter-device pipeline stores channel mappings in
 `messenger-links.json`:
@@ -199,6 +205,7 @@ pre-service documentation and should not be used for new service examples.
 
 ## Related
 
+- [Message routing: sender route tables](message-routing.md)
 - [Agent messenger patterns](../agent/messenger-patterns.md)
 - [User messenger guide](../user/messengers.md)
 - [Service UX draft](service-ux-draft.md)

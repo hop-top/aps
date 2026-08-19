@@ -45,7 +45,11 @@ POST /services/<service-id>/webhook
 The handler normalizes the provider payload, resolves a channel route, executes
 the target profile action, and returns platform-shaped JSON. For service routes,
 `--default-action handle-telegram` resolves inside the service profile; explicit
-legacy mappings use `profile=action`.
+legacy mappings use `profile=action`. Services that serve many organizations on
+one number swap `--default-action` for `--route-table` (sender-keyed routes with
+a terminal `match: unknown` fail-safe); the winning route is stamped on
+`platform_metadata.routing` in the action payload. See
+[Message routing](../dev/message-routing.md).
 
 Current lightweight checks are:
 
