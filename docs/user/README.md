@@ -19,7 +19,8 @@ Welcome to the APS (Adaptive Platform System) User Documentation. This section c
 ### [Reference](reference/)
 *   **CLI Command Reference**: Detailed usage for all `aps` commands.
 *   **Profile Schema**: Reference for `profile.yaml`.
-*   **[Messenger Integration](messengers.md)**: Setup guides for Telegram, Discord, Slack, GitHub, and Email messenger platforms.
+*   **[Messenger Integration](messengers.md)**: Setup guides for Telegram, Discord, Slack, SMS, and WhatsApp message services.
+*   **[Ticket Services](tickets.md)**: Email, Jira, Linear, and GitLab ticket services: route, auth, payloads, sender routing.
 
 ---
 

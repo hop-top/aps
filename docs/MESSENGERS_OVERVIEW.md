@@ -18,15 +18,18 @@ operator-owned values.
 | SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
 | WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
 
-Ticket and work-item platforms use ticket services instead:
+Ticket and work-item platforms use ticket services instead. They mount at
+`/services/<id>/ticket/<adapter>`, reuse the generic service request auth
+(`auth_token_env`, `signature_secret_env`, ...), and gate senders with
+`allowed_senders`; see [Ticket services](user/tickets.md).
 
-| Alias | Canonical service |
-| --- | --- |
-| `email` | `type: ticket`, `adapter: email` |
-| `github` | `type: ticket`, `adapter: github` |
-| `gitlab` | `type: ticket`, `adapter: gitlab` |
-| `jira` | `type: ticket`, `adapter: jira` |
-| `linear` | `type: ticket`, `adapter: linear` |
+| Alias | Canonical service | Inbound payload |
+| --- | --- | --- |
+| `email` | `type: ticket`, `adapter: email` | flat email JSON from a relay or poller |
+| `github` | `type: ticket`, `adapter: github` | route mounted; payloads not normalized yet |
+| `gitlab` | `type: ticket`, `adapter: gitlab` | GitLab issue/MR/note webhook JSON |
+| `jira` | `type: ticket`, `adapter: jira` | Jira issue/comment webhook JSON |
+| `linear` | `type: ticket`, `adapter: linear` | Linear issue/comment webhook JSON |
 
 ## Operator Model
 

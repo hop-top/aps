@@ -16,6 +16,7 @@ Quick navigation to all APS documentation.
 - [**Telegram Setup**](TELEGRAM_SETUP.md) — 2–3 min setup, best for commands and alerts
 - [**Discord Setup**](DISCORD_SETUP.md) — 5 min setup, rich features, community use
 - [**Messenger Quick Reference**](MESSENGER_SETUP_QUICK_REF.md) — One-liners and troubleshooting for all platforms
+- [**Ticket Services**](user/tickets.md) — Email, Jira, Linear, GitLab inbound routes: auth, payloads, sender routing
 
 ### Scripts
 - [**Scripts Documentation**](../scripts/README.md) — `setup-telegram.sh`, `setup-messenger.sh`
