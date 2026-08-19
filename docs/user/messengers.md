@@ -203,6 +203,22 @@ aps adapter messenger test my-telegram --profile my-agent --channel "-1001234567
 That command exercises the adapter-device mapping pipeline; it does not prove
 that `aps serve` is reachable from Telegram, Slack, Discord, SMS, or WhatsApp.
 
+## Conversation History
+
+Every routed inbound message and every delivered reply is recorded as a turn,
+keyed by the conversation identity (service, platform, channel, sender, and
+platform thread). The routed action receives the newest turns of the same
+session as `prior_turns` on stdin (default 20; set per service with
+`--history-turns N`), plus a `conversation` object with the identity keys.
+
+Inspect what a profile has seen:
+
+```bash
+aps service conversation list --service support-bot
+aps service conversation show <conversation-id>
+aps service conversation show <conversation-id> --limit 5 --format json
+```
+
 ## Legacy Adapter Devices
 
 Use adapter devices only when you need an external subprocess or existing

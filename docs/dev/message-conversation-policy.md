@@ -124,3 +124,72 @@ Policy:
 - Unsupported events must not create sessions or execute profile actions.
 - Webhook callers receive a status/error response; provider-specific retry and
   delivery behavior remains outside this policy.
+
+## Thread History
+
+APS persists message-service turns and hands the prior turns of the same
+session to the routed profile action. Storage, attachment, and query all key on
+the identity above: `ConversationID` groups turns, `SessionID` scopes what an
+action sees.
+
+### Conversation Store
+
+| Aspect | Policy |
+| --- | --- |
+| Backend | SQLite via the shared kit `sqldb` connection (same primitive as the session registry); table `message_turns`. |
+| Location | `<data-dir>/messages/conversations.db` (`$APS_DATA_PATH`, else XDG data dir). Opened lazily on the first recorded turn; never created by route registration or read-only commands. |
+| Turn record | `seq`, `conversation_id`, `session_id`, `service_id`, `platform`, `profile_id`, `action_name`, `direction` (`inbound`/`outbound`), `message_id`, `channel_id`, `sender_id`, `sender_name`, `text`, `attachments`, `timestamp`. |
+| Inbound turns | Recorded when a message is routed to a profile action (action execution mode) or handed to the chat runtime (chat execution mode). Unsupported events never become turns. |
+| Outbound turns | Recorded when a reply is actually sent: after successful provider delivery on the runtime path, or when the webhook response carries the reply (Twilio TwiML, provider reply JSON). Failed deliveries, empty replies, and `--reply none` do not create turns. Outbound `sender_id` is the profile ID and `message_id` is the inbound message being answered. |
+| Retention | Newest 500 turns per conversation; older turns are pruned on append. |
+| Failure mode | Store errors are logged and never block routing, execution, or delivery. |
+
+### Attachment Contract
+
+Routed action stdin stays a JSON object with the normalized message fields at
+the top level and gains two keys:
+
+```json
+{
+  "id": "SM123",
+  "platform": "sms",
+  "sender": { "id": "+15559990000" },
+  "channel": { "id": "+15550001111" },
+  "text": "my order is late",
+  "conversation": {
+    "service_id": "support-sms",
+    "platform": "sms",
+    "channel_id": "+15550001111",
+    "sender_id": "+15559990000",
+    "scope": "direct",
+    "conversation_id": "msgconv:v1:service:support-sms:platform:sms:channel:%2B15550001111:sender:%2B15559990000",
+    "session_id": "msgsess:v1:service:support-sms:platform:sms:channel:%2B15550001111:sender:%2B15559990000"
+  },
+  "prior_turns": [
+    { "seq": 1, "direction": "inbound", "sender_id": "+15559990000", "text": "hello", "message_id": "SM100", "timestamp": "2026-08-19T09:00:00Z", "...": "..." },
+    { "seq": 2, "direction": "outbound", "sender_id": "assistant", "text": "Hi! How can I help?", "message_id": "SM100", "timestamp": "2026-08-19T09:00:05Z", "...": "..." }
+  ]
+}
+```
+
+- `conversation` is the `ConversationState` for the current message.
+- `prior_turns` holds the turns recorded before the current message in the
+  same `session_id` (thread scope), oldest first so the newest is last. It is
+  always an array; empty when history is unavailable or nothing was recorded.
+  The current inbound message is never included.
+- The bound is the service option `history_turns` (`aps service add
+  --history-turns N`); default 20.
+- `RunInput.ThreadID` (and `RunState.thread_id`) is set to the policy
+  `session_id` so run state can be correlated with the multi-turn thread.
+
+### Query Surface
+
+```bash
+aps service conversation list [--service <id>] [--platform <p>] [--limit N]
+aps service conversation show <conversation-id> [--session <session-id>] [--limit N]
+```
+
+`list` prints conversations most recently appended first (turn count, last
+activity, last direction, text preview). `show` prints turns oldest first,
+newest last — the same order and shape actions receive in `prior_turns`.
+Both honour the global `--format` flag (`table|json|yaml`) and are read-only.

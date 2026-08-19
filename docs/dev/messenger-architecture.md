@@ -131,6 +131,11 @@ platform thread session.
 Attachments, mentions, commands, and unsupported event behavior are defined in
 [Message conversation and thread policy](message-conversation-policy.md).
 
+Turns are persisted per conversation in `<data-dir>/messages/conversations.db`;
+routed actions receive `conversation` and session-scoped `prior_turns` on stdin
+and `RunInput.ThreadID` set to the session key. `aps service conversation
+list|show` queries the store. See the Thread History section of the policy.
+
 ## Adapter Support
 
 | Adapter | Normalize support | Denormalize support | Service maturity |

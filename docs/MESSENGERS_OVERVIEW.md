@@ -433,6 +433,16 @@ Conversation and session keys are derived from service, platform, workspace,
 channel, sender, and thread fields. Full policy:
 [Message conversation and thread policy](dev/message-conversation-policy.md).
 
+Actions also receive `conversation` (the derived identity) and `prior_turns`
+(the newest turns of the same session, oldest first, default 20, set per
+service with `--history-turns`). Every routed inbound message and every
+delivered reply is recorded; inspect them with:
+
+```bash
+aps service conversation list --service <service-id>
+aps service conversation show <conversation-id> --format json
+```
+
 ## Validation And Routing
 
 Allowed-source checks run after normalization:
