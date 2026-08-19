@@ -130,6 +130,17 @@ aps service start <service-id> --addr 127.0.0.1:8080 \
 aps service stop <service-id>
 ```
 
+`aps service test --probe` POSTs a synthetic provider-shaped inbound at the
+public webhook. The synthetic sender and channel are taken from the service's
+own configuration — the first `allowed_numbers` / `allowed_chats` /
+`allowed_channels` / `allowed_guilds` entry, the sms/whatsapp `from` number, the
+WhatsApp `phone_number_id` — so the probe passes the same allowlist checks real
+traffic must pass without any bypass. The command prints `probe_sender`,
+`probe_channel` (and `probe_workspace` when a guild/team is configured) before
+the request, then `probe_status`, `probe_response`, and `probe_verified` on a
+2xx. An HTTP 403 means the service allowlist rejected the probe identity; a 5xx
+means the endpoint is up but the routed profile/action failed.
+
 `aps service start` runs a foreground HTTP server. Stop it with interrupt or by
 stopping the owning process manager. `aps service stop` prints that operational
 contract; it does not kill a background daemon.

@@ -76,8 +76,14 @@ command exits non-zero if the config is invalid.
 With --probe, additionally POST a synthetic adapter-shaped
 payload (signed for telegram/slack/sms/whatsapp where signing
 secrets are configured) at the webhook URL and print the response
-status and body. --timeout bounds the probe round-trip; the
-default is 5s.
+status and body. The synthetic inbound impersonates the first
+configured allowlist entry (allowed_numbers, allowed_chats,
+allowed_channels, allowed_guilds) and the service's own channel
+identity, so it passes the same allowlist checks real traffic
+must pass; probe_sender/probe_channel report what was sent. A 403
+therefore means the allowlist rejected the probe identity, not
+that the endpoint is down. --timeout bounds the probe round-trip;
+the default is 5s.
 
 Read-only on aps state; --probe makes a live outbound HTTP call
 each invocation so the kit-level idempotency tag is Conditional.`,
@@ -341,10 +347,11 @@ func deliveryHealth(service *core.ServiceConfig) string {
 }
 
 func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhookURL string, timeout time.Duration) error {
-	payload, err := core.SyntheticMessageWebhookPayload(service.Adapter)
+	payload, identity, err := core.SyntheticMessageWebhookPayload(service.Adapter, service.Options)
 	if err != nil {
 		return err
 	}
+	renderProbeIdentity(cmd, identity)
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewReader(payload))
@@ -371,10 +378,24 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 	if len(body) > 0 {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_response: %s\n", strings.TrimSpace(string(body)))
 	}
+	if resp.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("webhook probe returned HTTP 403: synthetic inbound rejected; check the service allowed_* options against probe_sender/probe_channel above")
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("webhook probe returned HTTP %d", resp.StatusCode)
 	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "probe_verified: webhook reachable; synthetic inbound accepted through request auth and allowlist checks")
 	return nil
+}
+
+// renderProbeIdentity states which identities the synthetic inbound carries
+// so operators can tell an allowlisted probe from a placeholder one.
+func renderProbeIdentity(cmd *cobra.Command, identity core.SyntheticProbeIdentity) {
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_sender: %s (%s)\n", identity.Sender, identity.SenderSource)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_channel: %s (%s)\n", identity.Channel, identity.ChannelSource)
+	if identity.Workspace != "" {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_workspace: %s (%s)\n", identity.Workspace, identity.WorkspaceSource)
+	}
 }
 
 func telegramWebhookSecret(service *core.ServiceConfig) string {
