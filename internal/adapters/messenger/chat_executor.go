@@ -175,7 +175,7 @@ func (e *ChatMessageExecutor) ExecuteMessage(ctx context.Context, handoff msgtyp
 		Output:   text,
 		Metadata: chatExecutionMetadata(state, reply),
 	}
-	if text == "" || replyMode(e.service) == "none" {
+	if text == "" || replyMode(e.service) == replyModeNone {
 		return result, nil
 	}
 	result.Reply = &msgtypes.DeliveryRequest{
@@ -220,7 +220,7 @@ func (e *ChatMessageExecutor) failureResult(msg *msgtypes.NormalizedMessage, tur
 			"conversation_id": turn.ConversationID,
 		},
 	}
-	if replyMode(e.service) != "none" {
+	if replyMode(e.service) != replyModeNone {
 		result.Reply = &msgtypes.DeliveryRequest{
 			Text:     text,
 			Metadata: replyMetadata(msg, e.service),

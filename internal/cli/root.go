@@ -86,15 +86,17 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-// profileFlagName / workspaceFlagName name the --profile and
-// --workspace root global flags. statusCmdName is the reserved-name
-// subcommand kit's signature validator requires. versionLabel is the
-// row key for the build-version line of `aps status`. Centralised so
-// subcommands and group-mapping tables reference the same identifier
-// and the goconst linter doesn't fire on cross-file repetition.
+// profileFlagName / workspaceFlagName / formatFlagName name the
+// --profile, --workspace and --format root global flags. statusCmdName
+// is the reserved-name subcommand kit's signature validator requires.
+// versionLabel is the row key for the build-version line of `aps
+// status`. Centralised so subcommands and group-mapping tables
+// reference the same identifier and the goconst linter doesn't fire on
+// cross-file repetition.
 const (
 	profileFlagName   = "profile"
 	workspaceFlagName = "workspace"
+	formatFlagName    = "format"
 	statusCmdName     = "status"
 	versionLabel      = "version"
 )

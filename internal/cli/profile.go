@@ -520,51 +520,56 @@ func writeProfileShowHuman(w io.Writer, profile *core.Profile) error {
 	if err != nil {
 		return fmt.Errorf("marshaling profile: %w", err)
 	}
-	fmt.Fprintln(w, string(data))
+	_, _ = fmt.Fprintln(w, string(data))
 
 	if profile.Workspace != nil {
-		fmt.Fprintf(w, "\nWorkspace: %s (%s)\n",
+		_, _ = fmt.Fprintf(w, "\nWorkspace: %s (%s)\n",
 			styles.Bold.Render(profile.Workspace.Name),
 			profile.Workspace.Scope)
 	}
 
 	if len(profile.Capabilities) > 0 {
-		fmt.Fprintln(w, "capabilities:")
+		_, _ = fmt.Fprintln(w, "capabilities:")
 		for _, capName := range profile.Capabilities {
-			dot := styles.StatusDot(true)
-			kind := "external"
-			desc := ""
-			if b, e := capability.GetBuiltin(capName); e == nil {
-				kind = "builtin"
-				desc = b.Description
-			} else if ext, e := capability.LoadCapability(capName); e == nil {
-				if ext.Description != "" {
-					desc = ext.Description
-				} else {
-					desc = ext.Path
-				}
-			}
-			badge := styles.KindBadge(kind)
-			line := fmt.Sprintf("  %s %-18s %s", dot, capName, badge)
-			if desc != "" {
-				line += "  " + styles.Dim.Render(desc)
-			}
-			fmt.Fprintln(w, line)
+			_, _ = fmt.Fprintln(w, profileCapabilityLine(capName))
 		}
 	}
 
-	fmt.Fprintln(w, "\nModules:")
+	_, _ = fmt.Fprintln(w, "\nModules:")
 	dir, _ := core.GetProfileDir(profile.ID)
 	if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
-		fmt.Fprintln(w, "- Secrets: present")
+		_, _ = fmt.Fprintln(w, "- Secrets: present")
 		secrets, _ := core.LoadProfileSecrets(profile.ID)
 		for k := range secrets {
-			fmt.Fprintf(w, "  - %s: ***redacted***\n", k)
+			_, _ = fmt.Fprintf(w, "  - %s: ***redacted***\n", k)
 		}
 	} else {
-		fmt.Fprintln(w, "- Secrets: missing")
+		_, _ = fmt.Fprintln(w, "- Secrets: missing")
 	}
 	return nil
+}
+
+// profileCapabilityLine renders one annotated capability row: status
+// dot, name, builtin/external badge, and a dimmed description when the
+// registry knows one (external capabilities fall back to their path).
+func profileCapabilityLine(capName string) string {
+	dot := styles.StatusDot(true)
+	kind := "external"
+	desc := ""
+	if b, e := capability.GetBuiltin(capName); e == nil {
+		kind = "builtin"
+		desc = b.Description
+	} else if ext, e := capability.LoadCapability(capName); e == nil {
+		desc = ext.Description
+		if desc == "" {
+			desc = ext.Path
+		}
+	}
+	line := fmt.Sprintf("  %s %-18s %s", dot, capName, styles.KindBadge(kind))
+	if desc != "" {
+		line += "  " + styles.Dim.Render(desc)
+	}
+	return line
 }
 
 // profileCapabilityCmd is the `aps profile capability` mid-level
