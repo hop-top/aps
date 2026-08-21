@@ -147,22 +147,61 @@ func (v *ServiceValidator) ValidateRequest(ctx context.Context, input RequestVal
 			now = time.Now().UTC()
 		}
 	}
-	provider := firstConfigured(input.Service.Options["provider"], input.Service.Adapter)
-	if input.Service.Options["provider"] == "" && hasGenericAuthOptions(input.Service.Options) {
-		provider = ""
-	}
+	_, hook := v.providerHook(input.Service)
 	req := authRequirements(input.Service)
-	if v != nil && v.Hooks != nil {
-		if hook := v.Hooks[provider]; hook != nil {
-			if requestValidator, ok := hook.(ProviderRequestValidator); ok {
-				if err := requestValidator.ValidateProviderRequest(ctx, input); err != nil {
-					return err
-				}
+	if hook != nil {
+		if requestValidator, ok := hook.(ProviderRequestValidator); ok {
+			if err := requestValidator.ValidateProviderRequest(ctx, input); err != nil {
+				return err //nolint:wrapcheck // typed MessengerError; handler matches on code
 			}
-			req = mergeAuthRequirements(req, hook.AuthRequirements(input.Service))
 		}
+		req = mergeAuthRequirements(req, hook.AuthRequirements(input.Service))
 	}
 	return validateAuth(input.Service.ID, req, input.Headers, input.Body, now, replayStore(v))
+}
+
+// AuthSummary is the effective inbound auth for a service as the validator
+// would apply it: generic options merged with the provider hook selected by
+// the provider/adapter. Display-oriented; secrets are never resolved.
+type AuthSummary struct {
+	// Provider is the hook key that applied ("" when only generic auth runs).
+	Provider string
+	// ProviderValidated is true when the provider hook validates the raw
+	// request itself (Twilio signature) rather than through Requirements.
+	ProviderValidated bool
+	Requirements      AuthRequirements
+}
+
+// DescribeAuth reports the auth requirements ValidateRequest would enforce
+// for the service, without touching the request or the environment.
+func (v *ServiceValidator) DescribeAuth(service ServiceValidationConfig) AuthSummary {
+	provider, hook := v.providerHook(service)
+	summary := AuthSummary{Requirements: authRequirements(service)}
+	if hook == nil {
+		return summary
+	}
+	summary.Provider = provider
+	_, summary.ProviderValidated = hook.(ProviderRequestValidator)
+	summary.Requirements = mergeAuthRequirements(summary.Requirements, hook.AuthRequirements(service))
+	return summary
+}
+
+// providerHook resolves the provider hook for a service: option provider
+// wins, then the adapter; generic auth options without an explicit provider
+// switch the route to generic auth only.
+func (v *ServiceValidator) providerHook(service ServiceValidationConfig) (string, ProviderAuthHook) {
+	provider := firstConfigured(service.Options["provider"], service.Adapter)
+	if service.Options["provider"] == "" && hasGenericAuthOptions(service.Options) {
+		provider = ""
+	}
+	if v == nil || v.Hooks == nil || provider == "" {
+		return "", nil
+	}
+	hook := v.Hooks[provider]
+	if hook == nil {
+		return "", nil
+	}
+	return provider, hook
 }
 
 func (v *ServiceValidator) ValidateMessage(service ServiceValidationConfig, msg *NormalizedMessage) error {
@@ -184,6 +223,9 @@ func (v *ServiceValidator) ValidateMessage(service ServiceValidationConfig, msg 
 	}
 	if allowed := splitCSV(opts["allowed_numbers"]); len(allowed) > 0 && !containsAny(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Channel.ID, msg.Channel.PlatformID) {
 		return ErrSenderNotAllowed(service.ID, "phone number is not allowed")
+	}
+	if allowed := splitCSV(opts[core.OptionAllowedSenders]); len(allowed) > 0 && !core.MatchAllowedSender(allowed, msg.Sender.ID, msg.Sender.PlatformID, msg.Sender.PlatformHandle) {
+		return ErrSenderNotAllowed(service.ID, "sender address is not allowed")
 	}
 	if service.Adapter == string(PlatformWhatsApp) {
 		if phoneNumberID := strings.TrimSpace(opts["phone_number_id"]); phoneNumberID != "" && !containsAny([]string{phoneNumberID}, msg.Channel.ID, msg.Channel.PlatformID) {

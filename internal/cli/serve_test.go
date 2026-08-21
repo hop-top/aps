@@ -156,6 +156,80 @@ func TestBuildServerHandler_MessageServiceWebhookMounted(t *testing.T) {
 	}
 }
 
+// TestBuildServerHandler_LegacyPlatformWebhookNotMounted verifies the
+// default serve mux does not expose the service-less
+// /messengers/{platform}/webhook entrypoint: it skips request validation
+// entirely, so an unauthenticated caller must get 404, never a normalized
+// pipeline response.
+func TestBuildServerHandler_LegacyPlatformWebhookNotMounted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	handler := newTestHandler(t, "")
+
+	body := `{"from":"attacker@example.test","to":"inbox@example.test","subject":"hi","text":"hello"}`
+	req := httptest.NewRequest(http.MethodPost, "/messengers/email/webhook", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d, want 404 (legacy platform webhook must not be mounted); body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestBuildServerHandler_TicketServiceWebhookMounted verifies aps serve mounts
+// the per-service ticket route at the path core.ServiceWebhookPath reports,
+// so what `aps service status` prints is what the server answers.
+func TestBuildServerHandler_TicketServiceWebhookMounted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	requireTestProfileAction(t, "inbox", "triage")
+	service := &core.ServiceConfig{
+		ID:      "support-inbox",
+		Type:    "ticket",
+		Adapter: "email",
+		Profile: "inbox",
+		Options: map[string]string{
+			"default_action": "triage",
+		},
+	}
+	if err := core.SaveService(service); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+	handler := newTestHandler(t, "")
+
+	path := core.ServiceWebhookPath(service)
+	if path != "/services/support-inbox/ticket/email" {
+		t.Fatalf("ServiceWebhookPath = %q", path)
+	}
+	body := `{
+		"message_id": "<abc@example.com>",
+		"from": "alice@example.com",
+		"to": "support@example.com",
+		"subject": "Cannot log in",
+		"body": "Password reset link never arrives."
+	}`
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusNotFound {
+		t.Fatalf("ticket service webhook route was not mounted; body=%s", rec.Body.String())
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode body: %v; raw=%s", err, rec.Body.String())
+	}
+	if payload["status"] != "success" {
+		t.Fatalf("status field: got %v, want success; body=%s", payload["status"], rec.Body.String())
+	}
+	if payload["body"] != "routed" {
+		t.Fatalf("action output: got %v, want routed (action stdout); body=%s", payload["body"], rec.Body.String())
+	}
+}
+
 func requireTestProfileAction(t *testing.T, profileID, actionID string) {
 	t.Helper()
 	if err := core.SaveProfile(&core.Profile{

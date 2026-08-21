@@ -9,6 +9,7 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/core"
+	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
 func newShowCmd() *cobra.Command {
@@ -17,9 +18,11 @@ func newShowCmd() *cobra.Command {
 		Short: "Show a persisted service",
 		Long: `Show the full configuration for a persisted service: id, type,
 backing adapter, owning profile, optional description, and the
-adapter-specific option map sorted by key. Runtime metadata from
-core.DescribeServiceRuntime (receives, executes, replies,
-maturity) is also printed.
+adapter-specific option map sorted by key. Message services also
+print the inbound auth the validator will enforce (auth: scheme,
+header, token/secret env names, timestamp and replay headers, or
+"auth: none"). Runtime metadata from core.DescribeServiceRuntime
+(receives, executes, replies, maturity) is also printed.
 
 Read-only: loads the service record from the service store and
 prints it. Idempotent.`,
@@ -49,6 +52,7 @@ prints it. Idempotent.`,
 				}
 			}
 			printRouting(cmd, service)
+			printAuth(cmd, service)
 			runtime := core.DescribeServiceRuntime(service)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "receives: %s\n", runtime.Receives)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "executes: %s\n", runtime.Executes)
@@ -60,6 +64,58 @@ prints it. Idempotent.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectRead)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyYes)
 	return cmd
+}
+
+// printAuth renders the inbound auth the messenger validator will enforce
+// for a message service, so operators can confirm generic webhook auth
+// (auth_scheme/auth_token_env/signature_secret_env) and provider hooks
+// without reading the validator. Secret values are never printed.
+func printAuth(cmd *cobra.Command, service *core.ServiceConfig) {
+	if service == nil || service.Type != core.ServiceTypeMessage {
+		return
+	}
+	out := cmd.OutOrStdout()
+	summary := msgtypes.NewServiceValidator().DescribeAuth(msgtypes.ServiceValidationConfig{
+		ID:      service.ID,
+		Adapter: service.Adapter,
+		Env:     service.Env,
+		Options: service.Options,
+	})
+	req := summary.Requirements
+	if req.Scheme == msgtypes.AuthSchemeNone && !summary.ProviderValidated {
+		_, _ = fmt.Fprintln(out, "auth: none")
+		return
+	}
+	_, _ = fmt.Fprintln(out, "auth:")
+	scheme := string(req.Scheme)
+	if summary.ProviderValidated && req.Scheme == msgtypes.AuthSchemeNone {
+		scheme = summary.Provider + "-signature"
+	}
+	_, _ = fmt.Fprintf(out, "  scheme: %s\n", scheme)
+	if summary.Provider != "" {
+		_, _ = fmt.Fprintf(out, "  provider: %s\n", summary.Provider)
+	}
+	if req.Header != "" {
+		_, _ = fmt.Fprintf(out, "  header: %s\n", req.Header)
+	}
+	if req.Token != "" {
+		_, _ = fmt.Fprintln(out, "  token: (literal in options)")
+	}
+	if req.TokenEnv != "" {
+		_, _ = fmt.Fprintf(out, "  token_env: %s\n", req.TokenEnv)
+	}
+	if req.SignatureSecret != "" {
+		_, _ = fmt.Fprintln(out, "  signature_secret: (literal in options)")
+	}
+	if req.SignatureSecretEnv != "" {
+		_, _ = fmt.Fprintf(out, "  signature_secret_env: %s\n", req.SignatureSecretEnv)
+	}
+	if req.TimestampHeader != "" {
+		_, _ = fmt.Fprintf(out, "  timestamp_header: %s (tolerance %s)\n", req.TimestampHeader, req.TimestampTolerance)
+	}
+	if req.ReplayIDHeader != "" {
+		_, _ = fmt.Fprintf(out, "  replay_id_header: %s\n", req.ReplayIDHeader)
+	}
 }
 
 // printRouting renders the compiled sender route table, or the reason it

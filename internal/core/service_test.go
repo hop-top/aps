@@ -1,13 +1,16 @@
 package core
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"hop.top/aps/internal/core/msgroute"
 )
 
 func TestResolveServiceType_Alias(t *testing.T) {
@@ -437,6 +440,7 @@ func TestDescribeServiceRuntime_TicketAdapters(t *testing.T) {
 		wantReceive string
 		wantReply   string
 	}{
+		{"email", "inbound email events (mail relay or poller JSON)", "reply body or status metadata"},
 		{"jira", "Jira issue/comment events", "Jira comment body or status metadata"},
 		{"linear", "Linear issue/comment events", "Linear comment body or status metadata"},
 		{"gitlab", "GitLab issue/MR/note events", "GitLab note body or status metadata"},
@@ -444,20 +448,91 @@ func TestDescribeServiceRuntime_TicketAdapters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.adapter, func(t *testing.T) {
-			got := DescribeServiceRuntime(&ServiceConfig{
+			service := &ServiceConfig{
 				ID:      tt.adapter + "-inbox",
 				Type:    "ticket",
 				Adapter: tt.adapter,
 				Profile: "triage",
-			})
+			}
+			got := DescribeServiceRuntime(service)
 
 			assert.Equal(t, tt.wantReceive, got.Receives)
 			assert.Equal(t, "routed profile action with normalized ticket payload", got.Executes)
 			assert.Equal(t, tt.wantReply, got.Replies)
-			assert.Equal(t, "component", got.Maturity)
-			assert.Equal(t, []string{"/services/" + tt.adapter + "-inbox/ticket/" + tt.adapter}, got.Routes)
+			assert.Equal(t, "ready", got.Maturity, "mounted route + normalizer = ready")
+			assert.Equal(t, []string{ServiceWebhookPath(service)}, got.Routes)
+			assert.Equal(t, "HTTP POST "+ServiceWebhookPath(service), got.Metadata.Ingress)
+			assert.Equal(t, OptionDefaultAction, got.Metadata.Routing)
 		})
 	}
+}
+
+func TestSyntheticServiceWebhookPayload_EmailUsesAllowedSender(t *testing.T) {
+	payload, identity, err := SyntheticServiceWebhookPayload(&ServiceConfig{
+		ID: "support-inbox", Type: "ticket", Adapter: "email", Profile: "inbox",
+		Options: map[string]string{"allowed_senders": "*@corp.example, ops@example.com"},
+	})
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(payload, &body))
+	assert.Equal(t, "APS Service Test <ops@example.com>", body["from"])
+	assert.Equal(t, "ops@example.com", identity.Sender)
+	assert.Equal(t, OptionAllowedSenders, identity.SenderSource)
+	assert.NotEmpty(t, body["to"])
+	assert.NotEmpty(t, body["message_id"])
+
+	payload, identity, err = SyntheticServiceWebhookPayload(&ServiceConfig{ID: "x", Type: "ticket", Adapter: "email", Profile: "inbox"})
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(payload, &body))
+	assert.Equal(t, "APS Service Test <service-test@aps.local>", body["from"])
+	assert.Equal(t, "synthetic", identity.SenderSource)
+}
+
+func TestDescribeServiceRuntime_TicketGitHubStaysComponent(t *testing.T) {
+	got := DescribeServiceRuntime(&ServiceConfig{ID: "repo-inbox", Type: "ticket", Adapter: "github", Profile: "maintainer"})
+	assert.Equal(t, "component", got.Maturity, "no github normalizer yet")
+	assert.Equal(t, []string{"/services/repo-inbox/ticket/github"}, got.Routes)
+}
+
+func TestValidateServiceConfig_TicketService(t *testing.T) {
+	t.Run("default action with auth is valid", func(t *testing.T) {
+		got := ValidateServiceConfig(&ServiceConfig{
+			ID: "support-inbox", Type: "ticket", Adapter: "email", Profile: "inbox",
+			Options: map[string]string{OptionDefaultAction: "triage", "auth_token_env": "SUPPORT_TOKEN", "allowed_senders": "*@corp.example"},
+		})
+		assert.True(t, got.Valid, got.Issues)
+		assert.Empty(t, got.Warnings)
+	})
+	t.Run("missing default action is invalid", func(t *testing.T) {
+		got := ValidateServiceConfig(&ServiceConfig{ID: "support-inbox", Type: "ticket", Adapter: "email", Profile: "inbox"})
+		assert.False(t, got.Valid)
+		assert.Contains(t, strings.Join(got.Issues, "\n"), "default_action")
+	})
+	t.Run("no auth and no allowlist warn", func(t *testing.T) {
+		got := ValidateServiceConfig(&ServiceConfig{
+			ID: "support-inbox", Type: "ticket", Adapter: "email", Profile: "inbox",
+			Options: map[string]string{OptionDefaultAction: "triage"},
+		})
+		assert.True(t, got.Valid, got.Issues)
+		joined := strings.Join(got.Warnings, "\n")
+		assert.Contains(t, joined, "no request auth")
+		assert.Contains(t, joined, "allowed_senders")
+	})
+	t.Run("unknown adapter is invalid", func(t *testing.T) {
+		got := ValidateServiceConfig(&ServiceConfig{
+			ID: "x", Type: "ticket", Adapter: "trello", Profile: "inbox",
+			Options: map[string]string{OptionDefaultAction: "triage"},
+		})
+		assert.False(t, got.Valid)
+	})
+	t.Run("routing and default action conflict", func(t *testing.T) {
+		got := ValidateServiceConfig(&ServiceConfig{
+			ID: "x", Type: "ticket", Adapter: "email", Profile: "inbox",
+			Options: map[string]string{OptionDefaultAction: "triage"},
+			Routing: &msgroute.Config{Routes: []msgroute.Route{{Match: msgroute.TerminalMatch, Action: "triage"}}},
+		})
+		assert.False(t, got.Valid)
+	})
 }
 
 func TestDescribeServiceRuntime_ServiceUXSurfaceMatrix(t *testing.T) {
@@ -632,4 +707,101 @@ func TestDescribeServiceRuntime_MessageRuntimeMetadata(t *testing.T) {
 	assert.Equal(t, []string{"ingress", "normalize", "route", "execute", "deliver", "retry"}, got.Metadata.ErrorHooks)
 	assert.Equal(t, "webhook", got.Metadata.ReceiveMode)
 	assert.Equal(t, []string{"text", "reaction", "file"}, got.Metadata.DeliveryModes)
+}
+
+func TestValidateServiceConfig_EmailAdapterConfig(t *testing.T) {
+	valid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":  "triage",
+			"allowed_senders": "alice@example.com, *@Example.org",
+			"auth_scheme":     "bearer",
+			"auth_token_env":  "MAIL_BRIDGE_TOKEN",
+			"reply":           "text",
+		},
+	})
+	assert.True(t, valid.Valid, valid.Issues)
+	assert.Empty(t, valid.Issues)
+	assert.NotContains(t, valid.Warnings, "email service has no allowed senders; any sender can route inbound messages")
+	assert.NotContains(t, valid.Warnings, "email service has no webhook auth; any client reaching the route can inject mail (set auth_scheme with auth_token_env or signature_secret_env)")
+
+	open := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{"default_action": "triage"},
+	})
+	assert.True(t, open.Valid, open.Issues)
+	assert.Contains(t, open.Warnings, "email service has no allowed senders; any sender can route inbound messages")
+	assert.Contains(t, open.Warnings, "email service has no webhook auth; any client reaching the route can inject mail (set auth_scheme with auth_token_env or signature_secret_env)")
+
+	invalid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action":  "triage",
+			"allowed_senders": "alice@*,bob,*@example.com",
+			"auth_scheme":     "hmac-sha256",
+		},
+	})
+	assert.False(t, invalid.Valid)
+	assert.Contains(t, invalid.Issues, `allowed_senders entry "alice@*" must be an exact address or a *@domain glob`)
+	assert.Contains(t, invalid.Issues, `allowed_senders entry "bob" must be an exact address or a *@domain glob`)
+	assert.Contains(t, invalid.Issues, "auth_scheme hmac-sha256 requires signature_secret or signature_secret_env")
+
+	badScheme := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "triage",
+			"auth_scheme":    "basic",
+			"auth_token_env": "MAIL_BRIDGE_TOKEN",
+		},
+	})
+	assert.False(t, badScheme.Valid)
+	assert.Contains(t, badScheme.Issues, `unsupported auth_scheme "basic"; use bearer, token, hmac-sha256, ed25519, or slack-signing-secret`)
+
+	tokenOnly := ValidateServiceConfig(&ServiceConfig{
+		ID:      "mail-inbox",
+		Type:    "message",
+		Adapter: "email",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "triage",
+			"auth_scheme":    "token",
+		},
+	})
+	assert.False(t, tokenOnly.Valid)
+	assert.Contains(t, tokenOnly.Issues, "auth_scheme token requires auth_token or auth_token_env")
+}
+
+func TestSyntheticMessageWebhookPayload_Email(t *testing.T) {
+	payload, identity, err := SyntheticMessageWebhookPayload("email", nil)
+	assert.NoError(t, err)
+	assert.Contains(t, string(payload), `"from"`)
+	assert.Contains(t, string(payload), `"to"`)
+	assert.Contains(t, string(payload), `"subject"`)
+	assert.Contains(t, string(payload), `"body"`)
+	assert.Equal(t, "synthetic", identity.SenderSource)
+
+	payload, identity, err = SyntheticMessageWebhookPayload("email", map[string]string{
+		OptionAllowedSenders: "*@example.org, ops@example.org",
+		"from":               "inbox@example.org",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "ops@example.org", identity.Sender)
+	assert.Equal(t, OptionAllowedSenders, identity.SenderSource)
+	assert.Equal(t, "inbox@example.org", identity.Channel)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(payload, &body))
+	assert.Equal(t, "APS Service Test <ops@example.org>", body["from"])
+	assert.Equal(t, "inbox@example.org", body["to"])
 }

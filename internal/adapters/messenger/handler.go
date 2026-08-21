@@ -111,7 +111,10 @@ func WithChatTurnRunner(runner ChatTurnRunner) func(*Handler) {
 
 // ServeHTTP handles incoming webhook POST requests. The URL path is expected
 // to end with /messengers/{platform}/webhook. It extracts the platform from
-// the path, validates the request, and dispatches to handleWebhook.
+// the path and dispatches to handleWebhook without a service, so no request
+// validation (provider hooks, generic auth, allowlists) runs. It is not
+// mounted by `aps serve`; the HTTP surface is ServeServiceWebhook via
+// /services/{service}/webhook.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "only POST requests are accepted")
@@ -329,7 +332,7 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	// Twilio delivers the webhook response to the sender only when it is
 	// TwiML; a JSON body is discarded (error 12300) and no reply SMS goes
 	// out. Other SMS providers keep the JSON contract.
-	if platform == string(msgtypes.PlatformSMS) && serviceProvider(service, "") == "twilio" {
+	if platform == string(msgtypes.PlatformSMS) && serviceProvider(service, "") == providerTwilio {
 		writeTwiML(w, twilioSMSReply(service, result))
 		return
 	}
@@ -341,7 +344,7 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 // Empty when the action did not succeed, replies are disabled, or the
 // action produced no output.
 func twilioSMSReply(service *core.ServiceConfig, result *ActionResult) string {
-	if result == nil || result.Status != "success" || replyMode(service) == "none" {
+	if result == nil || result.Status != "success" || replyMode(service) == replyModeNone {
 		return ""
 	}
 	return strings.TrimSpace(result.Output)
@@ -681,7 +684,7 @@ func (e *serviceRuntimeExecutor) ExecuteMessage(ctx context.Context, handoff msg
 		Status: actionResult.Status,
 		Output: actionResult.Output,
 	}
-	if actionResult.Status != "success" || replyMode(e.service) == "none" || strings.TrimSpace(actionResult.Output) == "" {
+	if actionResult.Status != "success" || replyMode(e.service) == replyModeNone || strings.TrimSpace(actionResult.Output) == "" {
 		return result, nil
 	}
 	result.Reply = &msgtypes.DeliveryRequest{
@@ -856,7 +859,7 @@ func serviceHistoryTurns(service *core.ServiceConfig) int {
 // recordWebhookReplyTurn persists the reply embedded in a legacy webhook
 // response as an outbound turn when a reply was actually produced.
 func (h *Handler) recordWebhookReplyTurn(ctx context.Context, msg *msgtypes.NormalizedMessage, service *core.ServiceConfig, result *ActionResult) {
-	if h.router == nil || msg == nil || result == nil || result.Status != "success" || replyMode(service) == "none" {
+	if h.router == nil || msg == nil || result == nil || result.Status != "success" || replyMode(service) == replyModeNone {
 		return
 	}
 	profileID, actionName := msg.ProfileID, ""
@@ -865,6 +868,16 @@ func (h *Handler) recordWebhookReplyTurn(ctx context.Context, msg *msgtypes.Norm
 	}
 	h.router.recordOutboundTurn(ctx, msg, strings.TrimSpace(result.Output), profileID, actionName)
 }
+
+// replyModeNone is the service `reply` option value that disables
+// outbound replies entirely; handlers skip delivery and answer with an
+// empty acknowledgement.
+const replyModeNone = "none"
+
+// providerTwilio is the `provider` option value for Twilio-backed SMS
+// and WhatsApp services. Twilio only honours TwiML webhook responses,
+// so handlers branch on it when rendering the reply body.
+const providerTwilio = "twilio"
 
 func replyMode(service *core.ServiceConfig) string {
 	if service == nil || service.Options == nil {

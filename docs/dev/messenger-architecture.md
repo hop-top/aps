@@ -24,7 +24,9 @@ canonical service config.
 | `--type whatsapp` | `message` | `whatsapp` |
 
 Ticket aliases share the same command grammar but resolve to `ticket`, not
-`message`: `email`, `github`, `gitlab`, `jira`, and `linear`.
+`message`: `email`, `github`, `gitlab`, `jira`, and `linear`. Ticket services
+are mounted by the ticket HTTP adapter (`internal/adapters/ticket`) at
+`POST /services/<id>/ticket/<adapter>`; see [Ticket Service Flow](#ticket-service-flow).
 
 ## Message Service Flow
 
@@ -50,6 +52,43 @@ POST /services/<service-id>/webhook
 `aps serve` mounts the service route through the messenger HTTP adapter. The
 route loads the persisted service, confirms `type: message`, and uses the
 persisted adapter to pick the normalizer/denormalizer.
+
+## Ticket Service Flow
+
+```text
+[Mail relay / IMAP poller / Jira / Linear / GitLab webhook]
+        |
+        v
+POST /services/<service-id>/ticket/<adapter>
+        |
+        v
+[Load service; require type: ticket and matching adapter]
+        |
+        v
+[Generic service request auth: bearer/token/HMAC, timestamp, replay]
+        |
+        v
+[Normalize adapter payload -> NormalizedTicket; allowed_senders gate]
+        |
+        v
+[Resolve sender route table or default_action]
+        |
+        v
+[Execute profile action: NormalizedTicket + service_id + route_key on stdin]
+        |
+        v
+[Return status JSON: status, body (action stdout), ticket_id, thread_id]
+```
+
+The ticket adapter (`internal/adapters/ticket`) mirrors the messenger
+adapter: `Adapter.RegisterRoutes` mounts the per-service pattern, `Handler`
+validates with the shared `core/messenger.ServiceValidator` (same options as
+message services, no provider hooks), `Normalizer` produces the
+`NormalizedTicket`, and `Router` resolves through the service
+(`serviceRouteResolver`: route table by author email, else `default_action`)
+and executes through `protocol.APSCore.ExecuteRun`. There is no unauthenticated
+catch-all route; a ticket service without `default_action` or a routing block
+answers `422`. User guide: [Ticket services](../user/tickets.md).
 
 ## Routing
 
@@ -117,9 +156,9 @@ All message adapters normalize to:
 }
 ```
 
-`github` and `email` still exist in the lower-level normalizer for older
-message-adapter code, but user-facing service aliases route them to `ticket`
-services.
+`github` and `email` still exist in the lower-level messenger normalizer for
+older message-adapter code, but user-facing service aliases route them to
+`ticket` services, whose email normalizer accepts the same flat email JSON.
 
 ## Conversation And Thread Policy
 
@@ -169,11 +208,11 @@ Message service routes are mounted at:
 POST /services/<service-id>/webhook
 ```
 
-Legacy component routes still exist at:
-
-```text
-POST /messengers/{platform}/webhook
-```
+This is the only messenger HTTP route `aps serve` mounts. The platform-keyed
+`/messengers/{platform}/webhook` entrypoint on `messenger.Handler` is a
+service-less component path: it skips request validation (provider auth
+hooks, generic webhook auth, allowlists), so it is deliberately not exposed
+over HTTP. Reach a platform through a message service.
 
 Use `aps adapter messenger test <device>` only for adapter-device route
 simulation. It is not a service-route test and it does not verify live platform

@@ -2,6 +2,7 @@ package ticket
 
 import (
 	"fmt"
+	"net/mail"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,8 @@ func (n *Normalizer) Normalize(adapter string, raw map[string]any) (*NormalizedT
 		ticket, err = n.normalizeLinear(raw)
 	case AdapterGitLab:
 		ticket, err = n.normalizeGitLab(raw)
+	case AdapterEmail:
+		ticket, err = n.normalizeEmail(raw)
 	default:
 		return nil, fmt.Errorf("unsupported ticket adapter %q", adapter)
 	}
@@ -213,6 +216,112 @@ func (n *Normalizer) normalizeGitLab(raw map[string]any) (*NormalizedTicket, err
 	}, nil
 }
 
+// normalizeEmail maps an inbound email event to a ticket. Expected shape
+// (the same flat document the messenger email normalizer accepts, so a mail
+// relay or IMAP poller can post to either service type):
+//
+//	{"message_id": "<id>", "in_reply_to": "<root>", "references": "<root> ...",
+//	 "from": "Name <addr>", "to": "mailbox@example.com", "cc": "...",
+//	 "subject": "...", "body": "...", "date": RFC3339/RFC1123Z,
+//	 "labels": [...], "attachments": [{"type","url","mime_type","size_bytes"}]}
+//
+// The recipient mailbox is the channel; the thread root (In-Reply-To, else the
+// first References entry, else the message itself) is the thread. A reply is a
+// comment on that thread; a fresh message opens an issue.
+func (n *Normalizer) normalizeEmail(raw map[string]any) (*NormalizedTicket, error) {
+	fromName, fromAddr := parseEmailAddress(firstNonEmpty(getString(raw, "from"), getString(raw, "sender")))
+	if fromAddr == "" {
+		return nil, fmt.Errorf("missing email sender (from)")
+	}
+	_, mailbox := parseEmailAddress(firstNonEmpty(getString(raw, "to"), getString(raw, "mailbox"), getString(raw, "recipient")))
+	if mailbox == "" {
+		return nil, fmt.Errorf("missing email recipient (to)")
+	}
+
+	id := strings.TrimSpace(firstNonEmpty(getString(raw, "message_id"), getString(raw, "message-id"), getString(raw, "id")))
+	if id == "" {
+		id = fmt.Sprintf("email_%d", time.Now().UnixNano())
+	}
+	threadID := strings.TrimSpace(firstNonEmpty(getString(raw, "thread_id"), getString(raw, "in_reply_to"), getString(raw, "in-reply-to")))
+	if threadID == "" {
+		if refs := strings.Fields(getString(raw, "references")); len(refs) > 0 {
+			threadID = refs[0]
+		}
+	}
+	kind := TicketKindComment
+	if threadID == "" {
+		kind = TicketKindIssue
+		threadID = id
+	}
+
+	metadata := map[string]any{"raw": raw, "mailbox": mailbox}
+	for _, key := range []string{"cc", "bcc", "reply_to", "references", "in_reply_to", "headers", "attachments", "html_body"} {
+		if value, ok := raw[key]; ok && value != nil {
+			metadata[key] = value
+		}
+	}
+	if raw["to"] != nil {
+		metadata["to"] = raw["to"]
+	}
+
+	received := parseEmailDate(firstNonEmpty(getString(raw, "date"), getString(raw, "received_at")))
+
+	return &NormalizedTicket{
+		ID:         id,
+		Adapter:    AdapterEmail,
+		Kind:       kind,
+		Action:     firstNonEmpty(getString(raw, "event"), "received"),
+		ChannelID:  mailbox,
+		ThreadID:   threadID,
+		ThreadType: TicketKindEmail,
+		Title:      getString(raw, "subject"),
+		Body:       firstNonEmpty(getString(raw, "body"), getString(raw, "text")),
+		State:      "received",
+		Author: Actor{
+			ID:     fromAddr,
+			Name:   fromName,
+			Handle: fromAddr,
+			Email:  fromAddr,
+		},
+		Labels:    getStringSlice(raw, "labels"),
+		CreatedAt: received,
+		UpdatedAt: received,
+		Metadata:  metadata,
+	}, nil
+}
+
+// parseEmailDate accepts RFC 3339 and RFC 5322 dates; anything else (or an
+// empty value) falls back to the time of normalization.
+func parseEmailDate(value string) time.Time {
+	if parsed := parseTime(value); !parsed.IsZero() {
+		return parsed
+	}
+	if parsed, err := mail.ParseDate(strings.TrimSpace(value)); err == nil {
+		return parsed.UTC()
+	}
+	return time.Now().UTC()
+}
+
+// parseEmailAddress splits "Name <addr>" or a bare address into its display
+// name and lowercased address. Malformed input yields the trimmed raw value
+// as the address so routing still has a stable key.
+func parseEmailAddress(value string) (name, addr string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", ""
+	}
+	if parsed, err := mail.ParseAddress(value); err == nil {
+		return strings.TrimSpace(parsed.Name), strings.ToLower(strings.TrimSpace(parsed.Address))
+	}
+	if list, err := mail.ParseAddressList(value); err == nil && len(list) > 0 {
+		return strings.TrimSpace(list[0].Name), strings.ToLower(strings.TrimSpace(list[0].Address))
+	}
+	if first, _, ok := strings.Cut(value, ","); ok {
+		value = strings.TrimSpace(first)
+	}
+	return "", strings.ToLower(strings.TrimPrefix(strings.TrimSpace(value), "mailto:"))
+}
+
 func (n *Normalizer) Denormalize(adapter string, result *ActionResult, ticket *NormalizedTicket) (map[string]any, error) {
 	if result == nil {
 		return nil, fmt.Errorf("action result is nil")
@@ -246,6 +355,8 @@ func (n *Normalizer) Denormalize(adapter string, result *ActionResult, ticket *N
 		response["target"] = "linear_comment"
 	case AdapterGitLab:
 		response["target"] = "gitlab_note"
+	case AdapterEmail:
+		response["target"] = "email_reply"
 	default:
 		response["target"] = "status"
 	}

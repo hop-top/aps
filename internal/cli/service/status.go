@@ -76,8 +76,14 @@ command exits non-zero if the config is invalid.
 With --probe, additionally POST a synthetic adapter-shaped
 payload (signed for telegram/slack/sms/whatsapp where signing
 secrets are configured) at the webhook URL and print the response
-status and body. --timeout bounds the probe round-trip; the
-default is 5s.
+status and body. The synthetic inbound impersonates the first
+configured allowlist entry (allowed_numbers, allowed_chats,
+allowed_channels, allowed_guilds) and the service's own channel
+identity, so it passes the same allowlist checks real traffic
+must pass; probe_sender/probe_channel report what was sent. A 403
+therefore means the allowlist rejected the probe identity, not
+that the endpoint is down. --timeout bounds the probe round-trip;
+the default is 5s.
 
 Read-only on aps state; --probe makes a live outbound HTTP call
 each invocation so the kit-level idempotency tag is Conditional.`,
@@ -341,10 +347,11 @@ func deliveryHealth(service *core.ServiceConfig) string {
 }
 
 func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhookURL string, timeout time.Duration) error {
-	payload, err := core.SyntheticMessageWebhookPayload(service.Adapter)
+	payload, identity, err := core.SyntheticServiceWebhookPayload(service)
 	if err != nil {
 		return err
 	}
+	renderProbeIdentity(cmd, identity)
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewReader(payload))
@@ -361,6 +368,9 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 		signSlackProbe(req, service, payload)
 	}
 	signProviderProbe(req, service, payload)
+	if service.Type == core.ServiceTypeTicket {
+		signGenericProbe(req, service, payload)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("webhook probe failed: %w", err)
@@ -371,10 +381,24 @@ func probeServiceWebhook(cmd *cobra.Command, service *core.ServiceConfig, webhoo
 	if len(body) > 0 {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_response: %s\n", strings.TrimSpace(string(body)))
 	}
+	if resp.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("webhook probe returned HTTP 403: synthetic inbound rejected; check the service allowed_* options against probe_sender/probe_channel above")
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("webhook probe returned HTTP %d", resp.StatusCode)
 	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "probe_verified: webhook reachable; synthetic inbound accepted through request auth and allowlist checks")
 	return nil
+}
+
+// renderProbeIdentity states which identities the synthetic inbound carries
+// so operators can tell an allowlisted probe from a placeholder one.
+func renderProbeIdentity(cmd *cobra.Command, identity core.SyntheticProbeIdentity) {
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_sender: %s (%s)\n", identity.Sender, identity.SenderSource)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_channel: %s (%s)\n", identity.Channel, identity.ChannelSource)
+	if identity.Workspace != "" {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "probe_workspace: %s (%s)\n", identity.Workspace, identity.WorkspaceSource)
+	}
 }
 
 func telegramWebhookSecret(service *core.ServiceConfig) string {
@@ -419,6 +443,79 @@ func signProviderProbe(req *http.Request, service *core.ServiceConfig, payload [
 		case "whatsapp-cloud":
 			signWhatsAppCloudProbe(req, service, payload)
 		}
+	}
+}
+
+// signGenericProbe attaches the generic service auth the webhook route
+// enforces (core/messenger ServiceValidator): bearer/token header from
+// auth_token or auth_token_env, HMAC-SHA256 body signature from
+// signature_secret or signature_secret_env, plus the optional timestamp and
+// replay headers.
+func signGenericProbe(req *http.Request, service *core.ServiceConfig, payload []byte) {
+	if service == nil || service.Options == nil {
+		return
+	}
+	opts := service.Options
+	scheme := strings.TrimSpace(strings.ToLower(opts["auth_scheme"]))
+	token := serviceConfiguredSecret(service, []string{"auth_token"}, []string{"auth_token_env"})
+	secret := serviceConfiguredSecret(service, []string{"signature_secret"}, []string{"signature_secret_env"})
+	if scheme == "" {
+		switch {
+		case token != "":
+			scheme = string(msgtypes.AuthSchemeBearer)
+		case secret != "":
+			scheme = string(msgtypes.AuthSchemeHMACSHA256)
+		}
+	}
+	header := strings.TrimSpace(opts["auth_header"])
+	switch msgtypes.AuthScheme(scheme) {
+	case msgtypes.AuthSchemeBearer:
+		if token != "" {
+			if header == "" {
+				header = "Authorization"
+			}
+			req.Header.Set(header, "Bearer "+token)
+		}
+	case msgtypes.AuthSchemeToken:
+		if token != "" {
+			if header == "" {
+				header = "X-APS-Token"
+			}
+			req.Header.Set(header, token)
+		}
+	case msgtypes.AuthSchemeHMACSHA256:
+		if secret != "" {
+			if header == "" {
+				header = "X-APS-Signature"
+			}
+			mac := hmac.New(sha256.New, []byte(secret))
+			_, _ = mac.Write(payload)
+			req.Header.Set(header, "sha256="+hex.EncodeToString(mac.Sum(nil)))
+		}
+	case msgtypes.AuthSchemeNone, msgtypes.AuthSchemeSlack, msgtypes.AuthSchemeEd25519:
+		// Nothing generic to attach: unauthenticated, or a provider scheme
+		// signed by its provider probe.
+	}
+	if tsHeader := strings.TrimSpace(opts["timestamp_header"]); tsHeader != "" || truthyOption(opts["require_timestamp"]) {
+		if tsHeader == "" {
+			tsHeader = "X-APS-Timestamp"
+		}
+		req.Header.Set(tsHeader, time.Now().UTC().Format(time.RFC3339))
+	}
+	if replayHeader := strings.TrimSpace(opts["replay_id_header"]); replayHeader != "" || truthyOption(opts["require_replay_check"]) {
+		if replayHeader == "" {
+			replayHeader = "X-APS-Delivery-ID"
+		}
+		req.Header.Set(replayHeader, fmt.Sprintf("aps-service-test-%d", time.Now().UnixNano()))
+	}
+}
+
+func truthyOption(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
 	}
 }
 
