@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"hop.top/kit/go/storage/secret"
@@ -176,5 +177,42 @@ func TestInfisicalAuthenticatesViaTokenEnv(t *testing.T) {
 	}
 	if string(got.Value) != "v" {
 		t.Fatalf("value = %q, want v", got.Value)
+	}
+}
+
+// A vault that is unreachable at the first lookup must not poison the profile
+// cache: once it recovers, resolution has to succeed without a restart.
+func TestVaultRecoversAfterTransientFailure(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	var up atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !up.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		key := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, "/api/v3/secrets/raw"), "/")
+		if key == "" {
+			_, _ = w.Write([]byte(`{"secrets":[{"secretKey":"tok","secretValue":"real-secret"}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"secret":{"secretKey":"tok","secretValue":"real-secret"}}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	writeSecretsConfig(t, "secrets:\n  backend: infisical\n  addr: "+srv.URL+
+		"\n  token: test-token\n  project: proj\n  env: prod\n")
+
+	if _, found := ResolveSecretValue("secret:tok", ProfileSecretLookup("p1"), EnvSecretLookup); found {
+		t.Fatal("expected no credential while the vault is down")
+	}
+
+	up.Store(true)
+
+	got, found := ResolveSecretValue("secret:tok", ProfileSecretLookup("p1"), EnvSecretLookup)
+	if !found || got != "real-secret" {
+		t.Fatalf("after recovery got (%q, %v); want (real-secret, true) — the failed read was cached", got, found)
 	}
 }

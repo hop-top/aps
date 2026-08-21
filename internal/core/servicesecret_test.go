@@ -224,3 +224,100 @@ func TestProfileSecretLookupEmptyProfile(t *testing.T) {
 		t.Fatal("empty profile should yield a nil lookup")
 	}
 }
+
+// A failed store read must not be cached. A vault that is briefly unreachable
+// at the first webhook would otherwise poison the profile for the lifetime of
+// the process: every later request resolves empty even after the vault
+// recovers, and only a restart clears it.
+func TestProfileSecretLookupRetriesAfterFailure(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
+
+	profileDir, err := GetProfileDir("p1")
+	if err != nil {
+		t.Skipf("profile dir unavailable: %v", err)
+	}
+	if err := os.MkdirAll(profileDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	secretsFile := filepath.Join(profileDir, "secrets.env")
+
+	// Make the store unreadable: a directory where a file is expected makes
+	// LoadProfileSecrets fail rather than report "no secrets".
+	if err := os.MkdirAll(secretsFile, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := ProfileSecretLookup("p1")("tok"); ok {
+		t.Fatal("expected no value while the store is unreadable")
+	}
+
+	// The store becomes readable.
+	if err := os.Remove(secretsFile); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(secretsFile, []byte("tok=real-secret\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok := ProfileSecretLookup("p1")("tok")
+	if !ok || got != "real-secret" {
+		t.Fatalf("after recovery got (%q, %v); want (real-secret, true) — a failed read was cached", got, ok)
+	}
+}
+
+// A successful read is still cached, so the happy path does not regress into
+// re-reading the backing store on every request.
+func TestProfileSecretLookupCachesSuccessfulRead(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
+
+	profileDir, err := GetProfileDir("p2")
+	if err != nil {
+		t.Skipf("profile dir unavailable: %v", err)
+	}
+	if err := os.MkdirAll(profileDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	secretsFile := filepath.Join(profileDir, "secrets.env")
+	if err := os.WriteFile(secretsFile, []byte("tok=first\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, _ := ProfileSecretLookup("p2")("tok"); got != "first" {
+		t.Fatalf("first read = %q, want first", got)
+	}
+
+	// Rewrite: a cached success must not be re-read.
+	if err := os.WriteFile(secretsFile, []byte("tok=second\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := ProfileSecretLookup("p2")("tok"); got != "first" {
+		t.Fatalf("second read = %q, want the cached \"first\"", got)
+	}
+}
+
+// An absent store is a successful, empty read — not a failure — so it must be
+// cached rather than retried on every request.
+func TestProfileSecretLookupCachesAbsentStore(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
+
+	if _, ok := ProfileSecretLookup("p3")("tok"); ok {
+		t.Fatal("expected not-found for a profile with no secrets")
+	}
+	if _, ok := ProfileSecretLookup("p3")("tok"); ok {
+		t.Fatal("expected not-found on the second lookup too")
+	}
+}

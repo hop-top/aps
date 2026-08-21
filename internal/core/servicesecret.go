@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"hop.top/aps/internal/logging"
 )
 
 // SecretRefPrefix marks a ServiceConfig Env/Options value as a reference to a
@@ -68,26 +70,42 @@ func EnvSecretLookup(name string) (string, bool) {
 // resolution happens on every inbound webhook, so the backing store must be
 // read once per profile rather than once per request — a keyring backend would
 // otherwise touch the OS keychain on every message.
+//
+// Only successful reads are cached. A failed read (vault unreachable, keyring
+// locked, malformed secrets file) is retried on the next lookup: caching it
+// would poison the profile for the lifetime of the process, so a momentary
+// blip at the first webhook would keep failing long after the store recovered.
 var profileSecretCache sync.Map // profileID -> *profileSecrets
 
 type profileSecrets struct {
-	once   sync.Once
+	mu     sync.Mutex
+	loaded bool
 	values map[string]string
 }
 
 func (p *profileSecrets) get(profileID, name string) (string, bool) {
-	p.once.Do(func() {
-		if loaded, err := LoadProfileSecrets(profileID); err == nil {
-			p.values = loaded
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.loaded {
+		values, err := LoadProfileSecrets(profileID)
+		if err != nil {
+			// Left unloaded so the next lookup retries. Logged rather than
+			// returned: callers fall through to their next source, and a
+			// silent empty credential is what made this hard to diagnose.
+			logging.GetLogger().Warn("reading profile secrets failed; will retry",
+				"profile", profileID, "error", err)
+			return "", false
 		}
-	})
+		p.values = values
+		p.loaded = true
+	}
 	v, ok := p.values[name]
 	return v, ok
 }
 
 // ProfileSecretLookup returns a SecretLookup backed by the profile's configured
-// secret store. The store is read at most once per profile for the lifetime of
-// the process; repeated calls share that result.
+// secret store. A successful read is shared across calls for the lifetime of
+// the process; a failed read is retried on the next lookup.
 //
 // A profile with no store, or a backend that fails to open, yields a lookup
 // that finds nothing, so callers fall through to their next source.
