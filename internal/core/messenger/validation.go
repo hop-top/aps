@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"hop.top/aps/internal/core"
 )
 
 type AuthScheme string
@@ -30,6 +32,7 @@ const (
 type ServiceValidationConfig struct {
 	ID      string
 	Adapter string
+	Profile string
 	Env     map[string]string
 	Options map[string]string
 }
@@ -432,20 +435,23 @@ func (SlackAuthHook) AuthRequirements(service ServiceValidationConfig) AuthRequi
 	}
 }
 
+// serviceEnvLiteral returns the binding only when it is a literal credential.
+// A "secret:NAME" binding names a secret rather than carrying one, so it is
+// not a literal.
 func serviceEnvLiteral(env map[string]string, key string) string {
 	value := strings.TrimSpace(env[key])
-	if value == "" || strings.HasPrefix(value, "secret:") {
+	if _, isRef := core.SplitSecretRef(value); isRef {
 		return ""
 	}
 	return value
 }
 
+// serviceEnvSecretName returns the NAME from a "secret:NAME" binding, or ""
+// when the binding is absent or a literal. The name is returned unresolved;
+// callers decide which backends to consult.
 func serviceEnvSecretName(env map[string]string, key string) string {
-	value := strings.TrimSpace(env[key])
-	if strings.HasPrefix(value, "secret:") {
-		return strings.TrimSpace(strings.TrimPrefix(value, "secret:"))
-	}
-	return ""
+	name, _ := core.SplitSecretRef(env[key])
+	return name
 }
 
 func replayStore(v *ServiceValidator) ReplayStore {

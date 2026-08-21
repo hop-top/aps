@@ -22,11 +22,17 @@ const OptionDefaultAction = "default_action"
 
 // ServiceConfig is the persisted profile-facing service definition.
 type ServiceConfig struct {
-	ID           string            `yaml:"id"`
-	Type         string            `yaml:"type"`
-	Adapter      string            `yaml:"adapter,omitempty"`
-	Profile      string            `yaml:"profile"`
-	Description  string            `yaml:"description,omitempty"`
+	ID          string `yaml:"id"`
+	Type        string `yaml:"type"`
+	Adapter     string `yaml:"adapter,omitempty"`
+	Profile     string `yaml:"profile"`
+	Description string `yaml:"description,omitempty"`
+	// Env binds credential names to values. A value may be a literal, or a
+	// "secret:NAME" reference resolved at use time against the profile secret
+	// store (see SecretsConfig) and then the process environment. A reference
+	// that resolves to nothing yields empty rather than falling back to the
+	// binding key, so a missing secret never silently authenticates with an
+	// unrelated ambient variable.
 	Env          map[string]string `yaml:"env,omitempty"`
 	Labels       map[string]string `yaml:"labels,omitempty"`
 	Options      map[string]string `yaml:"options,omitempty"`

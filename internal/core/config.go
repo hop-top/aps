@@ -151,11 +151,29 @@ type IdempotencyConfig struct {
 // SecretsConfig selects the kit/storage/secret backend used for profile secrets.
 // Backend "file" (default) keeps the legacy secrets.env per-profile layout; "env"
 // reads from process environment with optional Prefix; "keyring" delegates to
-// the OS keychain (Service defaults to "aps").
+// the OS keychain (Service defaults to "aps"). Remote vault backends
+// ("onepassword", "openbao", "infisical", "ghsecrets") and "agefile" use the
+// remaining fields; each backend ignores the ones it does not need.
 type SecretsConfig struct {
 	Backend string `yaml:"backend,omitempty"`
 	Service string `yaml:"service,omitempty"`
 	Prefix  string `yaml:"prefix,omitempty"`
+
+	// Vault backends.
+	Addr       string `yaml:"addr,omitempty"`        // infisical
+	Token      string `yaml:"token,omitempty"`       // infisical, onepassword Connect
+	Project    string `yaml:"project,omitempty"`     // infisical
+	Env        string `yaml:"env,omitempty"`         // infisical
+	Vault      string `yaml:"vault,omitempty"`       // onepassword
+	ConnectURL string `yaml:"connect_url,omitempty"` // onepassword Connect
+
+	// ghsecrets.
+	Repo string `yaml:"repo,omitempty"`
+
+	// TokenEnv names an environment variable holding the backend credential,
+	// so the token need not be written into the config file. It is consulted
+	// when Token is empty.
+	TokenEnv string `yaml:"token_env,omitempty"`
 }
 
 // GlobalIsolationConfig represents global isolation settings
@@ -241,7 +259,7 @@ func SaveConfig(config *Config) error {
 		return err
 	}
 
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return err
 	}
 
@@ -251,7 +269,7 @@ func SaveConfig(config *Config) error {
 		return err
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return err
 	}
 

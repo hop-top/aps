@@ -16,6 +16,51 @@ profile actions.
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
 not message aliases.
 
+## Credential Bindings
+
+`--env KEY=VALUE` binds a credential. `VALUE` is either a literal or a
+reference:
+
+| Form | Meaning |
+| --- | --- |
+| `--env SLACK_BOT_TOKEN=xoxb-abc123` | Literal. Stored verbatim in the service config. |
+| `--env SLACK_BOT_TOKEN=secret:slack_bot` | Reference to the secret named `slack_bot`. |
+
+A `secret:NAME` reference is resolved when the credential is used, in order:
+
+1. the profile secret store, whose backend is set by `secrets.backend` in
+   config (see below);
+2. the process environment variable `NAME`.
+
+### Secret Store Backends
+
+| `secrets.backend` | Where secrets live | Required config |
+| --- | --- | --- |
+| `file` (default) | the profile's `secrets.env`, mode 0600 | — |
+| `env` | `APS_SECRET_<NAME>` in the environment | `prefix` to override `APS_SECRET_` |
+| `keyring` | OS keychain | `service` (defaults to `aps/<profile>`) |
+| `onepassword` | 1Password, via the `op` CLI or Connect | `vault`; plus `connect_url` + `token` for Connect |
+| `infisical` | Infisical | `addr`, `project`, `env`, `token` |
+| `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
+
+Backend credentials should not be written into the config file: set
+`token_env` to the name of an environment variable holding the token instead,
+and it is read at open time.
+
+```yaml
+secrets:
+  backend: onepassword
+  vault: Engineering
+```
+
+If neither resolves, the credential is empty and the request fails. It does
+**not** fall back to an environment variable named after the binding key —
+a reference resolves only the name it declares, so a missing secret can never
+silently authenticate with an unrelated ambient variable.
+
+Prefer `secret:NAME` over literals: literals are written into the service
+config file in plaintext.
+
 ## Create A Message Service
 
 ```bash

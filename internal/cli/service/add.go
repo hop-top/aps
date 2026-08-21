@@ -32,7 +32,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 
 	cmd.Flags().StringVar(&opts.typeInput, "type", "", "Service type or adapter alias")
 	cmd.Flags().StringVar(&opts.adapter, "adapter", "", "Concrete adapter when --type is canonical")
-	cmd.Flags().StringArrayVar(&opts.env, "env", nil, "Environment binding KEY=VALUE, repeatable")
+	cmd.Flags().StringArrayVar(&opts.env, "env", nil, "Environment binding KEY=VALUE, repeatable; VALUE may be a literal or secret:NAME to resolve NAME from the profile secret store, then the environment")
 	cmd.Flags().StringArrayVar(&opts.labels, "label", nil, "Metadata label KEY=VALUE, repeatable")
 	cmd.Flags().StringVar(&opts.description, "description", "", "Human-readable description")
 	cmd.Flags().StringVar(&opts.site, "site", "", "Ticket adapter site or base URL")

@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"hop.top/aps/internal/core"
 )
 
 const (
@@ -103,27 +105,34 @@ func twilioAuthToken(service ServiceValidationConfig) string {
 	if service.Env == nil {
 		service.Env = map[string]string{}
 	}
+	lookup := core.ProfileSecretLookup(service.Profile)
 	return firstConfigured(
-		resolveConfiguredSecret(service.Options["twilio_auth_token"]),
-		resolveConfiguredSecret(service.Options["auth_token"]),
-		resolveConfiguredSecret(service.Options["signature_secret"]),
+		resolveConfiguredSecret(service.Options["twilio_auth_token"], lookup),
+		resolveConfiguredSecret(service.Options["auth_token"], lookup),
+		resolveConfiguredSecret(service.Options["signature_secret"], lookup),
 		getenv(service.Options["auth_token_env"]),
 		getenv(service.Options["signature_secret_env"]),
 		serviceEnvLiteral(service.Env, "TWILIO_AUTH_TOKEN"),
-		getenv(serviceEnvSecretName(service.Env, "TWILIO_AUTH_TOKEN")),
+		resolveSecretName(serviceEnvSecretName(service.Env, "TWILIO_AUTH_TOKEN"), lookup),
 		getenv("TWILIO_AUTH_TOKEN"),
 	)
 }
 
-func resolveConfiguredSecret(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
+// resolveConfiguredSecret resolves an option value that may be either a
+// literal credential or a "secret:NAME" reference.
+func resolveConfiguredSecret(value string, lookup core.SecretLookup) string {
+	resolved, _ := core.ResolveSecretValue(value, lookup, core.EnvSecretLookup)
+	return resolved
+}
+
+// resolveSecretName resolves an already-extracted secret name against the
+// profile store, then the process environment.
+func resolveSecretName(name string, lookup core.SecretLookup) string {
+	if strings.TrimSpace(name) == "" {
 		return ""
 	}
-	if strings.HasPrefix(value, "secret:") {
-		return getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
-	}
-	return value
+	resolved, _ := core.ResolveSecretValue(core.SecretRefPrefix+name, lookup, core.EnvSecretLookup)
+	return resolved
 }
 
 // SMSProvider is a first-class SMS message provider with mockable delivery.

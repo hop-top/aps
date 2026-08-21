@@ -463,7 +463,7 @@ func serviceProvider(service *core.ServiceConfig, fallback string) string {
 func serviceConfiguredSecret(service *core.ServiceConfig, optionKeys []string, optionEnvKeys []string, envKeys ...string) string {
 	if service != nil && service.Options != nil {
 		for _, key := range optionKeys {
-			if value := resolveServiceSecretValue(service.Options[key]); value != "" {
+			if value := resolveServiceSecretValue(service.Options[key], service.Profile); value != "" {
 				return value
 			}
 		}
@@ -481,21 +481,26 @@ func serviceConfiguredSecret(service *core.ServiceConfig, optionKeys []string, o
 	return ""
 }
 
+// serviceEnvSecret resolves the credential bound to key. A "secret:NAME"
+// binding resolves against the profile secret store and then the process
+// environment, using only NAME; an unresolvable reference yields empty rather
+// than falling back to os.Getenv(key), which would report a credential the
+// operator never named. The process environment is consulted under key only
+// when no binding exists.
 func serviceEnvSecret(service *core.ServiceConfig, key string) string {
-	if service != nil && service.Env != nil {
-		if value := resolveServiceSecretValue(service.Env[key]); value != "" {
-			return value
-		}
+	if service == nil || service.Env == nil {
+		return os.Getenv(key)
 	}
-	return os.Getenv(key)
+	value, bound := service.Env[key]
+	if !bound || strings.TrimSpace(value) == "" {
+		return os.Getenv(key)
+	}
+	return resolveServiceSecretValue(value, service.Profile)
 }
 
-func resolveServiceSecretValue(value string) string {
-	value = strings.TrimSpace(value)
-	if strings.HasPrefix(value, "secret:") {
-		return os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:")))
-	}
-	return value
+func resolveServiceSecretValue(value, profileID string) string {
+	resolved, _ := core.ResolveSecretValue(value, core.ProfileSecretLookup(profileID), core.EnvSecretLookup)
+	return resolved
 }
 
 func serveServiceHTTP(ctx context.Context, addr string) error {

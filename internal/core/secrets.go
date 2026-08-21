@@ -15,16 +15,32 @@ import (
 
 	"github.com/joho/godotenv"
 	"hop.top/kit/go/storage/secret"
-	_ "hop.top/kit/go/storage/secret/env"     // register "env"
-	_ "hop.top/kit/go/storage/secret/keyring" // register "keyring"
+	_ "hop.top/kit/go/storage/secret/env"         // register "env"
+	_ "hop.top/kit/go/storage/secret/ghsecrets"   // register "ghsecrets"
+	_ "hop.top/kit/go/storage/secret/infisical"   // register "infisical"
+	_ "hop.top/kit/go/storage/secret/keyring"     // register "keyring"
+	_ "hop.top/kit/go/storage/secret/onepassword" // register "onepassword"
 )
 
 // SecretsBackend* are the canonical backend identifiers for SecretsConfig.
 const (
-	SecretsBackendFile    = "file"
-	SecretsBackendEnv     = "env"
-	SecretsBackendKeyring = "keyring"
+	SecretsBackendFile        = "file"
+	SecretsBackendEnv         = "env"
+	SecretsBackendKeyring     = "keyring"
+	SecretsBackendOnePassword = "onepassword"
+	SecretsBackendInfisical   = "infisical"
+	SecretsBackendGHSecrets   = "ghsecrets"
 )
+
+// SecretsBackends lists every backend selectable via Config.Secrets.Backend.
+var SecretsBackends = []string{
+	SecretsBackendFile,
+	SecretsBackendEnv,
+	SecretsBackendKeyring,
+	SecretsBackendOnePassword,
+	SecretsBackendInfisical,
+	SecretsBackendGHSecrets,
+}
 
 // LoadSecrets loads secrets for the file backend from path (a secrets.env
 // file). Kept for backward compatibility with execution.go and isolation
@@ -38,7 +54,7 @@ func LoadSecrets(path string) (map[string]string, error) {
 		}
 		return nil, err
 	}
-	if mode := info.Mode().Perm(); mode&0077 != 0 {
+	if mode := info.Mode().Perm(); mode&0o077 != 0 {
 		fmt.Fprintf(os.Stderr,
 			"WARNING: Secrets file %s has insecure permissions (%o). It should be 0600.\n",
 			path, mode)
@@ -84,29 +100,88 @@ func openProfileStore(cfg *Config, profileID string) (secret.MutableStore, error
 	if backend == "" {
 		backend = SecretsBackendFile
 	}
-	switch backend {
-	case SecretsBackendFile:
+	// The file backend predates the kit registry and keeps the legacy
+	// per-profile secrets.env layout, so it is opened directly.
+	if backend == SecretsBackendFile {
 		dir, err := GetProfileDir(profileID)
 		if err != nil {
 			return nil, err
 		}
-		// Returns a wrapper around secrets.env (godotenv format).
 		return newDotenvStore(filepath.Join(dir, "secrets.env")), nil
-	case SecretsBackendEnv:
-		prefix := cfg.Secrets.Prefix
-		if prefix == "" {
-			prefix = "APS_SECRET_"
-		}
-		return secret.Open(secret.Config{Backend: SecretsBackendEnv, Prefix: prefix})
-	case SecretsBackendKeyring:
-		svc := cfg.Secrets.Service
-		if svc == "" {
-			svc = "aps/" + profileID
-		}
-		return secret.Open(secret.Config{Backend: SecretsBackendKeyring, Service: svc})
-	default:
-		return nil, fmt.Errorf("unknown secrets backend %q", backend)
 	}
+
+	kitCfg, err := secretBackendConfig(cfg.Secrets, backend, profileID)
+	if err != nil {
+		return nil, err
+	}
+	store, err := secret.Open(kitCfg)
+	if err != nil {
+		return nil, fmt.Errorf("opening %q secrets backend: %w", backend, err)
+	}
+	return store, nil
+}
+
+// secretBackendConfig maps aps SecretsConfig onto the kit backend config,
+// applying aps-specific defaults and validating the fields each backend
+// requires. Backends ignore fields they do not use.
+func secretBackendConfig(sc SecretsConfig, backend, profileID string) (secret.Config, error) {
+	kitCfg := secret.Config{
+		Backend:    backend,
+		Prefix:     sc.Prefix,
+		Service:    sc.Service,
+		Addr:       sc.Addr,
+		Token:      secretBackendToken(sc),
+		Project:    sc.Project,
+		Env:        sc.Env,
+		Repo:       sc.Repo,
+		Vault:      sc.Vault,
+		ConnectURL: sc.ConnectURL,
+	}
+
+	switch backend {
+	case SecretsBackendEnv:
+		if kitCfg.Prefix == "" {
+			kitCfg.Prefix = "APS_SECRET_"
+		}
+	case SecretsBackendKeyring:
+		if kitCfg.Service == "" {
+			kitCfg.Service = "aps/" + profileID
+		}
+	case SecretsBackendOnePassword:
+		if kitCfg.Vault == "" {
+			return secret.Config{}, fmt.Errorf("secrets backend %q requires secrets.vault", backend)
+		}
+	case SecretsBackendInfisical:
+		if kitCfg.Addr == "" {
+			return secret.Config{}, fmt.Errorf("secrets backend %q requires secrets.addr", backend)
+		}
+		if kitCfg.Project == "" {
+			return secret.Config{}, fmt.Errorf("secrets backend %q requires secrets.project", backend)
+		}
+		if kitCfg.Token == "" {
+			return secret.Config{}, fmt.Errorf("secrets backend %q requires secrets.token or secrets.token_env", backend)
+		}
+		if kitCfg.Env == "" {
+			return secret.Config{}, fmt.Errorf("secrets backend %q requires secrets.env", backend)
+		}
+	case SecretsBackendGHSecrets:
+		// Repo may be empty: the backend falls back to the current repo.
+	default:
+		return secret.Config{}, fmt.Errorf("unknown secrets backend %q", backend)
+	}
+	return kitCfg, nil
+}
+
+// secretBackendToken prefers an explicit token, then the environment variable
+// named by TokenEnv, so vault credentials need not live in the config file.
+func secretBackendToken(sc SecretsConfig) string {
+	if strings.TrimSpace(sc.Token) != "" {
+		return sc.Token
+	}
+	if name := strings.TrimSpace(sc.TokenEnv); name != "" {
+		return os.Getenv(name)
+	}
+	return ""
 }
 
 func drainStore(ctx context.Context, store secret.Store) (map[string]string, error) {
@@ -143,7 +218,7 @@ func (d *dotenvStore) read() (map[string]string, error) {
 }
 
 func (d *dotenvStore) write(m map[string]string) error {
-	if err := os.MkdirAll(filepath.Dir(d.path), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(d.path), 0o700); err != nil {
 		return err
 	}
 	var b strings.Builder
@@ -153,7 +228,7 @@ func (d *dotenvStore) write(m map[string]string) error {
 		b.WriteString(v)
 		b.WriteByte('\n')
 	}
-	return os.WriteFile(d.path, []byte(b.String()), 0600)
+	return os.WriteFile(d.path, []byte(b.String()), 0o600)
 }
 
 func (d *dotenvStore) Get(_ context.Context, key string) (*secret.Secret, error) {

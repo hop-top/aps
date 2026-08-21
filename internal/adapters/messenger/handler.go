@@ -911,19 +911,25 @@ func serviceProvider(service *core.ServiceConfig, fallback string) string {
 	return fallback
 }
 
+// resolveServiceEnv resolves the credential bound to key in the service's env
+// map. A "secret:NAME" value is resolved against the profile secret store and
+// then the process environment, using only NAME. When the binding is absent
+// entirely, the process environment is consulted under key itself.
+//
+// An unresolvable "secret:NAME" yields empty rather than falling back to
+// os.Getenv(key): the operator named NAME, and substituting an unrelated
+// ambient variable would silently authenticate with a credential they never
+// configured.
 func resolveServiceEnv(service *core.ServiceConfig, key string) string {
-	if service != nil && service.Env != nil {
-		value := strings.TrimSpace(service.Env[key])
-		if strings.HasPrefix(value, "secret:") {
-			if envValue := os.Getenv(strings.TrimSpace(strings.TrimPrefix(value, "secret:"))); envValue != "" {
-				return envValue
-			}
-		}
-		if value != "" && !strings.HasPrefix(value, "secret:") {
-			return value
-		}
+	if service == nil || service.Env == nil {
+		return os.Getenv(key)
 	}
-	return os.Getenv(key)
+	value, bound := service.Env[key]
+	if !bound || strings.TrimSpace(value) == "" {
+		return os.Getenv(key)
+	}
+	resolved, _ := core.ResolveSecretValue(value, core.ProfileSecretLookup(service.Profile), core.EnvSecretLookup)
+	return resolved
 }
 
 func writeRuntimeError(w http.ResponseWriter, err error) {
@@ -1099,6 +1105,7 @@ func serviceValidationConfig(service *core.ServiceConfig) msgtypes.ServiceValida
 	return msgtypes.ServiceValidationConfig{
 		ID:      service.ID,
 		Adapter: service.Adapter,
+		Profile: service.Profile,
 		Env:     service.Env,
 		Options: service.Options,
 	}
