@@ -626,5 +626,5 @@ tcpdump -i lo0 -A 'port 8081'
 
 - [A2A Protocol Specification](https://a2a-protocol.org/latest/specification/)
 - [a2a-go SDK Documentation](https://pkg.go.dev/github.com/a2aproject/a2a-go)
-- [APS A2A Specification](../../specs/005-a2a-protocol/spec.md)
+- [APS A2A Specification](../specs/005-a2a-protocol/spec.md)
 - [Test Examples](../../tests/unit/a2a/)

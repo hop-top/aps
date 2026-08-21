@@ -802,6 +802,6 @@ isolation:
 ## References
 
 - [Job Objects](https://docs.microsoft.com/en-us/windows/win32/procthread/job-objects)
-- [Security Levels](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-levels)
-- [AppContainer](https://docs.microsoft.com/en-us/windows/win32/api/appcontainer/)
-- [Windows Integrity Mechanism](https://docs.microsoft.com/en-us/windows/win32/secauthz/windows-integrity-mechanism)
+- [Security Levels](https://learn.microsoft.com/en-us/windows/win32/secauthz/access-tokens)
+- [AppContainer](https://learn.microsoft.com/en-us/windows/win32/api/securityappcontainer/)
+- [Windows Integrity Mechanism](https://learn.microsoft.com/en-us/windows/win32/secauthz/mandatory-integrity-control)

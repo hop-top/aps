@@ -226,7 +226,7 @@ Continue from archived custom protocol ADRs:
 - **Quickstart**: [quickstart.md](../quickstart.md) - Getting started guide
 
 ### Legacy (Custom Protocol)
-- **Custom Spec**: [legacy/custom-spec.md](../legacy/custom-spec.md) - Archived custom protocol
+- **Custom Spec**: legacy/custom-spec.md - Archived custom protocol
 - **Archived ADRs**: Listed above in "Archived ADRs" section
 
 ---

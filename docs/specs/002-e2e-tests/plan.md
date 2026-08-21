@@ -1,6 +1,6 @@
 # Implementation Plan: Automated E2E Test Suite
 
-**Branch**: `002-e2e-tests` | **Date**: 2026-01-15 | **Spec**: [specs/002-e2e-tests/spec.md](../spec.md)
+**Branch**: `002-e2e-tests` | **Date**: 2026-01-15 | **Spec**: [specs/002-e2e-tests/spec.md](spec.md)
 **Input**: Feature specification from `specs/002-e2e-tests/spec.md`
 
 ## Summary

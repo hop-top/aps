@@ -224,7 +224,7 @@ chmod 700 ~/.local/share/aps/a2a
 ## Resources
 
 - [Full Examples](./a2a-examples.md)
-- [A2A Specification](../../specs/005-a2a-protocol/spec.md)
+- [A2A Specification](../specs/005-a2a-protocol/spec.md)
 - [Official A2A Docs](https://a2a-protocol.org/latest/)
 - [APS Documentation](../../README.md)
 

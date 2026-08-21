@@ -325,7 +325,7 @@ type DarwinSandbox struct {
 
 ## References
 
-- [Isolation Architecture](../../specs/001-build-cli-core/isolation-architecture.md)
-- [AGENTS.md](../../AGENTS.md)
-- [macOS dscl Documentation](https://ss64.com/mac/dscl)
-- [macOS chmod ACL Documentation](https://ss64.com/mac/chmod)
+- [Isolation Architecture](../../../specs/001-build-cli-core/isolation-architecture.md)
+- AGENTS.md
+- [macOS dscl Documentation](https://ss64.com/mac/dscl.html)
+- [macOS chmod ACL Documentation](https://ss64.com/mac/chmod.html)

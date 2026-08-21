@@ -1,7 +1,7 @@
 # Tasks: Shell Integration & Shorthands
 
 **Feature Branch**: `003-shell-integration`
-**Spec**: [specs/003-shell-integration/spec.md](../spec.md)
+**Spec**: [specs/003-shell-integration/spec.md](spec.md)
 
 ## Phase 1: Setup & Infrastructure
 

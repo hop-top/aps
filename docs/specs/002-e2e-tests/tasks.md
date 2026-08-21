@@ -1,7 +1,7 @@
 # Tasks: Automated E2E Test Suite
 
 **Feature Branch**: `002-e2e-tests`
-**Spec**: [specs/002-e2e-tests/spec.md](../spec.md)
+**Spec**: [specs/002-e2e-tests/spec.md](spec.md)
 
 ## Phase 1: Setup & Infrastructure
 

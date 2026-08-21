@@ -496,5 +496,5 @@ id: my-profile
 ## See Also
 
 - [Isolation Architecture](../../specs/001-build-cli-core/isolation-architecture.md)
-- [Container Implementation](../../docs/CONTAINER_IMPLEMENTATION.md)
-- [Profile Configuration](../../README.md#profile-configuration)
+- [Container Implementation](../platforms/container/container-implementation.md)
+- [Profile Configuration](../../../README.md#profile-configuration)

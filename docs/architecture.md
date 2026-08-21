@@ -23,11 +23,11 @@ without a central server.
 
 Cross-references:
 
-- [kit](https://github.com/hop-top/kit/blob/main/docs/architecture.md) — CLI substrate; bus, charm v2, lipgloss
-- [cxr](https://github.com/hop-top/cxr/blob/main/docs/architecture.md) — execution framework (subprocess / script / builtin handler routing)
-- [upgrade](https://github.com/hop-top/upgrade/blob/main/docs/architecture.md) — version checks
+- [kit](https://github.com/hop-top/kit) — CLI substrate; bus, charm v2, lipgloss
+- [cxr](https://github.com/hop-top/cxr) — execution framework (subprocess / script / builtin handler routing)
+- [upgrade](https://github.com/hop-top/upgrade) — version checks
 - [wsm](https://github.com/hop-top/wsm/blob/main/docs/architecture.md) — workspace state; aps profiles link to workspaces by name
-- [tlc](https://github.com/hop-top/tlc/blob/main/docs/architecture.md) — task ledger; assignee resolution uses aps profile ID
+- tlc — task ledger; assignee resolution uses aps profile ID
 - [a2aproject/a2a-go](https://github.com/a2aproject/a2a-go) — Agent-to-Agent protocol (external)
 
 ## Containers

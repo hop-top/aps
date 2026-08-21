@@ -1,3 +1,6 @@
-exclude_path = ["vendor/"]
-exclude = ["127\\.0\\.0\\.1", "localhost"]
+# TEMPLATE.md is an ADR scaffold: its links are placeholders for the author
+# to fill in, not references that should resolve.
+exclude_path = ["vendor/", "docs/specs/005-a2a-protocol/adrs/TEMPLATE.md"]
+# docs.aws.amazon.com returns 403 to non-browser clients; the pages are live.
+exclude = ["127\\.0\\.0\\.1", "localhost", "docs\\.aws\\.amazon\\.com"]
 accept = [200, 204]

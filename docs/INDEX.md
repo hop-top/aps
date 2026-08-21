@@ -29,9 +29,9 @@ Quick navigation to all APS documentation.
 - [**Capability Bundles**](dev/bundles.md) — Named presets grouping capabilities, scope rules, env vars, and services
 - [**Voice**](dev/voice.md) — Backend lifecycle, channel adapters (web/TUI/messenger/telephony), session routing
 - [**Message Routing**](dev/message-routing.md) — Sender route tables for message services: contacts snapshot, exact/glob match, terminal fail-safe
-- [**A2A Implementation**](a2a-implementation.md) — Agent-to-agent protocol
-- [**ACP Implementation**](acp-implementation.md) — Agent control protocol
-- [**Protocol Interface Unification**](protocol-interface-unification.md) — Protocol abstraction layer
+- [**A2A Implementation**](dev/a2a-implementation.md) — Agent-to-agent protocol
+- [**ACP Implementation**](dev/acp-implementation.md) — Agent control protocol
+- [**Protocol Interface Unification**](dev/protocol-interface-unification.md) — Protocol abstraction layer
 
 ## Development Plans
 

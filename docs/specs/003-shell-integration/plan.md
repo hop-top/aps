@@ -1,6 +1,6 @@
 # Implementation Plan: Shell Integration & Shorthands
 
-**Branch**: `003-shell-integration` | **Date**: 2026-01-15 | **Spec**: [specs/003-shell-integration/spec.md](../spec.md)
+**Branch**: `003-shell-integration` | **Date**: 2026-01-15 | **Spec**: [specs/003-shell-integration/spec.md](spec.md)
 **Input**: Feature specification from `specs/003-shell-integration/spec.md`
 
 ## Summary

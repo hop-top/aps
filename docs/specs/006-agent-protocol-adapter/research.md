@@ -93,7 +93,7 @@ These are APS-specific features that AP doesn't address:
 
 ### Third-Party Implementations
 
-- [Goose (Block)](https://github.com/block/goose/issues/6282) - Considering adoption
+- [Goose (Block)](https://github.com/block/goose) - Considering adoption
 - Various AI agent frameworks evaluating compatibility
 
 ## Streaming Implementation

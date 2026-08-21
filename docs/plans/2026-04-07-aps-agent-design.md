@@ -2,7 +2,6 @@
 
 **Date:** 2026-04-07
 **Status:** Draft
-**Track:** [aps-agent](../../.tlc/tracks/aps-agent/)
 **Subcommand:** `aps agent`
 
 ---

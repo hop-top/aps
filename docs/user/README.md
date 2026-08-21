@@ -4,21 +4,18 @@ Welcome to the APS (Adaptive Platform System) User Documentation. This section c
 
 ## 📚 Contents
 
-### [Getting Started](getting-started.md)
-*   **Installation**: How to install APS.
-*   **Configuration**: Setting up your `config.yaml` and profiles.
-*   **Quick Start**: Your first steps with APS.
+### Getting Started
+*   **[Installation](getting-started/install.md)**: How to install APS.
+*   **[Tutorial](getting-started/tutorial.md)**: Your first steps with APS.
 
-### [User Guides](guides/)
-*   **Session Management**: How to create, inspect, and manage sessions.
-*   **Capability Management**: How to install and link external tools.
-*   **Environment Integration**: Integrating APS with your shell.
+### Guides
 *   **[A2A Quickstart](a2a-quickstart.md)**: Get started with Agent-to-Agent protocol in 5 minutes.
 *   **[A2A Examples](a2a-examples.md)**: Comprehensive examples for A2A protocol usage.
+*   **[ACP Quickstart](acp-quickstart.md)**: Get started with the Agent Client Protocol.
+*   **[Remote Access](remote-access.md)**: Reaching an APS instance from elsewhere.
+*   **[Skills](skills/README.md)**: Authoring and using skills.
 
-### [Reference](reference/)
-*   **CLI Command Reference**: Detailed usage for all `aps` commands.
-*   **Profile Schema**: Reference for `profile.yaml`.
+### Reference
 *   **[Messenger Integration](messengers.md)**: Setup guides for Telegram, Discord, Slack, SMS, and WhatsApp message services.
 *   **[Ticket Services](tickets.md)**: Email, Jira, Linear, and GitLab ticket services: route, auth, payloads, sender routing.
 

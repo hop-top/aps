@@ -806,6 +806,6 @@ isolation:
 
 ### External References
 - [Docker API Reference](https://docs.docker.com/engine/api/sdk/)
-- [Docker Go SDK](https://github.com/docker/docker/client)
+- [Docker Go SDK](https://pkg.go.dev/github.com/docker/docker/client)
 - [Docker Security](https://docs.docker.com/engine/security/)
 - [Container Resource Constraints](https://docs.docker.com/config/containers/resource_constraints/)
