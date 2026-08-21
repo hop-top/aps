@@ -102,7 +102,7 @@ operators can scope bypass per-command without flag plumbing.
 ## Tests
 
 ### E2E
-- `tests/e2e/redact/redact_test.go`
+- `tests/e2e/redact_test.go`
   - `TestRedact_RunCommandRedactsChildEnv` (drives `aps run` over a
     secret-bearing profile)
   - `TestRedact_NoRedactFlagShowsRawValue`

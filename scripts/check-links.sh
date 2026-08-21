@@ -38,28 +38,49 @@ else
 fi
 
 # --- Part 2: Verify referenced test file paths exist ---
+#
+# Only paths inside a story's "## Tests" section are checked. Elsewhere a
+# story may legitimately name a file that does not exist here: out-of-scope
+# work, a path in another repo, or a brace-glob standing for several files.
+# Those are prose, not references that must resolve. Paths rooted at a
+# sibling repo are skipped even inside that section.
 echo ""
 echo -e "${BOLD}Checking referenced test file paths in stories...${RESET}"
 
-missing=0
+missing_file="$(mktemp)"
+trap 'rm -f "$missing_file"' EXIT
 
 for story in docs/stories/[0-9]*.md; do
   [ -f "$story" ] || continue
 
-  # Extract backtick-quoted paths ending in .go
-  { grep -oE '`[^`]+\.go`' "$story" || true; } | tr -d '`' | while IFS= read -r gopath; do
-    [ -z "$gopath" ] && continue
-    if [ ! -f "$gopath" ]; then
-      echo -e "  ${RED}MISSING${RESET}: $gopath (referenced in $(basename "$story"))"
-      # Write to a temp file so the subshell can signal failure
-      echo "1" >> /tmp/check-links-missing.$$
-    fi
-  done
+  # Emit only the lines within the "## Tests" section: start at that heading,
+  # stop at the next heading of the same or higher level.
+  tests_section="$(awk '
+    /^##[^#]/ { in_tests = ($0 ~ /^##[[:space:]]+Tests[[:space:]]*$/) ? 1 : 0; next }
+    in_tests  { print }
+  ' "$story")"
+
+  [ -n "$tests_section" ] || continue
+
+  printf '%s\n' "$tests_section" \
+    | { grep -oE '`[^`]+\.go`' || true; } \
+    | tr -d '`' \
+    | while IFS= read -r gopath; do
+        [ -z "$gopath" ] && continue
+        # Paths rooted at a sibling repo (kit/, tlc/, wsm/, cxr/, upgrade/)
+        # describe files outside this checkout and cannot be verified here.
+        case "$gopath" in
+          kit/*|tlc/*|wsm/*|cxr/*|upgrade/*) continue ;;
+        esac
+        if [ ! -f "$gopath" ]; then
+          echo -e "  ${RED}MISSING${RESET}: $gopath (referenced in $(basename "$story"))"
+          echo "1" >> "$missing_file"
+        fi
+      done
 done
 
-if [ -f /tmp/check-links-missing.$$ ]; then
-  missing=$(wc -l < /tmp/check-links-missing.$$ | tr -d ' ')
-  rm -f /tmp/check-links-missing.$$
+if [ -s "$missing_file" ]; then
+  missing=$(wc -l < "$missing_file" | tr -d ' ')
   echo -e "${RED}${missing} referenced test file(s) not found.${RESET}"
   errors=$((errors + missing))
 else

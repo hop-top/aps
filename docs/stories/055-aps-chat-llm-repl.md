@@ -98,9 +98,9 @@ This story replaces the run-foo dance with a first-class `aps chat`.
 ### Unit
 
 - `internal/cli/chat/chat_test.go` — REPL loop, key-binding, history nav
-- `internal/cli/chat/persona_test.go` — Profile.Persona → system prompt
+- `internal/core/chat/persona_test.go` — Profile.Persona → system prompt
   renderer (tone/style/risk → directive lines)
-- `internal/cli/chat/routellm_test.go` — config resolution
+- `internal/core/chat/routellm_test.go` — config resolution
   (profile.yaml > workspace.yaml > config.yaml > kit defaults)
 
 ## Implementation Notes
@@ -135,7 +135,7 @@ Belongs to the `interact` group (matches `run`, `serve`, `voice`,
 | Routing / model selection | `kit/go/ai/llm/routellm` configured per-profile |
 | REPL TUI | `kit/go/console/tui` (input, scrollback, status line) |
 | Markdown rendering of replies | `kit/go/console/markdown` (T-0377 deferred no-op for aps; this story re-opens it) |
-| Persona → system prompt | aps-domain — small renderer in `internal/cli/chat/persona.go` |
+| Persona → system prompt | aps-domain — small renderer in `internal/core/chat/persona.go` |
 | Session persistence | `internal/core/session.Registry` extended with `SessionTypeChat` |
 | Secrets | `kit/go/storage/secret` (already wired via T-0378) |
 
