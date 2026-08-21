@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X hop.top/aps/internal/version.Version=$(VERSION) -X hop.top/
 CGO_ENABLED=1
 export CGO_ENABLED
 
-.PHONY: all build test lint lint-docs run clean release release-snapshot ci help setup \
+.PHONY: all build build-vault test lint lint-docs run clean release release-snapshot ci help setup \
 	test-stories \
 	12fcc-record 12fcc-grade 12fcc-badge 12fcc-scan \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
@@ -23,6 +23,12 @@ build: ## Build the binary locally
 	@mkdir -p $(BIN_DIR)
 	@go build -buildvcs=false -mod=mod $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/aps
 	@echo "Binary built at $(BIN_DIR)/$(BINARY_NAME)"
+
+build-vault: ## Build with the opt-in openbao secrets backend
+	@echo "Building $(BINARY_NAME) with openbao..."
+	@mkdir -p $(BIN_DIR)
+	@go build -buildvcs=false -mod=mod -tags openbao $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-vault ./cmd/aps
+	@echo "Binary built at $(BIN_DIR)/$(BINARY_NAME)-vault"
 
 test: test-go test-workflows ## Run all tests (Go and Workflows)
 

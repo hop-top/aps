@@ -44,10 +44,13 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 | `infisical` | Infisical | `addr`, `project`, `env`, `token` |
 | `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
 
-† `openbao` is opt-in at build time: it pulls the Vault API client and ~17
-transitive modules, so a stock `aps` build omits it entirely. Build with
-`-tags openbao` to enable it. Selecting it in a build that lacks it reports
-how to rebuild rather than failing obscurely.
+† `openbao` is opt-in: it pulls the Vault API client and ~17 transitive
+modules, so the stock `aps` binary omits it entirely. Selecting it in a build
+that lacks it reports how to enable it rather than failing obscurely.
+
+Releases ship a separate `aps-vault` archive with the backend compiled in —
+same CLI, same version, plus `openbao`. Download that instead of `aps`, or
+build from source:
 
 ```bash
 go build -tags openbao ./cmd/aps

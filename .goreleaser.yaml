@@ -31,10 +31,44 @@ builds:
       - -X hop.top/aps/internal/version.BuiltBy=goreleaser
     mod_timestamp: "{{ .CommitTimestamp }}"
 
+  # Vault-enabled variant. The openbao secrets backend is opt-in at build
+  # time (it pulls the Vault API client and ~17 transitive modules), so the
+  # stock `aps` binary above omits it. Shipped as a separate artifact rather
+  # than folded into `aps` so the default download stays lean.
+  - id: aps-vault
+    main: ./cmd/aps
+    binary: aps
+    env: [CGO_ENABLED=0]
+    flags: [-trimpath, -buildvcs=false, -tags=openbao]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X hop.top/aps/internal/version.Version={{ .Version }}
+      - -X hop.top/aps/internal/version.Commit={{ .Commit }}
+      - -X hop.top/aps/internal/version.Date={{ .Date }}
+      - -X hop.top/aps/internal/version.BuiltBy=goreleaser
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
 archives:
   - id: aps
     ids: [aps]
     name_template: "aps_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE*
+
+  # Same binary name inside the archive; the archive name carries the
+  # variant so both can coexist on one release.
+  - id: aps-vault
+    ids: [aps-vault]
+    name_template: "aps-vault_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats: [zip]
@@ -64,6 +98,9 @@ release:
 
 brews:
   - name: aps
+    # Pin to the stock archive: with two archives defined, an unpinned
+    # formula would pick up the vault variant as well.
+    ids: [aps]
     repository:
       owner: hop-top
       name: homebrew-tap
@@ -84,6 +121,8 @@ brews:
 
 scoops:
   - name: aps
+    # Pin to the stock archive; see the brews note above.
+    ids: [aps]
     repository:
       owner: hop-top
       name: scoop-bucket
