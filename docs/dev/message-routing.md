@@ -16,6 +16,9 @@ executes. Conversation identity is defined separately in
 `aps service add` references two YAML files; nothing is copied into the
 service record:
 
+> `secret:NAME` resolves `NAME` from the profile secret store, then the
+> environment. See [Credential Bindings](../user/messengers.md#credential-bindings).
+
 ```bash
 aps service add support-line \
   --type whatsapp \

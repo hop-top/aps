@@ -13,6 +13,9 @@ service.
 
 ## Create The Service
 
+> `secret:NAME` resolves `NAME` from the profile secret store, then the
+> environment. See [Credential Bindings](user/messengers.md#credential-bindings).
+
 ```bash
 aps profile create my-agent
 

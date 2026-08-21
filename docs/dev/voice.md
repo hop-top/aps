@@ -87,7 +87,10 @@ voice:
       auth_token_secret: TWILIO_AUTH_TOKEN
 ```
 
-All secret values are key names resolved from `secrets.env` at runtime — the same convention used elsewhere in APS.
+All secret values are key names resolved at runtime from the profile secret
+store — the same convention used elsewhere in APS. The store defaults to the
+profile's `secrets.env`, and is configurable via `secrets.backend` (see
+[Secret Store Backends](../user/messengers.md#secret-store-backends)).
 
 ## Current Maturity
 

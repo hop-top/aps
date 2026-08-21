@@ -77,6 +77,28 @@ silently authenticate with an unrelated ambient variable.
 Prefer `secret:NAME` over literals: literals are written into the service
 config file in plaintext.
 
+### When The Store Is Unavailable
+
+The store is read once per profile and the result held for the lifetime of the
+process, so an inbound message does not re-read the backend — a `keyring`
+profile prompts the OS keychain once, not once per message. To pick up a
+secret you have just changed, restart the service.
+
+A **failed** read is not cached. If the backend is unreachable at the first
+lookup — vault down, keyring locked, `secrets.env` not yet written — the next
+lookup retries, so a service recovers on its own once the store comes back
+without needing a restart. While the store is down, `secret:` references
+resolve to nothing and requests fail rather than falling back.
+
+Each failing profile logs at most one warning per minute:
+
+```
+WARN reading profile secrets failed; will retry profile=my-agent error=...
+```
+
+A single line does not mean a single failed request — it is throttled. Once
+the store recovers, a later outage warns again immediately.
+
 ## Create A Message Service
 
 ```bash

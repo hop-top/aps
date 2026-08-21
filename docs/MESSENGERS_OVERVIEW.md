@@ -172,6 +172,9 @@ Provider app setup:
 
 APS setup:
 
+> `secret:NAME` resolves `NAME` from the profile secret store, then the
+> environment. See [Credential Bindings](user/messengers.md#credential-bindings).
+
 ```bash
 aps service add telegram-support \
   --type telegram \
