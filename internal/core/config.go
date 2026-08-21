@@ -160,8 +160,9 @@ type SecretsConfig struct {
 	Prefix  string `yaml:"prefix,omitempty"`
 
 	// Vault backends.
-	Addr       string `yaml:"addr,omitempty"`        // infisical
-	Token      string `yaml:"token,omitempty"`       // infisical, onepassword Connect
+	Addr       string `yaml:"addr,omitempty"`        // openbao, infisical
+	Token      string `yaml:"token,omitempty"`       // openbao, infisical, onepassword Connect
+	Mount      string `yaml:"mount,omitempty"`       // openbao (KV v2 mount; defaults to "secret")
 	Project    string `yaml:"project,omitempty"`     // infisical
 	Env        string `yaml:"env,omitempty"`         // infisical
 	Vault      string `yaml:"vault,omitempty"`       // onepassword

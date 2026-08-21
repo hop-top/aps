@@ -180,9 +180,11 @@ func TestProfileSecretLookupReadsStoreOncePerProfile(t *testing.T) {
 	ResetProfileSecretCache()
 	t.Cleanup(ResetProfileSecretCache)
 
+	// Only the data dir is redirected: XDG_CONFIG_HOME is process-global and
+	// races tests that set it via os.Setenv while parallel. The default file
+	// backend needs no config file.
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
 
 	profileDir, err := GetProfileDir("p1")

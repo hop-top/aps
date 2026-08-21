@@ -40,6 +40,7 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 | `env` | `APS_SECRET_<NAME>` in the environment | `prefix` to override `APS_SECRET_` |
 | `keyring` | OS keychain | `service` (defaults to `aps/<profile>`) |
 | `onepassword` | 1Password, via the `op` CLI or Connect | `vault`; plus `connect_url` + `token` for Connect |
+| `openbao` | OpenBao / Vault KV v2 | `addr`, `token`; `mount` defaults to `secret` |
 | `infisical` | Infisical | `addr`, `project`, `env`, `token` |
 | `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
 

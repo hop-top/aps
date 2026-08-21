@@ -18,7 +18,8 @@ func TestSecretsBackendsAreRegistered(t *testing.T) {
 			cfg := SecretsConfig{
 				Backend: backend,
 				Vault:   "test-vault",
-				Addr:    "https://infisical.example",
+				Addr:    "https://vault.example",
+				Mount:   "secret",
 				Project: "test-project",
 				Env:     "prod",
 				Token:   "test-token",
@@ -91,6 +92,18 @@ func TestSecretBackendConfigRequiredFields(t *testing.T) {
 			wantErr: "secrets.vault",
 		},
 		{
+			name:    "openbao without addr",
+			backend: SecretsBackendOpenBao,
+			cfg:     SecretsConfig{Token: "tok"},
+			wantErr: "secrets.addr",
+		},
+		{
+			name:    "openbao without token",
+			backend: SecretsBackendOpenBao,
+			cfg:     SecretsConfig{Addr: "https://x"},
+			wantErr: "secrets.token",
+		},
+		{
 			name:    "infisical without addr",
 			backend: SecretsBackendInfisical,
 			cfg:     SecretsConfig{Token: "tok", Project: "proj", Env: "prod"},
@@ -116,8 +129,8 @@ func TestSecretBackendConfigRequiredFields(t *testing.T) {
 		},
 		{
 			name:    "unknown backend",
-			backend: "openbao",
-			wantErr: `unknown secrets backend "openbao"`,
+			backend: "nosuchvault",
+			wantErr: `unknown secrets backend "nosuchvault"`,
 		},
 	}
 	for _, tc := range tests {
