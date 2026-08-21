@@ -2,9 +2,9 @@ name: Platform Adapter Tests
 
 on:
   push:
-    branches: [ main, develop, "adapter/*" ]
+    branches: [ main, next, "adapter/*" ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, next ]
 
 jobs:
   adapter-tests:

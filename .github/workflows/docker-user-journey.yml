@@ -2,9 +2,9 @@ name: Docker User Journey Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, next ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, next ]
   workflow_dispatch:
 
 jobs:
