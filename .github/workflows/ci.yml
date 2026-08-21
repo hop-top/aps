@@ -56,6 +56,13 @@ jobs:
           # continue-on-error until env isolation is fixed across internal tests (T-0146)
           go test -v -timeout 5m $(go list ./internal/... | grep -v /core/isolation)
 
+      - name: Run openbao-backend tests
+        shell: bash
+        # The openbao secrets backend is behind a build tag, so the default
+        # test run never compiles it. Without this step the gated code and
+        # its tests can break on main unnoticed until a release build.
+        run: go test -timeout 5m -tags openbao ./internal/core/...
+
       - name: Run E2E tests
         shell: bash
         run: |
