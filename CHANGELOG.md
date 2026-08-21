@@ -1,5 +1,79 @@
 # Changelog
 
+## [0.6.0-alpha.1](https://github.com/hop-top/aps/compare/aps/v0.6.0-alpha.0...aps/v0.6.0-alpha.1) (2026-08-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **secrets:** an unresolvable `secret:NAME` now yields an empty credential instead of falling back to the environment variable named after the binding key. Services relying on that fallback must set NAME in the profile store or environment, or bind the literal value.
+* **messenger:** `aps serve` no longer mounts POST /messengers/{platform}/webhook. Route webhooks through a message service at POST /services/<service-id>/webhook.
+
+### Features
+
+* **cli:** add org command group ([350a2c7](https://github.com/hop-top/aps/commit/350a2c709bf12e027adc1431e7d4684454776b1d))
+* **cli:** add service conversation list/show and --history-turns ([abe7888](https://github.com/hop-top/aps/commit/abe78885358fb9c34ecd1f703a6079ef2d42f774))
+* **cli:** expose generic webhook auth options on service add ([e221dd6](https://github.com/hop-top/aps/commit/e221dd65b3819402d2fc05f7160209b6f858b77e))
+* **cli:** profile export to agent role manifest ([7087bde](https://github.com/hop-top/aps/commit/7087bde86d4ca65ec4878fc2093765c2ad98020f))
+* **cli:** profile import from agent role manifest ([c7564d5](https://github.com/hop-top/aps/commit/c7564d5725f973975e0aefa54f4a287a796dc04f))
+* **cli:** service add --route-table/--contacts, show routing summary ([d63c3fd](https://github.com/hop-top/aps/commit/d63c3fd677cfefb59f33b44c19b07ee2b0ed1f14))
+* **cli:** verify reportsTo on manifest import ([fae3a18](https://github.com/hop-top/aps/commit/fae3a18db9888898a3fc4dfa09009981253fd2b4))
+* **cmdrun:** add runner seam for external binaries ([e961107](https://github.com/hop-top/aps/commit/e96110710cae7d00b57cf3a383e2c0c9534144ea))
+* **core:** routing block on message services ([523138b](https://github.com/hop-top/aps/commit/523138bbdc014b10f10d0a3c18cce848ba1ac018))
+* **manifest:** agent role manifest parser ([bd3caac](https://github.com/hop-top/aps/commit/bd3caacdd4d871efc9cea054b8ca27e6f51d1ca1))
+* **messenger:** add sqlite conversation turn store ([41fac0c](https://github.com/hop-top/aps/commit/41fac0cce07f9e67d9734871e1de3518bc9b4051))
+* **messenger:** attach prior turns and thread id to routed action runs ([f62e86a](https://github.com/hop-top/aps/commit/f62e86a3c9914ec3a66743aaa7506bcd203e0bc6))
+* **messenger:** first-class email message adapter validation ([3781cb9](https://github.com/hop-top/aps/commit/3781cb906c7bf0fde21ae274a81724e878e5088a))
+* **messenger:** record conversation turns across runtime and webhook paths ([a9baae1](https://github.com/hop-top/aps/commit/a9baae1a1ba5c6512f4c7e5a782a92ba0aacb7a0))
+* **messenger:** sender route-table dispatch in MessageRouter ([62977db](https://github.com/hop-top/aps/commit/62977db0b7464c63bba99ff63e3b961616e521f4))
+* **msgroute:** route table config, YAML load, validation ([97864e0](https://github.com/hop-top/aps/commit/97864e0e9ca1c7ffeada502bb289c78a32edf8f9))
+* **msgroute:** sender + contact matcher ([4fa63b9](https://github.com/hop-top/aps/commit/4fa63b90f963ed4f85a97bf090d7cafcc9621620))
+* **msgroute:** sender key normalization ([f4c1dbc](https://github.com/hop-top/aps/commit/f4c1dbca5bb33860812dda5d8aef1ae00419cae8))
+* **org:** per-profile channel summary ([2b64011](https://github.com/hop-top/aps/commit/2b64011efa9b124693c200ad21e7909daf8951e2))
+* **org:** reporting hierarchy and organigram snapshot ([410fc8f](https://github.com/hop-top/aps/commit/410fc8fb420cfc78f26bbe2ccefcd351ed38dc26))
+* **org:** reporting-hierarchy graph core ([780581a](https://github.com/hop-top/aps/commit/780581af5d8c22f01e056f6561ff80a75a1bef62))
+* **profile:** add human|agent type discriminator ([2cbeb76](https://github.com/hop-top/aps/commit/2cbeb76665036b291799c7680668b4e7bdc11d7f))
+* **profile:** knowledge subscriptions reference + env injection ([b76e0cc](https://github.com/hop-top/aps/commit/b76e0ccfb03b3fb73de54cb22a628442c703fa16))
+* **profile:** persist description and reportsTo from manifests ([9918d70](https://github.com/hop-top/aps/commit/9918d705174a993b207fbb20359352eb6beda635))
+* **profile:** reports-to and type flags with graph validation ([e4dbb82](https://github.com/hop-top/aps/commit/e4dbb82f3ccb3ed7105370a3cfbf9bd1799ed1a7))
+* **profile:** role manifests and reporting hierarchy ([c0b1bc4](https://github.com/hop-top/aps/commit/c0b1bc4721aa92b59fff8c2d78c8eba294f7249d))
+* **release:** publish Homebrew + Scoop formulas on tagged release ([#91](https://github.com/hop-top/aps/issues/91)) ([4074bbc](https://github.com/hop-top/aps/commit/4074bbc8ede5476e23ebbd78e03329bb661a8d97))
+* **secrets:** add openbao backend, fix vault backends never loading ([579d320](https://github.com/hop-top/aps/commit/579d32029db929cc7aeacf481d2786286d3a755d))
+* **service:** ticket config validation, runtime info, probe auth ([3ace109](https://github.com/hop-top/aps/commit/3ace109b1cec6a71ecf5b6edb44a9d14d97e1e63))
+* **ticket:** email normalizer + real action execution ([d108c7d](https://github.com/hop-top/aps/commit/d108c7dbc36b7995e5234c9dde022e26382a81e7))
+* **ticket:** http adapter with per-service webhook routes ([227b152](https://github.com/hop-top/aps/commit/227b1521105b5dc1ba1b94a0dd34179d663e08ef))
+
+
+### Bug Fixes
+
+* **adapter:** apply declared input defaults on exec ([e5ca52c](https://github.com/hop-top/aps/commit/e5ca52c92d0a7ae9ce99fb61194aa31394c76d4c))
+* **adapter:** redact action output on exec failure path ([20a5b86](https://github.com/hop-top/aps/commit/20a5b86a749c20fb0a484a79e6b8d010a88110ee))
+* **adapter:** reject exec missing manifest-required inputs ([20c95cb](https://github.com/hop-top/aps/commit/20c95cb2f66b58ca1c93c37e67e15fa55d86c160))
+* **adapter:** reject malformed exec --input instead of dropping it ([a7995ac](https://github.com/hop-top/aps/commit/a7995acd5c1be0473cefa2a46e6d29de3b7ac560))
+* **adapters:** declare shell-only all_day default in calendar manifest ([1c397e7](https://github.com/hop-top/aps/commit/1c397e71b47e1c4db206a024db0d77110b5b8cee))
+* **adapters:** honour per-call addressbook override in contacts backend ([7388b25](https://github.com/hop-top/aps/commit/7388b25658e7669dc9dc241a0a10b2081b15fbae))
+* **adapter:** surface manifest input type mismatches instead of degrading ([8e331c4](https://github.com/hop-top/aps/commit/8e331c463a6f88b18fa961f997b90ea80d2ffad4))
+* **adapter:** warn on undeclared exec inputs instead of silent pass-through ([6e04436](https://github.com/hop-top/aps/commit/6e04436846393f1d16f735067c68a2a91d40a341))
+* **calendar:** guard empty array expansion for bash 3.2 ([9c20302](https://github.com/hop-top/aps/commit/9c20302f1fe24f2884c17769333d3dd56b8ba66d))
+* **cli:** dry-run import message signals preview ([0f627b9](https://github.com/hop-top/aps/commit/0f627b9c53cab3f3bb20bbd689a5ae4ff92f64fc))
+* **cli:** preserve domain error class through kit middleware ([ae84840](https://github.com/hop-top/aps/commit/ae848406060bb508e5b2b2628e091fd930b659f2))
+* **cli:** profile export flag collides with kit global format ([ae4d81c](https://github.com/hop-top/aps/commit/ae4d81cc126011c500e96cb03dc2015ecc08f1f8))
+* **cli:** refuse undeclared --format as a usage error ([e47cf73](https://github.com/hop-top/aps/commit/e47cf73e63f1413455da193c4d8ffde0a446fb41))
+* **cli:** satisfy lint on new manifest import/export code ([8c044b3](https://github.com/hop-top/aps/commit/8c044b359ca7801cf5f8d6f2b84634d92c1813ae))
+* **cli:** unknown subcommand exits 2 with usage envelope ([44c421e](https://github.com/hop-top/aps/commit/44c421e18eccf90fae510fc46b0f3177e7a1563c))
+* **contacts:** escape sed replacements, quote account flag ([ccaeecc](https://github.com/hop-top/aps/commit/ccaeecc02cc1eadc35aafa5e879ef6d1339b7761))
+* **email:** quote account flag, stop SIGPIPE on truncated list ([92ce9f3](https://github.com/hop-top/aps/commit/92ce9f3e50aa38f4caa1578d0ebe4f261471e67b))
+* **logging:** close redaction allow-list bypass, add missing token rules ([24ea2d8](https://github.com/hop-top/aps/commit/24ea2d879d972ff7edd5bf02a246e401252c66d3))
+* **manifest:** annotate operator-supplied path read for gosec ([c4e9bec](https://github.com/hop-top/aps/commit/c4e9bec4f7ba3d7bfe135f907d6c0765e8096e28))
+* **manifest:** normalize CRLF before parsing ([d7f4dc3](https://github.com/hop-top/aps/commit/d7f4dc3c0da9def897e0d4fe9ed2f0472609b257))
+* **messenger:** drop unauthenticated /messengers/{platform}/webhook mount ([3409daa](https://github.com/hop-top/aps/commit/3409daad1ba481088c5d4a8a82c668cbcaebca1d))
+* **messenger:** render twilio sms replies as TwiML ([2117acd](https://github.com/hop-top/aps/commit/2117acd7e84cafa2086e0b194b98517449d2e7bc))
+* **profile:** honor --format on show, align json and yaml schemas ([4ee33ba](https://github.com/hop-top/aps/commit/4ee33ba2bbab3994ab3e89d8cc45fe98f2ae6a99))
+* **secrets:** resolve `secret:` refs against the profile secret store ([5345252](https://github.com/hop-top/aps/commit/5345252c1de5dada7188224fd6482b0a13b16b8c))
+* **service:** probe uses allowlisted sender so allowlisted services pass ([3112bf3](https://github.com/hop-top/aps/commit/3112bf3b8909732bb81aa95761789109e360a71c))
+* **service:** validate config before persisting; refuse silent overwrite ([28d6eb9](https://github.com/hop-top/aps/commit/28d6eb987173b22c91ab8dfc2c87b6431ec8cf3b))
+* **session:** correct tmux capture-pane flags ([32e47c9](https://github.com/hop-top/aps/commit/32e47c9e45220f13be9e34d30fd3089a60b0e670))
+* **version:** strip tag prefix before v-prefixing describe output ([5151683](https://github.com/hop-top/aps/commit/5151683f1083d2c48abca7e74a969508545c7a86))
+
 ## [0.6.0-alpha.0](https://github.com/hop-top/aps/compare/aps/v0.5.0-alpha.3...aps/v0.6.0-alpha.0) (2026-05-25)
 
 
