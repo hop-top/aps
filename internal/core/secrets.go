@@ -2,9 +2,13 @@
 //
 // Profile secrets are routed through hop.top/kit/go/storage/secret so the
 // backend is configurable via Config.Secrets.Backend: file, env, keyring,
-// onepassword, openbao, infisical, or ghsecrets (see SecretsBackends). The
-// default "file" backend preserves the legacy per-profile secrets.env layout
-// (godotenv format); every other backend is opened through the kit registry.
+// onepassword, infisical, or ghsecrets (see SecretsBackends). The default
+// "file" backend preserves the legacy per-profile secrets.env layout (godotenv
+// format); every other backend is opened through the kit registry.
+//
+// The openbao backend is opt-in and requires `-tags openbao`, since it pulls
+// the Vault API client and its transitive modules. Use
+// AvailableSecretsBackends to list what a given binary can actually open.
 package core
 
 import (
@@ -21,22 +25,7 @@ import (
 	_ "hop.top/kit/go/storage/secret/infisical"   // register "infisical"
 	_ "hop.top/kit/go/storage/secret/keyring"     // register "keyring"
 	_ "hop.top/kit/go/storage/secret/onepassword" // register "onepassword"
-	"hop.top/kit/go/storage/secret/openbao"
 )
-
-// kit ships the openbao store but registers no opener for it, unlike every
-// other backend. Register it here so it is selectable via secrets.backend.
-func init() {
-	secret.RegisterBackend(SecretsBackendOpenBao, func(cfg secret.Config) (secret.MutableStore, error) {
-		if cfg.Addr == "" {
-			return nil, fmt.Errorf("secret: openbao backend requires Addr")
-		}
-		if cfg.Token == "" {
-			return nil, fmt.Errorf("secret: openbao backend requires Token")
-		}
-		return openbao.New(cfg.Addr, cfg.Token, cfg.Mount)
-	})
-}
 
 // SecretsBackend* are the canonical backend identifiers for SecretsConfig.
 const (
@@ -49,7 +38,9 @@ const (
 	SecretsBackendGHSecrets   = "ghsecrets"
 )
 
-// SecretsBackends lists every backend selectable via Config.Secrets.Backend.
+// SecretsBackends lists every backend aps knows about. Some are opt-in at
+// build time (see optionalBackends); AvailableSecretsBackends reports the
+// subset this binary can actually open.
 var SecretsBackends = []string{
 	SecretsBackendFile,
 	SecretsBackendEnv,
@@ -146,6 +137,10 @@ func openProfileStore(cfg *Config, profileID string) (secret.MutableStore, error
 // applying aps-specific defaults and validating the fields each backend
 // requires. Backends ignore fields they do not use.
 func secretBackendConfig(sc SecretsConfig, backend, profileID string) (secret.Config, error) {
+	if tag, optional := optionalBackends[backend]; optional && !backendAvailable(backend) {
+		return secret.Config{}, fmt.Errorf(
+			"secrets backend %q is not compiled into this build; rebuild with -tags %s", backend, tag)
+	}
 	kitCfg := secret.Config{
 		Backend:    backend,
 		Prefix:     sc.Prefix,

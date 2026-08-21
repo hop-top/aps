@@ -40,9 +40,18 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 | `env` | `APS_SECRET_<NAME>` in the environment | `prefix` to override `APS_SECRET_` |
 | `keyring` | OS keychain | `service` (defaults to `aps/<profile>`) |
 | `onepassword` | 1Password, via the `op` CLI or Connect | `vault`; plus `connect_url` + `token` for Connect |
-| `openbao` | OpenBao / Vault KV v2 | `addr`, `token`; `mount` defaults to `secret` |
+| `openbao` † | OpenBao / Vault KV v2 | `addr`, `token`; `mount` defaults to `secret` |
 | `infisical` | Infisical | `addr`, `project`, `env`, `token` |
 | `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
+
+† `openbao` is opt-in at build time: it pulls the Vault API client and ~17
+transitive modules, so a stock `aps` build omits it entirely. Build with
+`-tags openbao` to enable it. Selecting it in a build that lacks it reports
+how to rebuild rather than failing obscurely.
+
+```bash
+go build -tags openbao ./cmd/aps
+```
 
 Backend credentials should not be written into the config file: set
 `token_env` to the name of an environment variable holding the token instead,

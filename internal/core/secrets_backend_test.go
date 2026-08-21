@@ -14,6 +14,11 @@ func TestSecretsBackendsAreRegistered(t *testing.T) {
 		if backend == SecretsBackendFile {
 			continue // opened directly, not via the kit registry
 		}
+		if !backendAvailable(backend) {
+			// Opt-in backend compiled out of this build; the unavailable
+			// path is covered by TestUnavailableBackendReportsBuildTag.
+			continue
+		}
 		t.Run(backend, func(t *testing.T) {
 			cfg := SecretsConfig{
 				Backend: backend,
@@ -90,18 +95,6 @@ func TestSecretBackendConfigRequiredFields(t *testing.T) {
 			name:    "onepassword without vault",
 			backend: SecretsBackendOnePassword,
 			wantErr: "secrets.vault",
-		},
-		{
-			name:    "openbao without addr",
-			backend: SecretsBackendOpenBao,
-			cfg:     SecretsConfig{Token: "tok"},
-			wantErr: "secrets.addr",
-		},
-		{
-			name:    "openbao without token",
-			backend: SecretsBackendOpenBao,
-			cfg:     SecretsConfig{Addr: "https://x"},
-			wantErr: "secrets.token",
 		},
 		{
 			name:    "infisical without addr",
