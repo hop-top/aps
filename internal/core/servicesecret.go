@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"hop.top/aps/internal/logging"
 )
@@ -77,27 +78,71 @@ func EnvSecretLookup(name string) (string, bool) {
 // blip at the first webhook would keep failing long after the store recovered.
 var profileSecretCache sync.Map // profileID -> *profileSecrets
 
+// secretWarnInterval bounds how often a single profile reports a failing
+// secret store. Credentials resolve per inbound webhook, so an unreachable
+// vault would otherwise warn once per message.
+const secretWarnInterval = time.Minute
+
 type profileSecrets struct {
-	mu     sync.Mutex
-	loaded bool
-	values map[string]string
+	mu       sync.Mutex
+	loaded   bool
+	values   map[string]string
+	lastWarn time.Time
+	warned   bool
+
+	// Seams for tests; nil means the production behavior.
+	load func(profileID string) (map[string]string, error)
+	warn func(profileID string, err error)
+	now  func() time.Time
+}
+
+func (p *profileSecrets) loadSecrets(profileID string) (map[string]string, error) {
+	if p.load != nil {
+		return p.load(profileID)
+	}
+	return LoadProfileSecrets(profileID)
+}
+
+func (p *profileSecrets) timeNow() time.Time {
+	if p.now != nil {
+		return p.now()
+	}
+	return time.Now()
+}
+
+// warnThrottled reports a failing store at most once per secretWarnInterval.
+// The first failure after a healthy period always warns, so an outage is
+// visible immediately rather than after the window.
+func (p *profileSecrets) warnThrottled(profileID string, err error) {
+	now := p.timeNow()
+	if p.warned && now.Sub(p.lastWarn) < secretWarnInterval {
+		return
+	}
+	p.warned = true
+	p.lastWarn = now
+	if p.warn != nil {
+		p.warn(profileID, err)
+		return
+	}
+	logging.GetLogger().Warn("reading profile secrets failed; will retry",
+		"profile", profileID, "error", err)
 }
 
 func (p *profileSecrets) get(profileID, name string) (string, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if !p.loaded {
-		values, err := LoadProfileSecrets(profileID)
+		values, err := p.loadSecrets(profileID)
 		if err != nil {
 			// Left unloaded so the next lookup retries. Logged rather than
 			// returned: callers fall through to their next source, and a
 			// silent empty credential is what made this hard to diagnose.
-			logging.GetLogger().Warn("reading profile secrets failed; will retry",
-				"profile", profileID, "error", err)
+			p.warnThrottled(profileID, err)
 			return "", false
 		}
 		p.values = values
 		p.loaded = true
+		p.warned = false // re-arm, so a later outage warns immediately
 	}
 	v, ok := p.values[name]
 	return v, ok

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestSplitSecretRef(t *testing.T) {
@@ -319,5 +320,131 @@ func TestProfileSecretLookupCachesAbsentStore(t *testing.T) {
 	}
 	if _, ok := ProfileSecretLookup("p3")("tok"); ok {
 		t.Fatal("expected not-found on the second lookup too")
+	}
+}
+
+// A sustained store outage must not warn on every lookup: webhooks resolve
+// credentials per request, so an unreachable vault would otherwise emit a
+// warning per message. The first failure warns, repeats stay quiet until the
+// suppression window elapses.
+func TestProfileSecretWarnRateLimit(t *testing.T) {
+	var warned int
+	now := time.Unix(0, 0)
+
+	p := &profileSecrets{
+		load: func(string) (map[string]string, error) {
+			return nil, errors.New("vault unreachable")
+		},
+		warn: func(string, error) { warned++ },
+		now:  func() time.Time { return now },
+	}
+
+	for i := 0; i < 10; i++ {
+		p.get("p1", "tok")
+	}
+	if warned != 1 {
+		t.Fatalf("10 failing lookups warned %d times; want 1", warned)
+	}
+
+	// Still inside the window.
+	now = now.Add(secretWarnInterval - time.Second)
+	p.get("p1", "tok")
+	if warned != 1 {
+		t.Fatalf("within the window warned %d times; want 1", warned)
+	}
+
+	// Window elapsed: one more warning, so a persistent outage stays visible.
+	now = now.Add(2 * time.Second)
+	p.get("p1", "tok")
+	if warned != 2 {
+		t.Fatalf("after the window warned %d times; want 2", warned)
+	}
+}
+
+// Recovery must re-arm the warning on the same cache entry: after a successful
+// read, a later failure warns immediately instead of staying silent because an
+// old failure is still inside the suppression window.
+func TestProfileSecretWarnRearmsAfterRecovery(t *testing.T) {
+	var warned int
+	now := time.Unix(0, 0)
+	fail := true
+
+	p := &profileSecrets{
+		load: func(string) (map[string]string, error) {
+			if fail {
+				return nil, errors.New("vault unreachable")
+			}
+			return map[string]string{"tok": "real"}, nil
+		},
+		warn: func(string, error) { warned++ },
+		now:  func() time.Time { return now },
+	}
+
+	p.get("p1", "tok")
+	if warned != 1 {
+		t.Fatalf("first failure warned %d times; want 1", warned)
+	}
+
+	// Store recovers; the successful read is cached and clears the warn state.
+	fail = false
+	if v, ok := p.get("p1", "tok"); !ok || v != "real" {
+		t.Fatalf("after recovery got (%q, %v); want (real, true)", v, ok)
+	}
+
+	// Same entry, still well inside the suppression window. Invalidate the
+	// cache so the next lookup re-reads, and fail again: because the healthy
+	// read re-armed the warning, this outage must be reported at once.
+	p.loaded = false
+	fail = true
+	now = now.Add(time.Second)
+
+	p.get("p1", "tok")
+	if warned != 2 {
+		t.Fatalf("outage after recovery warned %d times total; want 2 — the warning did not re-arm", warned)
+	}
+}
+
+// Suppression is per profile: a profile with a failing store must not silence
+// warnings for a different profile that starts failing.
+func TestProfileSecretWarnIsPerProfile(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	warnedBy := map[string]int{}
+	newEntry := func() *profileSecrets {
+		return &profileSecrets{
+			load: func(string) (map[string]string, error) { return nil, errors.New("down") },
+			warn: func(profileID string, _ error) { warnedBy[profileID]++ },
+			now:  func() time.Time { return time.Unix(0, 0) },
+		}
+	}
+
+	a, b := newEntry(), newEntry()
+	for i := 0; i < 5; i++ {
+		a.get("profile-a", "tok")
+		b.get("profile-b", "tok")
+	}
+
+	if warnedBy["profile-a"] != 1 || warnedBy["profile-b"] != 1 {
+		t.Fatalf("warn counts = %v; want one warning each", warnedBy)
+	}
+}
+
+// Each profile gets its own cache entry, so throttle state cannot leak across
+// profiles through the shared cache.
+func TestProfileSecretCacheEntriesAreDistinctPerProfile(t *testing.T) {
+	ResetProfileSecretCache()
+	t.Cleanup(ResetProfileSecretCache)
+
+	ProfileSecretLookup("p1")("x")
+	ProfileSecretLookup("p2")("x")
+
+	e1, ok1 := profileSecretCache.Load("p1")
+	e2, ok2 := profileSecretCache.Load("p2")
+	if !ok1 || !ok2 {
+		t.Fatalf("expected a cache entry per profile; got p1=%v p2=%v", ok1, ok2)
+	}
+	if e1 == e2 {
+		t.Fatal("profiles share a cache entry; throttle state would leak between them")
 	}
 }
