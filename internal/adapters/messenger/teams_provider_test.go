@@ -3,6 +3,7 @@ package messenger
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -178,16 +179,40 @@ func TestTeamsProvider_DeliverMessage_MissingServiceURL(t *testing.T) {
 }
 
 func TestTeamsProvider_DeliverMessage_MissingCredentials(t *testing.T) {
-	provider := NewTeamsProvider(TeamsProviderConfig{Transport: &fakeTeamsTransport{}})
-	_, err := provider.DeliverMessage(context.Background(), coremessenger.DeliveryRequest{
-		Provider:  "teams",
-		ServiceID: "teams-support",
-		ChannelID: "a:1conversation",
-		Text:      "hi",
-		Metadata:  map[string]any{"teams_service_url": "https://smba.trafficmanager.net/amer"},
-	})
-	if err == nil {
-		t.Fatal("expected missing credential error")
+	cases := []struct {
+		name       string
+		config     TeamsProviderConfig
+		wantSecret string
+	}{
+		{
+			name:       "missing app id",
+			config:     TeamsProviderConfig{AppPassword: "secret", Transport: &fakeTeamsTransport{}},
+			wantSecret: "TEAMS_APP_ID",
+		},
+		{
+			name:       "missing app password",
+			config:     TeamsProviderConfig{AppID: "app-id", Transport: &fakeTeamsTransport{}},
+			wantSecret: "TEAMS_APP_PASSWORD",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := NewTeamsProvider(tc.config)
+			_, err := provider.DeliverMessage(context.Background(), coremessenger.DeliveryRequest{
+				Provider:  "teams",
+				ServiceID: "teams-support",
+				ChannelID: "a:1conversation",
+				Text:      "hi",
+				Metadata:  map[string]any{"teams_service_url": "https://smba.trafficmanager.net/amer"},
+			})
+			var msgErr *coremessenger.MessengerError
+			if !errors.As(err, &msgErr) || msgErr.Code != coremessenger.ErrCodeMissingSecret {
+				t.Fatalf("err = %v, want missing secret", err)
+			}
+			if msgErr.Name != tc.wantSecret {
+				t.Errorf("missing secret = %q, want %q", msgErr.Name, tc.wantSecret)
+			}
+		})
 	}
 }
 
