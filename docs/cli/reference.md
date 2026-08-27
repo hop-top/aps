@@ -163,6 +163,25 @@ APS_BIN=./aps_t1291 bash scripts/verify_note_flag.sh
 When introducing a new state-changing subcommand, add it to the
 `SUBCOMMANDS` array in the script AND to the table above.
 
+## `aps profile export` formats
+
+`aps profile export <id>` selects its rendering with the local
+`--manifest-format` flag; the table below is generated from the
+format registry in `internal/cli` (`make docs-gen`), so it always
+matches what the command accepts.
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/exportmd", "formats-table"],
+    text=True))
+]]] -->
+| Format | Rendering | Emits |
+|--------|-----------|-------|
+| *(flag omitted)* | Native profile record (default when the flag is omitted) | The full `profile.yaml` record as stored on disk; secret values live in `secrets.env` and are never part of the record. |
+| `--manifest-format agentco` | Agent role manifest (`AGENTS.md`: YAML frontmatter + markdown body) | Identity only — name, slug, description, reportsTo, skills, and the `notes.md` body; never secrets, isolation, gitconfig, knowledge references, or machine paths. |
+<!-- [[[end]]] -->
+
 ## See also
 
 - [../policies.md](../policies.md) — policy engine, default rules,
