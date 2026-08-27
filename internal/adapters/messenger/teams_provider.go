@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -196,12 +197,37 @@ type TeamsSDKTransport struct {
 }
 
 func NewTeamsSDKTransport(appID, appPassword, tokenURL string) (*TeamsSDKTransport, error) {
+	return NewTeamsSDKTransportWithConfig(TeamsSDKTransportConfig{
+		AppID:       appID,
+		AppPassword: appPassword,
+		TokenURL:    tokenURL,
+	})
+}
+
+// TeamsSDKTransportConfig configures the SDK connector transport. AuthClient
+// and ReplyClient default to fresh http.Clients; tests inject recording
+// clients through them.
+type TeamsSDKTransportConfig struct {
+	AppID       string
+	AppPassword string
+	TokenURL    string
+	AuthClient  *http.Client
+	ReplyClient *http.Client
+}
+
+func NewTeamsSDKTransportWithConfig(cfg TeamsSDKTransportConfig) (*TeamsSDKTransport, error) {
 	config, err := client.NewClientConfig(auth.SimpleCredentialProvider{
-		AppID:    appID,
-		Password: appPassword,
-	}, tokenURL)
+		AppID:    cfg.AppID,
+		Password: cfg.AppPassword,
+	}, cfg.TokenURL)
 	if err != nil {
 		return nil, fmt.Errorf("teams connector config: %w", err)
+	}
+	if cfg.AuthClient != nil {
+		config.AuthClient = cfg.AuthClient
+	}
+	if cfg.ReplyClient != nil {
+		config.ReplyClient = cfg.ReplyClient
 	}
 	connector, err := client.NewClient(config)
 	if err != nil {

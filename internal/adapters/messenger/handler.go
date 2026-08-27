@@ -46,6 +46,7 @@ type Handler struct {
 	chatRunner        ChatTurnRunner
 	telegramTransport TelegramTransport
 	slackTransport    SlackTransport
+	teamsTransport    TeamsTransport
 	whatsappTransport msgtypes.WhatsAppTransport
 }
 
@@ -56,6 +57,7 @@ func NewHandler(router *MessageRouter, normalizer *Normalizer, logger MessageLog
 	validator := msgtypes.NewServiceValidator()
 	validator.Hooks[string(msgtypes.PlatformTelegram)] = msgtypes.TelegramAuthHook{}
 	validator.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
+	validator.Hooks[string(msgtypes.PlatformTeams)] = msgtypes.TeamsAuthHook{}
 	validator.Hooks[string(msgtypes.PlatformWhatsApp)] = msgtypes.WhatsAppAuthHook{}
 	validator.Hooks["whatsapp-cloud"] = msgtypes.WhatsAppAuthHook{}
 	h := &Handler{router: router, normalizer: normalizer, logger: logger, validator: validator}
@@ -82,6 +84,9 @@ func WithServiceValidator(v *msgtypes.ServiceValidator) func(*Handler) {
 			if _, ok := v.Hooks[string(msgtypes.PlatformSlack)]; !ok {
 				v.Hooks[string(msgtypes.PlatformSlack)] = msgtypes.SlackAuthHook{}
 			}
+			if _, ok := v.Hooks[string(msgtypes.PlatformTeams)]; !ok {
+				v.Hooks[string(msgtypes.PlatformTeams)] = msgtypes.TeamsAuthHook{}
+			}
 			if _, ok := v.Hooks[string(msgtypes.PlatformWhatsApp)]; !ok {
 				v.Hooks[string(msgtypes.PlatformWhatsApp)] = msgtypes.WhatsAppAuthHook{}
 			}
@@ -99,6 +104,10 @@ func WithTelegramTransport(t TelegramTransport) func(*Handler) {
 
 func WithSlackTransport(t SlackTransport) func(*Handler) {
 	return func(h *Handler) { h.slackTransport = t }
+}
+
+func WithTeamsTransport(t TeamsTransport) func(*Handler) {
+	return func(h *Handler) { h.teamsTransport = t }
 }
 
 func WithWhatsAppTransport(t msgtypes.WhatsAppTransport) func(*Handler) {
@@ -196,6 +205,10 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 	}
 	if service != nil && platform == string(msgtypes.PlatformSlack) && serviceProvider(service, string(msgtypes.PlatformSlack)) == string(msgtypes.PlatformSlack) {
 		h.handleSlackServiceWebhook(w, r, rawBody, messengerName, service)
+		return
+	}
+	if service != nil && platform == string(msgtypes.PlatformTeams) {
+		h.handleTeamsServiceWebhook(w, r, rawBody, messengerName, service)
 		return
 	}
 	if service != nil && platform == string(msgtypes.PlatformWhatsApp) {
@@ -523,6 +536,118 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, response)
 }
 
+func (h *Handler) handleTeamsServiceWebhook(w http.ResponseWriter, r *http.Request, rawBody []byte, serviceID string, service *core.ServiceConfig) {
+	body, err := decodeWebhookBody(string(msgtypes.PlatformTeams), r.Header, rawBody)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if handleTeamsAcknowledgement(w, body) {
+		return
+	}
+
+	provider := NewTeamsProvider(TeamsProviderConfig{
+		AppID:       resolveServiceEnv(service, "TEAMS_APP_ID"),
+		AppPassword: resolveServiceEnv(service, "TEAMS_APP_PASSWORD"),
+		TenantID:    serviceOption(service, "tenant_id"),
+		TokenURL:    serviceOption(service, "teams_token_url"),
+		Transport:   h.teamsTransport,
+		Normalizer:  h.normalizer,
+	})
+	validatingProvider := &serviceValidatingProvider{
+		base:      provider,
+		validator: h.serviceValidator(),
+		service:   serviceValidationConfig(service),
+	}
+	var deliveryAttempts []msgtypes.DeliveryAttempt
+	runtime, err := msgtypes.NewRuntime(
+		validatingProvider,
+		h.router,
+		&serviceRuntimeExecutor{router: h.router, service: service, chatRunner: h.chatRunner},
+		runtimeOptionsWithDeliveryAttempts(serviceID, &deliveryAttempts, h.router.ConversationStore()),
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("teams runtime failed: %v", err))
+		return
+	}
+
+	result, err := runtime.HandleIngress(r.Context(), msgtypes.NativeIngress{
+		ServiceID:  serviceID,
+		Provider:   string(msgtypes.PlatformTeams),
+		Mode:       msgtypes.IngressModeWebhook,
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		Headers:    r.Header,
+		Query:      r.URL.Query(),
+		Body:       rawBody,
+		RemoteAddr: r.RemoteAddr,
+	})
+	if err != nil {
+		_ = recordServiceDeliveryAttempts(serviceID, deliveryAttempts, nil)
+		writeProviderRuntimeError(w, string(msgtypes.PlatformTeams), err)
+		return
+	}
+	if result != nil && result.Message != nil {
+		_ = core.RecordServiceInboundEvent(serviceID, core.ServiceEventMeta{
+			MessageID: result.Message.ID,
+			Platform:  string(msgtypes.PlatformTeams),
+			ChannelID: result.Message.Channel.ID,
+			SenderID:  result.Message.Sender.ID,
+			Status:    "received",
+		})
+		if result.Delivery != nil {
+			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
+			if len(result.DeliveryAttempts) == 0 {
+				_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+					MessageID: result.Message.ID,
+					Platform:  string(msgtypes.PlatformTeams),
+					ChannelID: result.Message.Channel.ID,
+					SenderID:  result.Message.Sender.ID,
+					Status:    result.Delivery.Status,
+				})
+			}
+		} else if result.Result != nil {
+			_ = recordServiceExecutionEvent(serviceID, result.Message, result.Result)
+		}
+	}
+
+	response := map[string]any{
+		"status":    "accepted",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	if result != nil {
+		if result.Message != nil {
+			response["message_id"] = result.Message.ID
+		}
+		response["route"] = result.Route.TargetAction()
+		if result.Result != nil {
+			response["status"] = result.Result.Status
+		}
+		if result.Delivery != nil {
+			response["delivery"] = result.Delivery
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+// handleTeamsAcknowledgement acknowledges Bot Framework activities that carry
+// no routable message (conversationUpdate on install, typing, reactions,
+// installationUpdate). The connector retries non-2xx deliveries, so these
+// must be accepted, not rejected.
+func handleTeamsAcknowledgement(w http.ResponseWriter, body map[string]any) bool {
+	activityType := getString(body, "type")
+	if activityType == "message" {
+		return false
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":      "ignored",
+		"reason":      "unsupported_teams_activity",
+		"activity_id": getString(body, "id"),
+		"timestamp":   time.Now().UTC().Format(time.RFC3339),
+	})
+	return true
+}
+
 func (h *Handler) handleWhatsAppVerification(w http.ResponseWriter, r *http.Request, serviceID, adapter string) {
 	service, err := core.LoadService(serviceID)
 	if err != nil {
@@ -826,6 +951,15 @@ func replyMetadata(msg *msgtypes.NormalizedMessage, service *core.ServiceConfig)
 		}
 		if id, ok := msg.PlatformMetadata["telegram_message_thread_id"]; ok {
 			metadata["message_thread_id"] = id
+		}
+	case msgtypes.PlatformTeams:
+		if msg.PlatformMetadata == nil {
+			return metadata
+		}
+		for _, key := range []string{"teams_service_url", "teams_conversation_id", "teams_activity_id", "teams_recipient_id"} {
+			if value, ok := msg.PlatformMetadata[key]; ok {
+				metadata[key] = value
+			}
 		}
 	case msgtypes.PlatformWhatsApp:
 		metadata["to"] = msg.Sender.ID

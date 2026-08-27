@@ -97,6 +97,32 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			},
 		},
 		{
+			name:        "teams",
+			adapter:     "teams",
+			fixture:     "teams_message.json",
+			contentType: "application/json",
+			service: messageService("teams-support", "teams", map[string]string{
+				"default_action":   "assistant=handle_teams",
+				"allowed_channels": "19:channel@thread.tacv2",
+				"reply":            "text",
+				"teams_token_url":  "https://login.teams.test/token",
+			}, map[string]string{
+				"TEAMS_APP_ID":       "bot-app-id",
+				"TEAMS_APP_PASSWORD": "bot-secret",
+			}),
+			headers: func(_ []byte) http.Header {
+				return http.Header{"Authorization": {"Bearer bot-framework-jwt"}}
+			},
+			wantMessageID: "msg-teams-1",
+			wantRoute:     "assistant=handle_teams",
+			xrrDelivery: func(t *testing.T) []func(*Handler) {
+				return []func(*Handler){
+					WithServiceValidator(teamsTestValidator(nil)),
+					WithTeamsTransport(teamsXRRSDKTransport(t, filepath.Join(t.TempDir(), "teams-delivery"), xrr.ModeRecord, "reply from action")),
+				}
+			},
+		},
+		{
 			name:        "discord",
 			adapter:     "discord",
 			fixture:     "discord_message_create.json",
@@ -193,6 +219,7 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 		contentType string
 		authHeaders http.Header
 		badHeaders  http.Header
+		opts        func(*testing.T) []func(*Handler)
 	}{
 		{
 			name:        "telegram",
@@ -222,6 +249,27 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 			badHeaders: http.Header{
 				"X-Slack-Request-Timestamp": {strconv.FormatInt(time.Now().UTC().Unix(), 10)},
 				"X-Slack-Signature":         {"v0=bad"},
+			},
+		},
+		{
+			name:        "teams",
+			adapter:     "teams",
+			fixture:     "teams_message.json",
+			contentType: "application/json",
+			service: messageService("teams-support", "teams", map[string]string{
+				"default_action":   "assistant=handle_teams",
+				"allowed_channels": "19:channel@thread.tacv2",
+			}, map[string]string{
+				"TEAMS_APP_ID":       "bot-app-id",
+				"TEAMS_APP_PASSWORD": "bot-secret",
+			}),
+			authHeaders: http.Header{"Authorization": {"Bearer bot-framework-jwt"}},
+			badHeaders:  http.Header{},
+			opts: func(*testing.T) []func(*Handler) {
+				return []func(*Handler){
+					WithServiceValidator(teamsTestValidator(nil)),
+					WithTeamsTransport(&fakeTeamsTransport{}),
+				}
 			},
 		},
 		{
@@ -277,7 +325,7 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 			require.NoError(t, core.SaveService(tt.service))
 			body := providerFixture(t, tt.fixture)
 			executor := &fakeActionExecutor{}
-			handler := newServiceTestHandler(executor)
+			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.opts)...)
 			headers := providerHeaders(tt.contentType, body, func([]byte) http.Header { return tt.badHeaders })
 
 			resp := serveWebhookThroughXRR(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
@@ -297,7 +345,7 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 			require.NoError(t, core.SaveService(blocked))
 			body := providerFixture(t, tt.fixture)
 			executor := &fakeActionExecutor{}
-			handler := newServiceTestHandler(executor)
+			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.opts)...)
 			headers := providerHeaders(tt.contentType, body, func(body []byte) http.Header {
 				if tt.adapter == "slack" {
 					ts := strconv.FormatInt(time.Now().UTC().Unix(), 10)
@@ -377,6 +425,32 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 			assertions: func(t *testing.T, receipt *msgtypes.DeliveryReceipt) {
 				assert.Equal(t, "1710000000.000099", receipt.DeliveryID)
 				assert.Equal(t, "success", receipt.Status)
+			},
+		},
+		{
+			name: "teams",
+			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+				provider := NewTeamsProvider(TeamsProviderConfig{
+					AppID:       "bot-app-id",
+					AppPassword: "bot-secret",
+					Transport:   teamsXRRSDKTransport(t, cassetteDir, mode, "ack"),
+					Now:         fixedProviderNow,
+				})
+				return provider.DeliverMessage(context.Background(), msgtypes.DeliveryRequest{
+					Provider:  "teams",
+					ServiceID: "teams-support",
+					ChannelID: "19:channel@thread.tacv2;messageid=msg-teams-0",
+					Text:      "ack",
+					Metadata: map[string]any{
+						"teams_service_url":  "https://smba.teams.test/emea",
+						"teams_activity_id":  "msg-teams-1",
+						"teams_recipient_id": "28:bot-app-id",
+					},
+				})
+			},
+			assertions: func(t *testing.T, receipt *msgtypes.DeliveryReceipt) {
+				assert.Equal(t, "success", receipt.Status)
+				assert.Equal(t, "19:channel@thread.tacv2;messageid=msg-teams-0", receipt.ProviderData["conversation"])
 			},
 		},
 		{
@@ -745,6 +819,45 @@ func xrrSlackPostMessageResponder(t *testing.T, status int, body string) func(*x
 		assert.Contains(t, req.Body, `"channel":"C012CHAN"`)
 		return &xhttp.Response{Status: status, Body: body}, nil
 	}
+}
+
+// xrrTeamsResponder answers both connector calls the SDK transport makes:
+// the client-credentials token request, then the activity post.
+func xrrTeamsResponder(t *testing.T, wantText string) func(*xhttp.Request) (*xhttp.Response, error) {
+	return func(req *xhttp.Request) (*xhttp.Response, error) {
+		require.Equal(t, http.MethodPost, req.Method)
+		if strings.HasPrefix(req.URL, "https://login.teams.test/") {
+			assert.Contains(t, req.Body, "grant_type=client_credentials")
+			assert.Contains(t, req.Body, "client_id=bot-app-id")
+			return &xhttp.Response{
+				Status:  http.StatusOK,
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"access_token":"teams-token","expires_in":3600,"token_type":"Bearer"}`,
+			}, nil
+		}
+		assert.Contains(t, req.URL, "https://smba.teams.test/")
+		assert.Contains(t, req.URL, "/v3/conversations/")
+		assert.Equal(t, "Bearer teams-token", req.Headers["Authorization"])
+		assert.Contains(t, req.Body, `"text":"`+wantText+`"`)
+		return &xhttp.Response{Status: http.StatusCreated, Body: `{"id":"reply-activity-1"}`}, nil
+	}
+}
+
+// teamsXRRSDKTransport builds the real SDK connector transport with its HTTP
+// clients routed through an XRR cassette.
+func teamsXRRSDKTransport(t *testing.T, cassetteDir string, mode xrr.Mode, wantText string) *TeamsSDKTransport {
+	t.Helper()
+	doer := newXRRHTTPDoerWithDir(t, cassetteDir, xrrTeamsResponder(t, wantText), mode)
+	httpClient := &http.Client{Transport: roundTripFunc(doer.Do)}
+	transport, err := NewTeamsSDKTransportWithConfig(TeamsSDKTransportConfig{
+		AppID:       "bot-app-id",
+		AppPassword: "bot-secret",
+		TokenURL:    "https://login.teams.test/token",
+		AuthClient:  httpClient,
+		ReplyClient: httpClient,
+	})
+	require.NoError(t, err)
+	return transport
 }
 
 func xrrDiscordMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
