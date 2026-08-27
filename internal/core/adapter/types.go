@@ -99,6 +99,36 @@ func IsLoadingStrategyValid(s LoadingStrategy) bool {
 	}
 }
 
+// LoadingStrategies describes each loading strategy for docs rendering.
+// Descriptions match the hand-written table in docs/dev/adapters.md.
+var LoadingStrategies = map[LoadingStrategy]string{
+	StrategySubprocess: "Runs a standalone binary as a managed child process.",
+	StrategyScript:     "Executes a shell/python/node script on demand per action.",
+	StrategyBuiltin:    "Native Go implementation compiled into the APS binary.",
+}
+
+// AdapterScopes describes each adapter scope for docs rendering.
+var AdapterScopes = map[AdapterScope]string{
+	ScopeGlobal:  "Available to every profile.",
+	ScopeProfile: "Owned by a single profile.",
+}
+
+// AdapterStates describes each runtime state for docs rendering.
+var AdapterStates = map[AdapterState]string{
+	StateStopped:  "Not running.",
+	StateStarting: "Startup in progress.",
+	StateRunning:  "Running under APS management.",
+	StateFailed:   "Exited or crashed with an error.",
+	StateUnknown:  "State could not be determined.",
+}
+
+// HealthStatuses describes each health status for docs rendering.
+var HealthStatuses = map[HealthStatus]string{
+	HealthHealthy:   "Last health check passed.",
+	HealthUnhealthy: "Last health check failed.",
+	HealthUnknown:   "No health check result yet.",
+}
+
 type Adapter struct {
 	Name         string          `json:"name" yaml:"name"`
 	Type         AdapterType     `json:"type" yaml:"type"`
