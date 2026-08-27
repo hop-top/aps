@@ -19,6 +19,7 @@ canonical service config.
 | `--type message --adapter telegram` | `message` | `telegram` |
 | `--type telegram` | `message` | `telegram` |
 | `--type slack` | `message` | `slack` |
+| `--type teams` | `message` | `teams` |
 | `--type discord` | `message` | `discord` |
 | `--type sms` | `message` | `sms` |
 | `--type whatsapp` | `message` | `whatsapp` |
@@ -134,7 +135,7 @@ All message adapters normalize to:
 ```json
 {
   "id": "msg_unique_id",
-  "platform": "telegram|discord|slack|sms|whatsapp",
+  "platform": "telegram|discord|slack|teams|sms|whatsapp",
   "profile_id": "assistant",
   "timestamp": "2026-05-11T10:30:00Z",
   "sender": {
@@ -187,6 +188,7 @@ list|show` queries the store. See the Thread History section of the policy.
 | --- | --- | --- | --- |
 | Telegram | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Ready when mounted with `aps serve` |
 | Slack | Events API event envelope JSON | text response JSON | Ready when mounted with `aps serve`; app verification is external |
+| Teams | Bot Framework `message` activity JSON | message activity JSON | Ready when mounted with `aps serve`; Azure Bot registration is external |
 | Discord | message-create style JSON | content response JSON | Ready when mounted with `aps serve`; Gateway client is external |
 | SMS | Twilio-style or generic phone fields in JSON/form | text response metadata | Ready for Twilio or JSON relays |
 | WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON/form | text/template response metadata | Ready for Cloud API and Twilio-compatible relays |

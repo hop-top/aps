@@ -9,6 +9,7 @@ profile actions.
 | --- | --- | --- | --- |
 | `telegram` | numeric chat ID, for example `-1001234567890` | BotFather | JSON webhook route through `aps serve` |
 | `slack` | channel ID, for example `C01ABC2DEF` | Slack API dashboard | JSON webhook route through `aps serve` |
+| `teams` | Bot Framework conversation ID, for example `19:abc123@thread.tacv2` | Azure Bot registration (App ID + client secret) | JSON webhook route through `aps serve` |
 | `discord` | numeric channel ID | Discord Developer Portal | JSON webhook route through `aps serve` |
 | `sms` | receiving phone number, for example `+15551234567` | SMS provider such as Twilio | JSON relay route through `aps serve` |
 | `whatsapp` | phone number ID or receiving number | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
@@ -173,6 +174,26 @@ aps service add team-chat \
   --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
   --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
+
+### Teams
+
+```bash
+aps service add teams-chat \
+  --type teams \
+  --profile assistant \
+  --allowed-channel "19:abc123@thread.tacv2" \
+  --default-action triage \
+  --reply text \
+  --option tenant_id=f8cdef31-a31e-4b4a-93e4-5f571e91255a \
+  --env TEAMS_APP_ID=secret:TEAMS_APP_ID \
+  --env TEAMS_APP_PASSWORD=secret:TEAMS_APP_PASSWORD
+```
+
+Inbound requests are authenticated by the Microsoft-signed Bot Framework JWT
+in the `Authorization` header; there is no signing secret to configure.
+`tenant_id` selects the single-tenant token endpoint for outbound replies.
+`aps service test --probe` cannot mint that JWT, so verify Teams services
+with a real message from the installed app.
 
 ### Discord
 

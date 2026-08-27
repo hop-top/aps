@@ -1,7 +1,7 @@
 # Message Service Quick Reference
 
-Use `aps service` for new Telegram, Slack, Discord, SMS, and WhatsApp message
-integrations.
+Use `aps service` for new Telegram, Slack, Teams, Discord, SMS, and WhatsApp
+message integrations.
 
 ## Fastest Path
 
@@ -53,6 +53,7 @@ Message adapter aliases:
 | --- | --- |
 | `telegram` | `type: message`, `adapter: telegram` |
 | `slack` | `type: message`, `adapter: slack` |
+| `teams` | `type: message`, `adapter: teams` |
 | `discord` | `type: message`, `adapter: discord` |
 | `sms` | `type: message`, `adapter: sms` |
 | `whatsapp` | `type: message`, `adapter: whatsapp` |
@@ -102,6 +103,25 @@ aps service add slack-support \
   --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
   --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
+
+### Teams
+
+```bash
+aps service add teams-support \
+  --type teams \
+  --profile assistant \
+  --allowed-channel "19:abc123@thread.tacv2" \
+  --default-action handle-teams \
+  --reply text \
+  --option tenant_id=f8cdef31-a31e-4b4a-93e4-5f571e91255a \
+  --env TEAMS_APP_ID=secret:TEAMS_APP_ID \
+  --env TEAMS_APP_PASSWORD=secret:TEAMS_APP_PASSWORD
+```
+
+Register the APS webhook URL as the Azure Bot registration's messaging
+endpoint. Inbound auth is the Microsoft-signed Bot Framework JWT; there is no
+signing secret, and `aps service test --probe` cannot impersonate Microsoft —
+verify with a real Teams message.
 
 ### Discord
 
