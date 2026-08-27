@@ -34,3 +34,16 @@ jobs:
           version: v2.12.2
           args: --timeout=5m ./...
           only-new-issues: true
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Provides uvx, which `make docs-check` uses to run a pinned
+      # cog without a checked-in Python toolchain.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Check generated doc regions
+        run: make docs-check
