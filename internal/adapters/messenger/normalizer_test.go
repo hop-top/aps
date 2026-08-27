@@ -468,6 +468,262 @@ func TestNormalizer_NormalizeSlack(t *testing.T) {
 	}
 }
 
+func TestNormalizer_NormalizeTeams(t *testing.T) {
+	n := NewNormalizer()
+
+	tests := []struct {
+		name    string
+		raw     map[string]any
+		wantErr bool
+		check   func(t *testing.T, msg *msgtypes.NormalizedMessage)
+	}{
+		{
+			name: "personal message",
+			raw: map[string]any{
+				"type":       "message",
+				"id":         "1485983408511",
+				"timestamp":  "2026-08-27T21:10:07.437Z",
+				"serviceUrl": "https://smba.trafficmanager.net/amer/",
+				"channelId":  "msteams",
+				"from": map[string]any{
+					"id":          "29:1abcdef",
+					"name":        "Megan Bowen",
+					"aadObjectId": "7faf8ab2-3d56-4244-b585-20c8a42ed2b8",
+				},
+				"conversation": map[string]any{
+					"conversationType": "personal",
+					"tenantId":         "f8cdef31-a31e-4b4a-93e4-5f571e91255a",
+					"id":               "a:1conversation",
+				},
+				"recipient": map[string]any{
+					"id":   "28:c9e8c047-2a74-40a2-b28a-b162d5f5327c",
+					"name": "Support Bot",
+				},
+				"text": "Hello bot",
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Platform != "teams" {
+					t.Errorf("platform = %q, want teams", msg.Platform)
+				}
+				if msg.ID != "1485983408511" {
+					t.Errorf("id = %q, want activity id", msg.ID)
+				}
+				if msg.Sender.ID != "29:1abcdef" {
+					t.Errorf("sender.ID = %q, want from id", msg.Sender.ID)
+				}
+				if msg.Sender.Name != "Megan Bowen" {
+					t.Errorf("sender.Name = %q, want from name", msg.Sender.Name)
+				}
+				if msg.Sender.PlatformID != "7faf8ab2-3d56-4244-b585-20c8a42ed2b8" {
+					t.Errorf("sender.PlatformID = %q, want aadObjectId", msg.Sender.PlatformID)
+				}
+				if msg.Channel.ID != "a:1conversation" {
+					t.Errorf("channel.ID = %q, want conversation id", msg.Channel.ID)
+				}
+				if msg.Channel.Type != "direct" {
+					t.Errorf("channel.Type = %q, want direct", msg.Channel.Type)
+				}
+				if msg.Text != "Hello bot" {
+					t.Errorf("text = %q, want Hello bot", msg.Text)
+				}
+				if msg.Timestamp.Format(time.RFC3339) != "2026-08-27T21:10:07Z" {
+					t.Errorf("timestamp = %s, want activity timestamp", msg.Timestamp.Format(time.RFC3339))
+				}
+				if msg.Thread != nil {
+					t.Error("thread should be nil without replyToId")
+				}
+				if got := msg.PlatformMetadata["teams_service_url"]; got != "https://smba.trafficmanager.net/amer/" {
+					t.Errorf("teams_service_url = %v, want serviceUrl", got)
+				}
+				if got := msg.PlatformMetadata["teams_conversation_id"]; got != "a:1conversation" {
+					t.Errorf("teams_conversation_id = %v, want conversation id", got)
+				}
+				if got := msg.PlatformMetadata["teams_activity_id"]; got != "1485983408511" {
+					t.Errorf("teams_activity_id = %v, want activity id", got)
+				}
+				if got := msg.PlatformMetadata["teams_recipient_id"]; got != "28:c9e8c047-2a74-40a2-b28a-b162d5f5327c" {
+					t.Errorf("teams_recipient_id = %v, want recipient id", got)
+				}
+				if got := msg.PlatformMetadata["teams_tenant_id"]; got != "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
+					t.Errorf("teams_tenant_id = %v, want tenant id", got)
+				}
+				if got := msg.PlatformMetadata["teams_bot_mentioned"]; got != false {
+					t.Errorf("teams_bot_mentioned = %v, want false", got)
+				}
+			},
+		},
+		{
+			name: "channel message with bot mention",
+			raw: map[string]any{
+				"type":       "message",
+				"id":         "1750000000001",
+				"timestamp":  "2026-08-27T09:00:00Z",
+				"serviceUrl": "https://smba.trafficmanager.net/emea/",
+				"channelId":  "msteams",
+				"from": map[string]any{
+					"id":   "29:2ghijkl",
+					"name": "Adele Vance",
+				},
+				"conversation": map[string]any{
+					"conversationType": "channel",
+					"id":               "19:channel@thread.tacv2;messageid=1749000000000",
+				},
+				"recipient": map[string]any{
+					"id":   "28:bot-app-id",
+					"name": "Support Bot",
+				},
+				"text": "<at>Support Bot</at> please summarize",
+				"entities": []any{
+					map[string]any{
+						"type": "mention",
+						"text": "<at>Support Bot</at>",
+						"mentioned": map[string]any{
+							"id":   "28:bot-app-id",
+							"name": "Support Bot",
+						},
+					},
+				},
+				"channelData": map[string]any{
+					"tenant":  map[string]any{"id": "tenant-guid"},
+					"team":    map[string]any{"id": "19:team@thread.tacv2"},
+					"channel": map[string]any{"id": "19:channel@thread.tacv2"},
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Channel.ID != "19:channel@thread.tacv2;messageid=1749000000000" {
+					t.Errorf("channel.ID = %q, want full conversation id", msg.Channel.ID)
+				}
+				if msg.Channel.PlatformID != "19:channel@thread.tacv2" {
+					t.Errorf("channel.PlatformID = %q, want channelData channel id", msg.Channel.PlatformID)
+				}
+				if msg.Channel.Type != "group" {
+					t.Errorf("channel.Type = %q, want group", msg.Channel.Type)
+				}
+				if msg.WorkspaceID != "19:team@thread.tacv2" {
+					t.Errorf("workspaceID = %q, want team id", msg.WorkspaceID)
+				}
+				if msg.Text != "please summarize" {
+					t.Errorf("text = %q, want mention stripped", msg.Text)
+				}
+				if got := msg.PlatformMetadata["teams_bot_mentioned"]; got != true {
+					t.Errorf("teams_bot_mentioned = %v, want true", got)
+				}
+				if got := msg.PlatformMetadata["teams_tenant_id"]; got != "tenant-guid" {
+					t.Errorf("teams_tenant_id = %v, want channelData tenant", got)
+				}
+			},
+		},
+		{
+			name: "reply with attachment",
+			raw: map[string]any{
+				"type":      "message",
+				"id":        "1760000000002",
+				"replyToId": "1750000000001",
+				"from":      map[string]any{"id": "29:2ghijkl", "name": "Adele Vance"},
+				"conversation": map[string]any{
+					"conversationType": "groupChat",
+					"id":               "19:group-chat",
+				},
+				"text": "see attached",
+				"attachments": []any{
+					map[string]any{
+						"contentType": "image/png",
+						"contentUrl":  "https://example.com/file.png",
+						"name":        "file.png",
+					},
+					map[string]any{
+						"contentType": "text/html",
+						"content":     "<div>inline card</div>",
+					},
+				},
+			},
+			check: func(t *testing.T, msg *msgtypes.NormalizedMessage) {
+				t.Helper()
+				if msg.Thread == nil || msg.Thread.ID != "1750000000001" {
+					t.Fatalf("thread = %+v, want replyToId thread", msg.Thread)
+				}
+				if msg.Thread.Type != "reply" {
+					t.Errorf("thread.Type = %q, want reply", msg.Thread.Type)
+				}
+				if msg.Channel.Type != "group" {
+					t.Errorf("channel.Type = %q, want group", msg.Channel.Type)
+				}
+				if len(msg.Attachments) != 1 {
+					t.Fatalf("attachments = %d, want 1 (content-only attachment skipped)", len(msg.Attachments))
+				}
+				if msg.Attachments[0].URL != "https://example.com/file.png" {
+					t.Errorf("attachment URL = %q", msg.Attachments[0].URL)
+				}
+				if msg.Attachments[0].MimeType != "image/png" {
+					t.Errorf("attachment mime = %q", msg.Attachments[0].MimeType)
+				}
+			},
+		},
+		{
+			name: "non-message activity rejected",
+			raw: map[string]any{
+				"type":         "conversationUpdate",
+				"id":           "1770000000003",
+				"from":         map[string]any{"id": "29:2ghijkl"},
+				"conversation": map[string]any{"id": "19:group-chat"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing sender rejected",
+			raw: map[string]any{
+				"type":         "message",
+				"id":           "1780000000004",
+				"conversation": map[string]any{"id": "19:group-chat"},
+				"text":         "hi",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing conversation rejected",
+			raw: map[string]any{
+				"type": "message",
+				"id":   "1790000000005",
+				"from": map[string]any{"id": "29:2ghijkl"},
+				"text": "hi",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, err := n.Normalize("teams", tt.raw)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			tt.check(t, msg)
+		})
+	}
+}
+
+func TestNormalizer_DenormalizeTeams(t *testing.T) {
+	n := NewNormalizer()
+	resp, err := n.Denormalize("teams", &ActionResult{Status: "success", Output: "done"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp["type"] != "message" {
+		t.Errorf("type = %v, want message", resp["type"])
+	}
+	if resp["text"] != "done" {
+		t.Errorf("text = %v, want output", resp["text"])
+	}
+}
+
 func TestNormalizer_NormalizeGitHub(t *testing.T) {
 	n := NewNormalizer()
 
