@@ -116,7 +116,16 @@ aps chat <profile-id> --attach <S-id>       # continue an existing chat session
 aps chat <id1> --invite <id2>[,<id3>]       # multi-profile chat, human-driven
 aps chat <id1>,<id2>                        # shorthand for --invite
 aps chat <id1> --invite <id2> --max-auto-turns N  # cap autonomous loops
+aps chat <profile-id> --temperature 0.2     # override sampling temperature (0-2)
+aps chat <profile-id> --max-tokens 2048     # override max response tokens
+aps chat <profile-id> --effort high         # reasoning effort (minimal|low|medium|high|xhigh)
+aps chat <profile-id> --verbosity low       # response verbosity (low|medium|high)
 ```
+
+Sampling flags sit at the same precedence position as `--model`:
+applied after the profile merge. A flag left unset means "no
+override"; an explicit `--temperature 0` or `--max-tokens 0` still
+overrides the merged config value.
 
 In-REPL meta-commands for multi-profile sessions:
 - `:auto` — yield to autonomous agent-to-agent turns (until `:done`
@@ -173,9 +182,11 @@ Resolution order (lowest → highest precedence):
 2. System config (kit/config layered)
 3. User config: `~/.config/aps/llm.yaml`
 4. Profile config: `profile.yaml#llm` block (extends LLMConfig type)
-5. CLI flag: `--model`
+5. CLI flags: `--model`, `--temperature`, `--max-tokens`, `--effort`,
+   `--verbosity`
 
-Profile YAML schema addition:
+Profile YAML schema addition (the same keys are valid at the
+`llm.yaml` file layers):
 
 ```yaml
 llm:
@@ -186,7 +197,17 @@ llm:
   fallback:
     - claude-haiku-4-5
     - gpt-4o-mini
+  temperature: 0.2        # 0-2; explicit 0 overrides lower layers
+  max_tokens: 2048        # 0/absent = provider default
+  reasoning_effort: high  # minimal|low|medium|high|xhigh
+  verbosity: low          # low|medium|high
 ```
+
+`temperature` and `max_tokens` map to the native `llm.Request`
+fields; `reasoning_effort` and `verbosity` travel in
+`llm.Request.Extensions` under the keys `"reasoning_effort"` and
+`"verbosity"` — providers that do not understand them ignore them.
+Out-of-range values fail resolution with an allowed-values error.
 
 ### Session Registry Extension
 

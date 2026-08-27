@@ -41,6 +41,13 @@ type Options struct {
 	Attach       string
 	Invite       []string
 	MaxAutoTurns int
+	// Temperature and MaxTokens are pointers so a flag left unset means
+	// "no override" while an explicit --temperature 0 still overrides
+	// the merged config value to zero.
+	Temperature *float64
+	MaxTokens   *int
+	Effort      string
+	Verbosity   string
 }
 
 const (

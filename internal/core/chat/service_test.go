@@ -78,4 +78,71 @@ func TestServicePersistsChatSessionAndTurns(t *testing.T) {
 	if len(saved.Turns) != 2 {
 		t.Fatalf("saved turns = %#v", saved.Turns)
 	}
+	if client.req.Temperature != 0 || client.req.MaxTokens != 0 || client.req.Extensions != nil {
+		t.Fatalf("unset sampling knobs leaked into request: %#v", client.req)
+	}
+}
+
+func TestServiceRequestCarriesSamplingKnobs(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	client := &fakeCompleter{}
+	temperature := 0.2
+
+	service, err := NewServiceWithProfile(&core.Profile{
+		ID:          "agent",
+		DisplayName: "Agent",
+	}, client, ServiceOptions{
+		Registry:        session.NewForTesting(),
+		Store:           NewStore(dataDir),
+		NewID:           func() string { return "chat-2" },
+		Model:           "gpt-4o",
+		Temperature:     &temperature,
+		MaxTokens:       900,
+		ReasoningEffort: "high",
+		Verbosity:       "low",
+	})
+	requireNoError(t, err)
+
+	_, err = service.Send(context.Background(), "chat-2", "hello")
+	requireNoError(t, err)
+
+	if client.req.Temperature != 0.2 {
+		t.Fatalf("Temperature = %v, want 0.2", client.req.Temperature)
+	}
+	if client.req.MaxTokens != 900 {
+		t.Fatalf("MaxTokens = %d, want 900", client.req.MaxTokens)
+	}
+	if got := client.req.Extensions["reasoning_effort"]; got != "high" {
+		t.Fatalf("Extensions[reasoning_effort] = %v, want high", got)
+	}
+	if got := client.req.Extensions["verbosity"]; got != "low" {
+		t.Fatalf("Extensions[verbosity] = %v, want low", got)
+	}
+}
+
+func TestServiceRequestExplicitZeroTemperature(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	client := &fakeCompleter{}
+	zero := 0.0
+
+	service, err := NewServiceWithProfile(&core.Profile{ID: "agent"}, client, ServiceOptions{
+		Registry:    session.NewForTesting(),
+		Store:       NewStore(dataDir),
+		NewID:       func() string { return "chat-3" },
+		Model:       "gpt-4o",
+		Temperature: &zero,
+	})
+	requireNoError(t, err)
+
+	_, err = service.Send(context.Background(), "chat-3", "hello")
+	requireNoError(t, err)
+
+	if client.req.Temperature != 0 {
+		t.Fatalf("Temperature = %v, want 0", client.req.Temperature)
+	}
+	if client.req.Extensions != nil {
+		t.Fatalf("Extensions = %#v, want nil when effort/verbosity unset", client.req.Extensions)
+	}
 }

@@ -140,16 +140,32 @@ type KnowledgeConfig struct {
 	Subscriptions string `yaml:"subscriptions,omitempty"`
 }
 
-// LLMConfig holds native chat model and routing preferences for a profile.
+// LLMConfig holds native chat model, routing, and sampling preferences
+// for a profile. Like Profile above, every field carries a json tag
+// mirroring its yaml tag so `--format json` and `--format yaml`
+// describe the same schema; keep the two tags in sync when adding a
+// field.
 type LLMConfig struct {
-	Provider     string         `yaml:"provider,omitempty"`
-	DefaultModel string         `yaml:"default_model,omitempty"`
-	BaseURL      string         `yaml:"base_url,omitempty"`
-	Routers      []string       `yaml:"routers,omitempty"`
-	RouterConfig map[string]any `yaml:"router_config,omitempty"`
-	Fallback     []string       `yaml:"fallback,omitempty"`
-	StrongModel  string         `yaml:"strong_model,omitempty"`
-	WeakModel    string         `yaml:"weak_model,omitempty"`
+	Provider     string         `yaml:"provider,omitempty" json:"provider,omitempty"`
+	DefaultModel string         `yaml:"default_model,omitempty" json:"default_model,omitempty"`
+	BaseURL      string         `yaml:"base_url,omitempty" json:"base_url,omitempty"`
+	Routers      []string       `yaml:"routers,omitempty" json:"routers,omitempty"`
+	RouterConfig map[string]any `yaml:"router_config,omitempty" json:"router_config,omitempty"`
+	Fallback     []string       `yaml:"fallback,omitempty" json:"fallback,omitempty"`
+	StrongModel  string         `yaml:"strong_model,omitempty" json:"strong_model,omitempty"`
+	WeakModel    string         `yaml:"weak_model,omitempty" json:"weak_model,omitempty"`
+	// Temperature is a pointer so an explicit 0 is distinguishable
+	// from unset: nil inherits the lower config layer, &0 overrides
+	// to zero. Valid range is 0–2.
+	Temperature *float64 `yaml:"temperature,omitempty" json:"temperature,omitempty"`
+	// MaxTokens caps the response length; 0 means unset (provider
+	// default applies).
+	MaxTokens int `yaml:"max_tokens,omitempty" json:"max_tokens,omitempty"`
+	// ReasoningEffort is one of minimal|low|medium|high|xhigh; empty
+	// means unset.
+	ReasoningEffort string `yaml:"reasoning_effort,omitempty" json:"reasoning_effort,omitempty"`
+	// Verbosity is one of low|medium|high; empty means unset.
+	Verbosity string `yaml:"verbosity,omitempty" json:"verbosity,omitempty"`
 }
 
 // ScopeConfig defines access boundaries for a profile.
