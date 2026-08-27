@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"hop.top/aps/internal/core"
 	corechat "hop.top/aps/internal/core/chat"
 	kitcli "hop.top/kit/go/console/cli"
@@ -13,6 +14,8 @@ import (
 
 func NewCommand() *cobra.Command {
 	var opts Options
+	var temperature float64
+	var maxTokens int
 	cmd := &cobra.Command{
 		Use:   "chat <profile-id>",
 		Short: "Chat with a profile-backed assistant",
@@ -43,6 +46,7 @@ turns, transcript appends) are user-driven and unbounded;
 previewing would have to fake the human input that drives them.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			applySamplingOverrides(cmd.Flags(), &opts, &temperature, &maxTokens)
 			return Run(cmd, args[0], opts)
 		},
 	}
@@ -52,6 +56,10 @@ previewing would have to fake the human input that drives them.`,
 	cmd.Flags().StringVar(&opts.Attach, "attach", "", "Attach to an existing chat session")
 	cmd.Flags().StringSliceVar(&opts.Invite, "invite", nil, "Invite additional profile IDs (comma-separated or repeatable)")
 	cmd.Flags().IntVar(&opts.MaxAutoTurns, "max-auto-turns", corechat.DefaultMaxAutoTurns, "Maximum autonomous turns before returning control to the human")
+	cmd.Flags().Float64Var(&temperature, "temperature", 0, "Override the sampling temperature (0-2)")
+	cmd.Flags().IntVar(&maxTokens, "max-tokens", 0, "Override the maximum response tokens")
+	cmd.Flags().StringVar(&opts.Effort, "effort", "", "Override the reasoning effort (minimal|low|medium|high|xhigh)")
+	cmd.Flags().StringVar(&opts.Verbosity, "verbosity", "", "Override the response verbosity (low|medium|high)")
 
 	// T-0648 — kit 0.4 signature annotations. `aps chat` is the
 	// interactive assistant REPL; each call appends a turn to the
@@ -72,6 +80,18 @@ previewing would have to fake the human input that drives them.`,
 		panic(err)
 	}
 	return cmd
+}
+
+// applySamplingOverrides copies numeric sampling flags into opts only
+// when the user actually set them, so an unset flag stays "no override"
+// while an explicit --temperature 0 or --max-tokens 0 still overrides.
+func applySamplingOverrides(flags *pflag.FlagSet, opts *Options, temperature *float64, maxTokens *int) {
+	if flags.Changed("temperature") {
+		opts.Temperature = temperature
+	}
+	if flags.Changed("max-tokens") {
+		opts.MaxTokens = maxTokens
+	}
 }
 
 func Run(cmd *cobra.Command, profileID string, opts Options) error {

@@ -21,9 +21,7 @@ func newEngine(ctx context.Context, profile *core.Profile, opts Options, systemP
 	}
 
 	service, err := corechat.NewService(ctx, profile.ID, corechat.ServiceOptions{
-		LLM: corechat.LLMResolveOptions{
-			ModelOverride: opts.Model,
-		},
+		LLM:          llmResolveOptions(opts),
 		SystemPrompt: systemPrompt,
 	})
 	if err != nil {
@@ -33,6 +31,19 @@ func newEngine(ctx context.Context, profile *core.Profile, opts Options, systemP
 		return nil, err
 	}
 	return coreEngine{service: service}, nil
+}
+
+// llmResolveOptions maps chat flag overrides onto the resolver options.
+// Overrides sit in the same precedence position as --model: applied
+// after the profile merge inside ResolveLLMConfig.
+func llmResolveOptions(opts Options) corechat.LLMResolveOptions {
+	return corechat.LLMResolveOptions{
+		ModelOverride:       opts.Model,
+		TemperatureOverride: opts.Temperature,
+		MaxTokensOverride:   opts.MaxTokens,
+		EffortOverride:      opts.Effort,
+		VerbosityOverride:   opts.Verbosity,
+	}
 }
 
 type coreEngine struct {

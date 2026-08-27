@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,6 +19,13 @@ type LLMResolveOptions struct {
 	SystemConfigPath string
 	UserConfigPath   string
 	ModelOverride    string
+	// TemperatureOverride and MaxTokensOverride are pointers so an
+	// unset flag means "no override" while an explicit --temperature 0
+	// or --max-tokens 0 still overrides the merged config value.
+	TemperatureOverride *float64
+	MaxTokensOverride   *int
+	EffortOverride      string
+	VerbosityOverride   string
 }
 
 type ResolvedLLMConfig struct {
@@ -50,6 +58,21 @@ func ResolveLLMConfig(profile *core.Profile, opts LLMResolveOptions) (ResolvedLL
 	}
 	if override := strings.TrimSpace(opts.ModelOverride); override != "" {
 		cfg.DefaultModel = override
+	}
+	if opts.TemperatureOverride != nil {
+		cfg.Temperature = opts.TemperatureOverride
+	}
+	if opts.MaxTokensOverride != nil {
+		cfg.MaxTokens = *opts.MaxTokensOverride
+	}
+	if override := strings.TrimSpace(opts.EffortOverride); override != "" {
+		cfg.ReasoningEffort = override
+	}
+	if override := strings.TrimSpace(opts.VerbosityOverride); override != "" {
+		cfg.Verbosity = override
+	}
+	if err := validateLLMSampling(cfg); err != nil {
+		return ResolvedLLMConfig{}, err
 	}
 
 	router := routerConfigFromLLM(cfg)
@@ -135,6 +158,52 @@ func mergeLLMConfig(dst *core.LLMConfig, src core.LLMConfig) {
 	if src.WeakModel != "" {
 		dst.WeakModel = src.WeakModel
 	}
+	// Pointer nil-check: a profile pinning temperature to an explicit
+	// 0 must still override the file-level value.
+	if src.Temperature != nil {
+		dst.Temperature = src.Temperature
+	}
+	if src.MaxTokens != 0 {
+		dst.MaxTokens = src.MaxTokens
+	}
+	if src.ReasoningEffort != "" {
+		dst.ReasoningEffort = src.ReasoningEffort
+	}
+	if src.Verbosity != "" {
+		dst.Verbosity = src.Verbosity
+	}
+}
+
+// Shared sampling-knob levels accepted by both the reasoning-effort
+// and verbosity validators.
+const (
+	samplingLevelLow    = "low"
+	samplingLevelMedium = "medium"
+	samplingLevelHigh   = "high"
+)
+
+// validateLLMSampling rejects out-of-range sampling knobs after the
+// final merge so file, profile, and flag layers are all covered by the
+// same check. Mirrors the allowed-list error style used for profile
+// validation (see core.Profile type validation).
+func validateLLMSampling(cfg core.LLMConfig) error {
+	if cfg.Temperature != nil && (*cfg.Temperature < 0 || *cfg.Temperature > 2) {
+		return fmt.Errorf("invalid llm temperature: %v (allowed: 0-2)", *cfg.Temperature)
+	}
+	if cfg.MaxTokens < 0 {
+		return fmt.Errorf("invalid llm max_tokens: %d (must be >= 0)", cfg.MaxTokens)
+	}
+	switch cfg.ReasoningEffort {
+	case "", "minimal", samplingLevelLow, samplingLevelMedium, samplingLevelHigh, "xhigh":
+	default:
+		return fmt.Errorf("invalid llm reasoning_effort: %q (allowed: minimal, low, medium, high, xhigh)", cfg.ReasoningEffort)
+	}
+	switch cfg.Verbosity {
+	case "", samplingLevelLow, samplingLevelMedium, samplingLevelHigh:
+	default:
+		return fmt.Errorf("invalid llm verbosity: %q (allowed: low, medium, high)", cfg.Verbosity)
+	}
+	return nil
 }
 
 func routerConfigFromLLM(cfg core.LLMConfig) routellm.RouterConfig {

@@ -14,14 +14,18 @@ import (
 )
 
 type Service struct {
-	profile *core.Profile
-	reg     *session.SessionRegistry
-	store   *Store
-	client  Completer
-	model   string
-	system  string
-	now     func() time.Time
-	newID   func() string
+	profile     *core.Profile
+	reg         *session.SessionRegistry
+	store       *Store
+	client      Completer
+	model       string
+	system      string
+	temperature *float64
+	maxTokens   int
+	effort      string
+	verbosity   string
+	now         func() time.Time
+	newID       func() string
 }
 
 type ServiceOptions struct {
@@ -33,6 +37,12 @@ type ServiceOptions struct {
 	LLM          LLMResolveOptions
 	Model        string
 	SystemPrompt string
+	// Temperature is a pointer so an explicit 0 is distinguishable
+	// from unset (nil leaves the request field at its zero value).
+	Temperature     *float64
+	MaxTokens       int
+	ReasoningEffort string
+	Verbosity       string
 }
 
 func NewService(ctx context.Context, profileID string, opts ServiceOptions) (*Service, error) {
@@ -52,6 +62,10 @@ func NewService(ctx context.Context, profileID string, opts ServiceOptions) (*Se
 		}
 	}
 	opts.Model = resolved.Model
+	opts.Temperature = resolved.Config.Temperature
+	opts.MaxTokens = resolved.Config.MaxTokens
+	opts.ReasoningEffort = resolved.Config.ReasoningEffort
+	opts.Verbosity = resolved.Config.Verbosity
 	return NewServiceWithProfile(profile, client, opts)
 }
 
@@ -83,14 +97,18 @@ func NewServiceWithProfile(profile *core.Profile, client Completer, opts Service
 		newID = func() string { return uuid.NewString() }
 	}
 	return &Service{
-		profile: profile,
-		reg:     reg,
-		store:   store,
-		client:  client,
-		model:   opts.Model,
-		system:  opts.SystemPrompt,
-		now:     now,
-		newID:   newID,
+		profile:     profile,
+		reg:         reg,
+		store:       store,
+		client:      client,
+		model:       opts.Model,
+		system:      opts.SystemPrompt,
+		temperature: opts.Temperature,
+		maxTokens:   opts.MaxTokens,
+		effort:      opts.ReasoningEffort,
+		verbosity:   opts.Verbosity,
+		now:         now,
+		newID:       newID,
 	}, nil
 }
 
@@ -188,7 +206,29 @@ func (s *Service) request(turns []Turn) llm.Request {
 			Content: turn.Content,
 		})
 	}
-	return llm.Request{Messages: messages, Model: s.model}
+	req := llm.Request{Messages: messages, Model: s.model, MaxTokens: s.maxTokens}
+	if s.temperature != nil {
+		// kit providers treat temperature 0 as "use provider default"
+		// (anthropic/google gate on >0, openai on !=0), so an explicit
+		// 0 here reaches the provider default rather than a literal 0
+		// on the wire. That is a kit transport contract, not ours.
+		req.Temperature = *s.temperature
+	}
+	// Forward contract: kit providers currently ignore unknown
+	// Extensions keys, but "reasoning_effort" and "verbosity" are the
+	// agreed keys aps emits so providers can adopt them without an
+	// aps-side change.
+	ext := map[string]any{}
+	if s.effort != "" {
+		ext["reasoning_effort"] = s.effort
+	}
+	if s.verbosity != "" {
+		ext["verbosity"] = s.verbosity
+	}
+	if len(ext) > 0 {
+		req.Extensions = ext
+	}
+	return req
 }
 
 func (s *Service) ensureRegistered(ctx context.Context, sessionID string) error {
