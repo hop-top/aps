@@ -23,10 +23,10 @@ Aps maps `domain` errors to kit's standard exit codes via
 |------|--------|---------|
 | 0 | — | Success |
 | 1 | Generic error | Any unmapped error |
-| 2 | `domain.ErrInvalidArgument` | Bad flag, missing required arg, validation failed |
+| 2 | `kitcli.ExitUsage` | Bad flag, unknown command, missing required arg (cobra) |
 | 3 | `domain.ErrNotFound` | Profile / session / capability does not exist |
 | 4 | `domain.ErrConflict`, `policy.PolicyDeniedError` | Uniqueness violation OR policy veto |
-| 5 | `domain.ErrPermissionDenied` | ACL / scope check failed |
+| 5 | `exit.ErrUnauthorized` | Credential / auth check failed |
 | 64 | `output.CodeRateLimited` | Factor-10 max-ops budget exceeded |
 
 Policy denials wrap `ErrConflict`, so they share exit 4 with
