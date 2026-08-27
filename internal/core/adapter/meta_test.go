@@ -108,7 +108,26 @@ func TestAdapterTypesPinned(t *testing.T) {
 }
 
 func TestLoadingStrategiesPinned(t *testing.T) {
-	assertPinned(t, "LoadingStrategies", "LoadingStrategy", LoadingStrategies)
+	decl := declaredValues(t, "LoadingStrategy")
+	for v := range decl {
+		if _, ok := LoadingStrategies[LoadingStrategy(v)]; !ok {
+			t.Errorf("LoadingStrategies missing row for declared LoadingStrategy const %q", v)
+		}
+	}
+	for k, meta := range LoadingStrategies {
+		if !decl[string(k)] {
+			t.Errorf("LoadingStrategies row %q matches no declared LoadingStrategy const", k)
+		}
+		if meta.Display == "" {
+			t.Errorf("LoadingStrategies row %q has empty display name", k)
+		}
+		if meta.Description == "" {
+			t.Errorf("LoadingStrategies row %q has empty description", k)
+		}
+		if meta.Persistence == "" {
+			t.Errorf("LoadingStrategies row %q has empty persistence", k)
+		}
+	}
 }
 
 func TestAdapterScopesPinned(t *testing.T) {

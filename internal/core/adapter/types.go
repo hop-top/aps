@@ -99,12 +99,32 @@ func IsLoadingStrategyValid(s LoadingStrategy) bool {
 	}
 }
 
+// LoadingStrategyMeta carries the presentation strings for one loading
+// strategy as rendered in docs/dev/adapters.md.
+type LoadingStrategyMeta struct {
+	Display     string
+	Description string
+	Persistence string
+}
+
 // LoadingStrategies describes each loading strategy for docs rendering.
-// Descriptions match the hand-written table in docs/dev/adapters.md.
-var LoadingStrategies = map[LoadingStrategy]string{
-	StrategySubprocess: "Runs a standalone binary as a managed child process.",
-	StrategyScript:     "Executes a shell/python/node script on demand per action.",
-	StrategyBuiltin:    "Native Go implementation compiled into the APS binary.",
+// Strings match the hand-written table in docs/dev/adapters.md.
+var LoadingStrategies = map[LoadingStrategy]LoadingStrategyMeta{
+	StrategySubprocess: {
+		Display:     "Subprocess",
+		Description: "Runs a standalone binary as a managed child process.",
+		Persistence: "Persistent",
+	},
+	StrategyScript: {
+		Display:     "Script",
+		Description: "Executes a shell/python/node script on demand per action.",
+		Persistence: "Ephemeral",
+	},
+	StrategyBuiltin: {
+		Display:     "Built-in",
+		Description: "Native Go implementation compiled into the APS binary.",
+		Persistence: "Persistent",
+	},
 }
 
 // AdapterScopes describes each adapter scope for docs rendering.
