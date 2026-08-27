@@ -292,15 +292,3 @@ const (
 	PlatformSMS      MessengerPlatform = "sms"
 	PlatformWhatsApp MessengerPlatform = "whatsapp"
 )
-
-// ChannelIDFormat documents the expected channel ID format per platform.
-var ChannelIDFormat = map[MessengerPlatform]string{
-	PlatformTelegram: "Numeric chat ID (e.g., -1001234567890)",
-	PlatformSlack:    "Alphanumeric channel ID (e.g., C01ABC2DEF)",
-	PlatformTeams:    "Bot Framework conversation ID (e.g., 19:abc123@thread.tacv2)",
-	PlatformDiscord:  "Numeric channel ID (e.g., 1234567890123456789)",
-	PlatformGitHub:   "org/repo (e.g., myorg/myrepo)",
-	PlatformEmail:    "Mailbox name or email address (e.g., inbox, work@co.com)",
-	PlatformSMS:      "Phone number receiving SMS (e.g., +15551234567)",
-	PlatformWhatsApp: "WhatsApp phone number ID or receiving number (e.g., 123456789012345)",
-}
