@@ -3,6 +3,7 @@ package messenger
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -27,10 +28,14 @@ type TeamsAuthHook struct {
 	Authenticator TeamsTokenAuthenticator
 }
 
+// AuthRequirements declares no header requirements: Teams authenticity is
+// established by validating the Bot Framework JWT on the raw request.
 func (TeamsAuthHook) AuthRequirements(ServiceValidationConfig) AuthRequirements {
 	return AuthRequirements{}
 }
 
+// ValidateProviderRequest authenticates the inbound activity's Bot Framework
+// JWT against the bot's Microsoft App ID.
 func (h TeamsAuthHook) ValidateProviderRequest(ctx context.Context, input RequestValidationInput) error {
 	appID := teamsAppID(input.Service)
 	if appID == "" {
@@ -63,8 +68,10 @@ type sdkTeamsAuthenticator struct {
 }
 
 func (a sdkTeamsAuthenticator) AuthenticateTeamsRequest(ctx context.Context, activity schema.Activity, authHeader, appID string) error {
-	_, err := a.validator.AuthenticateRequest(ctx, activity, authHeader, auth.SimpleCredentialProvider{AppID: appID}, "")
-	return err
+	if _, err := a.validator.AuthenticateRequest(ctx, activity, authHeader, auth.SimpleCredentialProvider{AppID: appID}, ""); err != nil {
+		return fmt.Errorf("bot framework token validation: %w", err)
+	}
+	return nil
 }
 
 var (

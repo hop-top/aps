@@ -106,6 +106,8 @@ func WithSlackTransport(t SlackTransport) func(*Handler) {
 	return func(h *Handler) { h.slackTransport = t }
 }
 
+// WithTeamsTransport overrides the Bot Framework connector transport used for
+// outbound Teams delivery; tests inject recording transports through it.
 func WithTeamsTransport(t TeamsTransport) func(*Handler) {
 	return func(h *Handler) { h.teamsTransport = t }
 }
@@ -956,7 +958,7 @@ func replyMetadata(msg *msgtypes.NormalizedMessage, service *core.ServiceConfig)
 		if msg.PlatformMetadata == nil {
 			return metadata
 		}
-		for _, key := range []string{"teams_service_url", "teams_conversation_id", "teams_activity_id", "teams_recipient_id"} {
+		for _, key := range []string{teamsMetaServiceURL, teamsMetaConversationID, teamsMetaActivityID, teamsMetaRecipientID} {
 			if value, ok := msg.PlatformMetadata[key]; ok {
 				metadata[key] = value
 			}

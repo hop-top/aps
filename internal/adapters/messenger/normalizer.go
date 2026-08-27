@@ -252,17 +252,28 @@ func slackTextMentionsUser(text, userID string) bool {
 	return userID != "" && strings.Contains(text, "<@"+userID+">")
 }
 
+// Bot Framework activity literals shared by the Teams normalizer and
+// denormalizer.
+const (
+	teamsActivityTypeField = "type"
+	teamsMessageType       = "message"
+	teamsConversationField = "conversation"
+)
+
+// attachmentTypeFile is the normalized attachment type for generic files.
+const attachmentTypeFile = "file"
+
 // normalizeTeams extracts fields from a Bot Framework Activity delivered by
 // Microsoft Teams. Only message activities normalize; installation and
 // membership traffic (conversationUpdate etc.) is acknowledged upstream.
 func (n *Normalizer) normalizeTeams(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
-	activityType := getString(raw, "type")
-	if activityType != "message" {
+	activityType := getString(raw, teamsActivityTypeField)
+	if activityType != teamsMessageType {
 		return nil, fmt.Errorf("unsupported teams activity type %q", activityType)
 	}
 
 	from := getMap(raw, "from")
-	conversation := getMap(raw, "conversation")
+	conversation := getMap(raw, teamsConversationField)
 	senderID := getString(from, "id")
 	conversationID := getString(conversation, "id")
 	if senderID == "" || conversationID == "" {
@@ -326,7 +337,7 @@ func (n *Normalizer) normalizeTeams(raw map[string]any) (*msgtypes.NormalizedMes
 				continue
 			}
 			att := msgtypes.Attachment{
-				Type:     "file",
+				Type:     attachmentTypeFile,
 				URL:      getString(attMap, "contentUrl"),
 				MimeType: getString(attMap, "contentType"),
 			}
@@ -383,7 +394,7 @@ func teamsEntitiesMention(raw map[string]any, recipientID string) bool {
 	}
 	for _, e := range entities {
 		entity, ok := e.(map[string]any)
-		if !ok || getString(entity, "type") != "mention" {
+		if !ok || getString(entity, teamsActivityTypeField) != "mention" {
 			continue
 		}
 		if getString(getMap(entity, "mentioned"), "id") == recipientID {
@@ -853,8 +864,8 @@ func (n *Normalizer) denormalizeSlack(result *ActionResult) map[string]any {
 
 func (n *Normalizer) denormalizeTeams(result *ActionResult) map[string]any {
 	resp := map[string]any{
-		"type": "message",
-		"text": result.Output,
+		teamsActivityTypeField: teamsMessageType,
+		"text":                 result.Output,
 	}
 	if result.OutputData != nil {
 		resp["attachments"] = result.OutputData

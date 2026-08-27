@@ -174,7 +174,7 @@ var serviceTypeAliases = map[string]string{
 	"events":   "events bus",
 	"mobile":   "mobile aps",
 	"slack":    "message slack",
-	"teams":    "message teams",
+	"teams":    "message teams", //nolint:goconst // adapter catalogue; literals are the data
 	"telegram": "message telegram",
 	"discord":  "message discord",
 	"sms":      "message sms",
