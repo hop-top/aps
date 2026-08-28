@@ -359,6 +359,8 @@ aps voice session list   # List active voice sessions
 aps docs               # Generate documentation
 ```
 
+Full command reference: [docs/cli/commands.md](docs/cli/commands.md)
+
 ## Examples
 
 See `~/.agents/docs/EXAMPLES.md` for detailed examples including:

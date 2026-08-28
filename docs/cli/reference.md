@@ -184,6 +184,8 @@ cog.out(subprocess.check_output(
 
 ## See also
 
+- [commands.md](commands.md) — full generated command reference
+  (every command, flag, and subcommand)
 - [../policies.md](../policies.md) — policy engine, default rules,
   and how `context.note` plumbs from `--note` into CEL
 - [redaction.md](redaction.md) — kit/core/redact wiring at the
