@@ -35,6 +35,10 @@
 
 APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.
 
+> **Where to next?**
+> - **Using aps** (human or agent) → [SKILL.md](SKILL.md) — an intent-based router into the docs
+> - **Modifying aps** → [DEVELOPING.md](DEVELOPING.md) — build, test, lint, generated docs, releases
+
 ## Quick Start
 
 ### Install
