@@ -2,9 +2,8 @@
 // platform metadata in internal/core/messenger and the live provider
 // capability metadata in internal/adapters/messenger. Invoked by the cog
 // markers embedded in the messenger docs (docs/MESSENGERS_OVERVIEW.md,
-// docs/MESSENGER_SETUP_QUICK_REF.md, docs/user/messengers.md,
-// docs/dev/messenger-architecture.md, docs/agent/messenger-patterns.md);
-// never run in production paths.
+// docs/user/messengers.md, docs/dev/messenger-architecture.md,
+// docs/agent/messenger-patterns.md); never run in production paths.
 package main
 
 import (
@@ -20,16 +19,14 @@ import (
 // Fragment names, one per doc table the renderer replaces.
 const (
 	fragmentOverviewNav      = "overview-nav"
-	fragmentQuickrefAliases  = "quickref-aliases"
 	fragmentUserSupport      = "user-support"
 	fragmentArchSupport      = "arch-support"
 	fragmentPatternsTable    = "patterns-table"
 	fragmentCapabilityMatrix = "capability-matrix"
 )
 
-const usage = "usage: messengermd " + fragmentOverviewNav + "|" + fragmentQuickrefAliases +
-	"|" + fragmentUserSupport + "|" + fragmentArchSupport + "|" + fragmentPatternsTable +
-	"|" + fragmentCapabilityMatrix
+const usage = "usage: messengermd " + fragmentOverviewNav + "|" + fragmentUserSupport +
+	"|" + fragmentArchSupport + "|" + fragmentPatternsTable + "|" + fragmentCapabilityMatrix
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -53,8 +50,6 @@ func render(name string) (string, error) {
 	switch name {
 	case fragmentOverviewNav:
 		return overviewNav(), nil
-	case fragmentQuickrefAliases:
-		return quickrefAliases(), nil
 	case fragmentUserSupport:
 		return userSupport(), nil
 	case fragmentArchSupport:
@@ -180,23 +175,6 @@ func overviewNav() string {
 	table(&b, "Platform", "Alias", "Channel control", "Current ingress", "Signature validation")
 	for _, row := range messageAdapters() {
 		rowLine(&b, row.Display, aliasCell(row), row.ChannelControl, row.Ingress, row.Signature)
-	}
-	return b.String()
-}
-
-// quickrefAliases renders the docs/MESSENGER_SETUP_QUICK_REF.md message
-// adapter alias table. Ticket aliases live in a separate table owned by
-// the ticket docs.
-func quickrefAliases() string {
-	var b strings.Builder
-	table(&b, "Alias", "Canonical config")
-	for _, row := range messageAdapters() {
-		if row.Alias == "" {
-			rowLine(&b, "(none)",
-				fmt.Sprintf("%s -- pass `--type message --adapter %s`", canonicalConfig(row), row.Platform))
-			continue
-		}
-		rowLine(&b, "`"+row.Alias+"`", canonicalConfig(row))
 	}
 	return b.String()
 }
