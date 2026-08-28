@@ -16,13 +16,20 @@ POST /services/<service-id>/ticket/<adapter>
 `aps service status <id>` and `aps service routes <id>` print the same path;
 `aps service test <id> --probe` posts a synthetic payload to it.
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "ticket-adapters"],
+    text=True))
+]]] -->
 | Adapter alias | Canonical service | Inbound payload | Maturity |
 | --- | --- | --- | --- |
 | `email` | `type: ticket`, `adapter: email` | flat email JSON from a relay or poller | ready |
+| `github` | `type: ticket`, `adapter: github` | route mounted; payloads rejected until a normalizer lands | component |
+| `gitlab` | `type: ticket`, `adapter: gitlab` | GitLab issue/MR/note webhook JSON | ready |
 | `jira` | `type: ticket`, `adapter: jira` | Jira issue/comment webhook JSON | ready |
 | `linear` | `type: ticket`, `adapter: linear` | Linear issue/comment webhook JSON | ready |
-| `gitlab` | `type: ticket`, `adapter: gitlab` | GitLab issue/MR/note webhook JSON | ready |
-| `github` | `type: ticket`, `adapter: github` | route mounted; payloads rejected until a normalizer lands | component |
+<!-- [[[end]]] -->
 
 There is no service-less catch-all: a POST to a ticket route whose service
 does not exist is `404`, a service of another type is `400`, and an adapter

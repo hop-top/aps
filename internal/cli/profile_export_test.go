@@ -147,5 +147,68 @@ func TestRunProfileExport_UnknownFormat(t *testing.T) {
 	var out strings.Builder
 	err := runProfileExport("fmt", "toml", &out)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "toml")
+	// Pinned byte-for-byte: the supported list derives from the format
+	// registry, so a row added there must surface here.
+	assert.Equal(t,
+		`unknown export format "toml" (supported: agentco, or omit for native yaml)`,
+		err.Error())
+}
+
+// --- format registry ----------------------------------------------------
+
+// TestProfileExportFormats_RowsComplete pins the registry↔handler
+// contract. Dispatch derives from profileExportFormats, so a renderer
+// cannot exist without a row; this test closes the other direction — a
+// row cannot land without a renderer or without the doc fields the
+// generated enumeration needs.
+func TestProfileExportFormats_RowsComplete(t *testing.T) {
+	seen := map[string]bool{}
+	for _, f := range profileExportFormats {
+		require.NotNil(t, f.render, "format %q declared without a renderer", f.Name)
+		require.NotEmpty(t, f.Summary, "format %q declared without a summary", f.Name)
+		require.NotEmpty(t, f.Emits, "format %q declared without an emits description", f.Name)
+		require.False(t, seen[f.Name], "format %q declared twice", f.Name)
+		seen[f.Name] = true
+	}
+	require.True(t, seen[""], "registry must declare the flag-omitted native yaml default")
+}
+
+// TestProfileExportFormats_EveryRowExportsEndToEnd drives
+// runProfileExport once per registry row, so a declared format the
+// command cannot actually render fails here rather than in an
+// operator's hands.
+func TestProfileExportFormats_EveryRowExportsEndToEnd(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmp)
+	require.NoError(t, core.CreateProfile("rows", core.Profile{DisplayName: "Rows"}))
+
+	for _, f := range profileExportFormats {
+		name := f.Name
+		if name == "" {
+			name = "(default)"
+		}
+		t.Run(name, func(t *testing.T) {
+			var out strings.Builder
+			require.NoError(t, runProfileExport("rows", f.Name, &out))
+			assert.NotEmpty(t, out.String())
+		})
+	}
+}
+
+// TestProfileExportFormats_ErrorListsEveryNamedRow asserts the
+// unknown-format error enumerates exactly the named registry rows, so
+// the operator-facing supported list can never drift from the table.
+func TestProfileExportFormats_ErrorListsEveryNamedRow(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("APS_DATA_PATH", tmp)
+	require.NoError(t, core.CreateProfile("list", core.Profile{DisplayName: "L"}))
+
+	var out strings.Builder
+	err := runProfileExport("list", "no-such-format", &out)
+	require.Error(t, err)
+	for _, f := range profileExportFormats {
+		if f.Name != "" {
+			assert.Contains(t, err.Error(), f.Name)
+		}
+	}
 }

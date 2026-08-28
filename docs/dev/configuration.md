@@ -62,12 +62,19 @@ capability_sources:
 
 **Fields:**
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/configmd", "config-fields"],
+    text=True))
+]]] -->
 | Field | Default | Description |
 |-------|---------|-------------|
 | `prefix` | `APS` | Prefix for environment variables injected into sessions |
 | `isolation.default_level` | `process` | Default isolation level for profiles that don't specify one |
 | `isolation.fallback_enabled` | `true` | Allow degraded-mode operation if preferred isolation is unavailable |
 | `capability_sources` | `[]` | Additional directories to search for capability definitions |
+<!-- [[[end]]] -->
 
 ## Migration from Legacy Paths
 

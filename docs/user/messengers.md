@@ -38,6 +38,12 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 
 ### Secret Store Backends
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/configmd", "secret-backends"],
+    text=True))
+]]] -->
 | `secrets.backend` | Where secrets live | Required config |
 | --- | --- | --- |
 | `file` (default) | the profile's `secrets.env`, mode 0600 | — |
@@ -47,6 +53,7 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 | `openbao` † | OpenBao / Vault KV v2 | `addr`, `token`; `mount` defaults to `secret` |
 | `infisical` | Infisical | `addr`, `project`, `env`, `token` |
 | `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
+<!-- [[[end]]] -->
 
 † `openbao` is opt-in: it pulls the Vault API client and ~17 transitive
 modules, so the stock `aps` binary omits it entirely. Selecting it in a build

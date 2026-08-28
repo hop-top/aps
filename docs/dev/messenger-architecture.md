@@ -14,15 +14,22 @@ aps service add <service-id> --type <adapter-alias> --profile <profile-id> [opti
 Message adapter aliases are expanded through kit aliasing and persisted as
 canonical service config.
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "persisted-adapters"],
+    text=True))
+]]] -->
 | Input | Persisted type | Persisted adapter |
 | --- | --- | --- |
 | `--type message --adapter telegram` | `message` | `telegram` |
-| `--type telegram` | `message` | `telegram` |
-| `--type slack` | `message` | `slack` |
-| `--type teams` | `message` | `teams` |
 | `--type discord` | `message` | `discord` |
+| `--type slack` | `message` | `slack` |
 | `--type sms` | `message` | `sms` |
+| `--type teams` | `message` | `teams` |
+| `--type telegram` | `message` | `telegram` |
 | `--type whatsapp` | `message` | `whatsapp` |
+<!-- [[[end]]] -->
 
 Ticket aliases share the same command grammar but resolve to `ticket`, not
 `message`: `email`, `github`, `gitlab`, `jira`, and `linear`. Ticket services
