@@ -49,18 +49,31 @@ headers, and raw body for provider signature verification.
 
 Message adapter aliases:
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "message-aliases"],
+    text=True))
+]]] -->
 | Alias | Canonical config |
 | --- | --- |
-| `telegram` | `type: message`, `adapter: telegram` |
-| `slack` | `type: message`, `adapter: slack` |
-| `teams` | `type: message`, `adapter: teams` |
 | `discord` | `type: message`, `adapter: discord` |
-| `sms` | `type: message`, `adapter: sms` |
-| `whatsapp` | `type: message`, `adapter: whatsapp` |
 | (none) | `type: message`, `adapter: email` -- pass `--type message --adapter email` |
+| `slack` | `type: message`, `adapter: slack` |
+| `sms` | `type: message`, `adapter: sms` |
+| `teams` | `type: message`, `adapter: teams` |
+| `telegram` | `type: message`, `adapter: telegram` |
+| `whatsapp` | `type: message`, `adapter: whatsapp` |
+<!-- [[[end]]] -->
 
 Ticket aliases, not message aliases:
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "ticket-aliases"],
+    text=True))
+]]] -->
 | Alias | Canonical config |
 | --- | --- |
 | `email` | `type: ticket`, `adapter: email` (mounted at `/services/<id>/ticket/email`; see [tickets](user/tickets.md)) |
@@ -68,6 +81,7 @@ Ticket aliases, not message aliases:
 | `gitlab` | `type: ticket`, `adapter: gitlab` |
 | `jira` | `type: ticket`, `adapter: jira` |
 | `linear` | `type: ticket`, `adapter: linear` |
+<!-- [[[end]]] -->
 
 Check alias resolution without writing:
 
