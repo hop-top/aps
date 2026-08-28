@@ -45,6 +45,7 @@ const (
 const (
 	probeAdapterTelegram = "telegram"
 	probeAdapterSlack    = "slack"
+	probeAdapterTeams    = "teams"
 	probeAdapterDiscord  = "discord"
 	probeAdapterSMS      = "sms"
 	probeAdapterWhatsApp = "whatsapp"
@@ -74,6 +75,11 @@ func SyntheticMessageWebhookPayload(adapter string, options map[string]string) (
 		payload, identity, err = syntheticTelegramProbe(options)
 	case probeAdapterSlack:
 		payload, identity = syntheticSlackProbe(options)
+	case probeAdapterTeams:
+		// Teams requests are authenticated by a Microsoft-signed Bot
+		// Framework JWT; no operator-held secret can sign a synthetic
+		// inbound, so a probe would always be rejected with 401.
+		return nil, identity, fmt.Errorf("teams services do not support synthetic probes: inbound auth is a Microsoft-signed Bot Framework JWT; verify with a real Teams message instead")
 	case probeAdapterDiscord:
 		payload, identity = syntheticDiscordProbe(options)
 	case probeAdapterSMS:

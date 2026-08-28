@@ -5,14 +5,22 @@ profile actions.
 
 ## Supported Message Adapters
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "user-support"],
+    text=True))
+]]] -->
 | Adapter alias | Channel ID format | Typical token source | Current support |
 | --- | --- | --- | --- |
-| `telegram` | numeric chat ID, for example `-1001234567890` | BotFather | JSON webhook route through `aps serve` |
-| `slack` | channel ID, for example `C01ABC2DEF` | Slack API dashboard | JSON webhook route through `aps serve` |
-| `discord` | numeric channel ID | Discord Developer Portal | JSON webhook route through `aps serve` |
-| `sms` | receiving phone number, for example `+15551234567` | SMS provider such as Twilio | JSON relay route through `aps serve` |
-| `whatsapp` | phone number ID or receiving number | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
-| `--type message --adapter email` | receiving address, for example `inbox@example.com` | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
+| `discord` | Numeric channel ID (e.g., 1234567890123456789) | Discord Developer Portal | JSON webhook route through `aps serve` |
+| `--type message --adapter email` | Mailbox name or email address (e.g., inbox, work@co.com) | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
+| `slack` | Alphanumeric channel ID (e.g., C01ABC2DEF) | Slack API dashboard | JSON webhook route through `aps serve` |
+| `sms` | Phone number receiving SMS (e.g., +15551234567) | SMS provider such as Twilio | JSON relay route through `aps serve` |
+| `teams` | Bot Framework conversation ID (e.g., 19:abc123@thread.tacv2) | Azure Bot registration (App ID + client secret) | JSON webhook route through `aps serve` |
+| `telegram` | Numeric chat ID (e.g., -1001234567890) | BotFather | JSON webhook route through `aps serve` |
+| `whatsapp` | WhatsApp phone number ID or receiving number (e.g., 123456789012345) | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
+<!-- [[[end]]] -->
 
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
 not message aliases; they mount at `/services/<id>/ticket/<adapter>` — see
@@ -37,6 +45,12 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 
 ### Secret Store Backends
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/configmd", "secret-backends"],
+    text=True))
+]]] -->
 | `secrets.backend` | Where secrets live | Required config |
 | --- | --- | --- |
 | `file` (default) | the profile's `secrets.env`, mode 0600 | — |
@@ -46,6 +60,7 @@ A `secret:NAME` reference is resolved when the credential is used, in order:
 | `openbao` † | OpenBao / Vault KV v2 | `addr`, `token`; `mount` defaults to `secret` |
 | `infisical` | Infisical | `addr`, `project`, `env`, `token` |
 | `ghsecrets` | GitHub Actions secrets | `repo` (defaults to the current repo) |
+<!-- [[[end]]] -->
 
 † `openbao` is opt-in: it pulls the Vault API client and ~17 transitive
 modules, so the stock `aps` binary omits it entirely. Selecting it in a build
@@ -195,6 +210,26 @@ aps service add team-chat \
   --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
   --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
+
+### Teams
+
+```bash
+aps service add teams-chat \
+  --type teams \
+  --profile assistant \
+  --allowed-channel "19:abc123@thread.tacv2" \
+  --default-action triage \
+  --reply text \
+  --option tenant_id=f8cdef31-a31e-4b4a-93e4-5f571e91255a \
+  --env TEAMS_APP_ID=secret:TEAMS_APP_ID \
+  --env TEAMS_APP_PASSWORD=secret:TEAMS_APP_PASSWORD
+```
+
+Inbound requests are authenticated by the Microsoft-signed Bot Framework JWT
+in the `Authorization` header; there is no signing secret to configure.
+`tenant_id` selects the single-tenant token endpoint for outbound replies.
+`aps service test --probe` cannot mint that JWT, so verify Teams services
+with a real message from the installed app.
 
 ### Discord
 

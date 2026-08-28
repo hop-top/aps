@@ -174,6 +174,7 @@ var serviceTypeAliases = map[string]string{
 	"events":   "events bus",
 	"mobile":   "mobile aps",
 	"slack":    "message slack",
+	"teams":    "message teams", //nolint:goconst // adapter catalogue; literals are the data
 	"telegram": "message telegram",
 	"discord":  "message discord",
 	"sms":      "message sms",
@@ -633,6 +634,11 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 		if truthyServiceOption(options["require_bot_mention"]) && strings.TrimSpace(options["bot_user_id"]) == "" {
 			result.Warnings = append(result.Warnings, "Slack require_bot_mention without bot_user_id only accepts app_mention events")
 		}
+	case "teams":
+		requireEnv(env, result, "TEAMS_APP_ID", "TEAMS_APP_PASSWORD")
+		if strings.TrimSpace(options["tenant_id"]) == "" {
+			result.Warnings = append(result.Warnings, "teams tenant_id not set; outbound token requests use the legacy multi-tenant endpoint (new bot registrations are single-tenant)")
+		}
 	case "discord":
 		requireEnv(env, result, "DISCORD_BOT_TOKEN")
 		if strings.EqualFold(strings.TrimSpace(options["receive"]), "interaction") {
@@ -780,6 +786,7 @@ func validateTelegramWebhookSecret(options map[string]string, result *ServiceVal
 var knownMessageAdapters = map[string]bool{
 	"telegram": true,
 	"slack":    true,
+	"teams":    true,
 	"discord":  true,
 	"sms":      true,
 	"whatsapp": true,

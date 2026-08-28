@@ -34,3 +34,27 @@ jobs:
           version: v2.12.2
           args: --timeout=5m ./...
           only-new-issues: true
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Provides uvx, which `make docs-check` uses to run a pinned
+      # cog without a checked-in Python toolchain.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      # Installs the lychee version pinned in mise.toml — the single
+      # source of truth for the link-checker version. install_args
+      # limits the install to lychee (no Go/goreleaser toolchain).
+      - name: Set up lychee
+        uses: jdx/mise-action@v4.3.0
+        with:
+          install_args: lychee
+
+      - name: Check generated doc regions
+        run: make docs-check
+
+      - name: Check documentation links
+        run: make lint-docs

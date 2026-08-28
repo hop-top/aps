@@ -265,6 +265,7 @@ See `docs/dev/implementation/summaries/final-implementation-summary.md` for road
 For issues, questions, or contributions:
 - Documentation: https://github.com/hop-top/aps/tree/main/docs
 - Issues: https://github.com/hop-top/aps/issues
+- Repository: https://github.com/hop-top/aps
 
 ---
 

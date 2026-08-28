@@ -392,7 +392,7 @@ async function startAgent(profileId: string) {
 
 - **Official ACP**: https://agentclientprotocol.com
 - **GitHub**: https://github.com/agentclientprotocol/agent-client-protocol
-- **Specification**: https://agentclientprotocol.com/protocol/schema
+- **Specification**: https://agentclientprotocol.com/protocol/overview
 
 ## Implementation Notes
 

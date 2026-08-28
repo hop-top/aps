@@ -122,6 +122,7 @@ func NewServiceValidator() *ServiceValidator {
 		Hooks: ProviderAuthHooks{
 			string(PlatformTelegram): TelegramAuthHook{},
 			string(PlatformSlack):    SlackAuthHook{},
+			string(PlatformTeams):    TeamsAuthHook{},
 			string(PlatformDiscord):  DiscordAuthHook{},
 			string(PlatformWhatsApp): WhatsAppAuthHook{},
 			"whatsapp-cloud":         WhatsAppAuthHook{},

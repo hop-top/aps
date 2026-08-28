@@ -31,8 +31,8 @@ ingress, and A2A streams so my agent reacts to events without me polling.
 ## Tests
 
 ### E2E
-- `tests/e2e/listen/listen_subscribe_test.go` — `TestListen_SubscribesToConfiguredTopics`
-- `tests/e2e/listen/listen_dispatch_test.go` — `TestListen_DispatchesToAction`
-- `tests/e2e/listen/listen_reconnect_test.go` — `TestListen_ReconnectsWithBackoff`
-- `tests/e2e/listen/listen_failsoft_test.go` — `TestListen_FailSoftOnHandlerError`
-- `tests/e2e/listen/listen_shutdown_test.go` — `TestListen_GracefulShutdown`
+- `tests/e2e/listen/listen_test.go` — `TestListen_SubscribesAndPrints`,
+  `TestListen_GracefulShutdown`, `TestListen_ExitAfterEvents`,
+  `TestListen_MultipleTopics`, `TestListen_FailSoft`
+- Handler dispatch and reconnect-with-backoff coverage lands with
+  the routing work (story 052); no dedicated e2e yet.

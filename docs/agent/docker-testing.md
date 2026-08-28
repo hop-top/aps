@@ -466,9 +466,9 @@ echo $?  # Exit code 1
 ### Documentation
 
 - [APS Documentation](../user/README.md) - Main documentation
-- CLI Reference - Complete command reference
-- Isolation Guide - Isolation levels explained
-- Examples - Practical examples
+- [CLI Reference](../cli/reference.md) - Complete command reference
+- [Isolation Architecture](../specs/001-build-cli-core/isolation-architecture.md) - Isolation levels explained
+- [Examples](../../README.md#quick-start) - Practical examples
 
 ### Development
 

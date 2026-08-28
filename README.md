@@ -35,6 +35,10 @@
 
 APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.
 
+> **Where to next?**
+> - **Using aps** (human or agent) → [SKILL.md](SKILL.md) — an intent-based router into the docs
+> - **Modifying aps** → [DEVELOPING.md](DEVELOPING.md) — build, test, lint, generated docs, releases
+
 ## Quick Start
 
 ### Install
@@ -141,6 +145,27 @@ Documentation will be generated at `~/.agents/docs/`.
 - **Voice Sessions**: Speech-to-speech backend integration (PersonaPlex, Moshi) with web, terminal, messenger, and telephony channels
 - **Graceful Degradation**: Automatic fallback to available isolation levels when requested level is unavailable
 - **Cross-Platform Support**: macOS, Linux, and Windows (platform isolation varies by OS)
+
+## Adapters
+
+Profiles connect to external systems through adapters, grouped by kind:
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/adaptermd", "kinds-list"],
+    text=True))
+]]] -->
+- **Actuator**: Robotics, hardware
+- **Desktop**: Desktop applications
+- **Messenger**: Telegram, Slack, etc.
+- **Mobile**: Mobile devices (via QR linking)
+- **Protocol**: A2A, ACP, webhooks, WebSockets
+- **Scheduler**: Calendars, schedulers, reminders
+- **Sense**: Camera, microphone
+<!-- [[[end]]] -->
+
+See [docs/dev/adapters.md](docs/dev/adapters.md) for the technical and integration guide.
 
 ## Directory Structure
 
@@ -337,6 +362,8 @@ aps voice start [--profile <id>] [--channel web|tui|telegram|twilio]
 aps voice session list   # List active voice sessions
 aps docs               # Generate documentation
 ```
+
+Full command reference: [docs/cli/commands.md](docs/cli/commands.md)
 
 ## Examples
 

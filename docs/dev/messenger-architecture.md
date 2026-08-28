@@ -14,14 +14,22 @@ aps service add <service-id> --type <adapter-alias> --profile <profile-id> [opti
 Message adapter aliases are expanded through kit aliasing and persisted as
 canonical service config.
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "persisted-adapters"],
+    text=True))
+]]] -->
 | Input | Persisted type | Persisted adapter |
 | --- | --- | --- |
 | `--type message --adapter telegram` | `message` | `telegram` |
-| `--type telegram` | `message` | `telegram` |
-| `--type slack` | `message` | `slack` |
 | `--type discord` | `message` | `discord` |
+| `--type slack` | `message` | `slack` |
 | `--type sms` | `message` | `sms` |
+| `--type teams` | `message` | `teams` |
+| `--type telegram` | `message` | `telegram` |
 | `--type whatsapp` | `message` | `whatsapp` |
+<!-- [[[end]]] -->
 
 Ticket aliases share the same command grammar but resolve to `ticket`, not
 `message`: `email`, `github`, `gitlab`, `jira`, and `linear`. Ticket services
@@ -134,7 +142,7 @@ All message adapters normalize to:
 ```json
 {
   "id": "msg_unique_id",
-  "platform": "telegram|discord|slack|sms|whatsapp",
+  "platform": "telegram|discord|slack|teams|sms|whatsapp",
   "profile_id": "assistant",
   "timestamp": "2026-05-11T10:30:00Z",
   "sender": {
@@ -183,13 +191,44 @@ list|show` queries the store. See the Thread History section of the policy.
 
 ## Adapter Support
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "arch-support"],
+    text=True))
+]]] -->
 | Adapter | Normalize support | Denormalize support | Service maturity |
 | --- | --- | --- | --- |
-| Telegram | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Ready when mounted with `aps serve` |
-| Slack | Events API event envelope JSON | text response JSON | Ready when mounted with `aps serve`; app verification is external |
 | Discord | message-create style JSON | content response JSON | Ready when mounted with `aps serve`; Gateway client is external |
+| Slack | Events API event envelope JSON | text response JSON | Ready when mounted with `aps serve`; app verification is external |
 | SMS | Twilio-style or generic phone fields in JSON/form | text response metadata | Ready for Twilio or JSON relays |
+| Teams | Bot Framework `message` activity JSON | message activity JSON | Ready when mounted with `aps serve`; Azure Bot registration is external |
+| Telegram | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Ready when mounted with `aps serve` |
 | WhatsApp | Cloud API JSON or Twilio-style WhatsApp JSON/form | text/template response metadata | Ready for Cloud API and Twilio-compatible relays |
+<!-- [[[end]]] -->
+
+## Capability Matrix
+
+Ingress, delivery, and feature capabilities as reported by each first-class
+provider's live `Metadata()`; platforms without a first-class provider show
+only their documented support status.
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "capability-matrix"],
+    text=True))
+]]] -->
+| Platform | Ingress modes | Delivery modes | Threads | Attachments | Reactions |
+| --- | --- | --- | --- | --- | --- |
+| Discord | `webhook`, `stream` | `text`, `file` | Yes | Yes | No |
+| Email | JSON relay route through `aps serve` | — | — | — | — |
+| Slack | `webhook` | `text`, `file` | Yes | Yes | No |
+| SMS | `webhook` | `text` | No | No | No |
+| Teams | `webhook` | `text` | Yes | Yes | No |
+| Telegram | `webhook` | `text` | Yes | Yes | No |
+| WhatsApp | `webhook` | `text`, `file` | Yes | Yes | No |
+<!-- [[[end]]] -->
 
 ## Runtime And Testing
 

@@ -61,17 +61,20 @@ gates outbound sends pre-release.
 
 ## Tests
 
-### E2E (planned)
+### E2E
 
-- `tests/e2e/email/send_test.go`
-  - `TestEmail_SendSucceeds`
-  - `TestEmail_DraftOnly`
-  - `TestEmail_SendDraftReleases`
+- Existing baseline: `tests/e2e/adapter/himalaya_send_test.go`
+  covers email send plumbing through the himalaya backend
+  (account/CC handling, multiline bodies, missing required vars).
+- Planned (this story, not yet built): send-succeeds, draft-only
+  rejection, and send-draft release scenarios for the founder
+  approval workflow.
 
 ### Unit (planned)
 
-- `internal/adapter/email/send_test.go` — argument parsing, draft routing,
-  outbox path resolution.
+- Argument parsing, draft routing, and outbox path resolution for
+  the email adapter (no dedicated package exists yet; the story is
+  still paper).
 
 ## Dependencies
 

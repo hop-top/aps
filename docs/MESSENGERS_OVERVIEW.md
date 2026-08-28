@@ -3,21 +3,30 @@
 Last updated: 2026-05-11
 
 APS message services let profiles receive chat-like messages from Telegram,
-Slack, Discord, SMS, WhatsApp, and email through one service webhook shape.
+Slack, Microsoft Teams, Discord, SMS, WhatsApp, and email through one service
+webhook shape.
 
 Use exact commands below. Replace IDs, profiles, numbers, and secret names with
 operator-owned values.
 
 ## Quick Navigation
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "overview-nav"],
+    text=True))
+]]] -->
 | Platform | Alias | Channel control | Current ingress | Signature validation |
 | --- | --- | --- | --- | --- |
-| Telegram | `telegram` | `--allowed-chat` | Bot API update JSON | Telegram secret-token header |
-| Slack | `slack` | `--allowed-channel` | Events API JSON | Slack signing secret |
 | Discord | `discord` | `--allowed-channel`, `--allowed-guild` | Message JSON or relay | Interactions Ed25519 only |
-| SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
-| WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
 | Email | `--type message --adapter email` | `--allowed-sender` | Bridge-posted `{from,to,subject,body}` JSON | Generic webhook auth (`auth_scheme` bearer/token/hmac-sha256/ed25519) |
+| Slack | `slack` | `--allowed-channel` | Events API JSON | Slack signing secret |
+| SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
+| Teams | `teams` | `--allowed-channel` | Bot Framework Activity JSON | Microsoft-signed Bot Framework JWT (`Authorization` header) |
+| Telegram | `telegram` | `--allowed-chat` | Bot API update JSON | Telegram secret-token header |
+| WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
+<!-- [[[end]]] -->
 
 The `email` alias resolves to the ticket adapter; the email *message* adapter
 has no alias and is always addressed in canonical form (see
@@ -118,6 +127,7 @@ Production reverse proxy checklist:
 | --- | --- | --- |
 | Telegram | Register the HTTPS URL with `setWebhook`; Telegram sends updates with the optional secret-token header. | Configure `--webhook-secret-token-env` when using Telegram's secret token. |
 | Slack | Events API sends a URL verification payload to the request URL. | APS acknowledges the challenge and validates signed event callbacks with the raw body. |
+| Teams | No URL challenge. The Azure Bot registration's messaging endpoint points at the APS URL. | Every request carries a Microsoft-signed Bot Framework JWT; APS validates the signature against the published JWKS, the issuer, the audience (bot App ID), and the `serviceurl` claim. |
 | Discord | Gateway message relays have no provider HTTP challenge. Interactions use Ed25519 verification separately. | Protect relays with proxy or relay auth unless using signed Interactions. |
 | Twilio SMS/WhatsApp | Twilio signs each request against the exact configured URL and parameters. | Set `--webhook-url` to the same public URL registered in Twilio. |
 | WhatsApp Cloud | Meta sends `GET /services/<id>/webhook?hub.mode=subscribe&hub.verify_token=...&hub.challenge=...`. | Configure `--verify-token-env`; APS echoes `hub.challenge` only when the token matches. |
@@ -251,6 +261,63 @@ Controls and limits:
 - Slack bot messages are ignored and duplicate `event_id` deliveries are
   deduplicated.
 - Replies use `chat.postMessage`; file upload is not the primary delivery path.
+
+### Teams
+
+Provider app setup:
+
+1. Create an Azure Bot registration (single-tenant; new multi-tenant
+   registrations are blocked by Microsoft).
+2. Save the bot's Microsoft App ID as `TEAMS_APP_ID` and its client secret as
+   `TEAMS_APP_PASSWORD`.
+3. Note the Microsoft Entra tenant ID of the registration.
+4. Add the Teams channel to the bot and install the app in the target team or
+   chat.
+5. Register the APS service URL as the bot's messaging endpoint.
+
+APS setup:
+
+```bash
+aps service add teams-support \
+  --type teams \
+  --profile assistant \
+  --allowed-channel "19:abc123@thread.tacv2" \
+  --default-action handle-teams \
+  --reply text \
+  --option tenant_id=f8cdef31-a31e-4b4a-93e4-5f571e91255a \
+  --env TEAMS_APP_ID=secret:TEAMS_APP_ID \
+  --env TEAMS_APP_PASSWORD=secret:TEAMS_APP_PASSWORD
+```
+
+Webhook URL:
+
+```text
+https://hooks.example.com/services/teams-support/webhook
+```
+
+Request validation:
+
+- Header: `Authorization: Bearer <Bot Framework JWT>`.
+- APS validates the token signature against the Bot Framework OpenID JWKS,
+  the issuer, the audience (the bot App ID), token expiry, and the
+  `serviceurl` claim against the activity's `serviceUrl`. Unsigned or
+  mismatched requests get HTTP 401.
+- There is no operator-mintable signature, so `aps service test --probe`
+  cannot impersonate Microsoft; verify end-to-end with a real Teams message.
+
+Controls and limits:
+
+- `--allowed-channel` matches the conversation ID or the
+  `channelData.channel.id` of channel posts.
+- Non-message activities (`conversationUpdate`, `typing`, reactions) are
+  acknowledged with HTTP 200 and ignored so the connector stops retrying.
+- Replies go through the Bot Framework connector (`replyToActivity` when the
+  inbound activity ID is known, `sendToConversation` otherwise) using the
+  `serviceUrl` carried by the inbound activity.
+- `tenant_id` selects the single-tenant token endpoint for outbound replies.
+  Without it APS falls back to the legacy multi-tenant endpoint, which only
+  works for bot registrations created before Microsoft blocked multi-tenant
+  creation (July 2025).
 
 ### Discord
 

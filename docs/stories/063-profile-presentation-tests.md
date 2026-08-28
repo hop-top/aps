@@ -48,4 +48,4 @@ from any single provider.
 
 ### Related
 - `internal/core/profile_presentation_test.go` (unit, story 062)
-- `kit/go/core/avatar/avatar_test.go` (unit, kit-side)
+- avatar unit tests in kit's `go/core/avatar` package (kit-side)

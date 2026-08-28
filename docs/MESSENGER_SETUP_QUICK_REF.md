@@ -1,7 +1,7 @@
 # Message Service Quick Reference
 
-Use `aps service` for new Telegram, Slack, Discord, SMS, and WhatsApp message
-integrations.
+Use `aps service` for new Telegram, Slack, Teams, Discord, SMS, and WhatsApp
+message integrations.
 
 ## Fastest Path
 
@@ -52,17 +52,31 @@ headers, and raw body for provider signature verification.
 
 Message adapter aliases:
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "message-aliases"],
+    text=True))
+]]] -->
 | Alias | Canonical config |
 | --- | --- |
-| `telegram` | `type: message`, `adapter: telegram` |
-| `slack` | `type: message`, `adapter: slack` |
 | `discord` | `type: message`, `adapter: discord` |
-| `sms` | `type: message`, `adapter: sms` |
-| `whatsapp` | `type: message`, `adapter: whatsapp` |
 | (none) | `type: message`, `adapter: email` -- pass `--type message --adapter email` |
+| `slack` | `type: message`, `adapter: slack` |
+| `sms` | `type: message`, `adapter: sms` |
+| `teams` | `type: message`, `adapter: teams` |
+| `telegram` | `type: message`, `adapter: telegram` |
+| `whatsapp` | `type: message`, `adapter: whatsapp` |
+<!-- [[[end]]] -->
 
 Ticket aliases, not message aliases:
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/servicemd", "ticket-aliases"],
+    text=True))
+]]] -->
 | Alias | Canonical config |
 | --- | --- |
 | `email` | `type: ticket`, `adapter: email` (mounted at `/services/<id>/ticket/email`; see [tickets](user/tickets.md)) |
@@ -70,6 +84,7 @@ Ticket aliases, not message aliases:
 | `gitlab` | `type: ticket`, `adapter: gitlab` |
 | `jira` | `type: ticket`, `adapter: jira` |
 | `linear` | `type: ticket`, `adapter: linear` |
+<!-- [[[end]]] -->
 
 Check alias resolution without writing:
 
@@ -105,6 +120,25 @@ aps service add slack-support \
   --env SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN \
   --env SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET
 ```
+
+### Teams
+
+```bash
+aps service add teams-support \
+  --type teams \
+  --profile assistant \
+  --allowed-channel "19:abc123@thread.tacv2" \
+  --default-action handle-teams \
+  --reply text \
+  --option tenant_id=f8cdef31-a31e-4b4a-93e4-5f571e91255a \
+  --env TEAMS_APP_ID=secret:TEAMS_APP_ID \
+  --env TEAMS_APP_PASSWORD=secret:TEAMS_APP_PASSWORD
+```
+
+Register the APS webhook URL as the Azure Bot registration's messaging
+endpoint. Inbound auth is the Microsoft-signed Bot Framework JWT; there is no
+signing secret, and `aps service test --probe` cannot impersonate Microsoft —
+verify with a real Teams message.
 
 ### Discord
 

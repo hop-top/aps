@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X hop.top/aps/internal/version.Version=$(VERSION) -X hop.top/
 CGO_ENABLED=1
 export CGO_ENABLED
 
-.PHONY: all build build-vault test lint lint-docs run clean release release-snapshot ci help setup \
+.PHONY: all build build-vault test lint lint-docs docs-gen docs-check run clean release release-snapshot ci help setup \
 	test-stories \
 	12fcc-record 12fcc-grade 12fcc-badge 12fcc-scan \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
@@ -51,12 +51,32 @@ test-workflows: ## Run GitHub Actions locally with act
 	@echo "Running workflows locally with act..."
 	@act push --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
-lint: ## Run golangci-lint
+lint: docs-check ## Run golangci-lint and the generated-docs staleness check
 	@echo "Running linter..."
 	@golangci-lint run ./...
 
 lint-docs: ## Validate documentation links and referenced test files
 	@bash scripts/check-links.sh
+
+# Generated doc regions (cog markers). Marker files are discovered
+# dynamically, so both targets are a green no-op until the first
+# marked file lands. --untracked lets authors iterate before `git add`.
+COG := uvx --from cogapp==3.6.0 cog
+COG_FILES := $(shell git grep -lF --untracked '[[[cog' -- '*.md' 2>/dev/null)
+
+docs-gen: ## Regenerate generated doc regions (cog markers)
+	@if [ -n "$(strip $(COG_FILES))" ]; then \
+		$(COG) -r $(COG_FILES); \
+	else \
+		echo "No cog-marked markdown files; nothing to regenerate."; \
+	fi
+
+docs-check: ## Fail when generated doc regions are stale
+	@if [ -n "$(strip $(COG_FILES))" ]; then \
+		$(COG) --check $(COG_FILES); \
+	else \
+		echo "No cog-marked markdown files; nothing to check."; \
+	fi
 
 run: ## Run the CLI locally
 	@go run ./cmd/aps $(ARGS)

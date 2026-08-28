@@ -59,16 +59,15 @@ As a user, I want to access the same workspace from multiple devices (laptop, ph
 ## Tests
 
 ### Unit
-- `tests/unit/core/multidevice/linker_test.go` — Device linking, permission updates
-- `tests/unit/core/multidevice/presence_test.go` — Presence state machine, transitions
-- `tests/unit/core/multidevice/access_control_test.go` — Permission evaluation, policy models
-- `tests/unit/core/multidevice/conflict_test.go` — Conflict detection and resolution
-- `tests/unit/core/multidevice/offline_test.go` — Offline queue, sync recovery
+- `internal/core/multidevice/multidevice_test.go` — consolidated
+  package suite: device linking and role permissions (`Linker_*`,
+  `PermissionsForRole_*`), link persistence (`SaveAndLoadLink`,
+  `DeleteLink`, `ListLinks`), event store and categories, presence
+  state machine with offline timeout transitions
 
 ### E2E
-- `tests/e2e/multidevice/event_broadcasting_test.go` — Event publishing, subscription, ordering
-- `tests/e2e/multidevice/presence_tracking_test.go` — Heartbeat, timeout detection, state transitions
-- `tests/e2e/multidevice/access_control_test.go` — Permission enforcement, rate limiting
-- `tests/e2e/multidevice/conflict_resolution_test.go` — Automatic and manual conflict resolution
-- `tests/e2e/multidevice/sync_test.go` — Offline sync, event recovery
-- `tests/e2e/multidevice/integration_test.go` — Full multi-device workflow scenarios
+Not yet implemented (status: shipped-no-e2e). Planned coverage:
+event broadcasting and ordering, presence heartbeat/timeout
+tracking, permission enforcement with rate limiting, conflict
+resolution, offline sync recovery, and full multi-device workflow
+scenarios.

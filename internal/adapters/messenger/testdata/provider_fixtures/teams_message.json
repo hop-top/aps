@@ -1,0 +1,36 @@
+{
+  "type": "message",
+  "id": "msg-teams-1",
+  "timestamp": "2026-08-27T09:00:00Z",
+  "serviceUrl": "https://smba.teams.test/emea/",
+  "channelId": "msteams",
+  "from": {
+    "id": "29:2ghijkl",
+    "name": "Adele Vance",
+    "aadObjectId": "9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d"
+  },
+  "conversation": {
+    "conversationType": "channel",
+    "id": "19:channel@thread.tacv2;messageid=msg-teams-0"
+  },
+  "recipient": {
+    "id": "28:bot-app-id",
+    "name": "Support Bot"
+  },
+  "text": "<at>Support Bot</at> please summarize",
+  "entities": [
+    {
+      "type": "mention",
+      "text": "<at>Support Bot</at>",
+      "mentioned": {
+        "id": "28:bot-app-id",
+        "name": "Support Bot"
+      }
+    }
+  ],
+  "channelData": {
+    "tenant": {"id": "tenant-guid"},
+    "team": {"id": "19:team@thread.tacv2"},
+    "channel": {"id": "19:channel@thread.tacv2"}
+  }
+}

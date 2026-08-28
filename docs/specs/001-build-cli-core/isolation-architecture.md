@@ -1215,6 +1215,6 @@ aps run agent-a -- env | grep APS_
 - **Docker SDK**: https://pkg.go.dev/github.com/docker/docker/client
 - **Linux Namespaces**: https://man7.org/linux/man-pages/man7/namespaces.7.html
 - **Linux ACLs**: https://man7.org/linux/man-pages/man1/setfacl.1.html
-- **Windows Restricted Tokens**: https://learn.microsoft.com/en-us/windows/win32/secauthz/restricted-tokens
+- **Windows Restricted Tokens**: https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken
 - **Go os/exec Package**: https://pkg.go.dev/os/exec
 - **Charmbracelet Bubble Tea**: https://github.com/charmbracelet/bubbletea

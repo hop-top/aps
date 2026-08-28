@@ -20,6 +20,7 @@ func TestResolveServiceType_Alias(t *testing.T) {
 		wantAdapter string
 	}{
 		{input: "slack", wantTyp: "message", wantAdapter: "slack"},
+		{input: "teams", wantTyp: "message", wantAdapter: "teams"},
 		{input: "discord", wantTyp: "message", wantAdapter: "discord"},
 		{input: "sms", wantTyp: "message", wantAdapter: "sms"},
 		{input: "whatsapp", wantTyp: "message", wantAdapter: "whatsapp"},
@@ -224,6 +225,42 @@ func TestValidateServiceConfig_MessageProviderConfig(t *testing.T) {
 	assert.Contains(t, invalid.Issues, "message receive mode must be webhook or polling")
 	assert.Contains(t, invalid.Issues, "reply mode must be text, auto, or none")
 	assert.Contains(t, invalid.Issues, "missing env binding TELEGRAM_BOT_TOKEN")
+}
+
+func TestValidateServiceConfig_TeamsProviderConfig(t *testing.T) {
+	valid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "teams-support",
+		Type:    "message",
+		Adapter: "teams",
+		Profile: "assistant",
+		Env: map[string]string{
+			"TEAMS_APP_ID":       "secret:teams-app-id",
+			"TEAMS_APP_PASSWORD": "secret:teams-app-password",
+		},
+		Options: map[string]string{
+			"default_action": "reply",
+			"receive":        "webhook",
+			"reply":          "text",
+			"tenant_id":      "f8cdef31-a31e-4b4a-93e4-5f571e91255a",
+		},
+	})
+	assert.True(t, valid.Valid)
+	assert.Empty(t, valid.Issues)
+	assert.Empty(t, valid.Warnings)
+
+	invalid := ValidateServiceConfig(&ServiceConfig{
+		ID:      "teams-support",
+		Type:    "message",
+		Adapter: "teams",
+		Profile: "assistant",
+		Options: map[string]string{
+			"default_action": "reply",
+		},
+	})
+	assert.False(t, invalid.Valid)
+	assert.Contains(t, invalid.Issues, "missing env binding TEAMS_APP_ID")
+	assert.Contains(t, invalid.Issues, "missing env binding TEAMS_APP_PASSWORD")
+	assert.Contains(t, invalid.Warnings, "teams tenant_id not set; outbound token requests use the legacy multi-tenant endpoint (new bot registrations are single-tenant)")
 }
 
 func TestValidateServiceConfig_SMSProviderConfig(t *testing.T) {

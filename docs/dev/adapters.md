@@ -7,24 +7,38 @@ Adapters are the integration points that connect APS profiles to external system
 ### Adapter Types
 APS categorizes adapters into functional types. These types determine default behaviors and UI grouping (e.g., `aps messenger` alias).
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/adaptermd", "kinds-table"],
+    text=True))
+]]] -->
 | Type | Key | Description |
 | :--- | :--- | :--- |
-| **Messenger** | `messenger` | Messaging platforms (Telegram, Discord, Slack, etc.). |
-| **Scheduler** | `scheduler` | Calendar / time-block surfaces (Google Calendar, CalDAV). |
-| **Protocol** | `protocol` | Agent communication protocols (A2A, ACP, Webhooks). |
-| **Actuator** | `actuator` | Output/Action triggers (Hardware, Timers, local CLIs). |
-| **Sense** | `sense` | Input/Sensor data (Camera, Microphone, Web scrapers). |
-| **Mobile** | `mobile` | Mobile client pairing via QR and WebSockets. |
-| **Desktop** | `desktop` | Native desktop application integration. |
+| **Actuator** | `actuator` | Robotics, hardware |
+| **Desktop** | `desktop` | Desktop applications |
+| **Messenger** | `messenger` | Telegram, Slack, etc. |
+| **Mobile** | `mobile` | Mobile devices (via QR linking) |
+| **Protocol** | `protocol` | A2A, ACP, webhooks, WebSockets |
+| **Scheduler** | `scheduler` | Calendars, schedulers, reminders |
+| **Sense** | `sense` | Camera, microphone |
+<!-- [[[end]]] -->
 
 ### Loading Strategies
 Strategies define how APS executes or interacts with the adapter backend.
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/adaptermd", "strategies-table"],
+    text=True))
+]]] -->
 | Strategy | Description | Persistence |
 | :--- | :--- | :--- |
-| **Subprocess** | Runs a standalone binary as a managed child process. | Persistent |
-| **Script** | Executes a shell/python/node script on demand per action. | Ephemeral |
 | **Built-in** | Native Go implementation compiled into the APS binary. | Persistent |
+| **Script** | Executes a shell/python/node script on demand per action. | Ephemeral |
+| **Subprocess** | Runs a standalone binary as a managed child process. | Persistent |
+<!-- [[[end]]] -->
 
 ### Script Execution Environment
 When using the `script` strategy, APS injects the following environment variables. The input prefix comes from the manifest's `env_prefix` field (`EMAIL` for the email adapter, `CAL` for calendar, `CONTACT` for contacts); manifests that omit `env_prefix` fall back to the default.

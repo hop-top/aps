@@ -274,6 +274,7 @@ func TestChannelIDFormat_MessagePlatforms(t *testing.T) {
 	tests := []MessengerPlatform{
 		PlatformTelegram,
 		PlatformSlack,
+		PlatformTeams,
 		PlatformDiscord,
 		PlatformSMS,
 		PlatformWhatsApp,

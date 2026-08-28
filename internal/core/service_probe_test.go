@@ -99,3 +99,12 @@ func TestSyntheticMessageWebhookPayload_Errors(t *testing.T) {
 	_, _, err = SyntheticMessageWebhookPayload("pager", nil)
 	require.Error(t, err)
 }
+
+// Teams inbound auth is a Microsoft-signed JWT the operator cannot mint, so
+// the probe refuses with guidance instead of emitting a payload that would
+// always be rejected with 401.
+func TestSyntheticMessageWebhookPayload_TeamsUnsupported(t *testing.T) {
+	_, _, err := SyntheticMessageWebhookPayload("teams", nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "real Teams message")
+}

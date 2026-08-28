@@ -34,6 +34,8 @@ func (n *Normalizer) Normalize(platform string, raw map[string]any) (*msgtypes.N
 		msg, err = n.normalizeTelegram(raw)
 	case msgtypes.PlatformSlack:
 		msg, err = n.normalizeSlack(raw)
+	case msgtypes.PlatformTeams:
+		msg, err = n.normalizeTeams(raw)
 	case msgtypes.PlatformDiscord:
 		msg, err = n.normalizeDiscord(raw)
 	case msgtypes.PlatformGitHub:
@@ -248,6 +250,158 @@ func stripLeadingSlackMention(text string) string {
 func slackTextMentionsUser(text, userID string) bool {
 	userID = strings.TrimSpace(userID)
 	return userID != "" && strings.Contains(text, "<@"+userID+">")
+}
+
+// Bot Framework activity literals shared by the Teams normalizer and
+// denormalizer.
+const (
+	teamsActivityTypeField = "type"
+	teamsMessageType       = "message"
+	teamsConversationField = "conversation"
+)
+
+// attachmentTypeFile is the normalized attachment type for generic files.
+const attachmentTypeFile = "file"
+
+// normalizeTeams extracts fields from a Bot Framework Activity delivered by
+// Microsoft Teams. Only message activities normalize; installation and
+// membership traffic (conversationUpdate etc.) is acknowledged upstream.
+func (n *Normalizer) normalizeTeams(raw map[string]any) (*msgtypes.NormalizedMessage, error) {
+	activityType := getString(raw, teamsActivityTypeField)
+	if activityType != teamsMessageType {
+		return nil, fmt.Errorf("unsupported teams activity type %q", activityType)
+	}
+
+	from := getMap(raw, "from")
+	conversation := getMap(raw, teamsConversationField)
+	senderID := getString(from, "id")
+	conversationID := getString(conversation, "id")
+	if senderID == "" || conversationID == "" {
+		return nil, fmt.Errorf("missing from or conversation in teams activity")
+	}
+
+	channelType := msgtypes.ChannelTypeGroup
+	if getString(conversation, "conversationType") == "personal" {
+		channelType = msgtypes.ChannelTypeDirect
+	}
+
+	channelData := getMap(raw, "channelData")
+	tenantID := firstNonEmpty(
+		getString(getMap(channelData, "tenant"), "id"),
+		getString(conversation, "tenantId"),
+	)
+	channelPlatformID := firstNonEmpty(getString(getMap(channelData, "channel"), "id"), conversationID)
+
+	recipientID := getString(getMap(raw, "recipient"), "id")
+	text, mentionStripped := stripTeamsMentionTags(getString(raw, "text"))
+	activityID := getString(raw, "id")
+
+	msg := &msgtypes.NormalizedMessage{
+		ID:          firstNonEmpty(activityID, fmt.Sprintf("msg_%d", time.Now().UnixNano())),
+		Timestamp:   firstNonZeroTime(parseTeamsTimestamp(getString(raw, "timestamp")), time.Now().UTC()),
+		Platform:    string(msgtypes.PlatformTeams),
+		WorkspaceID: getString(getMap(channelData, "team"), "id"),
+		Sender: msgtypes.Sender{
+			ID:         senderID,
+			Name:       getString(from, "name"),
+			PlatformID: getString(from, "aadObjectId"),
+		},
+		Channel: msgtypes.Channel{
+			ID:         conversationID,
+			Name:       getString(conversation, "name"),
+			Type:       channelType,
+			PlatformID: channelPlatformID,
+		},
+		Text:             text,
+		PlatformMetadata: raw,
+	}
+	msg.PlatformMetadata["teams_activity_type"] = activityType
+	msg.PlatformMetadata["teams_activity_id"] = activityID
+	msg.PlatformMetadata["teams_conversation_id"] = conversationID
+	msg.PlatformMetadata["teams_service_url"] = getString(raw, "serviceUrl")
+	msg.PlatformMetadata["teams_recipient_id"] = recipientID
+	msg.PlatformMetadata["teams_tenant_id"] = tenantID
+	msg.PlatformMetadata["teams_bot_mentioned"] = mentionStripped || teamsEntitiesMention(raw, recipientID)
+
+	if replyToID := getString(raw, "replyToId"); replyToID != "" {
+		msg.Thread = &msgtypes.Thread{
+			ID:   replyToID,
+			Type: msgtypes.ThreadTypeReply,
+		}
+	}
+
+	if attachments, ok := raw["attachments"].([]any); ok {
+		for _, a := range attachments {
+			attMap, ok := a.(map[string]any)
+			if !ok {
+				continue
+			}
+			att := msgtypes.Attachment{
+				Type:     attachmentTypeFile,
+				URL:      getString(attMap, "contentUrl"),
+				MimeType: getString(attMap, "contentType"),
+			}
+			if att.URL != "" {
+				msg.Attachments = append(msg.Attachments, att)
+			}
+		}
+	}
+
+	return msg, nil
+}
+
+// parseTeamsTimestamp parses the ISO-8601 activity timestamp.
+func parseTeamsTimestamp(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	ts, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return time.Time{}
+	}
+	return ts.UTC()
+}
+
+// stripTeamsMentionTags removes every <at>…</at> mention span from the text
+// and reports whether any span was removed.
+func stripTeamsMentionTags(text string) (string, bool) {
+	const openTag, closeTag = "<at>", "</at>"
+	stripped := false
+	for {
+		start := strings.Index(text, openTag)
+		if start < 0 {
+			break
+		}
+		end := strings.Index(text[start:], closeTag)
+		if end < 0 {
+			break
+		}
+		text = text[:start] + text[start+end+len(closeTag):]
+		stripped = true
+	}
+	return strings.TrimSpace(strings.Join(strings.Fields(text), " ")), stripped
+}
+
+// teamsEntitiesMention reports whether the activity entities mention the
+// recipient bot.
+func teamsEntitiesMention(raw map[string]any, recipientID string) bool {
+	if recipientID == "" {
+		return false
+	}
+	entities, ok := raw["entities"].([]any)
+	if !ok {
+		return false
+	}
+	for _, e := range entities {
+		entity, ok := e.(map[string]any)
+		if !ok || getString(entity, teamsActivityTypeField) != "mention" {
+			continue
+		}
+		if getString(getMap(entity, "mentioned"), "id") == recipientID {
+			return true
+		}
+	}
+	return false
 }
 
 // normalizeDiscord extracts fields from a Discord message payload.
@@ -665,6 +819,8 @@ func (n *Normalizer) Denormalize(platform string, result *ActionResult) (map[str
 		return n.denormalizeTelegram(result), nil
 	case msgtypes.PlatformSlack:
 		return n.denormalizeSlack(result), nil
+	case msgtypes.PlatformTeams:
+		return n.denormalizeTeams(result), nil
 	case msgtypes.PlatformDiscord:
 		return n.denormalizeDiscord(result), nil
 	case msgtypes.PlatformGitHub:
@@ -702,6 +858,17 @@ func (n *Normalizer) denormalizeSlack(result *ActionResult) map[string]any {
 	}
 	if result.OutputData != nil {
 		resp["blocks"] = result.OutputData
+	}
+	return resp
+}
+
+func (n *Normalizer) denormalizeTeams(result *ActionResult) map[string]any {
+	resp := map[string]any{
+		teamsActivityTypeField: teamsMessageType,
+		"text":                 result.Output,
+	}
+	if result.OutputData != nil {
+		resp["attachments"] = result.OutputData
 	}
 	return resp
 }

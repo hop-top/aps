@@ -23,10 +23,10 @@ Aps maps `domain` errors to kit's standard exit codes via
 |------|--------|---------|
 | 0 | — | Success |
 | 1 | Generic error | Any unmapped error |
-| 2 | `domain.ErrInvalidArgument` | Bad flag, missing required arg, validation failed |
+| 2 | `kitcli.ExitUsage` | Bad flag, unknown command, missing required arg (cobra) |
 | 3 | `domain.ErrNotFound` | Profile / session / capability does not exist |
 | 4 | `domain.ErrConflict`, `policy.PolicyDeniedError` | Uniqueness violation OR policy veto |
-| 5 | `domain.ErrPermissionDenied` | ACL / scope check failed |
+| 5 | `exit.ErrUnauthorized` | Credential / auth check failed |
 | 64 | `output.CodeRateLimited` | Factor-10 max-ops budget exceeded |
 
 Policy denials wrap `ErrConflict`, so they share exit 4 with
@@ -163,8 +163,29 @@ APS_BIN=./aps_t1291 bash scripts/verify_note_flag.sh
 When introducing a new state-changing subcommand, add it to the
 `SUBCOMMANDS` array in the script AND to the table above.
 
+## `aps profile export` formats
+
+`aps profile export <id>` selects its rendering with the local
+`--manifest-format` flag; the table below is generated from the
+format registry in `internal/cli` (`make docs-gen`), so it always
+matches what the command accepts.
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/exportmd", "formats-table"],
+    text=True))
+]]] -->
+| Format | Rendering | Emits |
+|--------|-----------|-------|
+| *(flag omitted)* | Native profile record (default when the flag is omitted) | The full `profile.yaml` record as stored on disk; secret values live in `secrets.env` and are never part of the record. |
+| `--manifest-format agentco` | Agent role manifest (`AGENTS.md`: YAML frontmatter + markdown body) | Identity only — name, slug, description, reportsTo, skills, and the `notes.md` body; never secrets, isolation, gitconfig, knowledge references, or machine paths. |
+<!-- [[[end]]] -->
+
 ## See also
 
+- [commands.md](commands.md) — full generated command reference
+  (every command, flag, and subcommand)
 - [../policies.md](../policies.md) — policy engine, default rules,
   and how `context.note` plumbs from `--note` into CEL
 - [redaction.md](redaction.md) — kit/core/redact wiring at the

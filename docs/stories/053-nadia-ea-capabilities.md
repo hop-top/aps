@@ -48,10 +48,20 @@ Nadia's declared set:
 
 ### E2E
 
-`tests/e2e/capability/profile_capabilities_test.go`:
+- `tests/e2e/capability_test.go` — `TestCapabilityCommands` (CLI
+  surface: add/remove/list against a profile)
+- `tests/e2e/capability/list_test.go` — listing filters
+  (built-in/external, enabled state, JSON format)
 
-- `TestProfileCapabilities_DraftAllowed`
-- `TestProfileCapabilities_SendDirectRejected`
-- `TestProfileCapabilities_NotifyFounderWhitelist`
-- `TestProfileCapabilities_UnknownCapability`
-- `TestProfileCapabilities_PortableAcrossProfiles`
+### Unit
+
+- `tests/unit/core/profile_capability_test.go` — per-profile
+  capability bundles: add/remove, `ProfileHasCapability`,
+  `ProfilesUsingCapability`, env injection scoped to enabled caps
+- `tests/unit/core/capability/capability_test.go` — capability
+  lifecycle and smart linking
+
+The originally planned scenario suite (draft allowed, send-direct
+rejected, founder whitelist, unknown capability, portability across
+profiles) has no dedicated e2e file yet; enforcement is covered at
+the unit layer above.

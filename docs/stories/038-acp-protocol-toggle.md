@@ -23,4 +23,4 @@ As a user, I want to enable or disable the ACP (Agent Client Protocol) for my pr
 ## Tests
 
 ### E2E
-- `tests/e2e/protocol_test.go` — `TestACPToggle_Enable`, `TestACPToggle_Disable`, `TestACPToggle_CustomConfig`, `TestACPToggle_ServerIntegration`
+- `tests/e2e/protocol_toggle_test.go` — `TestACPToggle_Enable`, `TestACPToggle_Disable`, `TestACPToggle_RejectsUnwiredNetworkTransport`, `TestACPServer_AutoEnable`

@@ -62,7 +62,7 @@ type AdapterTypeMeta struct {
 
 var AdapterTypes = map[AdapterType]AdapterTypeMeta{
 	AdapterTypeMessenger: {Type: AdapterTypeMessenger, Description: "Telegram, Slack, etc.", Implemented: true},
-	AdapterTypeProtocol:  {Type: AdapterTypeProtocol, Description: "A2A, ACP, WebSocket", Implemented: true},
+	AdapterTypeProtocol:  {Type: AdapterTypeProtocol, Description: "A2A, ACP, webhooks, WebSockets", Implemented: true},
 	AdapterTypeDesktop:   {Type: AdapterTypeDesktop, Description: "Desktop applications", Implemented: true},
 	AdapterTypeMobile:    {Type: AdapterTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: true},
 	AdapterTypeSense:     {Type: AdapterTypeSense, Description: "Camera, microphone", Implemented: true},
@@ -97,6 +97,56 @@ func IsLoadingStrategyValid(s LoadingStrategy) bool {
 	default:
 		return false
 	}
+}
+
+// LoadingStrategyMeta carries the presentation strings for one loading
+// strategy as rendered in docs/dev/adapters.md.
+type LoadingStrategyMeta struct {
+	Display     string
+	Description string
+	Persistence string
+}
+
+// LoadingStrategies describes each loading strategy for docs rendering.
+// Strings match the hand-written table in docs/dev/adapters.md.
+var LoadingStrategies = map[LoadingStrategy]LoadingStrategyMeta{
+	StrategySubprocess: {
+		Display:     "Subprocess",
+		Description: "Runs a standalone binary as a managed child process.",
+		Persistence: "Persistent",
+	},
+	StrategyScript: {
+		Display:     "Script",
+		Description: "Executes a shell/python/node script on demand per action.",
+		Persistence: "Ephemeral",
+	},
+	StrategyBuiltin: {
+		Display:     "Built-in",
+		Description: "Native Go implementation compiled into the APS binary.",
+		Persistence: "Persistent",
+	},
+}
+
+// AdapterScopes describes each adapter scope for docs rendering.
+var AdapterScopes = map[AdapterScope]string{
+	ScopeGlobal:  "Available to every profile.",
+	ScopeProfile: "Owned by a single profile.",
+}
+
+// AdapterStates describes each runtime state for docs rendering.
+var AdapterStates = map[AdapterState]string{
+	StateStopped:  "Not running.",
+	StateStarting: "Startup in progress.",
+	StateRunning:  "Running under APS management.",
+	StateFailed:   "Exited or crashed with an error.",
+	StateUnknown:  "State could not be determined.",
+}
+
+// HealthStatuses describes each health status for docs rendering.
+var HealthStatuses = map[HealthStatus]string{
+	HealthHealthy:   "Last health check passed.",
+	HealthUnhealthy: "Last health check failed.",
+	HealthUnknown:   "No health check result yet.",
 }
 
 type Adapter struct {

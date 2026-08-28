@@ -556,7 +556,7 @@ func VerifyChecksum(data []byte, checksum string) error {
 
 - **Specification**: `spec.md` - Message Size and Compression section
 - **RFC 3986**: Uniform Resource Identifier (URI): Generic Syntax
-- **AWS S3**: https://docs.aws.amazon.com/AmazonS3/
+- **AWS S3**: https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
 - **Decisions Document**: `decisions.md` - Question #5
 
 ---

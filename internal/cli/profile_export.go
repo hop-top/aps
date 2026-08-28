@@ -61,45 +61,140 @@ func renderAgentcoManifest(p *core.Profile, body string) (string, error) {
 	return b.String(), nil
 }
 
-// runProfileExport writes a profile export to out. format "" (default)
-// dumps the native profile.yaml record; "agentco" renders an agent
-// role manifest. Unknown formats error.
+// exportFormat declares one profile export format: the
+// --manifest-format value (empty for the flag-omitted default), the
+// doc-facing description of the rendering and of what it emits, and
+// the renderer itself. runProfileExport dispatches through this table
+// and derives the unknown-format error's supported list from it, so a
+// format cannot be declared without a renderer nor rendered without a
+// declaration.
+type exportFormat struct {
+	// Name is the --manifest-format value; "" means the flag was
+	// omitted (native yaml default).
+	Name string
+	// Summary is the one-line rendering description shown in the
+	// generated docs enumeration.
+	Summary string
+	// Emits describes the export's data scope — what the output
+	// contains and, where it matters, what it never contains.
+	Emits string
+	// render writes the export for an already-loaded profile.
+	render func(profile *core.Profile, id string, out io.Writer) error
+}
+
+// profileExportFormats is the single source of truth for `aps profile
+// export` formats, in docs order: the flag-omitted default first, then
+// named formats sorted by name. The enumeration in
+// docs/cli/reference.md is generated from this table via
+// internal/tools/exportmd (`make docs-gen`).
+var profileExportFormats = []exportFormat{
+	{
+		Name:    "",
+		Summary: "Native profile record (default when the flag is omitted)",
+		Emits:   "The full `profile.yaml` record as stored on disk; secret values live in `secrets.env` and are never part of the record.",
+		render:  renderNativeExport,
+	},
+	{
+		Name:    "agentco",
+		Summary: "Agent role manifest (`AGENTS.md`: YAML frontmatter + markdown body)",
+		Emits:   "Identity only — name, slug, description, reportsTo, skills, and the `notes.md` body; never secrets, isolation, gitconfig, knowledge references, or machine paths.",
+		render:  renderAgentcoExport,
+	},
+}
+
+// ExportFormatDoc is the doc-facing projection of one export format
+// registry row, consumed by internal/tools/exportmd when regenerating
+// the enumeration in docs/cli/reference.md.
+type ExportFormatDoc struct {
+	// Flag is the --manifest-format value; empty means the flag is
+	// omitted (default format).
+	Flag    string
+	Summary string
+	Emits   string
+}
+
+// ExportFormatDocs returns the declared profile export formats in
+// registry (docs) order.
+func ExportFormatDocs() []ExportFormatDoc {
+	docs := make([]ExportFormatDoc, 0, len(profileExportFormats))
+	for _, f := range profileExportFormats {
+		docs = append(docs, ExportFormatDoc{Flag: f.Name, Summary: f.Summary, Emits: f.Emits})
+	}
+	return docs
+}
+
+// lookupExportFormat resolves a --manifest-format value against the
+// registry; ok is false for undeclared formats.
+func lookupExportFormat(name string) (exportFormat, bool) {
+	for _, f := range profileExportFormats {
+		if f.Name == name {
+			return f, true
+		}
+	}
+	return exportFormat{}, false
+}
+
+// supportedExportFormats joins the named (non-default) registry
+// formats for the unknown-format error, in registry order.
+func supportedExportFormats() string {
+	names := make([]string, 0, len(profileExportFormats))
+	for _, f := range profileExportFormats {
+		if f.Name != "" {
+			names = append(names, f.Name)
+		}
+	}
+	return strings.Join(names, ", ")
+}
+
+// renderNativeExport dumps the native profile.yaml record.
+func renderNativeExport(profile *core.Profile, _ string, out io.Writer) error {
+	data, err := yaml.Marshal(profile)
+	if err != nil {
+		return fmt.Errorf("marshaling profile: %w", err)
+	}
+	if _, err := out.Write(data); err != nil {
+		return fmt.Errorf("writing profile: %w", err)
+	}
+	return nil
+}
+
+// renderAgentcoExport renders an agent role manifest, pulling the body
+// from the profile's notes.md when present.
+func renderAgentcoExport(profile *core.Profile, id string, out io.Writer) error {
+	body := ""
+	if dir, err := core.GetProfileDir(id); err == nil {
+		// #nosec G304 -- notes.md is resolved under the profile's own
+		// directory, not from caller-supplied input.
+		if notes, err := os.ReadFile(filepath.Join(dir, "notes.md")); err == nil {
+			body = string(notes)
+		}
+	}
+	doc, err := renderAgentcoManifest(profile, body)
+	if err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, doc); err != nil {
+		return fmt.Errorf("writing manifest: %w", err)
+	}
+	return nil
+}
+
+// runProfileExport writes a profile export to out. The format is
+// resolved against profileExportFormats: "" (default) dumps the native
+// profile.yaml record; named formats render their registry row.
+// Undeclared formats error with the registry-derived supported list.
 func runProfileExport(id, format string, out io.Writer) error {
 	profile, err := core.LoadProfile(id)
 	if err != nil {
 		return fmt.Errorf("loading profile: %w", err)
 	}
 
-	switch format {
-	case "":
-		data, err := yaml.Marshal(profile)
-		if err != nil {
-			return fmt.Errorf("marshaling profile: %w", err)
-		}
-		if _, err := out.Write(data); err != nil {
-			return fmt.Errorf("writing profile: %w", err)
-		}
-		return nil
-	case "agentco":
-		body := ""
-		if dir, err := core.GetProfileDir(id); err == nil {
-			// #nosec G304 -- notes.md is resolved under the profile's own
-			// directory, not from caller-supplied input.
-			if notes, err := os.ReadFile(filepath.Join(dir, "notes.md")); err == nil {
-				body = string(notes)
-			}
-		}
-		doc, err := renderAgentcoManifest(profile, body)
-		if err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, doc); err != nil {
-			return fmt.Errorf("writing manifest: %w", err)
-		}
-		return nil
-	default:
-		return fmt.Errorf("unknown export format %q (supported: agentco, or omit for native yaml)", format)
+	f, ok := lookupExportFormat(format)
+	if !ok {
+		return fmt.Errorf("unknown export format %q (supported: %s, or omit for native yaml)",
+			format, supportedExportFormats())
 	}
+	return f.render(profile, id, out)
 }
 
 // profileExportCmd implements `aps profile export <id>`.

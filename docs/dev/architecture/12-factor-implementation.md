@@ -83,7 +83,7 @@ actions:
 - `internal/profile/action.go` - Action execution logic
 
 **Docs:**
-- Profile Configuration
+- [Profile Configuration](../../../README.md#configuration)
 
 ---
 
@@ -124,7 +124,7 @@ isolation:
 - `internal/profile/env.go` - Environment variable injection
 
 **Docs:**
-- Isolation Levels
+- [Isolation Levels](../../specs/001-build-cli-core/isolation-architecture.md)
 
 ---
 
@@ -219,7 +219,7 @@ aps session logs sess_abc123
 - `~/.aps/sessions/registry.json` - Single source of truth
 
 **Docs:**
-- Session Management
+- [Session Management](../../cli/reference.md#sessions)
 
 ---
 
@@ -268,8 +268,8 @@ aps session terminate sess_abc123
 - `internal/isolation/*/session.go` - Isolation-specific session handling
 
 **Docs:**
-- Session Management
-- [Platform Isolation Sessions](../platforms/macos/overview.md#sessions)
+- [Session Management](../../cli/reference.md#sessions)
+- [Platform Isolation Sessions](../platforms/macos/overview.md#session-management)
 
 ---
 
@@ -313,7 +313,7 @@ aps webhook register myagent request-approval \
 - `cmd/webhook.go` - Webhook CLI commands
 
 **Docs:**
-- Webhooks Guide
+- [Webhooks Guide](../../user/remote-access.md)
 
 ---
 
@@ -435,7 +435,7 @@ actions:
 - `internal/profile/action.go` - Retry logic support
 
 **Docs:**
-- Session Logs
+- [Session Logs](../../cli/reference.md#sessions)
 - [A2A Protocol](../../specs/005-a2a-protocol/spec.md)
 
 ---
@@ -487,7 +487,7 @@ profiles:
 - `<data>/profiles/*/profile.yaml` - One profile = one agent
 
 **Docs:**
-- Profile Management
+- [Profile Management](../../../README.md#configuration)
 
 ---
 
@@ -535,8 +535,8 @@ aps myagent
 - `internal/a2a/server.go` - A2A entry point
 
 **Docs:**
-- CLI Reference
-- Webhooks
+- [CLI Reference](../../cli/reference.md)
+- [Webhooks](../../user/remote-access.md)
 - [A2A Protocol](../../specs/005-a2a-protocol/spec.md)
 
 ---
@@ -589,31 +589,31 @@ actions:
 | Factor | APS Implementation | Files | Docs |
 |--------|-------------------|-------|------|
 | 1. NL → Tool Calls | A2A Protocol | `internal/a2a/` | [A2A Spec](../../specs/005-a2a-protocol/spec.md) |
-| 2. Own Prompts | Profile YAML | `profile.yaml` | Profiles |
-| 3. Own Context | Env vars, volumes | `internal/profile/env.go` | Isolation |
-| 4. Structured Outputs | Action results, A2A | `internal/a2a/task.go` | CLI |
-| 5. Unified State | Session registry | `internal/session/registry.go` | Sessions |
-| 6. Launch/Pause/Resume | Session lifecycle | `internal/session/lifecycle.go` | Sessions |
-| 7. Contact Humans | Webhooks, actions | `internal/webhook/` | Webhooks |
-| 8. Own Control Flow | Profile actions | `internal/profile/action.go` | Profiles |
-| 9. Compact Errors → Context | Error recovery, retry | `internal/session/logger.go`, `internal/a2a/conversation.go` | Sessions |
-| 10. Small Agents | One profile = one agent | `<data>/profiles/` | Profiles |
-| 11. Trigger Anywhere | CLI/webhooks/A2A | `cmd/`, `internal/webhook/`, `internal/a2a/` | CLI |
-| 12. Stateless | Profile config | `profile.yaml` | Profiles |
+| 2. Own Prompts | Profile YAML | `profile.yaml` | [Profiles](../../../README.md#configuration) |
+| 3. Own Context | Env vars, volumes | `internal/profile/env.go` | [Isolation](../../specs/001-build-cli-core/isolation-architecture.md) |
+| 4. Structured Outputs | Action results, A2A | `internal/a2a/task.go` | [CLI](../../cli/reference.md) |
+| 5. Unified State | Session registry | `internal/session/registry.go` | [Sessions](../../cli/reference.md#sessions) |
+| 6. Launch/Pause/Resume | Session lifecycle | `internal/session/lifecycle.go` | [Sessions](../../cli/reference.md#sessions) |
+| 7. Contact Humans | Webhooks, actions | `internal/webhook/` | [Webhooks](../../user/remote-access.md) |
+| 8. Own Control Flow | Profile actions | `internal/profile/action.go` | [Profiles](../../../README.md#configuration) |
+| 9. Compact Errors → Context | Error recovery, retry | `internal/session/logger.go`, `internal/a2a/conversation.go` | [Sessions](../../cli/reference.md#sessions) |
+| 10. Small Agents | One profile = one agent | `<data>/profiles/` | [Profiles](../../../README.md#configuration) |
+| 11. Trigger Anywhere | CLI/webhooks/A2A | `cmd/`, `internal/webhook/`, `internal/a2a/` | [CLI](../../cli/reference.md) |
+| 12. Stateless | Profile config | `profile.yaml` | [Profiles](../../../README.md#configuration) |
 
 ---
 
 ## Next Steps
 
 1. **Read the full 12-factor methodology:** [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)
-2. **Try the examples:** EXAMPLES.md
+2. **Try the examples:** [README Quick Start](../../../README.md#quick-start)
 3. **Design your agent profiles** following these principles
-4. **Ask a question or report a problem:** https://github.com/hop-top/aps/issues
+4. **Join the discussion:** https://github.com/hop-top/aps/issues
 
 ---
 
 ## Related
 
-- **12-Factor Agents (Full Methodology):** https://github.com/humanlayer/12-factor-agents
-- **APS Architecture:** AGENTS.md
+- **12-Factor Agents (Full Methodology):** [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)
+- **APS Architecture:** [architecture.md](../../architecture.md)
 - **A2A Protocol:** [specs/005-a2a-protocol/](../../specs/005-a2a-protocol/)

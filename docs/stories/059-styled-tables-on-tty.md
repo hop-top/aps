@@ -68,16 +68,19 @@ adopter once those primitives landed.
   `~/.ops/reviews/aps-kit-integration-audit-2026-05-04.md` §3) were
   migrated to typed rows + `listing.RenderList`; the shared
   `workspace/helpers.go:newTabWriter` factory and the `tableHeader`
-  lipgloss vars in `policy/cmd.go`, `session/list.go`,
-  `migrate/cmd.go`, and `workspace/helpers.go` were removed.
+  lipgloss vars in `internal/cli/policy/cmd.go`,
+  `internal/cli/session/list.go`, `internal/cli/migrate/cmd.go`, and
+  `internal/cli/workspace/helpers.go` were removed.
 - Styled path is gated on `writerIsTTY` in kit/output (an
   `*os.File` + `isatty.IsTerminal` check) — non-TTY callers never
   see ANSI or box-drawing runes.
 - Out of scope: migrating other tabwriter callsites in
-  `internal/cli/{adapter,squad,workspace/activity}.go`. Tracked
-  separately to keep this rollout scoped to the audit's 5 sites.
-- Out of scope: removing `tlc/internal/cli/ttytable.go` in favor
-  of the kit primitive. Filed as a follow-up tlc track via T-0455.
+  `internal/cli/adapter.go`, `internal/cli/squad.go`, and
+  `internal/cli/workspace/activity.go`. Tracked separately to keep
+  this rollout scoped to the audit's 5 sites.
+- Out of scope: removing the `ttytable` helper in tlc's
+  `internal/cli` in favor of the kit primitive. Filed as a
+  follow-up tlc track.
 
 ## Tests
 

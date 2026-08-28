@@ -83,18 +83,20 @@ TTY writers.
   `table:"COLNAME,priority=N"` + `json:"…"` + `yaml:"…"` tags,
   replace tabwriter block with
   `listing.RenderList(os.Stdout, output.Table, rows)`.
-- `presence_cmd.go` introduces TWO row types — `presenceRow` for
-  json/yaml (ints preserved) and `presenceTableRow` for the table
-  (ints projected to suffixed strings). Same split for `pending.go`
-  with `pendingTableRow` + `pendingJSONRow` so the existing JSON
-  field set stays exactly stable.
-- `squad/check.go` drops a hand-rolled `─── ─── ───` separator row
+- `internal/cli/adapter/presence_cmd.go` introduces TWO row types —
+  `presenceRow` for json/yaml (ints preserved) and
+  `presenceTableRow` for the table (ints projected to suffixed
+  strings). Same split for `internal/cli/adapter/pending.go` with
+  `pendingTableRow` + `pendingJSONRow` so the existing JSON field
+  set stays exactly stable.
+- `internal/cli/squad/check.go` drops a hand-rolled `─── ─── ───` separator row
   — kit/output draws its own border on TTY, and the plain
   tabwriter renderer aligns columns without a manual divider.
 - `internal/cli/adapter/styles.go` drops `tableHeader =
   lipgloss.NewStyle()…` (last consumer migrated) and the
   `charm.land/lipgloss/v2` import. Mirrors the Wave 2 cleanup in
-  `policy/cmd.go`, `migrate/cmd.go`, and `workspace/helpers.go`.
+  `internal/cli/policy/cmd.go`, `internal/cli/migrate/cmd.go`, and
+  `internal/cli/workspace/helpers.go`.
 
 ## Tests
 
