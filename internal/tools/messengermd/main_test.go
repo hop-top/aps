@@ -11,7 +11,6 @@ import (
 
 var fragmentNames = []string{
 	fragmentOverviewNav,
-	fragmentQuickrefAliases,
 	fragmentUserSupport,
 	fragmentArchSupport,
 	fragmentPatternsTable,
@@ -62,7 +61,6 @@ func TestFragmentRowCountsPinnedToMeta(t *testing.T) {
 
 	wantRows := map[string]int{
 		fragmentOverviewNav:      metaRowCount(isMessage),
-		fragmentQuickrefAliases:  metaRowCount(isMessage),
 		fragmentUserSupport:      metaRowCount(isMessage),
 		fragmentCapabilityMatrix: metaRowCount(isMessage),
 		fragmentArchSupport:      metaRowCount(isAliased),
@@ -78,7 +76,6 @@ func TestFragmentRowCountsPinnedToMeta(t *testing.T) {
 func TestFragmentHeaders(t *testing.T) {
 	wantHeaders := map[string]string{
 		fragmentOverviewNav:      "| Platform | Alias | Channel control | Current ingress | Signature validation |",
-		fragmentQuickrefAliases:  "| Alias | Canonical config |",
 		fragmentUserSupport:      "| Adapter alias | Channel ID format | Typical token source | Current support |",
 		fragmentArchSupport:      "| Adapter | Normalize support | Denormalize support | Service maturity |",
 		fragmentPatternsTable:    "| Adapter alias | Canonical config | Incoming payload support | Reply shape | Notes |",

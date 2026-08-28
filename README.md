@@ -35,6 +35,10 @@
 
 APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.
 
+> **Where to next?**
+> - **Using aps** (human or agent) → [SKILL.md](SKILL.md) — an intent-based router into the docs
+> - **Modifying aps** → [DEVELOPING.md](DEVELOPING.md) — build, test, lint, generated docs, releases
+
 ## Quick Start
 
 ### Install
@@ -358,6 +362,8 @@ aps voice start [--profile <id>] [--channel web|tui|telegram|twilio]
 aps voice session list   # List active voice sessions
 aps docs               # Generate documentation
 ```
+
+Full command reference: [docs/cli/commands.md](docs/cli/commands.md)
 
 ## Examples
 
