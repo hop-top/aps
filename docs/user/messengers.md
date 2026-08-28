@@ -5,15 +5,22 @@ profile actions.
 
 ## Supported Message Adapters
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "user-support"],
+    text=True))
+]]] -->
 | Adapter alias | Channel ID format | Typical token source | Current support |
 | --- | --- | --- | --- |
-| `telegram` | numeric chat ID, for example `-1001234567890` | BotFather | JSON webhook route through `aps serve` |
-| `slack` | channel ID, for example `C01ABC2DEF` | Slack API dashboard | JSON webhook route through `aps serve` |
-| `teams` | Bot Framework conversation ID, for example `19:abc123@thread.tacv2` | Azure Bot registration (App ID + client secret) | JSON webhook route through `aps serve` |
-| `discord` | numeric channel ID | Discord Developer Portal | JSON webhook route through `aps serve` |
-| `sms` | receiving phone number, for example `+15551234567` | SMS provider such as Twilio | JSON relay route through `aps serve` |
-| `whatsapp` | phone number ID or receiving number | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
-| `--type message --adapter email` | receiving address, for example `inbox@example.com` | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
+| `discord` | Numeric channel ID (e.g., 1234567890123456789) | Discord Developer Portal | JSON webhook route through `aps serve` |
+| `--type message --adapter email` | Mailbox name or email address (e.g., inbox, work@co.com) | your email bridge (IMAP poller, MTA hook) | JSON relay route through `aps serve` |
+| `slack` | Alphanumeric channel ID (e.g., C01ABC2DEF) | Slack API dashboard | JSON webhook route through `aps serve` |
+| `sms` | Phone number receiving SMS (e.g., +15551234567) | SMS provider such as Twilio | JSON relay route through `aps serve` |
+| `teams` | Bot Framework conversation ID (e.g., 19:abc123@thread.tacv2) | Azure Bot registration (App ID + client secret) | JSON webhook route through `aps serve` |
+| `telegram` | Numeric chat ID (e.g., -1001234567890) | BotFather | JSON webhook route through `aps serve` |
+| `whatsapp` | WhatsApp phone number ID or receiving number (e.g., 123456789012345) | WhatsApp Cloud API or Twilio | JSON webhook/relay route through `aps serve` |
+<!-- [[[end]]] -->
 
 `github`, `gitlab`, `jira`, `linear`, and `email` are ticket service aliases,
 not message aliases; they mount at `/services/<id>/ticket/<adapter>` — see
