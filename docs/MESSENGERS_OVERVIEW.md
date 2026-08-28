@@ -11,15 +11,22 @@ operator-owned values.
 
 ## Quick Navigation
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "overview-nav"],
+    text=True))
+]]] -->
 | Platform | Alias | Channel control | Current ingress | Signature validation |
 | --- | --- | --- | --- | --- |
-| Telegram | `telegram` | `--allowed-chat` | Bot API update JSON | Telegram secret-token header |
-| Slack | `slack` | `--allowed-channel` | Events API JSON | Slack signing secret |
-| Teams | `teams` | `--allowed-channel` | Bot Framework Activity JSON | Microsoft-signed Bot Framework JWT (`Authorization` header) |
 | Discord | `discord` | `--allowed-channel`, `--allowed-guild` | Message JSON or relay | Interactions Ed25519 only |
-| SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
-| WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
 | Email | `--type message --adapter email` | `--allowed-sender` | Bridge-posted `{from,to,subject,body}` JSON | Generic webhook auth (`auth_scheme` bearer/token/hmac-sha256/ed25519) |
+| Slack | `slack` | `--allowed-channel` | Events API JSON | Slack signing secret |
+| SMS | `sms` | `--allowed-number` | Twilio/generic phone JSON or form | Twilio signature when provider is `twilio` |
+| Teams | `teams` | `--allowed-channel` | Bot Framework Activity JSON | Microsoft-signed Bot Framework JWT (`Authorization` header) |
+| Telegram | `telegram` | `--allowed-chat` | Bot API update JSON | Telegram secret-token header |
+| WhatsApp | `whatsapp` | `--allowed-number`, `--phone-number-id` | Cloud API JSON or Twilio-style form/JSON | Cloud `X-Hub-Signature-256`; Twilio signature when provider is `twilio` |
+<!-- [[[end]]] -->
 
 The `email` alias resolves to the ticket adapter; the email *message* adapter
 has no alias and is always addressed in canonical form (see

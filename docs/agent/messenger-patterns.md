@@ -78,13 +78,21 @@ client is delivering messages to `aps serve`.
 
 ## Supported Message Adapters
 
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/messengermd", "patterns-table"],
+    text=True))
+]]] -->
 | Adapter alias | Canonical config | Incoming payload support | Reply shape | Notes |
 | --- | --- | --- | --- | --- |
-| `telegram` | `type: message`, `adapter: telegram` | Telegram Bot API `message` and `edited_message` JSON | Telegram `sendMessage` JSON | Chat IDs are numeric; groups usually start with `-100`. |
-| `slack` | `type: message`, `adapter: slack` | Slack Events API event envelope JSON | Slack text response JSON | Slack URL verification and app provisioning are outside `aps service add`. |
-| `discord` | `type: message`, `adapter: discord` | Discord message-create style JSON | Discord content response JSON | Discord Gateway/bot runtime is not created by `aps service add`. |
-| `sms` | `type: message`, `adapter: sms` | Twilio-style form or JSON phone fields | Text response metadata | Twilio signatures require exact public `--webhook-url`. |
-| `whatsapp` | `type: message`, `adapter: whatsapp` | WhatsApp Cloud API JSON or Twilio-style WhatsApp JSON | Text response metadata | Use `--phone-number-id` for Cloud API channel IDs. |
+| `discord` | `type: message`, `adapter: discord` | message-create style JSON | content response JSON | Discord Gateway/bot runtime is not created by `aps service add`. |
+| `slack` | `type: message`, `adapter: slack` | Events API event envelope JSON | text response JSON | Slack URL verification and app provisioning are outside `aps service add`. |
+| `sms` | `type: message`, `adapter: sms` | Twilio-style or generic phone fields in JSON/form | text response metadata | Twilio signatures require exact public `--webhook-url`. |
+| `teams` | `type: message`, `adapter: teams` | Bot Framework `message` activity JSON | message activity JSON | — |
+| `telegram` | `type: message`, `adapter: telegram` | Bot API `message` and `edited_message` JSON | `sendMessage` JSON | Chat IDs are numeric; groups usually start with `-100`. |
+| `whatsapp` | `type: message`, `adapter: whatsapp` | Cloud API JSON or Twilio-style WhatsApp JSON/form | text/template response metadata | Use `--phone-number-id` for Cloud API channel IDs. |
+<!-- [[[end]]] -->
 
 ## Message Vs Ticket Aliases
 
