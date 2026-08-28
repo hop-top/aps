@@ -62,7 +62,7 @@ type AdapterTypeMeta struct {
 
 var AdapterTypes = map[AdapterType]AdapterTypeMeta{
 	AdapterTypeMessenger: {Type: AdapterTypeMessenger, Description: "Telegram, Slack, etc.", Implemented: true},
-	AdapterTypeProtocol:  {Type: AdapterTypeProtocol, Description: "A2A, ACP, WebSocket", Implemented: true},
+	AdapterTypeProtocol:  {Type: AdapterTypeProtocol, Description: "A2A, ACP, webhooks, WebSockets", Implemented: true},
 	AdapterTypeDesktop:   {Type: AdapterTypeDesktop, Description: "Desktop applications", Implemented: true},
 	AdapterTypeMobile:    {Type: AdapterTypeMobile, Description: "Mobile devices (via QR linking)", Implemented: true},
 	AdapterTypeSense:     {Type: AdapterTypeSense, Description: "Camera, microphone", Implemented: true},

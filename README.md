@@ -156,7 +156,7 @@ cog.out(subprocess.check_output(
 - **Desktop**: Desktop applications
 - **Messenger**: Telegram, Slack, etc.
 - **Mobile**: Mobile devices (via QR linking)
-- **Protocol**: A2A, ACP, WebSocket
+- **Protocol**: A2A, ACP, webhooks, WebSockets
 - **Scheduler**: Calendars, schedulers, reminders
 - **Sense**: Camera, microphone
 <!-- [[[end]]] -->

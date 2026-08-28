@@ -19,7 +19,7 @@ cog.out(subprocess.check_output(
 | **Desktop** | `desktop` | Desktop applications |
 | **Messenger** | `messenger` | Telegram, Slack, etc. |
 | **Mobile** | `mobile` | Mobile devices (via QR linking) |
-| **Protocol** | `protocol` | A2A, ACP, WebSocket |
+| **Protocol** | `protocol` | A2A, ACP, webhooks, WebSockets |
 | **Scheduler** | `scheduler` | Calendars, schedulers, reminders |
 | **Sense** | `sense` | Camera, microphone |
 <!-- [[[end]]] -->
