@@ -4,9 +4,9 @@ This documentation is intended for AI Agents (and their human collaborators) wor
 
 ## 🧠 Core Context
 
-*   **[Codebase Structure](structure.md)**: Overview of the standard package layout (`internal/core`, `internal/cli`, etc.).
-*   **[Design Patterns](patterns.md)**: Standard patterns used (e.g., Capability Manager, Registry, Adapter Pattern for Isolation).
-*   **[Testing Strategy](testing.md)**: How to write and run Unit vs E2E tests.
+*   **[Codebase Structure](../../README.md#directory-structure)**: Overview of the standard package layout (`internal/core`, `internal/cli`, etc.).
+*   **[Architecture](../architecture.md)**: Component layout, event bus, and the patterns used (Capability Manager, Registry, Adapter Pattern for Isolation).
+*   **[Testing](../../README.md#test)**: How to run Unit vs E2E tests.
 *   **[A2A Protocol Integration](a2a-integration.md)**: Agent-to-Agent communication for inter-profile messaging.
 *   **[Docker Testing](docker-testing.md)**: Using Docker for isolated Linux testing and user journey validation.
 

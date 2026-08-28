@@ -551,4 +551,4 @@ isolation:
 
 - [Apple Sandbox Guide](https://developer.apple.com/library/archive/documentation/Security/Conceptual/AppSandboxDesignGuide/)
 - [macOS Sandbox Profile Syntax](https://developer.apple.com/library/archive/documentation/Security/Conceptual/AppSandboxDesignGuide/AboutAppSandbox/AboutAppSandbox.html)
-- [Task Policy API](https://developer.apple.com/documentation/kernel/task_policy)
+- [Kernel Framework (task policy APIs)](https://developer.apple.com/documentation/kernel)

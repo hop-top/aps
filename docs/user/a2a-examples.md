@@ -335,6 +335,6 @@ You can inspect task state by reading the JSON files directly.
 
 ## Further Reading
 
-- [A2A Protocol Specification](../../specs/005-a2a-protocol/spec.md)
+- [A2A Protocol Specification](../specs/005-a2a-protocol/spec.md)
 - [Official A2A Documentation](https://a2a-protocol.org/latest/)
 - [A2A Go SDK](https://github.com/a2aproject/a2a-go)

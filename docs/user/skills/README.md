@@ -555,7 +555,7 @@ More examples:
 
 1. **Quick Start:** Follow the [Quickstart Guide](QUICKSTART.md)
 2. **Create Skills:** Read [Creating Skills](CREATING_SKILLS.md)
-3. **See Examples:** Check [Examples](EXAMPLES.md)
+3. **See Examples:** Check [the hello-world skill](../../../examples/skills/hello-world/SKILL.md)
 
 ---
 

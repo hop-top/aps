@@ -1,7 +1,7 @@
 # Tasks: CLI and Core Engine Implementation
 
 **Feature Branch**: `001-build-cli-core`
-**Spec**: [specs/001-build-cli-core/spec.md](../spec.md)
+**Spec**: [specs/001-build-cli-core/spec.md](spec.md)
 
 ## Phase 1: Setup & Infrastructure
 

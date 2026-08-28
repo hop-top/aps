@@ -86,22 +86,23 @@ This story replaces the run-foo dance with a first-class `aps chat`.
 
 ### E2E
 
-- `tests/e2e/chat/chat_repl_test.go` — `TestChat_OpensRepl_PersonaApplied`
-- `tests/e2e/chat/chat_session_persist_test.go` — `TestChat_SessionAppearsInRegistry`
-- `tests/e2e/chat/chat_routellm_test.go` — `TestChat_RouteLLM_PicksConfiguredTier`
-- `tests/e2e/chat/chat_attach_test.go` — `TestChat_AttachReplaysPriorTurns`
-- `tests/e2e/chat/chat_unauth_test.go` — `TestChat_ExitsCode5OnMissingKeys`
-- `tests/e2e/chat/chat_once_test.go` — `TestChat_OnceFlagOneShotPersistsSession`
-- `tests/e2e/chat/chat_multi_invite_test.go` — `TestChat_MultiProfile_InvitedRepliesInPersona`
-- `tests/e2e/chat/chat_multi_auto_test.go` — `TestChat_MultiProfile_AutoMode_RespectsTurnPolicy`
+- `tests/e2e/chat/main_test.go` — `TestChatRepl_Opens`,
+  `TestChatOnce_PersistsSession`, `TestChatSessionList_ShowsChatSession`,
+  `TestChatAttach_ReplaysPriorTurns`
+- Planned (not yet built): RouteLLM tier selection, missing-keys
+  exit-code, and multi-profile invite/auto-mode e2e scenarios.
 
 ### Unit
 
-- `internal/cli/chat/chat_test.go` — REPL loop, key-binding, history nav
-- `internal/cli/chat/persona_test.go` — Profile.Persona → system prompt
+- `internal/cli/chat/multi_test.go` — participant parsing
+  (primary/shorthand/invites), meta-command parsing
+- `internal/core/chat/persona_test.go` — Profile.Persona → system prompt
   renderer (tone/style/risk → directive lines)
-- `internal/cli/chat/routellm_test.go` — config resolution
+- `internal/core/chat/routellm_test.go` — config resolution
   (profile.yaml > workspace.yaml > config.yaml > kit defaults)
+- `internal/core/chat/service_test.go` — chat session + turn persistence
+- `internal/core/chat/participants_test.go` — multi-profile system
+  prompt composition, active-speaker validation
 
 ## Implementation Notes
 
@@ -135,7 +136,7 @@ Belongs to the `interact` group (matches `run`, `serve`, `voice`,
 | Routing / model selection | `kit/go/ai/llm/routellm` configured per-profile |
 | REPL TUI | `kit/go/console/tui` (input, scrollback, status line) |
 | Markdown rendering of replies | `kit/go/console/markdown` (T-0377 deferred no-op for aps; this story re-opens it) |
-| Persona → system prompt | aps-domain — small renderer in `internal/cli/chat/persona.go` |
+| Persona → system prompt | aps-domain — small renderer in `internal/core/chat/persona.go` |
 | Session persistence | `internal/core/session.Registry` extended with `SessionTypeChat` |
 | Secrets | `kit/go/storage/secret` (already wired via T-0378) |
 

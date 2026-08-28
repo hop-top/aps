@@ -76,8 +76,8 @@ miss against a hard requirement (audit `~/.ops/reviews/aps-kit-integration-audit
 
 ### Unit
 - Existing `tests/unit/core/config_test.go` covers `LoadConfig` /
-  `GetConfigDir`. Resolver behaviour piggybacks on kit's
-  `kit/go/console/cli/config/paths_cmd_test.go`.
+  `GetConfigDir`. Resolver behaviour piggybacks on the `paths`
+  subcommand tests in kit's `go/console/cli/config` package.
 
 ## Dependencies
 

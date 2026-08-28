@@ -52,10 +52,9 @@ listen:
 ## Tests
 
 ### E2E
-- `tests/e2e/listen/route_pattern_match_test.go` — `TestRoute_PatternMatch`
-- `tests/e2e/listen/route_where_filter_test.go` — `TestRoute_WhereExpression`
-- `tests/e2e/listen/route_first_match_test.go` — `TestRoute_FirstMatchWins`
-- `tests/e2e/listen/route_action_dispatch_test.go` — `TestRoute_ActionDispatch`
-- `tests/e2e/listen/route_adapter_dispatch_test.go` — `TestRoute_AdapterDispatch`
-- `tests/e2e/listen/route_webhook_dispatch_test.go` — `TestRoute_WebhookDispatch`
-- `tests/e2e/listen/route_invalid_where_test.go` — `TestRoute_InvalidWhereSkipsRule`
+Not yet implemented — `aps listen` currently ships the
+subscribe-and-print form only (see the package comment in
+`internal/cli/listen.go`); routing dispatch is a follow-up. Planned
+coverage, to live under `tests/e2e/listen/`: pattern match, `where`
+expression filters, first-match-wins ordering, action/adapter/webhook
+dispatch, and invalid-`where` rule skipping.

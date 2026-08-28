@@ -10,7 +10,7 @@ Use this template when creating new Architecture Decision Records (ADRs).
 
 **Status**: [Draft | Proposed | Accepted | Deprecated | Superseded]
 **Date**: YYYY-MM-DD
-**Related**: [ADR-XXX](other-adr.md) (if any)
+**Related**: `[ADR-XXX](NNN-slug.md)` (if any)
 
 ---
 

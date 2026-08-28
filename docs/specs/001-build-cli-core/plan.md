@@ -1,6 +1,6 @@
 # Implementation Plan: CLI and Core Engine Implementation
 
-**Branch**: `001-build-cli-core` | **Date**: 2026-01-15 | **Spec**: [specs/001-build-cli-core/spec.md](../spec.md)
+**Branch**: `001-build-cli-core` | **Date**: 2026-01-15 | **Spec**: [specs/001-build-cli-core/spec.md](spec.md)
 **Input**: Feature specification from `specs/001-build-cli-core/spec.md`
 
 ## Summary

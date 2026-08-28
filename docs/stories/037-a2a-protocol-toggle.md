@@ -23,4 +23,4 @@ As a user, I want to enable or disable the A2A (Agent-to-Agent) protocol for my 
 ## Tests
 
 ### E2E
-- `tests/e2e/protocol_test.go` — `TestA2AToggle_Enable`, `TestA2AToggle_Disable`, `TestA2AToggle_CustomConfig`, `TestA2AToggle_ServerIntegration`
+- `tests/e2e/protocol_toggle_test.go` — `TestA2AToggle_Enable`, `TestA2AToggle_Disable`, `TestA2AToggle_CustomConfig`, `TestA2AToggle_ForceEnable`, `TestA2AServer_AutoEnable`

@@ -263,9 +263,9 @@ See `docs/dev/implementation/summaries/final-implementation-summary.md` for road
 ## Support
 
 For issues, questions, or contributions:
-- Documentation: https://github.com/oss-aps/cli-integration/docs
-- Issues: https://github.com/oss-aps/cli-integration/issues
-- Discussions: https://github.com/oss-aps/cli-integration/discussions
+- Documentation: https://github.com/hop-top/aps/tree/main/docs
+- Issues: https://github.com/hop-top/aps/issues
+- Repository: https://github.com/hop-top/aps
 
 ---
 
