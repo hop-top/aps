@@ -56,9 +56,18 @@ Profile data is per-machine (`<data-dir>/profiles/<id>/`).
 
 ### Adapter system (`internal/core/adapter/`)
 
-Multi-strategy dispatch. An adapter has a `type`
-(messenger / protocol / mobile / desktop / sense / actuator)
-and a `strategy` (`subprocess` / `script` / `builtin`).
+Multi-strategy dispatch. An adapter has a `strategy`
+(`subprocess` / `script` / `builtin`) and a `type`:
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/adaptermd", "kinds-inline"],
+    text=True))
+]]] -->
+(actuator / desktop / messenger / mobile / protocol / scheduler / sense)
+<!-- [[[end]]] -->
+
 Adapters are auto-discovered from `<data-dir>/adapters/` and
 per-profile dirs. Each declares itself via `manifest.yaml`.
 
