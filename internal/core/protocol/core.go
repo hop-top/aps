@@ -500,13 +500,46 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 }
 
 func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
-	filePath := filepath.Join(a.storeDir, namespace, storeFileName(key)+".json")
+	profileDir := filepath.Join(a.storeDir, namespace)
+	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
+	// #nosec G304 -- filePath is built from storeFileName(key), a
+	// percent-encoding of the caller-supplied key under a\.storeDir; there
+	// is no way to escape a\.storeDir via key content (no raw path
+	// separators survive the escape), and StorePut/StoreDelete already
+	// read/write this same derived path with no additional check.
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to read store item: %w", err)
+		}
+		// Escaped file missing: fall back to the legacy unescaped name for
+		// keys written by a pre-escaping build (only reachable for keys
+		// containing a reserved character; storeFileName is a no-op
+		// otherwise, so the two paths already coincide). On a hit, migrate
+		// by writing the escaped copy (via StorePut, so both write paths
+		// agree on file mode/marshaling) and removing the legacy file, so
+		// the key converges to the new layout after first read.
+		legacyPath := filepath.Join(profileDir, key+".json")
+		if legacyPath == filePath {
 			return nil, fmt.Errorf("key not found: %s/%s", namespace, key)
 		}
-		return nil, err
+		// #nosec G304 -- legacyPath is filePath's own pre-escaping form of
+		// the same caller-supplied key; same trust boundary as filePath.
+		legacyData, readErr := os.ReadFile(legacyPath)
+		if readErr != nil {
+			if os.IsNotExist(readErr) {
+				return nil, fmt.Errorf("key not found: %s/%s", namespace, key)
+			}
+			return nil, fmt.Errorf("failed to read legacy store item: %w", readErr)
+		}
+		var legacyItem StoreItem
+		if err := json.Unmarshal(legacyData, &legacyItem); err != nil {
+			return nil, fmt.Errorf("failed to parse legacy store item: %w", err)
+		}
+		if putErr := a.StorePut(namespace, key, legacyItem.Value); putErr == nil {
+			_ = os.Remove(legacyPath)
+		}
+		return legacyItem.Value, nil
 	}
 
 	var item StoreItem
@@ -518,8 +551,25 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 }
 
 func (a *APSAdapter) StoreDelete(namespace string, key string) error {
-	filePath := filepath.Join(a.storeDir, namespace, storeFileName(key)+".json")
-	return os.Remove(filePath)
+	profileDir := filepath.Join(a.storeDir, namespace)
+	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
+	err := os.Remove(filePath)
+	if err == nil {
+		return nil
+	}
+	if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to delete store item: %w", err)
+	}
+	// Escaped file missing: the key may still exist under its pre-escaping
+	// legacy name (see StoreGet). Only worth trying when the names differ.
+	legacyPath := filepath.Join(profileDir, key+".json")
+	if legacyPath == filePath {
+		return fmt.Errorf("failed to delete store item: %w", err)
+	}
+	if legacyErr := os.Remove(legacyPath); legacyErr == nil {
+		return nil
+	}
+	return fmt.Errorf("failed to delete store item: %w", err)
 }
 
 func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]byte, error) {
@@ -532,6 +582,15 @@ func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]
 		return nil, err
 	}
 
+	// storeFileName is a deterministic escape of the logical key, so an
+	// escaped-prefix match on the filename alone cheaply rules out most
+	// non-matches without reading/unmarshaling every file. It can't be the
+	// only filter: a legacy (pre-escaping) file's name isn't run through
+	// storeFileName, so it wouldn't share the escaped prefix even when its
+	// payload key does. The payload-based check below stays as the
+	// authoritative filter; this is a prefilter, not a replacement.
+	escapedPrefix := storeFileName(prefix)
+
 	result := make(map[string][]byte)
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -539,6 +598,9 @@ func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]
 		}
 		name := entry.Name()
 		if !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		if prefix != "" && !strings.HasPrefix(name, escapedPrefix) && !strings.HasPrefix(name, prefix) {
 			continue
 		}
 

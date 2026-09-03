@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"hop.top/aps/internal/core/session"
 )
 
@@ -827,6 +828,81 @@ func TestStoreGet_MalformedJSON(t *testing.T) {
 
 	_, err = adapter.StoreGet("ns", "bad-key")
 	assert.Error(t, err)
+}
+
+// TestStoreGet_LegacyUnescapedFile verifies a key written before escaping
+// was introduced (raw reserved character in the filename, e.g. "user:1"
+// stored as "user:1.json" on POSIX) is still readable, and is migrated to
+// the escaped filename on first read.
+func TestStoreGet_LegacyUnescapedFile(t *testing.T) {
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	value, err := adapter.StoreGet("ns", "user:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), value)
+
+	// Migrated: escaped file now exists, legacy file is gone.
+	escapedPath := filepath.Join(nsDir, "user%3A1.json")
+	assert.FileExists(t, escapedPath)
+	assert.NoFileExists(t, legacyPath)
+
+	// Second read still works, now via the escaped file.
+	value, err = adapter.StoreGet("ns", "user:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), value)
+}
+
+// TestStoreDelete_LegacyUnescapedFile verifies StoreDelete removes a key
+// that only exists under its pre-escaping legacy filename.
+func TestStoreDelete_LegacyUnescapedFile(t *testing.T) {
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	require.NoError(t, adapter.StoreDelete("ns", "user:1"))
+	assert.NoFileExists(t, legacyPath)
+
+	_, err = adapter.StoreGet("ns", "user:1")
+	assert.Error(t, err)
+}
+
+// TestStoreSearch_MatchesLegacyUnescapedFile verifies StoreSearch's
+// filename prefilter doesn't hide a legacy file whose escaped and
+// unescaped names differ.
+func TestStoreSearch_MatchesLegacyUnescapedFile(t *testing.T) {
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	require.NoError(t, adapter.StorePut("ns", "user:2", []byte("new-value")))
+
+	results, err := adapter.StoreSearch("ns", "user:")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), results["user:1"])
+	assert.Equal(t, []byte("new-value"), results["user:2"])
 }
 
 // TestStoreDelete_ExistingKey tests StoreDelete removes key
