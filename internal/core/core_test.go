@@ -805,10 +805,9 @@ func TestGetShellName(t *testing.T) {
 
 // TestGetConfigDir tests config directory resolution
 func TestGetConfigDir(t *testing.T) {
-	t.Parallel()
-
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
+	// Not t.Parallel(): mutates the process-wide XDG_CONFIG_HOME env var
+	// via os.Setenv/Unsetenv, which would race with any parallel test that
+	// reads or writes the same var.
 
 	// Use a real, platform-native absolute path (t.TempDir()) rather than a
 	// hardcoded "/tmp/xdg" literal. On Windows, filepath.IsAbs("/tmp/xdg")
@@ -816,12 +815,12 @@ func TestGetConfigDir(t *testing.T) {
 	// %LOCALAPPDATA% and ignores XDG_CONFIG_HOME entirely — asserting the
 	// Unix-joined path against that fallback fails there.
 	xdgHome := t.TempDir()
-	require.NoError(t, os.Setenv("XDG_CONFIG_HOME", xdgHome))
+	t.Setenv("XDG_CONFIG_HOME", xdgHome)
 	dir, err := GetConfigDir()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(xdgHome, "aps"), dir)
 
-	os.Unsetenv("XDG_CONFIG_HOME")
+	t.Setenv("XDG_CONFIG_HOME", "")
 	dir, err = GetConfigDir()
 	require.NoError(t, err)
 	assert.NotEmpty(t, dir)
