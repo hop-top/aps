@@ -40,6 +40,22 @@ cog.out(subprocess.check_output(
 | **Subprocess** | Runs a standalone binary as a managed child process. | Persistent |
 <!-- [[[end]]] -->
 
+### Which path remembers
+The Persistence column above describes process lifetime (long-lived child vs. spawned per
+action), not message memory. No strategy records what it handled. Whether a turn is kept
+depends on the path the message takes:
+
+| Path | Command shape | Records turns? | Where |
+| :--- | :--- | :--- | :--- |
+| Adapter device | `aps adapter exec <adapter> <action>` (email, contacts, timer, phone, ...) | No. Output is the backend's (himalaya, cardamum, comodoro); nothing stored, no inbox. | — |
+| Message service | `aps service add --type <platform>` + `POST /services/<id>/webhook` via `aps serve` | Yes. Inbound turn on route, outbound turn after a delivered reply. | `<data-dir>/messages/conversations.db`; `aps service conversation list\|show` |
+
+Email sits on both: `aps adapter exec email send` keeps nothing, while
+`aps service add --type message --adapter email` records every routed turn. Identity keys,
+store schema, retention, and the `prior_turns` stdin contract:
+[message-conversation-policy.md](message-conversation-policy.md). User view:
+[messengers.md#conversation-history](../user/messengers.md#conversation-history).
+
 ### Script Execution Environment
 When using the `script` strategy, APS injects the following environment variables. The input prefix comes from the manifest's `env_prefix` field (`EMAIL` for the email adapter, `CAL` for calendar, `CONTACT` for contacts); manifests that omit `env_prefix` fall back to the default.
 
