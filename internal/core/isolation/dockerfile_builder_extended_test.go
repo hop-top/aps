@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -838,6 +839,16 @@ func TestConcurrentBuilderOperations(t *testing.T) {
 
 // TestDockerfileWritePermissionError verifies permission error handling
 func TestDockerfileWritePermissionError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows directories don't enforce a Unix-style "read-only"
+		// permission that blocks creating files inside them — the
+		// read-only attribute on a directory is largely vestigial there
+		// (only affects Explorer's folder customization, not file
+		// creation), so os.Mkdir(dir, 0444) does not make WriteDockerfile
+		// fail the way it does on POSIX. Untestable without real Windows
+		// ACLs, which os.Chmod cannot set.
+		t.Skip("Windows directory permissions do not block file creation the way Unix mode bits do")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("Test cannot run as root")
 	}
