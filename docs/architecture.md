@@ -1,6 +1,6 @@
 # Architecture — aps
 
-Last updated: 2026-08-05
+Last updated: 2026-09-03
 Author: $USER
 
 ## Purpose
@@ -39,6 +39,7 @@ Cross-references:
 | Adapters | `<data-dir>/adapters/` + `<data-dir>/profiles/<id>/adapters/` | Per-profile or global adapter binaries |
 | Profile registry | `<data-dir>/profiles/<id>/profile.yaml` | YAML files; one per profile |
 | Session registry | `<data-dir>/sessions/registry.json` | Active session tracking |
+| Conversation store | `<data-dir>/messages/conversations.db` | SQLite; message-service turns (created lazily) |
 
 `<data-dir>` resolves via `internal/core/paths.go`
 (`core.GetDataDir()`): `$APS_DATA_PATH` > `$XDG_DATA_HOME/aps` >
@@ -101,6 +102,41 @@ point. Scripts receive a curated environment:
 - `EMAIL_<INPUT>*` for each `--input k=v`
 
 Default email backend is `himalaya`; scripts handle IMAP / SMTP details.
+
+Stateless: each call runs the backend and returns its output — no
+inbox, no turn store, nothing to query afterwards. Tracked
+conversations go through message services (next section).
+
+### Message services + conversation store (`internal/adapters/messenger/`)
+
+The stateful pipeline. `aps service add --type
+telegram|slack|discord|sms|whatsapp|teams` (email: `--type message
+--adapter email`) persists a service route; `aps serve` mounts it via
+`adapter.go`. Per inbound event:
+
+- `POST /services/{service}/webhook` → `handler.go` loads the service
+  and picks the provider normalizer (`normalizer.go`)
+- `NormalizedMessage.ConversationState()` (`internal/core/messenger/types.go`)
+  derives `ConversationID` (service + platform [+ workspace] + channel
+  [+ sender for DM / phone]) and `SessionID` (conversation [+ platform
+  thread])
+- `router.go` resolves `default_action` or the sender route table
+  (`internal/core/msgroute/`), then runs the profile action through
+  `ExecuteRun` (`internal/core/protocol/core.go`)
+- action stdin carries `conversation` + `prior_turns` of the same
+  session (default 20; `--history-turns N`)
+- inbound turn recorded when routed; outbound turn only after a
+  delivered reply
+
+Store (`internal/core/messenger/history.go` + `history_sqlite.go`): SQLite at
+`<data-dir>/messages/conversations.db`, table `message_turns`, opened
+lazily on the first recorded turn — never by route registration or
+read-only commands. Newest 500 turns per conversation; older pruned on
+append. Store errors are logged and never block routing, execution, or
+delivery. Query: `aps service conversation list|show`
+(`internal/cli/service/conversation.go`). Full spec:
+[message-conversation-policy.md](dev/message-conversation-policy.md);
+flow diagrams: [messenger-architecture.md](dev/messenger-architecture.md).
 
 ### Event bus (`internal/events/events.go` + `internal/cli/bus.go`)
 
@@ -175,6 +211,7 @@ aps run <profile> -- <cmd>
 aps env <profile>
 aps adapter exec <name> <action> [--profile <id>] [--input k=v] [--from email]
 aps adapter [create\|start\|stop\|link\|unlink\|list\|status\|logs]
+aps service [add\|list\|show\|status\|start\|stop\|test\|routes\|conversation]
 aps session [list\|inspect\|logs\|terminate\|delete]
 aps action [list\|show\|run]
 aps workspace [use\|list\|show\|join\|members\|agents\|send\|tasks\|task\|ctx\|conflicts\|resolve\|policy]
@@ -251,6 +288,7 @@ Env passed to script: `APS_EMAIL_FROM`, `EMAIL_TO`,
 | `/sessions` | GET | List active sessions |
 | `/sessions/{id}` | GET | Session detail |
 | `/profiles/{p}/actions/{a}` | POST | Run action |
+| `/services/{service}/webhook` | POST | Message-service ingress; provider webhook → normalize → route → record |
 | `/workspaces` | GET | Workspace list |
 | `/workspaces/{ws}/ctx/{key}` | PUT | Context update |
 | `/a2a/tasks` | POST | Submit A2A task |

@@ -28,12 +28,18 @@ git tag v1.0.0  →  push  →  GitHub Actions:
 git checkout main
 git pull
 
-# 2. Create and push tag
+# 2. Convert or remove availability callouts
+git grep -n '^> Availability: unreleased' -- docs
+
+# 3. Create and push tag
 git tag v1.0.0-alpha.1
 git push origin v1.0.0-alpha.1
 
-# 3. Monitor release at GitHub Actions
+# 4. Monitor release at GitHub Actions
 ```
+
+Step 2 follows [Version markers](../../conventions/version-markers.md): rewrite each
+callout to `since aps/v<version>`, or drop it.
 
 ## Versioning
 

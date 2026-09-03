@@ -97,6 +97,27 @@ Env vars passed to scripts: `APS_EMAIL_FROM`,
 
 ---
 
+## Message Services
+
+Inbound chat (Telegram, Slack, Teams, Discord, SMS, WhatsApp, email) routed
+to a profile action via `aps serve`. Turns recorded per conversation.
+
+```bash
+aps service add <id> --type telegram \
+  --profile <profile> --default-action <act> \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN  # bind platform → action
+aps service routes <id>                      # webhook path mounted by aps serve
+aps service status <id> --base-url <origin>  # profile, lifecycle, public webhook_url
+aps service conversation list --service <id> # conversations recorded for service
+aps service conversation show <conversation-id> \
+  --limit 20 --format json                   # newest turns; --session <key> narrows
+```
+
+Webhook: `POST /services/<id>/webhook`. Routed action reads `conversation`
+and `prior_turns` (default 20; `--history-turns N` on `service add`) from stdin.
+
+---
+
 ## Sessions
 
 ```bash
@@ -264,6 +285,7 @@ aps workspace audit                     # collaboration event trail
 | Session stuck | `aps session inspect <id>`; terminate + clean up |
 | A2A task failed | `aps a2a tasks show <id>` → check error; `cancel-task` + retry |
 | Collab task not delivered | `aps workspace task <id>`; check recipient presence with `members` |
+| Service message not routed | `aps service routes <id>`; confirm `aps serve` reachable; `aps service conversation list --service <id>` shows recorded turns |
 | Conflict blocks workspace | `aps workspace conflicts`; resolve before sending more tasks |
 | Capability missing | `aps capability list`; install with `aps capability install <src>` |
 | APS server not reachable | Verify `aps serve` running; check `--addr`; use CLI fallback |
