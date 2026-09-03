@@ -309,21 +309,23 @@ func turnFields() ([]turnField, error) {
 	return fields, nil
 }
 
+// jsonKindNames maps the Go kinds ConversationTurn uses to their JSON shape.
+var jsonKindNames = map[reflect.Kind]string{
+	reflect.Int:    "integer",
+	reflect.Int64:  "integer",
+	reflect.String: "string",
+	reflect.Slice:  "array",
+}
+
 // jsonType names the JSON shape of a Go field type for the doc table.
 func jsonType(t reflect.Type) (string, error) {
 	if t == reflect.TypeOf(time.Time{}) {
 		return "timestamp (RFC 3339, UTC)", nil
 	}
-	switch t.Kind() {
-	case reflect.Int, reflect.Int64:
-		return "integer", nil
-	case reflect.String:
-		return "string", nil
-	case reflect.Slice:
-		return "array", nil
-	default:
-		return "", fmt.Errorf("unsupported field kind %s", t.Kind())
+	if name, ok := jsonKindNames[t.Kind()]; ok {
+		return name, nil
 	}
+	return "", fmt.Errorf("unsupported field kind %s", t.Kind())
 }
 
 // conversationTurn renders the docs/user/conversations.md turn fields table
