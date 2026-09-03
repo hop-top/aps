@@ -1,6 +1,6 @@
 # APS Message Services Overview
 
-Last updated: 2026-05-11
+Release history: [CHANGELOG.md](../CHANGELOG.md).
 
 APS message services let profiles receive chat-like messages from Telegram,
 Slack, Microsoft Teams, Discord, SMS, WhatsApp, and email through one service
@@ -595,6 +595,10 @@ Profile actions receive normalized message JSON. Example shape:
 Conversation and session keys are derived from service, platform, workspace,
 channel, sender, and thread fields. Full policy:
 [Message conversation and thread policy](dev/message-conversation-policy.md).
+
+### Conversation History
+
+> Availability: unreleased. Requires a build newer than aps/v0.6.0-alpha.0.
 
 Actions also receive `conversation` (the derived identity) and `prior_turns`
 (the newest turns of the same session, oldest first, default 20, set per
