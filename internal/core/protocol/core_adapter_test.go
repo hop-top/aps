@@ -905,6 +905,68 @@ func TestStoreSearch_MatchesLegacyUnescapedFile(t *testing.T) {
 	assert.Equal(t, []byte("new-value"), results["user:2"])
 }
 
+// TestStore_TraversalNamespaceRejected verifies a namespace that resolves
+// outside the store directory is refused by every store method. namespace
+// arrives untrusted from the agentprotocol HTTP adapter.
+func TestStore_TraversalNamespaceRejected(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	for _, ns := range []string{"..", "../escape", "nested/../../escape", "."} {
+		err := adapter.StorePut(ns, "key", []byte("v"))
+		require.Error(t, err, "StorePut namespace %q", ns)
+		assert.Contains(t, err.Error(), "invalid store path component")
+
+		_, err = adapter.StoreGet(ns, "key")
+		require.Error(t, err, "StoreGet namespace %q", ns)
+
+		err = adapter.StoreDelete(ns, "key")
+		require.Error(t, err, "StoreDelete namespace %q", ns)
+
+		_, err = adapter.StoreSearch(ns, "")
+		require.Error(t, err, "StoreSearch namespace %q", ns)
+	}
+
+	// Nested namespaces without traversal remain valid.
+	require.NoError(t, adapter.StorePut("deeply/nested/ns", "key", []byte("v")))
+}
+
+// TestStore_TraversalKeyStaysInNamespace verifies the legacy-filename
+// fallback in StoreGet/StoreDelete cannot read or delete a file outside
+// the key's own namespace directory. The escaped filename is safe by
+// construction (separators are percent-encoded); the raw legacy name is
+// what needs the containment check.
+func TestStore_TraversalKeyStaysInNamespace(t *testing.T) {
+	adapter, tmpDir := setupTestAdapter(t)
+
+	// A valid store file in a *different* namespace, the traversal target.
+	victimDir := filepath.Join(tmpDir, "other")
+	require.NoError(t, os.MkdirAll(victimDir, 0o755))
+	victimPath := filepath.Join(victimDir, "victim.json")
+	data, err := json.Marshal(StoreItem{Namespace: "other", Key: "victim", Value: []byte("secret")})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(victimPath, data, 0o644))
+
+	_, err = adapter.StoreGet("ns", "../other/victim")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "key not found")
+	assert.FileExists(t, victimPath, "StoreGet must not migrate/remove a file outside its namespace")
+
+	err = adapter.StoreDelete("ns", "../other/victim")
+	require.Error(t, err)
+	assert.FileExists(t, victimPath, "StoreDelete must not remove a file outside its namespace")
+
+	// The same key written through StorePut lands inside "ns" under its
+	// escaped name, never in "other".
+	require.NoError(t, adapter.StorePut("ns", "../other/victim", []byte("mine")))
+	assert.FileExists(t, filepath.Join(tmpDir, "ns", "..%2Fother%2Fvictim.json"))
+	value, err := adapter.StoreGet("ns", "../other/victim")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("mine"), value)
+	got, err := adapter.StoreGet("other", "victim")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("secret"), got, "victim untouched")
+}
+
 // TestStoreDelete_ExistingKey tests StoreDelete removes key
 func TestStoreDelete_ExistingKey(t *testing.T) {
 	adapter, _ := setupTestAdapter(t)

@@ -472,6 +472,22 @@ func storeFileName(key string) string {
 	return b.String()
 }
 
+// containedJoin joins elems under root and refuses any result that resolves
+// outside root. namespace and key reach the store untrusted (the
+// agentprotocol HTTP adapter only checks them for non-emptiness), and a
+// namespace may legitimately contain separators (nested namespaces), so
+// containment after filepath.Clean is the invariant, not "single path
+// component". The error deliberately omits root so it cannot leak the
+// on-disk layout through the HTTP error response.
+func containedJoin(root string, elems ...string) (string, error) {
+	root = filepath.Clean(root)
+	p := filepath.Clean(filepath.Join(append([]string{root}, elems...)...))
+	if !strings.HasPrefix(p, root+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid store path component: %q", filepath.Join(elems...))
+	}
+	return p, nil
+}
+
 func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error {
 	if namespace == "" {
 		return fmt.Errorf("namespace is required")
@@ -480,12 +496,18 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 		return fmt.Errorf("key is required")
 	}
 
-	profileDir := filepath.Join(a.storeDir, namespace)
+	profileDir, err := containedJoin(a.storeDir, namespace)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(profileDir, 0755); err != nil {
 		return err
 	}
 
-	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
+	filePath, err := containedJoin(profileDir, storeFileName(key)+".json")
+	if err != nil {
+		return err
+	}
 	data, err := json.Marshal(StoreItem{
 		Namespace: namespace,
 		Key:       key,
@@ -500,13 +522,16 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 }
 
 func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
-	profileDir := filepath.Join(a.storeDir, namespace)
-	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
-	// #nosec G304 -- filePath is built from storeFileName(key), a
-	// percent-encoding of the caller-supplied key under a\.storeDir; there
-	// is no way to escape a\.storeDir via key content (no raw path
-	// separators survive the escape), and StorePut/StoreDelete already
-	// read/write this same derived path with no additional check.
+	profileDir, err := containedJoin(a.storeDir, namespace)
+	if err != nil {
+		return nil, err
+	}
+	filePath, err := containedJoin(profileDir, storeFileName(key)+".json")
+	if err != nil {
+		return nil, err
+	}
+	// #nosec G304 -- filePath is containment-checked under profileDir by
+	// containedJoin, and storeFileName leaves no raw separators anyway.
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -515,16 +540,20 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 		// Escaped file missing: fall back to the legacy unescaped name for
 		// keys written by a pre-escaping build (only reachable for keys
 		// containing a reserved character; storeFileName is a no-op
-		// otherwise, so the two paths already coincide). On a hit, migrate
-		// by writing the escaped copy (via StorePut, so both write paths
-		// agree on file mode/marshaling) and removing the legacy file, so
-		// the key converges to the new layout after first read.
-		legacyPath := filepath.Join(profileDir, key+".json")
-		if legacyPath == filePath {
+		// otherwise, so the two paths already coincide). The raw key goes
+		// through the same containment check: a key that would resolve
+		// outside its own namespace directory was never a legitimate
+		// legacy record, so it is reported as not found rather than read.
+		// On a hit, migrate by writing the escaped copy (via StorePut, so
+		// both write paths agree on file mode/marshaling) and removing the
+		// legacy file, so the key converges to the new layout after first
+		// read.
+		legacyPath, legacyErr := containedJoin(profileDir, key+".json")
+		if legacyErr != nil || legacyPath == filePath {
 			return nil, fmt.Errorf("key not found: %s/%s", namespace, key)
 		}
-		// #nosec G304 -- legacyPath is filePath's own pre-escaping form of
-		// the same caller-supplied key; same trust boundary as filePath.
+		// #nosec G304 -- legacyPath is containment-checked under profileDir
+		// by containedJoin.
 		legacyData, readErr := os.ReadFile(legacyPath)
 		if readErr != nil {
 			if os.IsNotExist(readErr) {
@@ -551,9 +580,15 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 }
 
 func (a *APSAdapter) StoreDelete(namespace string, key string) error {
-	profileDir := filepath.Join(a.storeDir, namespace)
-	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
-	err := os.Remove(filePath)
+	profileDir, err := containedJoin(a.storeDir, namespace)
+	if err != nil {
+		return err
+	}
+	filePath, err := containedJoin(profileDir, storeFileName(key)+".json")
+	if err != nil {
+		return err
+	}
+	err = os.Remove(filePath)
 	if err == nil {
 		return nil
 	}
@@ -561,9 +596,10 @@ func (a *APSAdapter) StoreDelete(namespace string, key string) error {
 		return fmt.Errorf("failed to delete store item: %w", err)
 	}
 	// Escaped file missing: the key may still exist under its pre-escaping
-	// legacy name (see StoreGet). Only worth trying when the names differ.
-	legacyPath := filepath.Join(profileDir, key+".json")
-	if legacyPath == filePath {
+	// legacy name (see StoreGet). Only worth trying when the names differ,
+	// and never outside this namespace directory.
+	legacyPath, legacyErr := containedJoin(profileDir, key+".json")
+	if legacyErr != nil || legacyPath == filePath {
 		return fmt.Errorf("failed to delete store item: %w", err)
 	}
 	if legacyErr := os.Remove(legacyPath); legacyErr == nil {
@@ -573,7 +609,10 @@ func (a *APSAdapter) StoreDelete(namespace string, key string) error {
 }
 
 func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]byte, error) {
-	profileDir := filepath.Join(a.storeDir, namespace)
+	profileDir, err := containedJoin(a.storeDir, namespace)
+	if err != nil {
+		return nil, err
+	}
 	entries, err := os.ReadDir(profileDir)
 	if err != nil {
 		if os.IsNotExist(err) {
