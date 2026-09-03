@@ -412,7 +412,7 @@ func TestGenerateEnvExports(t *testing.T) {
 		if strings.Contains(export, "APS_EXPORT_CAP_PATH") {
 			foundExport = true
 			assert.True(t, strings.HasPrefix(export, "export APS_"))
-			assert.True(t, strings.Contains(export, "capabilities/export-cap"))
+			assert.True(t, strings.Contains(export, filepath.Join("capabilities", "export-cap")))
 		}
 	}
 	assert.True(t, foundExport)
@@ -465,7 +465,7 @@ func TestDirectoryOperations(t *testing.T) {
 	// Get specific capability path
 	capPath, err := GetCapabilityPath("test-cap")
 	require.NoError(t, err)
-	assert.Contains(t, capPath, "capabilities/test-cap")
+	assert.Contains(t, capPath, filepath.Join("capabilities", "test-cap"))
 }
 
 // ============================================================================
