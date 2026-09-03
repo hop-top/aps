@@ -29,10 +29,17 @@ func (cd *ConflictDetector) DetectWriteConflicts(workspace *Workspace, window ti
 
 	cutoff := time.Now().Add(-window)
 
-	// Group recent mutations by key.
+	// Group recent mutations by key. A mutation is "within window" only
+	// when it is strictly after cutoff; using Timestamp.Before(cutoff) as
+	// the exclusion test instead means a mutation whose timestamp exactly
+	// equals cutoff is kept (Before is a strict "<", so equal timestamps
+	// are not "before" and slip through as "recent" even with a zero
+	// window). Two mutations recorded back-to-back can legitimately land
+	// on the same clock tick on coarser-resolution timers, so this
+	// mattered in practice, not just at the boundary in theory.
 	byKey := make(map[string][]ContextMutation)
 	for _, m := range mutations {
-		if m.Timestamp.Before(cutoff) {
+		if !m.Timestamp.After(cutoff) {
 			continue
 		}
 		byKey[m.Key] = append(byKey[m.Key], m)

@@ -1437,6 +1437,12 @@ func TestSessionState_Updates(t *testing.T) {
 		Metadata:   map[string]string{"count": "1"},
 	}
 
+	// Ensure a real gap before the update, so LastSeenAt is provably later
+	// than CreatedAt regardless of clock resolution on the runner. Two
+	// back-to-back time.Now() calls with no enforced gap can tie on
+	// coarser-grained clocks, making the After() assertion flaky.
+	time.Sleep(time.Millisecond)
+
 	// Update metadata
 	session.Metadata["count"] = "2"
 	session.LastSeenAt = time.Now()
