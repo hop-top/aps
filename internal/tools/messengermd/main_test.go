@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -15,6 +17,8 @@ var fragmentNames = []string{
 	fragmentArchSupport,
 	fragmentPatternsTable,
 	fragmentCapabilityMatrix,
+	fragmentConversationStore,
+	fragmentConversationTurn,
 }
 
 // metaRowCount counts platform metadata rows matching a predicate, so the
@@ -75,11 +79,13 @@ func TestFragmentRowCountsPinnedToMeta(t *testing.T) {
 
 func TestFragmentHeaders(t *testing.T) {
 	wantHeaders := map[string]string{
-		fragmentOverviewNav:      "| Platform | Alias | Channel control | Current ingress | Signature validation |",
-		fragmentUserSupport:      "| Adapter alias | Channel ID format | Typical token source | Current support |",
-		fragmentArchSupport:      "| Adapter | Normalize support | Denormalize support | Service maturity |",
-		fragmentPatternsTable:    "| Adapter alias | Canonical config | Incoming payload support | Reply shape | Notes |",
-		fragmentCapabilityMatrix: "| Platform | Ingress modes | Delivery modes | Threads | Attachments | Reactions |",
+		fragmentOverviewNav:       "| Platform | Alias | Channel control | Current ingress | Signature validation |",
+		fragmentUserSupport:       "| Adapter alias | Channel ID format | Typical token source | Current support |",
+		fragmentArchSupport:       "| Adapter | Normalize support | Denormalize support | Service maturity |",
+		fragmentPatternsTable:     "| Adapter alias | Canonical config | Incoming payload support | Reply shape | Notes |",
+		fragmentCapabilityMatrix:  "| Platform | Ingress modes | Delivery modes | Threads | Attachments | Reactions |",
+		fragmentConversationStore: "| Fact | Value |",
+		fragmentConversationTurn:  "| Field | Type | Optional | Meaning |",
 	}
 	for fragment, want := range wantHeaders {
 		out, err := render(fragment)
@@ -290,5 +296,99 @@ func TestRunRendersFragments(t *testing.T) {
 		if stdout.String() != want {
 			t.Errorf("run(%q) stdout differs from render output", fragment)
 		}
+	}
+}
+
+// turnJSONFields enumerates ConversationTurn's JSON tags independently of
+// the renderer so the fragment is pinned to the struct, not to itself.
+func turnJSONFields(t *testing.T) (names []string, optional map[string]bool) {
+	t.Helper()
+	optional = map[string]bool{}
+	rt := reflect.TypeOf(messenger.ConversationTurn{})
+	for i := 0; i < rt.NumField(); i++ {
+		name, opts, _ := strings.Cut(rt.Field(i).Tag.Get("json"), ",")
+		if name == "" || name == "-" {
+			continue
+		}
+		names = append(names, name)
+		optional[name] = strings.Contains(opts, "omitempty")
+	}
+	if len(names) == 0 {
+		t.Fatal("ConversationTurn exposes no JSON fields")
+	}
+	return names, optional
+}
+
+// TestConversationTurnPinnedToStruct checks the turn table row by row
+// against ConversationTurn's JSON tags (order, name, optionality) and that
+// turnFieldMeanings neither misses a field nor documents a stale one.
+func TestConversationTurnPinnedToStruct(t *testing.T) {
+	names, optional := turnJSONFields(t)
+	rows := bodyRows(t, fragmentConversationTurn)
+	if len(rows) != len(names) {
+		t.Fatalf("%s has %d body rows, want %d struct fields", fragmentConversationTurn, len(rows), len(names))
+	}
+	for i, row := range rows {
+		values := cells(t, row)
+		if len(values) != 4 {
+			t.Fatalf("turn row has %d cells, want 4: %q", len(values), row)
+		}
+		if want := "`" + names[i] + "`"; values[0] != want {
+			t.Errorf("turn row %d field = %q, want %q (struct order)", i, values[0], want)
+		}
+		if values[1] == "" || values[1] == emptyCell {
+			t.Errorf("turn row %s has no type", names[i])
+		}
+		if want := yesNo(optional[names[i]]); values[2] != want {
+			t.Errorf("turn row %s optional = %q, want %q from json tag", names[i], values[2], want)
+		}
+		if values[3] != turnFieldMeanings[names[i]] {
+			t.Errorf("turn row %s meaning = %q, want %q", names[i], values[3], turnFieldMeanings[names[i]])
+		}
+	}
+	for key := range turnFieldMeanings {
+		if !optionalHas(optional, key) {
+			t.Errorf("turnFieldMeanings documents %q, which is not a ConversationTurn JSON field", key)
+		}
+	}
+}
+
+func optionalHas(fields map[string]bool, key string) bool {
+	_, ok := fields[key]
+	return ok
+}
+
+// TestConversationStoreFactsFromConstants asserts every store fact cell is
+// derived from the exported store constants rather than literals.
+func TestConversationStoreFactsFromConstants(t *testing.T) {
+	facts := map[string]string{}
+	for _, row := range bodyRows(t, fragmentConversationStore) {
+		values := cells(t, row)
+		if len(values) != 2 {
+			t.Fatalf("store row has %d cells, want 2: %q", len(values), row)
+		}
+		facts[values[0]] = values[1]
+	}
+	wantContains := map[string]string{
+		"Location":                    messenger.ConversationsDir + "/" + messenger.ConversationStoreFile,
+		"Table":                       messenger.ConversationTable,
+		"Prior turns per action run":  "`" + strconv.Itoa(messenger.DefaultPriorTurnLimit) + "`",
+		"Turns kept per conversation": "`" + strconv.Itoa(messenger.DefaultConversationRetention) + "`",
+	}
+	if len(facts) != len(wantContains) {
+		t.Errorf("%s has %d rows, want %d", fragmentConversationStore, len(facts), len(wantContains))
+	}
+	for fact, want := range wantContains {
+		got, ok := facts[fact]
+		if !ok {
+			t.Errorf("%s has no %q row", fragmentConversationStore, fact)
+			continue
+		}
+		if !strings.Contains(got, want) {
+			t.Errorf("%s %q = %q, want it to contain %q", fragmentConversationStore, fact, got, want)
+		}
+	}
+	if !strings.Contains(facts["Prior turns per action run"], "--history-turns") {
+		t.Errorf("prior-turns row %q does not name the --history-turns override", facts["Prior turns per action run"])
 	}
 }

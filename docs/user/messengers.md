@@ -405,6 +405,10 @@ that `aps serve` is reachable from Telegram, Slack, Discord, SMS, or WhatsApp.
 
 ## Conversation History
 
+> Availability: unreleased. Requires a build newer than aps/v0.6.0-alpha.0.
+
+Concepts and how-to: [Conversations](conversations.md).
+
 Every routed inbound message and every delivered reply is recorded as a turn,
 keyed by the conversation identity (service, platform, channel, sender, and
 platform thread). The routed action receives the newest turns of the same

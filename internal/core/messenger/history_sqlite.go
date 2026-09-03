@@ -35,7 +35,7 @@ type SQLiteConversationStore struct {
 var _ ConversationStore = (*SQLiteConversationStore)(nil)
 
 const conversationSchema = `
-CREATE TABLE IF NOT EXISTS message_turns (
+CREATE TABLE IF NOT EXISTS ` + ConversationTable + ` (
 	seq             INTEGER PRIMARY KEY AUTOINCREMENT,
 	conversation_id TEXT NOT NULL,
 	session_id      TEXT NOT NULL,
@@ -52,8 +52,8 @@ CREATE TABLE IF NOT EXISTS message_turns (
 	attachments     TEXT NOT NULL DEFAULT '',
 	created_at      TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_message_turns_conversation ON message_turns(conversation_id, seq);
-CREATE INDEX IF NOT EXISTS idx_message_turns_session ON message_turns(session_id, seq);
+CREATE INDEX IF NOT EXISTS idx_message_turns_conversation ON ` + ConversationTable + `(conversation_id, seq);
+CREATE INDEX IF NOT EXISTS idx_message_turns_session ON ` + ConversationTable + `(session_id, seq);
 `
 
 const turnColumns = `seq, conversation_id, session_id, service_id, platform, profile_id, action_name,
@@ -106,7 +106,7 @@ func (s *SQLiteConversationStore) AppendTurn(ctx context.Context, turn Conversat
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	result, err := tx.ExecContext(ctx, `INSERT INTO message_turns (
+	result, err := tx.ExecContext(ctx, `INSERT INTO `+ConversationTable+` (
 		conversation_id, session_id, service_id, platform, profile_id, action_name,
 		direction, message_id, channel_id, sender_id, sender_name, text, attachments, created_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -120,9 +120,9 @@ func (s *SQLiteConversationStore) AppendTurn(ctx context.Context, turn Conversat
 	if err != nil {
 		return ConversationTurn{}, fmt.Errorf("read conversation turn seq: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM message_turns
+	if _, err := tx.ExecContext(ctx, `DELETE FROM `+ConversationTable+`
 		WHERE conversation_id = ? AND seq NOT IN (
-			SELECT seq FROM message_turns WHERE conversation_id = ? ORDER BY seq DESC LIMIT ?
+			SELECT seq FROM `+ConversationTable+` WHERE conversation_id = ? ORDER BY seq DESC LIMIT ?
 		)`, turn.ConversationID, turn.ConversationID, s.opts.retention()); err != nil {
 		return ConversationTurn{}, fmt.Errorf("prune conversation turns: %w", err)
 	}
@@ -146,7 +146,7 @@ func (s *SQLiteConversationStore) RecentTurns(ctx context.Context, query Convers
 	// Newest N by seq, then reversed so callers see chronological order. An
 	// empty session filter matches every session in the conversation.
 	rows, err := s.db.QueryContext(ctx, `SELECT `+turnColumns+` FROM (
-		SELECT `+turnColumns+` FROM message_turns
+		SELECT `+turnColumns+` FROM `+ConversationTable+`
 		WHERE conversation_id = ? AND (? = '' OR session_id = ?)
 		ORDER BY seq DESC LIMIT ?
 	) ORDER BY seq ASC`, query.ConversationID, query.SessionID, query.SessionID, limit)
@@ -178,12 +178,12 @@ func (s *SQLiteConversationStore) ListConversations(ctx context.Context, filter 
 	// which may be skewed across providers.
 	rows, err := s.db.QueryContext(ctx, `SELECT last.conversation_id, last.service_id, last.platform, last.channel_id,
 		agg.turn_count, first.created_at, last.created_at, last.direction, last.text
-	FROM message_turns last
+	FROM `+ConversationTable+` last
 	JOIN (
 		SELECT conversation_id, COUNT(*) AS turn_count, MIN(seq) AS first_seq, MAX(seq) AS last_seq
-		FROM message_turns GROUP BY conversation_id
+		FROM `+ConversationTable+` GROUP BY conversation_id
 	) agg ON agg.conversation_id = last.conversation_id AND agg.last_seq = last.seq
-	JOIN message_turns first ON first.seq = agg.first_seq
+	JOIN `+ConversationTable+` first ON first.seq = agg.first_seq
 	WHERE (? = '' OR last.service_id = ?) AND (? = '' OR last.platform = ?)
 	ORDER BY last.seq DESC LIMIT ?`,
 		filter.ServiceID, filter.ServiceID, filter.Platform, filter.Platform, limit)
