@@ -167,6 +167,31 @@ cog.out(subprocess.check_output(
 
 See [docs/dev/adapters.md](docs/dev/adapters.md) for the technical and integration guide.
 
+### Message Services
+
+Message services bind a chat platform (Telegram, Slack, Teams, Discord, SMS,
+WhatsApp, email) to one profile action. `aps serve` mounts a webhook per
+service; APS validates the request, normalizes the event, routes it by
+sender, and runs the action.
+
+```bash
+aps service add support-bot \
+  --type telegram \
+  --profile my-agent \
+  --default-action handle-telegram \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
+```
+
+Every routed message and delivered reply is recorded as a conversation turn,
+and each action run receives the newest prior turns of the same session;
+inspect them with `aps service conversation list|show`.
+
+See [docs/MESSENGERS_OVERVIEW.md](docs/MESSENGERS_OVERVIEW.md) for the platform
+comparison, [docs/user/messengers.md](docs/user/messengers.md) for setup and
+testing, and
+[docs/dev/message-conversation-policy.md](docs/dev/message-conversation-policy.md)
+for how conversation and session identity are derived.
+
 ## Directory Structure
 
 All APS data lives under `~/.agents/`:

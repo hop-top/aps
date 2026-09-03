@@ -155,6 +155,27 @@ aps workspace archive <ws>              # archive workspace
 
 ---
 
+## Message Services
+
+```bash
+aps service add <id> --type telegram \
+  --profile <profile> \
+  --default-action <action> \
+  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN  # bind platform to profile action
+aps service show <id>                # stored config
+aps service routes <id>              # webhook route mounted by aps serve
+aps service status <id> --base-url <origin>  # public webhook_url for provider setup
+aps service test <id>                # validate config, optionally probe webhook
+aps service start <id>               # serve the webhook (foreground)
+aps service stop <id>                # how to stop the foreground server
+
+# Conversation history (turns recorded per sender/channel/thread)
+aps service conversation list --service <id>     # conversations seen by service
+aps service conversation show <conversation-id>  # turns; --limit N, --format json
+```
+
+---
+
 ## Adapters & Messengers
 
 ```bash
@@ -321,6 +342,7 @@ aps version                          # version info
 | Capability missing | `aps capability list`; install with `aps capability install` |
 | A2A task stuck | `aps a2a tasks show <id>`; cancel + retry |
 | Messenger not receiving | For services, check `aps service routes <id>` and `aps serve`; for legacy devices, run `aps adapter messenger test <id>` and check `aps adapter logs <id>` |
+| Action lacks prior turns | `aps service conversation show <conversation-id>`; raise `--history-turns` on `aps service add` |
 | Wrong workspace active | `aps workspace use <workspace>` |
 | Conflict blocks collab | `aps workspace conflicts`; then `aps workspace resolve <id>` |
 | Serve won't start | Check port with `lsof -i :8080`; use `--addr` for alt port |
