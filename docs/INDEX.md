@@ -4,6 +4,7 @@ Quick navigation to all APS documentation.
 
 ## Getting Started
 
+- [**Glossary**](glossary.md) — Terms and disambiguation: session, messenger, thread, service, adapter
 - [**Messengers Overview**](MESSENGERS_OVERVIEW.md) — Platform comparison, routing architecture, best practices
 - [**Conversations**](user/conversations.md) — Turns, conversation and session keys, what actions receive, history commands
 - [**Voice**](dev/voice.md) — Speech-to-speech backend, channel adapters, CLI commands

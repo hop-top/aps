@@ -546,6 +546,7 @@ Contributions are welcome!
 *   **[User Documentation](docs/user/README.md)**: Guides for installing and using APS.
 *   **[Developer Documentation](docs/dev/readme.md)**: Architecture, design specs, and implementation details.
 *   **[Agent Documentation](docs/agent/README.md)**: Context and patterns for AI agents working on the codebase.
+*   **[Glossary](docs/glossary.md)**: Terms and disambiguation for sessions, messengers, threads, services, and adapters.
 
 See `docs/dev/operations/releases/release-notes.md` for recent changes and version history.
 
