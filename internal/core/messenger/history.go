@@ -30,6 +30,9 @@ const (
 
 	// ConversationStoreFile is the on-disk sqlite filename.
 	ConversationStoreFile = "conversations.db"
+
+	// ConversationTable is the sqlite table holding one row per turn.
+	ConversationTable = "message_turns"
 )
 
 // ConversationTurn is one persisted message-service turn. Turns are keyed by
