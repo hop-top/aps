@@ -1429,10 +1429,15 @@ func TestSessionState_TimestampTracking(t *testing.T) {
 
 // TestSessionState_Updates tests SessionState updates
 func TestSessionState_Updates(t *testing.T) {
+	// CreatedAt is set in the past so LastSeenAt (time.Now() below) is
+	// provably later regardless of clock resolution on the runner, with no
+	// wall-clock wait. Two back-to-back time.Now() calls with no enforced
+	// gap can tie on coarser-grained clocks, making the After() assertion
+	// flaky; a real sleep fixes that too but slows the suite for no reason.
 	session := &SessionState{
 		SessionID:  "sess-1",
 		ProfileID:  "profile-1",
-		CreatedAt:  time.Now(),
+		CreatedAt:  time.Now().Add(-time.Second),
 		LastSeenAt: time.Now(),
 		Metadata:   map[string]string{"count": "1"},
 	}

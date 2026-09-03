@@ -1,6 +1,9 @@
 package storage_test
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -109,6 +112,44 @@ func TestCollaborationStorage_DeleteWorkspace_NotFound(t *testing.T) {
 	s := newTestStorage(t)
 
 	err := s.DeleteWorkspace("nonexistent")
+	require.Error(t, err)
+}
+
+// TestCollaborationStorage_LoadsLegacyUnescapedWorkspaceDir verifies a
+// workspace directory named before escaping was introduced (raw reserved
+// character, e.g. collab.GlobalAuditWorkspace = "aps:global") is still
+// loadable and deletable. Escaping was added after workspaces could
+// already exist on disk under their unescaped ID, and aps:global is
+// created unconditionally by the audit subscriber, not opt-in.
+func TestCollaborationStorage_LoadsLegacyUnescapedWorkspaceDir(t *testing.T) {
+	// A directory named "aps:global" is invalid on Windows (":" is the
+	// drive/stream separator), so no pre-escaping build could have created
+	// the legacy layout there; the fallback is POSIX-only by construction.
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy unescaped workspace directories cannot exist on Windows")
+	}
+	root := t.TempDir()
+	workspaceID := collab.GlobalAuditWorkspace // "aps:global"
+
+	// Simulate a pre-escaping on-disk layout: directory named with the raw
+	// (unescaped) workspace ID, written directly rather than via
+	// CollaborationStorage, matching what SaveWorkspace produces.
+	legacyDir := filepath.Join(root, workspaceID)
+	require.NoError(t, os.MkdirAll(legacyDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(legacyDir, "manifest.yaml"),
+		[]byte("name: global-audit\nowner_profile_id: owner-1\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(legacyDir, "state.json"),
+		[]byte(`{"id":"`+workspaceID+`","state":"active","created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}`), 0o644))
+
+	s, err := storage.NewCollaborationStorage(root)
+	require.NoError(t, err)
+
+	loaded, err := s.LoadWorkspace(workspaceID)
+	require.NoError(t, err)
+	assert.Equal(t, workspaceID, loaded.ID)
+
+	require.NoError(t, s.DeleteWorkspace(workspaceID))
+	_, err = s.LoadWorkspace(workspaceID)
 	require.Error(t, err)
 }
 

@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"hop.top/aps/internal/core/session"
 )
 
@@ -20,10 +22,18 @@ import (
 func setupTestAdapter(t *testing.T) (*APSAdapter, string) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	registry := session.NewForTesting()
+	// The session registry lazily opens a sqlite-backed kv store under
+	// tmpDir. Without an explicit Close, the file handle can still be
+	// open when t.TempDir()'s cleanup tries to remove the directory.
+	// POSIX allows unlinking an open file; Windows does not, and fails
+	// cleanup with "The process cannot access the file because it is
+	// being used by another process."
+	t.Cleanup(func() { _ = registry.Close() })
 	adapter := &APSAdapter{
 		runRegistry:     make(map[string]*RunState),
 		runMutex:        sync.RWMutex{},
-		sessionRegistry: session.NewForTesting(),
+		sessionRegistry: registry,
 		storeDir:        tmpDir,
 	}
 	return adapter, tmpDir
@@ -608,6 +618,10 @@ func TestUpdateSession_PersistsAndRefreshes(t *testing.T) {
 	// persistence happened (the old direct pointer mutation would
 	// not have made it to disk).
 	reloaded := session.NewForTesting()
+	// Second registry on the same data dir: close it too, or its sqlite
+	// handle is still open when t.TempDir() cleanup runs. POSIX unlinks an
+	// open file; Windows refuses ("being used by another process").
+	t.Cleanup(func() { _ = reloaded.Close() })
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -819,6 +833,159 @@ func TestStoreGet_MalformedJSON(t *testing.T) {
 
 	_, err = adapter.StoreGet("ns", "bad-key")
 	assert.Error(t, err)
+}
+
+// skipLegacyLayoutOnWindows skips tests whose fixture is a pre-escaping
+// legacy file name containing a reserved character. On Windows such a
+// name never denoted a regular file: "user:1.json" is an NTFS alternate
+// data stream "1.json" on a file named "user", invisible to os.ReadDir.
+// That is the defect the escaping fixes, so the legacy layout exists only
+// on POSIX and the fallback can only be exercised there.
+func skipLegacyLayoutOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy unescaped store files cannot exist on Windows: reserved characters become NTFS alternate data streams")
+	}
+}
+
+// TestStoreGet_LegacyUnescapedFile verifies a key written before escaping
+// was introduced (raw reserved character in the filename, e.g. "user:1"
+// stored as "user:1.json" on POSIX) is still readable, and is migrated to
+// the escaped filename on first read.
+func TestStoreGet_LegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	value, err := adapter.StoreGet("ns", "user:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), value)
+
+	// Migrated: escaped file now exists, legacy file is gone.
+	escapedPath := filepath.Join(nsDir, "user%3A1.json")
+	assert.FileExists(t, escapedPath)
+	assert.NoFileExists(t, legacyPath)
+
+	// Second read still works, now via the escaped file.
+	value, err = adapter.StoreGet("ns", "user:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), value)
+}
+
+// TestStoreDelete_LegacyUnescapedFile verifies StoreDelete removes a key
+// that only exists under its pre-escaping legacy filename.
+func TestStoreDelete_LegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	require.NoError(t, adapter.StoreDelete("ns", "user:1"))
+	assert.NoFileExists(t, legacyPath)
+
+	_, err = adapter.StoreGet("ns", "user:1")
+	assert.Error(t, err)
+}
+
+// TestStoreSearch_MatchesLegacyUnescapedFile verifies StoreSearch's
+// filename prefilter doesn't hide a legacy file whose escaped and
+// unescaped names differ.
+func TestStoreSearch_MatchesLegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, tmpDir := setupTestAdapter(t)
+
+	nsDir := filepath.Join(tmpDir, "ns")
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+
+	legacyPath := filepath.Join(nsDir, "user:1.json")
+	item := StoreItem{Namespace: "ns", Key: "user:1", Value: []byte("legacy-value")}
+	data, err := json.Marshal(item)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyPath, data, 0o644))
+
+	require.NoError(t, adapter.StorePut("ns", "user:2", []byte("new-value")))
+
+	results, err := adapter.StoreSearch("ns", "user:")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy-value"), results["user:1"])
+	assert.Equal(t, []byte("new-value"), results["user:2"])
+}
+
+// TestStore_TraversalNamespaceRejected verifies a namespace that resolves
+// outside the store directory is refused by every store method. namespace
+// arrives untrusted from the agentprotocol HTTP adapter.
+func TestStore_TraversalNamespaceRejected(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	for _, ns := range []string{"..", "../escape", "nested/../../escape", "."} {
+		err := adapter.StorePut(ns, "key", []byte("v"))
+		require.Error(t, err, "StorePut namespace %q", ns)
+		assert.Contains(t, err.Error(), "invalid store path component")
+
+		_, err = adapter.StoreGet(ns, "key")
+		require.Error(t, err, "StoreGet namespace %q", ns)
+
+		err = adapter.StoreDelete(ns, "key")
+		require.Error(t, err, "StoreDelete namespace %q", ns)
+
+		_, err = adapter.StoreSearch(ns, "")
+		require.Error(t, err, "StoreSearch namespace %q", ns)
+	}
+
+	// Nested namespaces without traversal remain valid.
+	require.NoError(t, adapter.StorePut("deeply/nested/ns", "key", []byte("v")))
+}
+
+// TestStore_TraversalKeyStaysInNamespace verifies the legacy-filename
+// fallback in StoreGet/StoreDelete cannot read or delete a file outside
+// the key's own namespace directory. The escaped filename is safe by
+// construction (separators are percent-encoded); the raw legacy name is
+// what needs the containment check.
+func TestStore_TraversalKeyStaysInNamespace(t *testing.T) {
+	adapter, tmpDir := setupTestAdapter(t)
+
+	// A valid store file in a *different* namespace, the traversal target.
+	victimDir := filepath.Join(tmpDir, "other")
+	require.NoError(t, os.MkdirAll(victimDir, 0o755))
+	victimPath := filepath.Join(victimDir, "victim.json")
+	data, err := json.Marshal(StoreItem{Namespace: "other", Key: "victim", Value: []byte("secret")})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(victimPath, data, 0o644))
+
+	_, err = adapter.StoreGet("ns", "../other/victim")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "key not found")
+	assert.FileExists(t, victimPath, "StoreGet must not migrate/remove a file outside its namespace")
+
+	err = adapter.StoreDelete("ns", "../other/victim")
+	require.Error(t, err)
+	assert.FileExists(t, victimPath, "StoreDelete must not remove a file outside its namespace")
+
+	// The same key written through StorePut lands inside "ns" under its
+	// escaped name, never in "other".
+	require.NoError(t, adapter.StorePut("ns", "../other/victim", []byte("mine")))
+	assert.FileExists(t, filepath.Join(tmpDir, "ns", "..%2Fother%2Fvictim.json"))
+	value, err := adapter.StoreGet("ns", "../other/victim")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("mine"), value)
+	got, err := adapter.StoreGet("other", "victim")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("secret"), got, "victim untouched")
 }
 
 // TestStoreDelete_ExistingKey tests StoreDelete removes key

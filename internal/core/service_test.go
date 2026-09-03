@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -170,6 +171,17 @@ func TestServicePathRejectsPathComponents(t *testing.T) {
 }
 
 func TestSaveServiceUsesRestrictedPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows has no Unix-style permission bits. os.FileInfo.Mode().Perm()
+		// on Windows is synthesized by the Go runtime from the file's
+		// read-only attribute alone (either 0666 or 0444) — see
+		// https://pkg.go.dev/os#Chmod ("On Windows... only the 0200 bit
+		// (owner writable) of mode is used"). A group/other-bits mask
+		// (0o077/0o027) can never be zero there, so this assertion is
+		// fundamentally untestable on Windows rather than platform-buggy.
+		t.Skip("Unix permission bits are not meaningful on Windows (os.FileMode.Perm() only reflects the read-only attribute)")
+	}
+
 	home := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
 

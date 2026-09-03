@@ -1414,7 +1414,10 @@ func TestExecuteCommandWithFileRedirection(t *testing.T) {
 	}
 	proc.context = context
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo 'test content' > %s", outputFile))
+	// Single-quote the path: it may contain backslashes (Windows paths),
+	// which POSIX shells otherwise treat as escape characters in an
+	// unquoted word, corrupting the redirect target.
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo 'test content' > '%s'", outputFile))
 	err := proc.SetupEnvironment(cmd)
 	require.NoError(t, err)
 

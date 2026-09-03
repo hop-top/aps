@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,9 +54,80 @@ func NewCollaborationStorage(root string) (*CollaborationStorage, error) {
 	return &CollaborationStorage{root: root}, nil
 }
 
-// workspaceDir returns the directory for a specific workspace.
+// dirNameEscape lists characters reserved in Windows file/directory names
+// (< > : " / \ | ? *) plus the percent sign used as the escape marker.
+// Workspace IDs are mostly UUIDs/slugs, but the collaboration package also
+// uses synthetic sentinel IDs containing a colon (collab.GlobalAuditWorkspace
+// = "aps:global"); a literal ":" in a Windows path component is reserved
+// for drive letters/NTFS alternate data streams, so filepath.Join(root,
+// "aps:global") produces a directory name Windows rejects outright
+// ("The directory name is invalid").
+const dirNameEscape = `<>:"/\|?*%`
+
+// escapeWorkspaceID returns a filesystem-safe directory name for the given
+// workspace ID. Reserved characters are percent-encoded so the mapping is
+// unambiguous and reversible via unescapeWorkspaceID; ordinary IDs (the
+// common case) are left untouched.
+func escapeWorkspaceID(id string) string {
+	var b strings.Builder
+	for _, r := range id {
+		if r < 0x20 || strings.ContainsRune(dirNameEscape, r) {
+			fmt.Fprintf(&b, "%%%02X", r)
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// unescapeWorkspaceID reverses escapeWorkspaceID. Invalid escapes are left
+// as-is rather than erroring, since directory names are only ever produced
+// by escapeWorkspaceID in the first place.
+func unescapeWorkspaceID(name string) string {
+	if !strings.ContainsRune(name, '%') {
+		return name
+	}
+	var b strings.Builder
+	for i := 0; i < len(name); i++ {
+		if name[i] == '%' && i+2 < len(name) {
+			if v, err := strconv.ParseUint(name[i+1:i+3], 16, 8); err == nil {
+				b.WriteByte(byte(v))
+				i += 2
+				continue
+			}
+		}
+		b.WriteByte(name[i])
+	}
+	return b.String()
+}
+
+// workspaceDir returns the canonical (escaped) directory for a workspace.
+// Pure path construction, no filesystem access — always the write target,
+// so saves converge every workspace to the escaped layout over time.
 func (s *CollaborationStorage) workspaceDir(id string) string {
-	return filepath.Join(s.root, id)
+	return filepath.Join(s.root, escapeWorkspaceID(id))
+}
+
+// resolveWorkspaceDir returns the directory to read/delete a workspace
+// from: the escaped directory if present, otherwise the pre-escaping
+// legacy directory (unescaped id) if that exists instead. Needed because
+// escaping was introduced after workspaces could already exist on disk —
+// notably collab.GlobalAuditWorkspace ("aps:global"), created
+// unconditionally by the audit subscriber, not opt-in. A workspace ID with
+// no reserved characters resolves to the same path either way.
+func (s *CollaborationStorage) resolveWorkspaceDir(id string) string {
+	dir := s.workspaceDir(id)
+	if _, err := os.Stat(dir); err == nil {
+		return dir
+	}
+	legacyDir := filepath.Join(s.root, id)
+	if legacyDir == dir {
+		return dir
+	}
+	if _, err := os.Stat(legacyDir); err == nil {
+		return legacyDir
+	}
+	return dir
 }
 
 // SaveWorkspace persists a workspace to disk as manifest.yaml + state.json.
@@ -102,7 +174,7 @@ func (s *CollaborationStorage) LoadWorkspace(id string) (*collab.Workspace, erro
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	dir := s.workspaceDir(id)
+	dir := s.resolveWorkspaceDir(id)
 
 	// Read manifest.yaml
 	manifestData, err := os.ReadFile(filepath.Join(dir, "manifest.yaml"))
@@ -166,7 +238,7 @@ func (s *CollaborationStorage) ListWorkspaces() ([]string, error) {
 		// Only include directories that contain a manifest.yaml
 		manifestPath := filepath.Join(s.root, entry.Name(), "manifest.yaml")
 		if _, err := os.Stat(manifestPath); err == nil {
-			ids = append(ids, entry.Name())
+			ids = append(ids, unescapeWorkspaceID(entry.Name()))
 		}
 	}
 
@@ -178,7 +250,7 @@ func (s *CollaborationStorage) DeleteWorkspace(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	dir := s.workspaceDir(id)
+	dir := s.resolveWorkspaceDir(id)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return &collab.WorkspaceNotFoundError{ID: id}
 	}
@@ -327,7 +399,7 @@ func (s *CollaborationStorage) saveJSON(workspaceID, filename string, v any) err
 // loadJSON reads {workspaceDir}/{filename} and unmarshals it into v.
 // Returns nil (no error) if the file does not exist. Caller must hold the read lock.
 func (s *CollaborationStorage) loadJSON(workspaceID, filename string, v any) error {
-	path := filepath.Join(s.workspaceDir(workspaceID), filename)
+	path := filepath.Join(s.resolveWorkspaceDir(workspaceID), filename)
 
 	data, err := os.ReadFile(path)
 	if err != nil {

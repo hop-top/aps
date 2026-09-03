@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -1117,6 +1118,13 @@ func TestContainerSSHEnvironmentVariables(t *testing.T) {
 
 // TestSSHPermissionsValidation verifies SSH permission checks
 func TestSSHPermissionsValidation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows has no Unix-style permission bits; os.WriteFile(..., 0600)
+		// there only toggles the read-only attribute, so info.Mode()&0077
+		// is never guaranteed to be zero. See os.Chmod godoc.
+		t.Skip("Unix permission bits are not meaningful on Windows")
+	}
+
 	tmpDir := t.TempDir()
 	keysDir := filepath.Join(tmpDir, ".aps", "keys")
 	require.NoError(t, os.MkdirAll(keysDir, 0700))
