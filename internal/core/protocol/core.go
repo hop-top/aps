@@ -500,7 +500,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(profileDir, 0755); err != nil {
+	if err := os.MkdirAll(profileDir, 0o750); err != nil {
 		return err
 	}
 

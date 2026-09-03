@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -617,6 +618,10 @@ func TestUpdateSession_PersistsAndRefreshes(t *testing.T) {
 	// persistence happened (the old direct pointer mutation would
 	// not have made it to disk).
 	reloaded := session.NewForTesting()
+	// Second registry on the same data dir: close it too, or its sqlite
+	// handle is still open when t.TempDir() cleanup runs. POSIX unlinks an
+	// open file; Windows refuses ("being used by another process").
+	t.Cleanup(func() { _ = reloaded.Close() })
 	if err := reloaded.LoadFromDisk(); err != nil {
 		t.Fatalf("LoadFromDisk failed: %v", err)
 	}
@@ -830,11 +835,25 @@ func TestStoreGet_MalformedJSON(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// skipLegacyLayoutOnWindows skips tests whose fixture is a pre-escaping
+// legacy file name containing a reserved character. On Windows such a
+// name never denoted a regular file: "user:1.json" is an NTFS alternate
+// data stream "1.json" on a file named "user", invisible to os.ReadDir.
+// That is the defect the escaping fixes, so the legacy layout exists only
+// on POSIX and the fallback can only be exercised there.
+func skipLegacyLayoutOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy unescaped store files cannot exist on Windows: reserved characters become NTFS alternate data streams")
+	}
+}
+
 // TestStoreGet_LegacyUnescapedFile verifies a key written before escaping
 // was introduced (raw reserved character in the filename, e.g. "user:1"
 // stored as "user:1.json" on POSIX) is still readable, and is migrated to
 // the escaped filename on first read.
 func TestStoreGet_LegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
 	adapter, tmpDir := setupTestAdapter(t)
 
 	nsDir := filepath.Join(tmpDir, "ns")
@@ -864,6 +883,7 @@ func TestStoreGet_LegacyUnescapedFile(t *testing.T) {
 // TestStoreDelete_LegacyUnescapedFile verifies StoreDelete removes a key
 // that only exists under its pre-escaping legacy filename.
 func TestStoreDelete_LegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
 	adapter, tmpDir := setupTestAdapter(t)
 
 	nsDir := filepath.Join(tmpDir, "ns")
@@ -886,6 +906,7 @@ func TestStoreDelete_LegacyUnescapedFile(t *testing.T) {
 // filename prefilter doesn't hide a legacy file whose escaped and
 // unescaped names differ.
 func TestStoreSearch_MatchesLegacyUnescapedFile(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
 	adapter, tmpDir := setupTestAdapter(t)
 
 	nsDir := filepath.Join(tmpDir, "ns")

@@ -3,6 +3,7 @@ package storage_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -121,6 +122,12 @@ func TestCollaborationStorage_DeleteWorkspace_NotFound(t *testing.T) {
 // already exist on disk under their unescaped ID, and aps:global is
 // created unconditionally by the audit subscriber, not opt-in.
 func TestCollaborationStorage_LoadsLegacyUnescapedWorkspaceDir(t *testing.T) {
+	// A directory named "aps:global" is invalid on Windows (":" is the
+	// drive/stream separator), so no pre-escaping build could have created
+	// the legacy layout there; the fallback is POSIX-only by construction.
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy unescaped workspace directories cannot exist on Windows")
+	}
 	root := t.TempDir()
 	workspaceID := collab.GlobalAuditWorkspace // "aps:global"
 
