@@ -11,10 +11,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// GetConfigDir resolves via kit/go/core/xdg, which honours XDG_CONFIG_HOME
+// directly but falls back to an OS-native location (%LOCALAPPDATA% on
+// Windows, $HOME/Library/... on macOS) that does NOT read $HOME. Isolating
+// these tests via HOME alone is a no-op on Windows and macOS: LoadConfig
+// then reads/writes the real, shared per-user config dir on the runner,
+// leaking state (e.g. a "MYAPP"/"CUSTOM" prefix) into every other test in
+// the job that calls LoadConfig without its own XDG_CONFIG_HOME override.
+// Always isolate via XDG_CONFIG_HOME (an absolute t.TempDir() path, which
+// filepath.IsAbs accepts on every platform) and use t.Setenv so state is
+// restored automatically and parallel misuse is caught by the testing pkg.
 func TestConfigDefaultIsolation(t *testing.T) {
-	tempHome := t.TempDir()
-	os.Setenv("HOME", tempHome)
-	os.Setenv("XDG_CONFIG_HOME", "")
+	tempDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	config, err := core.LoadConfig()
 	require.NoError(t, err)
@@ -26,7 +35,7 @@ func TestConfigDefaultIsolation(t *testing.T) {
 
 func TestConfigLoadWithIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -50,9 +59,8 @@ isolation:
 }
 
 func TestConfigSaveWithIsolation(t *testing.T) {
-	tempHome := t.TempDir()
-	os.Setenv("HOME", tempHome)
-	os.Setenv("XDG_CONFIG_HOME", "")
+	tempDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	config := &core.Config{
 		Prefix: "MYAPP",
@@ -75,7 +83,7 @@ func TestConfigSaveWithIsolation(t *testing.T) {
 
 func TestConfigMigrate(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -106,7 +114,7 @@ func TestConfigMigrate(t *testing.T) {
 
 func TestConfigMigrateNoExisting(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	migrated, err := core.MigrateConfig()
 	require.NoError(t, err)
@@ -115,7 +123,7 @@ func TestConfigMigrateNoExisting(t *testing.T) {
 
 func TestConfigInvalidIsolationLevel(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -139,7 +147,7 @@ isolation:
 
 func TestConfigPartialIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,10 +35,14 @@ func TestLoadUserOverrides_EmptyDirReturnsEmpty(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
-	// On macOS, os.UserConfigDir() uses $HOME/Library/Application Support when
-	// XDG_CONFIG_HOME is unset. On Linux it uses $XDG_CONFIG_HOME. Set both to
-	// be safe across platforms.
+	// os.UserConfigDir() reads $XDG_CONFIG_HOME on Linux, $HOME on macOS,
+	// and %AppData% on Windows — HOME/XDG_CONFIG_HOME are not consulted at
+	// all there (see os.UserConfigDir godoc). Without AppData set, this
+	// falls through to the real, shared %AppData%\aps\bundles on the
+	// runner and can see state left behind by other tests/steps in the
+	// same job. Set all three so isolation actually holds everywhere.
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("AppData", tmpDir)
 
 	bundles, err := LoadUserOverrides()
 	require.NoError(t, err)
@@ -47,22 +52,24 @@ func TestLoadUserOverrides_EmptyDirReturnsEmpty(t *testing.T) {
 func TestLoadUserOverrides_LoadsYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Set HOME so os.UserConfigDir() returns a predictable path.
+	// Set HOME (macOS/Linux) and AppData (Windows) so os.UserConfigDir()
+	// returns a predictable, isolated path on every platform.
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("AppData", tmpDir)
 
 	// Determine the actual config dir as the implementation will see it.
 	configDir, err := os.UserConfigDir()
 	require.NoError(t, err)
 
 	// Create the expected bundles directory under that config dir.
-	bundlesDir := configDir + "/aps/bundles"
-	require.NoError(t, os.MkdirAll(bundlesDir, 0755))
+	bundlesDir := filepath.Join(configDir, "aps", "bundles")
+	require.NoError(t, os.MkdirAll(bundlesDir, 0o755))
 
 	bundleYAML := `name: custom-test
 description: A user-defined test bundle
 version: "1.0"
 `
-	require.NoError(t, os.WriteFile(bundlesDir+"/custom-test.yaml", []byte(bundleYAML), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(bundlesDir, "custom-test.yaml"), []byte(bundleYAML), 0o644))
 
 	bundles, err := LoadUserOverrides()
 	require.NoError(t, err)

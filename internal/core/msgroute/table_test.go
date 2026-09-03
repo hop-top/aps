@@ -165,7 +165,11 @@ routes:
 
 func TestLoad_ExternalFileTildeExpansion(t *testing.T) {
 	home := t.TempDir()
+	// os.UserHomeDir() (used for "~" expansion) reads $HOME on POSIX but
+	// %USERPROFILE% on Windows — HOME alone does not isolate this test
+	// there, so ~ still expands to the real home dir on the runner.
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	writeFile(t, filepath.Join(home, "routes.yaml"), `
 routes:
   - match: unknown
