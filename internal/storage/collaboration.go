@@ -101,9 +101,33 @@ func unescapeWorkspaceID(name string) string {
 	return b.String()
 }
 
-// workspaceDir returns the directory for a specific workspace.
+// workspaceDir returns the canonical (escaped) directory for a workspace.
+// Pure path construction, no filesystem access — always the write target,
+// so saves converge every workspace to the escaped layout over time.
 func (s *CollaborationStorage) workspaceDir(id string) string {
 	return filepath.Join(s.root, escapeWorkspaceID(id))
+}
+
+// resolveWorkspaceDir returns the directory to read/delete a workspace
+// from: the escaped directory if present, otherwise the pre-escaping
+// legacy directory (unescaped id) if that exists instead. Needed because
+// escaping was introduced after workspaces could already exist on disk —
+// notably collab.GlobalAuditWorkspace ("aps:global"), created
+// unconditionally by the audit subscriber, not opt-in. A workspace ID with
+// no reserved characters resolves to the same path either way.
+func (s *CollaborationStorage) resolveWorkspaceDir(id string) string {
+	dir := s.workspaceDir(id)
+	if _, err := os.Stat(dir); err == nil {
+		return dir
+	}
+	legacyDir := filepath.Join(s.root, id)
+	if legacyDir == dir {
+		return dir
+	}
+	if _, err := os.Stat(legacyDir); err == nil {
+		return legacyDir
+	}
+	return dir
 }
 
 // SaveWorkspace persists a workspace to disk as manifest.yaml + state.json.
@@ -150,7 +174,7 @@ func (s *CollaborationStorage) LoadWorkspace(id string) (*collab.Workspace, erro
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	dir := s.workspaceDir(id)
+	dir := s.resolveWorkspaceDir(id)
 
 	// Read manifest.yaml
 	manifestData, err := os.ReadFile(filepath.Join(dir, "manifest.yaml"))
@@ -226,7 +250,7 @@ func (s *CollaborationStorage) DeleteWorkspace(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	dir := s.workspaceDir(id)
+	dir := s.resolveWorkspaceDir(id)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return &collab.WorkspaceNotFoundError{ID: id}
 	}
@@ -375,7 +399,7 @@ func (s *CollaborationStorage) saveJSON(workspaceID, filename string, v any) err
 // loadJSON reads {workspaceDir}/{filename} and unmarshals it into v.
 // Returns nil (no error) if the file does not exist. Caller must hold the read lock.
 func (s *CollaborationStorage) loadJSON(workspaceID, filename string, v any) error {
-	path := filepath.Join(s.workspaceDir(workspaceID), filename)
+	path := filepath.Join(s.resolveWorkspaceDir(workspaceID), filename)
 
 	data, err := os.ReadFile(path)
 	if err != nil {
