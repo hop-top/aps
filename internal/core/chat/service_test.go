@@ -26,6 +26,7 @@ func TestServicePersistsChatSessionAndTurns(t *testing.T) {
 	dataDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", dataDir)
 	registry := session.NewForTesting()
+	t.Cleanup(func() { _ = registry.Close() })
 	client := &fakeCompleter{}
 	now := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 
@@ -88,12 +89,14 @@ func TestServiceRequestCarriesSamplingKnobs(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", dataDir)
 	client := &fakeCompleter{}
 	temperature := 0.2
+	registry := session.NewForTesting()
+	t.Cleanup(func() { _ = registry.Close() })
 
 	service, err := NewServiceWithProfile(&core.Profile{
 		ID:          "agent",
 		DisplayName: "Agent",
 	}, client, ServiceOptions{
-		Registry:        session.NewForTesting(),
+		Registry:        registry,
 		Store:           NewStore(dataDir),
 		NewID:           func() string { return "chat-2" },
 		Model:           "gpt-4o",
@@ -126,9 +129,11 @@ func TestServiceRequestExplicitZeroTemperature(t *testing.T) {
 	t.Setenv("APS_DATA_PATH", dataDir)
 	client := &fakeCompleter{}
 	zero := 0.0
+	registry := session.NewForTesting()
+	t.Cleanup(func() { _ = registry.Close() })
 
 	service, err := NewServiceWithProfile(&core.Profile{ID: "agent"}, client, ServiceOptions{
-		Registry:    session.NewForTesting(),
+		Registry:    registry,
 		Store:       NewStore(dataDir),
 		NewID:       func() string { return "chat-3" },
 		Model:       "gpt-4o",

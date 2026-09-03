@@ -20,10 +20,18 @@ import (
 func setupTestAdapter(t *testing.T) (*APSAdapter, string) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	registry := session.NewForTesting()
+	// The session registry lazily opens a sqlite-backed kv store under
+	// tmpDir. Without an explicit Close, the file handle can still be
+	// open when t.TempDir()'s cleanup tries to remove the directory.
+	// POSIX allows unlinking an open file; Windows does not, and fails
+	// cleanup with "The process cannot access the file because it is
+	// being used by another process."
+	t.Cleanup(func() { _ = registry.Close() })
 	adapter := &APSAdapter{
 		runRegistry:     make(map[string]*RunState),
 		runMutex:        sync.RWMutex{},
-		sessionRegistry: session.NewForTesting(),
+		sessionRegistry: registry,
 		storeDir:        tmpDir,
 	}
 	return adapter, tmpDir
