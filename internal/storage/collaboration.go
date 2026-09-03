@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,9 +54,56 @@ func NewCollaborationStorage(root string) (*CollaborationStorage, error) {
 	return &CollaborationStorage{root: root}, nil
 }
 
+// dirNameEscape lists characters reserved in Windows file/directory names
+// (< > : " / \ | ? *) plus the percent sign used as the escape marker.
+// Workspace IDs are mostly UUIDs/slugs, but the collaboration package also
+// uses synthetic sentinel IDs containing a colon (collab.GlobalAuditWorkspace
+// = "aps:global"); a literal ":" in a Windows path component is reserved
+// for drive letters/NTFS alternate data streams, so filepath.Join(root,
+// "aps:global") produces a directory name Windows rejects outright
+// ("The directory name is invalid").
+const dirNameEscape = `<>:"/\|?*%`
+
+// escapeWorkspaceID returns a filesystem-safe directory name for the given
+// workspace ID. Reserved characters are percent-encoded so the mapping is
+// unambiguous and reversible via unescapeWorkspaceID; ordinary IDs (the
+// common case) are left untouched.
+func escapeWorkspaceID(id string) string {
+	var b strings.Builder
+	for _, r := range id {
+		if r < 0x20 || strings.ContainsRune(dirNameEscape, r) {
+			fmt.Fprintf(&b, "%%%02X", r)
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// unescapeWorkspaceID reverses escapeWorkspaceID. Invalid escapes are left
+// as-is rather than erroring, since directory names are only ever produced
+// by escapeWorkspaceID in the first place.
+func unescapeWorkspaceID(name string) string {
+	if !strings.ContainsRune(name, '%') {
+		return name
+	}
+	var b strings.Builder
+	for i := 0; i < len(name); i++ {
+		if name[i] == '%' && i+2 < len(name) {
+			if v, err := strconv.ParseUint(name[i+1:i+3], 16, 8); err == nil {
+				b.WriteByte(byte(v))
+				i += 2
+				continue
+			}
+		}
+		b.WriteByte(name[i])
+	}
+	return b.String()
+}
+
 // workspaceDir returns the directory for a specific workspace.
 func (s *CollaborationStorage) workspaceDir(id string) string {
-	return filepath.Join(s.root, id)
+	return filepath.Join(s.root, escapeWorkspaceID(id))
 }
 
 // SaveWorkspace persists a workspace to disk as manifest.yaml + state.json.
@@ -166,7 +214,7 @@ func (s *CollaborationStorage) ListWorkspaces() ([]string, error) {
 		// Only include directories that contain a manifest.yaml
 		manifestPath := filepath.Join(s.root, entry.Name(), "manifest.yaml")
 		if _, err := os.Stat(manifestPath); err == nil {
-			ids = append(ids, entry.Name())
+			ids = append(ids, unescapeWorkspaceID(entry.Name()))
 		}
 	}
 

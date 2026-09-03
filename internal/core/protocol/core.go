@@ -446,6 +446,32 @@ func (a *APSAdapter) ListSessions(profileID string) ([]SessionState, error) {
 	return states, nil
 }
 
+// storeFileNameEscape lists characters that are reserved in Windows
+// filenames (< > : " / \ | ? *) plus the percent sign used as the escape
+// marker itself. StorePut keys are arbitrary caller-chosen strings (e.g.
+// "user:1") and are used directly as a filename component; on Windows a
+// literal ":" is interpreted as a drive-letter/NTFS-alternate-data-stream
+// separator, so an unescaped key can silently write into an ADS instead of
+// a real file (invisible to os.ReadDir) or fail outright. Escaping keeps
+// the on-disk name filesystem-safe on every platform without changing the
+// logical key, which is preserved verbatim in the JSON payload.
+const storeFileNameEscape = `<>:"/\|?*%`
+
+// storeFileName returns a filesystem-safe file name (without extension)
+// for the given store key. Reserved characters are percent-encoded so the
+// mapping is unambiguous; ordinary keys are left untouched.
+func storeFileName(key string) string {
+	var b strings.Builder
+	for _, r := range key {
+		if r < 0x20 || strings.ContainsRune(storeFileNameEscape, r) {
+			fmt.Fprintf(&b, "%%%02X", r)
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
 func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error {
 	if namespace == "" {
 		return fmt.Errorf("namespace is required")
@@ -459,7 +485,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 		return err
 	}
 
-	filePath := filepath.Join(profileDir, key+".json")
+	filePath := filepath.Join(profileDir, storeFileName(key)+".json")
 	data, err := json.Marshal(StoreItem{
 		Namespace: namespace,
 		Key:       key,
@@ -474,7 +500,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 }
 
 func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
-	filePath := filepath.Join(a.storeDir, namespace, key+".json")
+	filePath := filepath.Join(a.storeDir, namespace, storeFileName(key)+".json")
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -492,7 +518,7 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 }
 
 func (a *APSAdapter) StoreDelete(namespace string, key string) error {
-	filePath := filepath.Join(a.storeDir, namespace, key+".json")
+	filePath := filepath.Join(a.storeDir, namespace, storeFileName(key)+".json")
 	return os.Remove(filePath)
 }
 
@@ -515,10 +541,6 @@ func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]
 		if !strings.HasSuffix(name, ".json") {
 			continue
 		}
-		key := name[:len(name)-5]
-		if prefix != "" && key[:len(prefix)] != prefix {
-			continue
-		}
 
 		data, err := os.ReadFile(filepath.Join(profileDir, name))
 		if err != nil {
@@ -527,6 +549,13 @@ func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]
 
 		var item StoreItem
 		if err := json.Unmarshal(data, &item); err != nil {
+			continue
+		}
+
+		// Filter on the logical key from the payload, not the escaped
+		// on-disk file name, so prefixes containing reserved characters
+		// (e.g. "user:") still match correctly.
+		if prefix != "" && !strings.HasPrefix(item.Key, prefix) {
 			continue
 		}
 
