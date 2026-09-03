@@ -117,6 +117,8 @@ docs/
 ## Additional Resources
 
 - [Story Index](stories/README.md)
+- [Conventions: Version Markers](conventions/version-markers.md)
+- [Conventions: Stories](conventions/stories.md)
 - [End-to-end Tests](../tests/e2e/)
 - [Type Definitions](../internal/core/messenger/types.go)
 
