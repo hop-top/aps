@@ -17,6 +17,7 @@ Quick navigation to all APS documentation.
 - [**Discord Setup**](DISCORD_SETUP.md) — 5 min setup, rich features, community use
 - [**Messenger Quick Reference**](MESSENGER_SETUP_QUICK_REF.md) — One-liners and troubleshooting for all platforms
 - [**Ticket Services**](user/tickets.md) — Email, Jira, Linear, GitLab inbound routes: auth, payloads, sender routing
+- [**Message Services**](user/messengers.md) — Service setup, routes, testing, conversation history
 
 ### Scripts
 - [**Scripts Documentation**](../scripts/README.md) — `setup-telegram.sh`, `setup-messenger.sh`
@@ -29,6 +30,8 @@ Quick navigation to all APS documentation.
 - [**Capability Bundles**](dev/bundles.md) — Named presets grouping capabilities, scope rules, env vars, and services
 - [**Voice**](dev/voice.md) — Backend lifecycle, channel adapters (web/TUI/messenger/telephony), session routing
 - [**Message Routing**](dev/message-routing.md) — Sender route tables for message services: contacts snapshot, exact/glob match, terminal fail-safe
+- [**Messenger Architecture**](dev/messenger-architecture.md) — Webhook flow, routing, turn store
+- [**Message Conversation Policy**](dev/message-conversation-policy.md) — Identity keys, turn storage, `prior_turns`
 - [**A2A Implementation**](dev/a2a-implementation.md) — Agent-to-agent protocol
 - [**ACP Implementation**](dev/acp-implementation.md) — Agent control protocol
 - [**Protocol Interface Unification**](dev/protocol-interface-unification.md) — Protocol abstraction layer
@@ -43,6 +46,16 @@ Quick navigation to all APS documentation.
 1. Read [Messengers Overview](MESSENGERS_OVERVIEW.md)
 2. Choose: [Telegram](TELEGRAM_SETUP.md) | [Discord](DISCORD_SETUP.md)
 3. Run: `./scripts/setup-messenger.sh --type=<platform>`
+
+### Inspect conversation history
+```bash
+aps service conversation list --service <service-id>
+aps service conversation show <conversation-id>
+```
+
+See [Conversation History](user/messengers.md#conversation-history) for what routed
+actions receive (`conversation`, `prior_turns`) and
+[Message Conversation Policy](dev/message-conversation-policy.md) for identity derivation.
 
 ### Use voice
 ```bash
@@ -107,4 +120,4 @@ docs/
 
 ---
 
-**Last Updated**: 2026-03-16
+**Last Updated**: 2026-09-03
