@@ -6,7 +6,7 @@ require (
 	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.0.9
 	charm.land/lipgloss/v2 v2.0.6
-	charm.land/log/v2 v2.0.0
+	charm.land/log/v2 v2.0.1
 	github.com/a2aproject/a2a-go v0.3.15
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/huh v1.0.0
@@ -31,10 +31,10 @@ require (
 	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.45.0
 	gopkg.in/yaml.v3 v3.0.1
-	hop.top/cite v0.1.0
+	hop.top/cite v0.1.1
 	hop.top/cxr v0.1.0-alpha.0
 	hop.top/kit v0.5.0-alpha.1
-	hop.top/xrr v0.1.0-alpha.4
+	hop.top/xrr v0.1.0-alpha.5
 )
 
 require (
