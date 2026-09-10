@@ -1,152 +1,239 @@
-<p>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="#" width="340">
-    <source media="(prefers-color-scheme: light)" srcset="#" width="340">
-    <img src="#" width="340" alt="APS Logo">
-  </picture>
-  <br>
-  <a href="https://github.com/hop-top/aps/releases">
-    <img src="https://img.shields.io/github/release/hop-top/aps.svg" alt="Latest Release">
-  </a>
-  <a href="https://pkg.go.dev/hop.top/aps">
-    <img src="https://godoc.org/hop.top/aps?status.svg" alt="GoDoc">
-  </a>
-  <a href="https://github.com/hop-top/aps/actions">
-    <img src="https://github.com/hop-top/aps/workflows/CI/badge.svg" alt="Build Status">
-  </a>
-  <a href="https://codecov.io/gh/hop-top/aps">
-    <img src="https://codecov.io/gh/hop-top/aps/branch/main/graph/badge.svg" alt="Coverage">
-  </a>
-  <a href="https://github.com/hop-top/aps/blob/main/e2e/conformance/README.md">
-    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/aps/main/.12fc.json" alt="12-factor AI-CLI conformance">
-  </a>
-</p>
+# aps
 
-# APS (Agent Profile System)
+Agent Profile System: run commands and agent workflows under isolated, local-first profiles.
 
-> [!WARNING]
-> **🚧 Do Not Use — History Will Be Rewritten 🚧**
->
-> This repo is undergoing major restructuring as we selectively
-> open-source internal tools built at
-> [Idea Crafters LLC](https://ideacrafters.com). Git history **will be
-> force-pushed and rewritten** multiple times. Do not fork, clone, or
-> depend on this repo in any capacity until we tag a stable release.
+Prerelease: versions stay on the `0.x` alpha channel until 1.0, and a minor bump can carry breaking changes ([CHANGELOG.md](CHANGELOG.md)).
 
-APS is a local-first Agent Profile System that enables running commands and agent workflows under isolated profiles.
+[![Release](https://img.shields.io/github/v/release/hop-top/aps?include_prereleases&sort=semver)](https://github.com/hop-top/aps/releases)
+[![CI](https://github.com/hop-top/aps/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hop-top/aps/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/hop-top/aps/branch/main/graph/badge.svg)](https://codecov.io/gh/hop-top/aps)
+[![12-factor AI-CLI conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/aps/main/.12fc.json)](e2e/conformance/README.md)
 
-> **Where to next?**
-> - **Using aps** (human or agent) → [SKILL.md](SKILL.md) — an intent-based router into the docs
-> - **Modifying aps** → [DEVELOPING.md](DEVELOPING.md) — build, test, lint, generated docs, releases
+## Table of contents
 
-## Quick Start
+- [Demo](#demo)
+- [Why](#why)
+- [Quick start](#quick-start)
+- [Install](#install)
+- [Usage](#usage)
+- [Commands](#commands)
+- [Flags](#flags)
+- [Configuration](#configuration)
+- [Exit codes](#exit-codes)
+- [Agent usage](#agent-usage)
+- [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
 
-### Install
+## Demo
 
-```bash
-# Build from source
-git clone https://github.com/hop-top/aps.git
-cd aps
-make build
+```console
+$ aps profile create reviewer --display-name "Code Reviewer" --email reviewer@example.com
+Profile 'reviewer' created successfully.
+$ aps run reviewer -- git config --get user.name
+[exec] git
+Code Reviewer
+[exit] git ok
 ```
 
-### Create Your First Profile
+## Why
 
-```bash
-./aps profile create myagent --display-name "My AI Agent" --email "agent@example.com"
+Running several agents, or one agent under several identities, means a different set of
+credentials, a different git identity, and a different blast radius per task. Exporting
+variables by hand puts the wrong token in the wrong tool. aps keeps each identity as a
+profile: a directory holding `profile.yaml`, `secrets.env`, a `gitconfig`, notes, and
+actions. `aps run reviewer -- git status` starts any command inside that environment at the
+isolation level the profile asks for. The rest of the CLI manages profiles and the surfaces
+that feed work into them: messengers, webhooks, ticket queues, agent protocols, voice.
+
+**Why use it**
+
+- One static binary. The base install needs no daemon, container, or background service.
+- Local-first. Profiles are YAML files on disk, and `--offline` disables every network call.
+- Secrets, git identity, and profile variables reach the child process as environment
+  variables; secrets and PII are redacted from logs and output unless you pass `--no-redact`.
+- Three isolation levels: process, platform (a sandbox user account on macOS and Linux), and
+  container (Docker), with a configurable fallback when the requested level is unavailable.
+- Every command speaks `--format json`, `yaml`, or `csv`, honours `--dry-run` and
+  `--confirm`, and exits with canonical codes; `aps toolspec` describes the whole surface for
+  tool runners. Graded 12/12 against the 12-factor AI-CLI contract.
+
+**When not to use it**
+
+- Platform isolation needs passwordless sudo and an OpenSSH server (macOS 10.15 or later
+  with the Xcode Command Line Tools; Linux kernel 3.10 or later with `useradd` and
+  `setfacl`), and container isolation needs a running Docker daemon. Without them a profile
+  falls back to process isolation, or fails when it sets `strict: true`. On Windows only
+  process isolation is available; the platform sandbox there is documented as planned.
+- Data lives under `~/.local/share/aps`, `~/.config/aps`, `~/.local/state/aps`, and
+  `~/.cache/aps` on every OS, including macOS and Windows. There is no OS-native layout.
+- `aps service add` records a message service on the aps side only. It does not create the
+  Slack app, Discord gateway client, Telegram poller, Twilio webhook, or public tunnel that
+  delivers messages to it.
+
+## Quick start
+
+```sh
+brew install hop-top/tap/aps
+aps profile create reviewer --display-name "Code Reviewer" --email reviewer@example.com
+aps run reviewer -- git config --get user.name
 ```
 
-### Choose Your Isolation Level
+The last command prints `Code Reviewer` between the `[exec] git` and `[exit] git ok`
+progress lines. `aps reviewer -- echo hi` is shorthand for `aps run`, `aps reviewer` opens a
+shell as that profile, and `aps` with no arguments opens the interactive TUI.
 
-```bash
-# Process isolation (default, fastest)
-./aps profile create myagent
+## Install
 
-# Platform isolation (macOS/Linux only, user-level sandbox)
-./aps profile create myagent --isolation-level platform
+Prebuilt binaries need nothing else. Building from source or `go install` needs Go 1.26.6
+or later. Platform and container isolation have their own requirements, listed in
+[docs/user/isolation.md](docs/user/isolation.md).
 
-# Container isolation (strongest isolation, requires Docker)
-./aps profile create myagent --isolation-level container
+| Path | Command |
+|---|---|
+| Homebrew (macOS, Linux) | `brew install hop-top/tap/aps` |
+| Scoop (Windows) | `scoop bucket add hop-top https://github.com/hop-top/scoop-bucket`, then `scoop install aps` |
+| Go | `go install hop.top/aps/cmd/aps@latest`, with `$(go env GOPATH)/bin` on `PATH` |
+| Prebuilt binary | Download from [Releases](https://github.com/hop-top/aps/releases) and put `aps` on `PATH` |
+| Source | `git clone https://github.com/hop-top/aps.git && cd aps && make build` builds `bin/aps`; `make build-vault` adds the opt-in OpenBao secrets backend |
+
+Supported platforms: Linux and macOS on amd64 and arm64, Windows on amd64. Release archives
+are named after the version, OS, and architecture (`.tar.gz`, or `.zip` on Windows); the
+`aps-vault` archives hold the same binary built with the OpenBao backend.
+
+Verify a download: every release ships `checksums.txt` with SHA-256 sums and an SBOM per
+archive. Compare `shasum -a 256` of the archive with its line in `checksums.txt` before
+extracting.
+
+Shell completion for bash, zsh, fish, and PowerShell comes from `aps completion`:
+
+```sh
+aps completion zsh > "${fpath[1]}/_aps"    # zsh; bash: source <(aps completion bash)
 ```
 
-### Run Commands
+`eval "$(aps alias shell)"` defines one shell alias per profile, so `reviewer echo hi` runs
+`aps reviewer echo hi`. `aps upgrade` checks for a newer release and installs it after a
+prompt; `--auto` skips the prompt.
 
-```bash
-# Run a command under your profile
-./aps myagent -- echo "Hello from agent!"
+## Usage
 
-# Run git with profile's git config
-./aps myagent -- git status
+List profiles. Every list and show command takes `--format json`, `yaml`, or `csv`:
 
-# Start an interactive shell
-./aps myagent
+```console
+$ aps profile list
+ID        DISPLAY NAME   ROLES  CAPABILITIES  WORKSPACE  EMAIL                 SECRETS  DID    COLOR  AVATAR
+reviewer  Code Reviewer                                  reviewer@example.com  true     false
 ```
 
-Profile secrets (`secrets.env`) are injected as environment variables, so
-external LLM CLIs inherit the selected profile's API keys:
+Run a command with the profile's environment plus one-off variables:
 
-```bash
-# Profile-scoped LLM sessions. Each CLI reads API keys from
-# myagent's secrets.env, without APS logging the secret values.
-./aps run myagent -- claude "summarize this branch's changes"
-./aps run myagent -- codex "write tests for this package"
-./aps run myagent -- gemini "summarize docs/user"
-./aps run myagent -- opencode "inspect the failing test"
-
-# Shorthand form is equivalent:
-./aps myagent claude "review this branch"
+```console
+$ aps run reviewer --env GREETING=hello -- sh -c 'echo "$GREETING from $APS_PROFILE_ID"'
+[exec] sh
+hello from reviewer
+[exit] sh ok
 ```
 
-Native `aps chat <profile>` — REPL with the profile as the assistant
-identity, persona-as-system-prompt, sessions persisted in the registry —
-is on the roadmap (story 055). The commands above are the supported
-external-CLI bridge.
+Keys in the profile's `secrets.env` reach the command as environment variables, so an
+external CLI such as `claude`, `codex`, `gemini`, or `opencode` picks up the profile's API
+keys without aps printing their values:
 
-### Generate Documentation
-
-```bash
-./aps docs
+```console
+$ aps run reviewer -- sh -c 'test -n "$GITHUB_TOKEN" && echo "GITHUB_TOKEN is set"'
+[exec] sh
+GITHUB_TOKEN is set
+[exit] sh ok
 ```
 
-Documentation will be generated at `~/.agents/docs/`.
+The profile-first form drops the progress lines; with no command it opens a shell as the
+profile:
 
-**Then read:**
-- `~/.agents/docs/README.md` - Getting started guide
-- `~/.agents/docs/CLI.md` - Complete command reference
-- `~/.agents/docs/PROFILES.md` - Profile management guide
-- `~/.agents/docs/ISOLATION.md` - Isolation levels and configuration
-- `~/.agents/docs/SESSIONS.md` - Session management guide
-- `~/.agents/docs/EXAMPLES.md` - Practical examples
-- `~/.agents/docs/WEBHOOKS.md` - Webhook setup guide
-- `~/.agents/docs/SECURITY.md` - Security best practices
+```console
+$ aps reviewer -- echo hi
+hi
+```
 
-**Additional documentation available in the repository:**
-- `docs/dev/implementation/guides/migration-guide.md` - Migration guide from process to platform/container isolation
-- `docs/dev/testing/performance-benchmarks.md` - Performance benchmarks and optimization
-- `docs/dev/security/security-audit.md` - Comprehensive security audit report
-- `docs/dev/operations/releases/release-notes.md` - Release notes and version history
-- `docs/dev/platforms/macos/overview.md` - macOS platform isolation setup
-- `docs/dev/platforms/linux/overview.md` - Linux platform isolation setup
-- `docs/dev/platforms/container/overview.md` - Container isolation setup and configuration
+Inspect a profile. `aps profile export reviewer --manifest-format agentco` renders the same
+record as an `AGENTS.md` role manifest (identity only, never secrets), and
+`aps profile import AGENTS.md` creates a profile from one:
 
-## Features
+```console
+$ aps profile show reviewer
+id: reviewer
+display_name: Code Reviewer
+email: reviewer@example.com
+preferences:
+    shell: /bin/zsh
+git:
+    enabled: true
+isolation:
+    level: process
+    strict: false
+    fallback: false
 
-- **Profile Isolation**: Separate environments for different agents, environments, or contexts with configurable isolation levels (process, platform, container)
-- **Platform Isolation**: User-level sandboxing on macOS (via `dscl`) and Linux (via `useradd`) with ACL-based access control
-- **Container Isolation**: Docker-based isolation with automatic Dockerfile generation, volume mounting, and resource limits
-- **Session Management**: Track and manage long-running sessions with inspect, logs, and terminate commands
-- **Session Attachment**: SSH-based session attachment for platform and container isolation
-- **Secrets Management**: Secure credential storage with automatic environment injection
-- **Action Automation**: Custom scripts triggered by CLI or webhooks
-- **Git Integration**: Automatic gitconfig and SSH key management
-- **Manifest Interchange**: Import/export agent role manifests (AGENTS.md) — profiles stay aps-native; manifests convert on the way in and out
-- **Webhook Support**: Event-driven automation from GitHub, GitLab, and more
-- **TUI Interface**: Interactive terminal user interface for easy profile management
-- **Voice Sessions**: Speech-to-speech backend integration (PersonaPlex, Moshi) with web, terminal, messenger, and telephony channels
-- **Graceful Degradation**: Automatic fallback to available isolation levels when requested level is unavailable
-- **Cross-Platform Support**: macOS, Linux, and Windows (platform isolation varies by OS)
 
-## Adapters
+Modules:
+- Secrets: present
+```
+
+## Commands
+
+`aps --help` groups commands by intent (interact, organize, pipelines, security, instance);
+`--help-all` adds the management group, and `-h` after any command prints its flags. The
+generated reference for every command and flag is
+[docs/cli/commands.md](docs/cli/commands.md).
+
+| Command | Purpose |
+|---|---|
+| `run` | Run a command in a profile context |
+| `profile` | Manage agent profiles |
+| `session` | Manage sessions |
+| `chat` | Chat with a profile-backed assistant |
+| `serve` | Start protocol server |
+| `listen` | Subscribe to bus topics for a profile and print events as JSONL |
+| `voice` | Manage voice sessions and the voice backend service |
+| `capability` | Manage capabilities (tools, configs, dotfiles) |
+| `bundle` | Manage capability bundles |
+| `workspace` | Manage multi-agent workspaces |
+| `squad` | Manage agent squads (topology, membership, scope) |
+| `org` | Inspect the reporting hierarchy across profiles |
+| `contact` | Manage contacts via adapter |
+| `action` | Manage and execute profile actions |
+| `adapter` | Manage adapters (messengers, protocols, mobile, desktop) |
+| `service` | Manage profile-facing services |
+| `webhook` | Manage Webhook server |
+| `skill` | Manage Agent Skills |
+| `a2a` | Manage A2A (Agent-to-Agent) protocol operations |
+| `acp` | Manage ACP (Agent Client Protocol) server |
+| `directory` | Manage AGNTCY Directory registration and discovery |
+| `identity` | Manage DID-based agent identity |
+| `policy` | Manage workspace access policies |
+| `observability` | Manage OpenTelemetry observability |
+| `status` | Show aps configuration and runtime status |
+| `config` | Inspect aps configuration |
+| `docs` | Generate documentation |
+| `toolspec` | Print the aps tool specification (commands, flags, errors, workflows) |
+| `alias` | Manage command aliases |
+| `completion` | Generate completion script |
+| `env` | Output environment variables for configured capabilities |
+| `migrate` | Migrate legacy configurations to new formats |
+| `upgrade` | Check for and install updates |
+| `version` | Print version information |
+
+Sessions: `aps session list` (filters `--status`, `--tier`, `--type`; voice sessions are
+`--type voice`), `inspect`, `logs`, `attach`, `detach`, `terminate`, and `delete`. Attach
+uses tmux; for a platform-sandboxed session it tunnels over SSH into the sandbox user, for a
+container session into the container.
+
+Capabilities: `aps capability install`, `list`, `show`, `link`, `adopt` (move a file or
+directory under aps and symlink it back), `watch` (symlink an external file in), `enable`
+and `disable` per profile, and `delete`. `aps capability link copilot` or `link windsurf`
+without `--target` resolves to that tool's conventional path. `eval "$(aps env)"` exports a
+path variable per installed capability.
+
+### Adapters
 
 Profiles connect to external systems through adapters, grouped by kind:
 
@@ -165,399 +252,270 @@ cog.out(subprocess.check_output(
 - **Sense**: Camera, microphone
 <!-- [[[end]]] -->
 
-See [docs/dev/adapters.md](docs/dev/adapters.md) for the technical and integration guide.
+Message services bind one chat platform (Telegram, Slack, Microsoft Teams, Discord, SMS,
+WhatsApp, or email) to a profile action: `aps service add` records the service, `aps serve`
+or `aps service start` exposes its webhook, and aps validates each request, normalises the
+event, routes it by sender, and runs the action. Every routed message and delivered reply is
+stored as a conversation turn, and each action run receives the newest prior turns of the
+same session; `aps service conversation list` and `show` read them back. Platform
+comparison: [docs/MESSENGERS_OVERVIEW.md](docs/MESSENGERS_OVERVIEW.md); setup and testing:
+[docs/user/messengers.md](docs/user/messengers.md); how conversation and session identity
+are derived: [docs/dev/message-conversation-policy.md](docs/dev/message-conversation-policy.md);
+adapter internals and manifests: [docs/dev/adapters.md](docs/dev/adapters.md).
 
-### Message Services
+## Flags
 
-Message services bind a chat platform (Telegram, Slack, Teams, Discord, SMS,
-WhatsApp, email) to one profile action. `aps serve` mounts a webhook per
-service; APS validates the request, normalizes the event, routes it by
-sender, and runs the action.
+Global flags apply to every command; `aps --help-all` lists all of them. The ones to reach
+for first:
 
-```bash
-aps service add support-bot \
-  --type telegram \
-  --profile my-agent \
-  --default-action handle-telegram \
-  --env TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN
-```
+| Flag | Default | Effect |
+|---|---|---|
+| `--format` | `table` | Output format: `csv`, `human`, `json`, `table`, `text`, `yaml` |
+| `-p`, `--profile` | active profile | Profile id; `APS_PROFILE` sets the default |
+| `--workspace` | active workspace | Workspace id |
+| `--offline` | off | Disable all network calls |
+| `--dry-run` | off | Preview side effects without applying them, on commands that support it |
+| `--confirm` | `prompt` on a TTY, `no` otherwise | Confirmation policy for destructive commands: `auto`, `yes`, `no`, `prompt` |
+| `--max-ops` | `0` (unlimited) | Cap mutating operations per invocation |
+| `--quiet` | off | Suppress non-essential output |
+| `--no-color` | off | Disable ANSI colour |
+| `-V`, `--verbose` | off | Increase log verbosity: `-V` debug, `-VV` trace |
 
-Every routed message and delivered reply is recorded as a conversation turn,
-and each action run receives the newest prior turns of the same session;
-inspect them with `aps service conversation list|show`.
-
-See [docs/MESSENGERS_OVERVIEW.md](docs/MESSENGERS_OVERVIEW.md) for the platform
-comparison, [docs/user/messengers.md](docs/user/messengers.md) for setup and
-testing, and
-[docs/dev/message-conversation-policy.md](docs/dev/message-conversation-policy.md)
-for how conversation and session identity are derived.
-
-## Directory Structure
-
-All APS data lives under `~/.agents/`:
-
-```
-~/.agents/
-  profiles/
-    myagent/
-      profile.yaml
-      secrets.env
-      gitconfig
-      actions/
-      notes.md
-  docs/
-    README.md
-    CLI.md
-    PROFILES.md
-    SECURITY.md
-    EXAMPLES.md
-    WEBHOOKS.md
-    ISOLATION.md
-    SESSIONS.md
-
-~/.aps/
-  sessions/
-    registry.json
-  keys/
-    <session-id>/
-      admin_key
-      admin_key.pub
-  tmux.conf
-```
-
-## Shell Integration
-
-### Auto-completion
-
-```bash
-# For zsh
-echo 'source <(./aps completion zsh)' >> ~/.zshrc
-
-# For bash
-echo 'source <(./aps completion bash)' >> ~/.bashrc
-```
-
-### Profile Aliases
-
-```bash
-eval "$(./aps alias)"
-```
-
-Then run:
-```bash
-myagent echo "Hello!"
-```
+Per-command flags come from `-h`. `run` takes `--env KEY=VALUE` (repeatable, later wins),
+`--env-file` (dotenv file, repeatable), and `--idempotency-key`. Every state-changing
+subcommand takes `-n`, `--note`, an audit note recorded with the bus event and visible to
+the policy engine; some policies reject destructive operations without one
+([docs/cli/reference.md](docs/cli/reference.md)).
 
 ## Configuration
 
-Global configuration at `~/.config/aps/config.yaml`:
+The user config file is `~/.config/aps/config.yaml` (`$XDG_CONFIG_HOME/aps/config.yaml`).
+A project can add `.aps.yaml`, `.aps/config.yaml`, or `.hop/aps/config.yaml`; aps reads
+the current directory's markers, walks up to the project root, then the user file, then
+`/etc/aps/config.yaml`. `aps config paths` prints that chain, and `-c key=value` overrides
+one value for one invocation.
 
 ```yaml
-prefix: MYTOOL
+prefix: APS
 isolation:
-  default_level: process  # process | platform | container
-  fallback_enabled: true   # Allow fallback to lower isolation levels
-```
-
-This changes environment variables from `APS_*` to `MYTOOL_*` and configures the default isolation behavior.
-
-### Profile Isolation
-
-Profiles can also specify isolation settings in `profile.yaml`:
-
-```yaml
-isolation:
-  level: process  # process | platform | container
-  strict: false   # Fail if requested level is unavailable
-  fallback: true  # Allow fallback to lower isolation levels
-  platform:
-    # macOS/Linux specific settings
-    # See docs/dev/platforms/macos/overview.md or docs/dev/platforms/linux/overview.md
-  container:
-    # Container specific settings
-    image: "ubuntu:22.04"    # Base Docker image
-    volumes:                # Volume mounts
-      - source: /tmp
-        target: /workspace
-    resources:              # Resource limits
-      memory: "1g"
-      cpu: "0.5"
-```
-
-## Build Instructions
-
-### Prerequisites
-- Go 1.25.5+
-- [mise](https://mise.jdx.dev) (recommended for dev tools)
-
-```bash
-# Install all required tools (go, goreleaser, act, etc.)
-mise install
-```
-
-### Platform Requirements
-
-**macOS Platform Isolation:**
-- macOS 10.15 (Catalina) or later
-- Xcode Command Line Tools
-- OpenSSH Server (`sudo systemsetup -setremotelogin on`)
-
-**Linux Platform Isolation:**
-- Linux kernel 3.10+
-- `useradd`, `setfacl` commands
-- OpenSSH Server
-
-**Container Isolation:**
-- Docker installed and running
-- Admin privileges for Docker operations
-
-### Build for all platforms
-
-```bash
-make build
-```
-
-### Build for current platform
-
-```bash
-make build-local
-```
-
-### Test
-
-```bash
-# Unit tests
-go test -v ./tests/unit
-
-# E2E tests
-go test -v ./tests/e2e
-
-# Platform-specific tests (macOS only)
-go test -v -tags darwin ./tests/unit/core/isolation
-
-# Platform-specific tests (Linux only)
-go test -v -tags linux ./tests/unit/core/isolation
-
-# Docker user journey tests
-make docker-test-e2e-user
-```
-
-### Docker Testing
-
-APS includes a Docker-based testing environment for testing in an isolated Linux environment that simulates a user's machine. This is particularly useful for testing installation, setup, and workflows without affecting your local development environment.
-
-```bash
-# Build the test environment
-make docker-build-test
-
-# Run all user journey tests
-make docker-test-e2e-user
-
-# Start an interactive test environment
-make docker-test-up
-make docker-test-shell  # For manual testing
-
-# Cleanup
-make docker-test-cleanup
-```
-
-For detailed documentation, see [Docker testing user guide](docs/agent/docker-testing.md) or [Docker testing strategy for developers](docs/dev/testing/docker-testing-strategy.md).
-
-## Commands
-
-```bash
-aps                    # Launch TUI
-aps help               # Show help
-aps profile list       # List all profiles
-aps profile create <id>   # Create a new profile
-aps profile show <id>  # Show profile details
-aps profile import <bundle|AGENTS.md>  # Import a bundle or agent role manifest
-aps profile export <id> [--manifest-format agentco]  # Export native yaml or AGENTS.md
-aps run <id> -- <cmd>  # Run command under profile
-aps action list <id>   # List profile actions
-aps action run <id> <action>  # Run action
-aps session list      # List active sessions
-aps session attach <id>  # Attach to a session
-aps session detach <id>  # Detach from a session
-aps session inspect <id> # Inspect session details
-aps session logs <id>    # Show session logs
-aps session terminate <id> # Terminate a session
-aps voice service start|stop|status  # Manage voice backend
-aps voice start [--profile <id>] [--channel web|tui|telegram|twilio]
-aps voice session list   # List active voice sessions
-aps docs               # Generate documentation
-```
-
-Full command reference: [docs/cli/commands.md](docs/cli/commands.md)
-
-## Examples
-
-See `~/.agents/docs/EXAMPLES.md` for detailed examples including:
-- GitHub issue triage
-- OpenAI chat assistant
-- Data processing pipelines
-- Multi-environment deployment
-- Webhook integrations
-- Containerized workflows
-- Platform isolation use cases
-- And more
-
-**Platform-specific examples:**
-- `docs/dev/platforms/macos/overview.md` - macOS sandbox examples
-- `docs/dev/platforms/linux/overview.md` - Linux sandbox examples
-- `docs/dev/platforms/container/overview.md` - Container isolation examples
-
-## Isolation Levels
-
-APS supports multiple isolation levels for running commands and actions:
-
-- **process** (default): Runs commands in isolated processes with injected environment
-- **platform**: Uses platform-specific sandboxing (macOS, Linux)
-- **container**: Runs commands in isolated containers (Docker)
-
-If the requested isolation level is unavailable, APS can gracefully degrade to a lower level based on configuration.
-
-### Performance Comparison
-
-| Isolation Level | Setup Time | Execution Overhead | Memory Overhead |
-|---------------|------------|-------------------|----------------|
-| Process | 0ms | < 5ms | ~10MB |
-| Platform | 150-400ms* / < 50ms | 10-40ms | ~50-60MB |
-| Container | 2-5s / 100-500ms | 20-50ms | 100-200MB |
-
-\*First run includes user account creation. Subsequent runs are cached.
-
-See `docs/dev/testing/performance-benchmarks.md` for detailed benchmarks.
-
-### Platform Isolation
-
-- **macOS**: User account sandboxing via `dscl`, ACL-based access control
-- **Linux**: User account isolation via `useradd`, namespace/chroot/cgroups support
-- Requires: Admin/sudo access, SSH server, admin public key
-
-### Container Isolation
-
-- Docker-based isolation with automatic Dockerfile generation
-- Volume mounting, network configuration, resource limits
-- SSH server and tmux integration for session management
-- Requires: Docker installed
-
-See `docs/dev/platforms/container/overview.md`, `docs/dev/platforms/macos/overview.md`, and `docs/dev/platforms/linux/overview.md` for platform-specific setup guides.
-
-## Capability Management
-
-APS can manage external tools, configurations, and dotfiles as "Capabilities". These are stored in `~/.aps/capabilities/` and can be linked into your workspace.
-
-### Commands
-
-```bash
-# Install a capability from a directory
-aps capability install ./my-tool --name my-tool
-
-# List installed capabilities
-aps capability list
-
-# Link a capability to your current workspace
-aps capability link my-tool --target ./local/path
-
-# "Smart Link" a known tool (e.g., windsurf, copilot)
-# This automatically resolves the target path based on standard conventions
-aps capability link copilot
-
-# "Adopt" an existing file into APS management
-aps capability adopt ./my-config.yaml --name my-config
-
-# "Watch" an external file (symlink into APS)
-aps capability watch ./external/file --name my-ref
-
-# Delete a capability
-aps capability delete my-tool
-```
-
-### Environment Integration
-
-You can automatically export environment variables for all your capabilities (e.g., `APS_MY_TOOL_PATH`).
-
-Add this to your shell profile (`~/.zshrc` or `~/.bashrc`):
-
-```bash
-eval "$(aps env)"
-```
-
-This ensures that whenever you install or remove a capability, your environment variables are updated (on next shell load or re-eval).
-
-### Configuration
-
-You can configure additional source directories for capabilities in `~/.config/aps/config.yaml`:
-
-```yaml
+  default_level: process
+  fallback_enabled: true
 capability_sources:
-  - /shared/team/capabilities
-  - ~/personal/capabilities
+  - ~/shared/capabilities
 ```
 
-## Session Management
+| Field | Default | Effect |
+|---|---|---|
+| `prefix` | `APS` | Prefix for the variables injected into sessions |
+| `isolation.default_level` | `process` | Default isolation level for profiles that do not set one |
+| `isolation.fallback_enabled` | `true` | Allow degraded-mode operation if the preferred isolation is unavailable |
+| `capability_sources` | `[]` | Additional directories to search for capability definitions |
 
-APS provides session tracking for long-running operations:
+`secrets.backend` selects where secrets live: `file` (the profile's `secrets.env`, mode
+0600, the default), `env`, `keyring`, `onepassword`, `openbao` (needs the `aps-vault`
+build), `infisical`, or `ghsecrets`; the keys each backend needs are listed under Secret
+Store Backends in [docs/user/messengers.md](docs/user/messengers.md). Per-profile isolation
+lives in `profile.yaml` (`isolation.level`, `strict`, `fallback`, and the `platform` and
+`container` blocks): [docs/user/isolation.md](docs/user/isolation.md).
 
-```bash
-# List all active sessions
-aps session list
+Environment variables aps reads:
 
-# List sessions for a specific profile
-aps session list --profile myagent
+| Variable | Effect |
+|---|---|
+| `APS_DATA_PATH` | Data directory; overrides `$XDG_DATA_HOME/aps` and `~/.local/share/aps` |
+| `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME` | Roots for config, state, and cache, each with an `aps` subdirectory |
+| `APS_PROFILE` | Default profile when `--profile` is not passed |
+| `APS_BUS_TOKEN` (or `BUS_TOKEN`), `APS_BUS_ADDR` | Event-bus auth token and address; without a token the bus is disabled and a warning is printed |
+| `APS_NO_BUS_WARN` | Suppress that warning |
+| `APS_ADAPTER_DISABLE_PREFIX_VALIDATION` | Set to `1` to accept adapter manifests whose `env_prefix` is not a valid variable name while migrating them |
 
-# Filter by status or tier
-aps session list --status active
-aps session list --tier premium
+Variables the child process receives, with the prefix from `prefix`: `APS_PROFILE_ID`,
+`APS_PROFILE_DIR`, `APS_PROFILE_YAML`, `APS_PROFILE_SECRETS`, `APS_PROFILE_DOCS_DIR`, every
+key in `secrets.env`, `GIT_CONFIG_GLOBAL` pointing at the profile's `gitconfig` when git is
+enabled, `GIT_SSH_COMMAND` when an SSH key is configured, a path variable per linked
+capability, then the values from `--env-file` and `--env`.
 
-# Inspect session details
-aps session inspect <session-id>
+### Directory structure
 
-# View session logs
-aps session logs <session-id>
+| Purpose | Path |
+|---|---|
+| Data: profiles, sessions, adapters, capabilities, generated docs | `$APS_DATA_PATH`, else `$XDG_DATA_HOME/aps`, else `~/.local/share/aps` |
+| Config | `$XDG_CONFIG_HOME/aps`, else `~/.config/aps` |
+| State | `$XDG_STATE_HOME/aps`, else `~/.local/state/aps` |
+| Cache | `$XDG_CACHE_HOME/aps`, else `~/.cache/aps` |
 
-# Terminate a session gracefully
-aps session terminate <session-id>
+Inside the data directory:
+
+```
+profiles/reviewer/
+  profile.yaml         identity, preferences, git and isolation settings
+  secrets.env          KEY=VALUE secrets, mode 0600
+  gitconfig            used through GIT_CONFIG_GLOBAL
+  notes.md             body of the exported AGENTS.md manifest
+  actions/             profile action scripts
+sessions/registry.db   session registry
+capabilities/          installed capabilities
+keys/admin_priv        admin key for attaching to sandboxed sessions
+docs/                  output of aps docs
 ```
 
-### Session Attachment
+Older releases kept profiles under `~/.agents/profiles` and sessions in a `registry.json`;
+see [Troubleshooting](#troubleshooting).
 
-- **Process Isolation**: Direct shell access
-- **Platform Isolation**: SSH to sandbox user (macOS/Linux)
-- **Container Isolation**: SSH into container
+## Exit codes
 
-Sessions are tracked in `~/.aps/sessions/registry.json` and include metadata like PID, status, and heartbeat tracking.
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Generic error, including unknown flags, missing arguments, and a missing `--` on `aps run` |
+| 3 | Not found: the profile, session, or capability does not exist |
+| 4 | Conflict: the record already exists, or a policy denied the change |
+| 5 | Unauthorized: a credential or auth check failed |
+| 64 | Rate limited: the `--max-ops` budget was exceeded |
+| child's code | `aps run` and `aps action run` propagate the command's exit code |
 
-## Testing
+Error output carries the same class as a prefix (`NOT_FOUND`, `CONFLICT`, `GENERIC`), and
+`--format json` renders it as a structured envelope.
 
-To run the E2E test suite:
+## Agent usage
 
-```bash
-go test -v ./tests/e2e
+Every command accepts `--format json` (also `yaml` and `csv`) and never prompts off a TTY:
+`--confirm` defaults to `no` there, and `profile create` asks for missing fields only when
+stdin is a terminal.
+
+```console
+$ aps profile list --format json
+[
+  {
+    "id": "reviewer",
+    "display_name": "Code Reviewer",
+    "roles": "",
+    "capabilities": "",
+    "workspace": "",
+    "email": "reviewer@example.com",
+    "has_secrets": true,
+    "has_identity": false,
+    "color": "",
+    "avatar": ""
+  }
+]
 ```
+
+- `--dry-run` previews commands that support it; the ones that cannot (`run`, `chat`,
+  `docs`) say why in `-h`.
+- `--max-ops` caps mutating operations per invocation, and `--idempotency-key` on `run`,
+  `action run`, and `profile import` replays the recorded result for a repeated key.
+- `--progress-format json`, the default alongside `--format json`, emits the exec and exit
+  progress envelope as JSONL.
+- `aps toolspec --format json` prints every command, flag, error pattern, and workflow;
+  `aps status --format json` reports the active profile, workspace, version, and bus state.
+- `aps listen --profile reviewer` streams bus events as JSONL (needs `APS_BUS_TOKEN`).
+
+Exit codes are listed above. A cheatsheet for scripts and LLMs is
+[docs/cheatsheet-agent.md](docs/cheatsheet-agent.md); [AGENTS.md](AGENTS.md) covers working
+on the aps codebase itself.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled` on every command | No event-bus token in the environment | Set `APS_BUS_TOKEN` to enable the bus (`aps listen`, event publishing), or `APS_NO_BUS_WARN=1` to silence the warning |
+| `aps: command not found` after `go install` | `$(go env GOPATH)/bin` is not on `PATH` | Add it in your shell profile |
+| `go install` fails with module or toolchain errors | Go older than 1.26.6 | Upgrade Go |
+| Profiles from an older install are missing | Data moved from `~/.agents/profiles` to `~/.local/share/aps/profiles` | Copy the profile directories over, or `export APS_DATA_PATH="$HOME/.agents"` |
+| `GENERIC: missing '--' separator` | `aps run` needs `--` between the profile and the command | `aps run reviewer -- git status` |
+| `aps voice start` reports the backend unreachable | The voice backend daemon is not running | Run `aps voice service start` first |
+| `aps service add` prints `config_valid: false` and exits 1 | A required option for that service type is missing, for example `--provider` and `--from` for `sms` | Add the listed options; nothing was written |
+
+More: the troubleshooting section of
+[docs/user/getting-started/install.md](docs/user/getting-started/install.md),
+[docs/MESSENGER_SETUP_QUICK_REF.md](docs/MESSENGER_SETUP_QUICK_REF.md), and the platform
+pages linked below.
+
+## Documentation
+
+- [SKILL.md](SKILL.md) routes by intent ("I want to..."); [docs/INDEX.md](docs/INDEX.md)
+  lists everything; [DEVELOPING.md](DEVELOPING.md) is for changing aps.
+- Getting started: [install](docs/user/getting-started/install.md),
+  [tutorial](docs/user/getting-started/tutorial.md), [glossary](docs/glossary.md).
+- CLI: [reference](docs/cli/reference.md) (global flags, exit codes, `--note` inventory,
+  export formats), [commands](docs/cli/commands.md) (generated),
+  [human cheatsheet](docs/cheatsheet-human.md), [agent cheatsheet](docs/cheatsheet-agent.md),
+  [redaction](docs/cli/redaction.md).
+- Isolation: [levels and requirements](docs/user/isolation.md),
+  [macOS](docs/dev/platforms/macos/overview.md), [Linux](docs/dev/platforms/linux/overview.md),
+  [container](docs/dev/platforms/container/overview.md),
+  [migrating a profile from process to platform or container](docs/dev/implementation/guides/migration-guide.md),
+  [benchmarks](docs/dev/testing/performance-benchmarks.md).
+- Messaging and tickets: [overview](docs/MESSENGERS_OVERVIEW.md),
+  [quick reference](docs/MESSENGER_SETUP_QUICK_REF.md),
+  [message services](docs/user/messengers.md), [conversations](docs/user/conversations.md),
+  [tickets](docs/user/tickets.md), [Telegram](docs/TELEGRAM_SETUP.md),
+  [Discord](docs/DISCORD_SETUP.md).
+- Protocols and remote access: [A2A quickstart](docs/user/a2a-quickstart.md),
+  [A2A examples](docs/user/a2a-examples.md), [ACP quickstart](docs/user/acp-quickstart.md),
+  [remote access](docs/user/remote-access.md).
+- Extending: [adapters](docs/dev/adapters.md), [skills](docs/user/skills/README.md) with an
+  [example skill](examples/skills/hello-world/SKILL.md),
+  [capability bundles](docs/dev/bundles.md), [squads](docs/dev/squads.md),
+  [voice](docs/dev/voice.md), [policies](docs/policies.md),
+  [configuration](docs/dev/configuration.md).
+- Architecture: [architecture.md](docs/architecture.md), [ADRs](docs/adr/),
+  [developer notebook](docs/dev/readme.md),
+  [agent guide to the codebase](docs/agent/README.md),
+  [security audit](docs/dev/security/security-audit.md),
+  [release notes](docs/dev/operations/releases/release-notes.md).
+- Generated locally: `aps docs` writes `README.md`, `CLI.md`, `PROFILES.md`,
+  `ISOLATION.md`, `SESSIONS.md`, `EXAMPLES.md`, `WEBHOOKS.md`, `SECURITY.md`, and
+  `SPEC.md` under the data directory's `docs/`. `EXAMPLES.md` walks through GitHub issue
+  triage, an OpenAI chat assistant, a data-processing pipeline, multi-environment
+  deployment, a Reddit bot, git workflow automation, webhook integration, a database
+  migration, a custom shell environment, and running tests under different environments.
+
+Changelog: [CHANGELOG.md](CHANGELOG.md), maintained by release-please.
 
 ## Contributing
 
-Contributions are welcome!
+Pull requests are welcome; read [CONTRIBUTING.md](CONTRIBUTING.md) first (fork, feature
+branch, Conventional Commits, one concern per PR). Questions and bug reports go to
+[GitHub issues](https://github.com/hop-top/aps/issues); templates exist for bug reports and
+for platform-adapter PRs.
 
-### Documentation Structure
+Dev setup: `mise install` (pinned Go, goreleaser, golangci-lint, act, lychee), then
+`make build` for `bin/aps`; `make help` lists every target. Before a PR run `make test` and
+`make lint`, which is what CI runs on Ubuntu, macOS, and Windows: unit, internal-package, and
+end-to-end Go tests; golangci-lint; the generated-docs staleness check; and the lychee link
+check. Tables between cog markers, including the adapter list above, are generated from
+code: change the source, run `make docs-gen`, and commit both.
 
-*   **[User Documentation](docs/user/README.md)**: Guides for installing and using APS.
-*   **[Developer Documentation](docs/dev/readme.md)**: Architecture, design specs, and implementation details.
-*   **[Agent Documentation](docs/agent/README.md)**: Context and patterns for AI agents working on the codebase.
-*   **[Glossary](docs/glossary.md)**: Terms and disambiguation for sessions, messengers, threads, services, and adapters.
+Releases are automated by release-please on `main`: merging its release PR tags `aps/v` plus
+the version, publishes the GitHub Release and the CHANGELOG entry, and GoReleaser uploads
+the archives and updates the Homebrew tap and Scoop bucket. Versions stay on the prerelease
+channel until 1.0. Details: [RELEASING.md](RELEASING.md).
 
-See `docs/dev/operations/releases/release-notes.md` for recent changes and version history.
+### Test
 
-For developers working on the codebase, see `AGENTS.md` for implementation guidance and architecture details.
+```sh
+make test                   # Go tests plus the GitHub workflows locally via act
+make test-unit              # tests/unit
+make test-e2e               # tests/e2e
+make test-stories           # tests linked from docs/stories/
+make docker-test-e2e-user   # user-journey tests in a Docker Linux environment
+```
+
+Test layout, the direct `go test` forms, the Docker targets, and story-linked tests:
+[docs/dev/testing/running-tests.md](docs/dev/testing/running-tests.md).
+
+## Security
+
+Report vulnerabilities privately by email to the address in [SECURITY.md](SECURITY.md); do
+not open a public issue. Reports are acknowledged within 48 hours, assessed within a week,
+and fixed on a best-effort basis within 30 days; only the latest release receives security
+fixes. How secrets and PII are kept out of logs and output:
+[docs/cli/redaction.md](docs/cli/redaction.md); audit:
+[docs/dev/security/security-audit.md](docs/dev/security/security-audit.md).
 
 ## License
 
-[MIT](https://github.com/hop-top/aps/raw/main/LICENSE)
-
-## Support
-
-For issues, questions, or contributions, please visit:
-- GitHub: https://github.com/hop-top/aps
-- Issues: https://github.com/hop-top/aps/issues
+[MIT](LICENSE). Copyright (c) 2026 Idea Crafters LLC and jadb. Release archives include the
+license and an SBOM.
