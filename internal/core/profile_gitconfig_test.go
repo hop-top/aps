@@ -80,7 +80,7 @@ func TestCreateProfile_GitConfig(t *testing.T) {
 		},
 		{
 			name:        "NUL dropped",
-			id:          "nul",
+			id:          "nulbyte", // "nul" is a reserved device name on Windows
 			displayName: "a\x00b",
 			email:       "n@x.io",
 			wantFile:    "[user]\n\tname = \"ab\"\n\temail = \"n@x.io\"\n",
