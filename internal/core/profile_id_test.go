@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -188,6 +189,9 @@ func TestImportProfileBundle_RejectsInvalidIDBeforeTouchingFS(t *testing.T) {
 // Existing profiles whose id predates validation must stay loadable
 // and listable; validation applies on creation only.
 func TestLegacyInvalidProfileID_StillLoadsAndLists(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("ids rejected by ValidateProfileID cannot exist as directories on Windows")
+	}
 	dataDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", dataDir)
 
