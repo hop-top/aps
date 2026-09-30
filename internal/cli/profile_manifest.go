@@ -158,7 +158,7 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 	}
 	// Before the dry-run preview, so the preview gives the real verdict.
 	if err := core.ValidateProfileID(id); err != nil {
-		return err
+		return fmt.Errorf("importing manifest: %w", err)
 	}
 
 	linkable, skipped := partitionManifestSkills(m.Skills, capability.Exists)

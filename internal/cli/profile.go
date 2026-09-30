@@ -250,7 +250,7 @@ record (use --force to replace).`,
 		// Before prompts and the --force removal below: profiles/..
 		// resolves to the data dir itself.
 		if err := core.ValidateProfileID(id); err != nil {
-			return err
+			return fmt.Errorf("creating profile: %w", err)
 		}
 		displayName, _ := cmd.Flags().GetString("display-name")
 		email, _ := cmd.Flags().GetString("email")
