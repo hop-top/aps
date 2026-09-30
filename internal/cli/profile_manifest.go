@@ -156,6 +156,10 @@ func runManifestImport(ctx context.Context, path, idOverride string, dryRun, for
 	if id == "" {
 		return fmt.Errorf("could not derive a profile id from manifest %q; pass --id", path)
 	}
+	// Before the dry-run preview, so the preview gives the real verdict.
+	if err := core.ValidateProfileID(id); err != nil {
+		return err
+	}
 
 	linkable, skipped := partitionManifestSkills(m.Skills, capability.Exists)
 

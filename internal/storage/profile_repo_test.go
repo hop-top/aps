@@ -3,6 +3,8 @@ package storage_test
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"hop.top/aps/internal/core"
@@ -174,4 +176,28 @@ func TestProfile_GetID(t *testing.T) {
 // satisfying the interface, this fails to compile.
 func TestProfileRepo_SatisfiesDomainRepository(t *testing.T) {
 	var _ domain.Repository[core.Profile] = storage.NewProfileRepo()
+}
+
+// Create rejects an unportable id before its preflight load. A
+// profile.yaml planted at the data dir root makes the preflight for
+// ".." succeed (profiles/.. is the data dir), so a validation that ran
+// after it would surface ErrConflict instead.
+func TestProfileRepo_Create_RejectsInvalidIDBeforePreflight(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APS_DATA_PATH", dataDir)
+	if err := os.WriteFile(filepath.Join(dataDir, "profile.yaml"), []byte("id: root\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := storage.NewProfileRepo()
+	ctx := context.Background()
+
+	for _, id := range []string{"..", "nul", "Con.txt", "a?b", "x "} {
+		err := r.Create(ctx, &core.Profile{ID: id, DisplayName: "X"})
+		if !errors.Is(err, core.ErrInvalidProfileID) {
+			t.Errorf("Create(%q) err = %v, want ErrInvalidProfileID", id, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "profiles")); !os.IsNotExist(err) {
+		t.Errorf("profiles dir must not be created; stat err = %v", err)
+	}
 }
