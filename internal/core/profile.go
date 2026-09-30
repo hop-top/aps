@@ -552,7 +552,7 @@ func CreateProfileWithContext(ctx context.Context, id string, config Profile) er
 	// Create optional gitconfig if requested (logic handled by caller usually, but we can scaffold empty one if git enabled)
 	if config.Git.Enabled {
 		gitConfigPath := filepath.Join(dir, "gitconfig")
-		defaultGitConfig := "[user]\n\tname = " + config.DisplayName + "\n\temail = agent@example.com\n"
+		defaultGitConfig := renderProfileGitConfig(id, config)
 		if err := os.WriteFile(gitConfigPath, []byte(defaultGitConfig), 0644); err != nil {
 			return fmt.Errorf("failed to create gitconfig: %w", err)
 		}
