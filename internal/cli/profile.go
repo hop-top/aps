@@ -220,6 +220,13 @@ directory name; display name, email, avatar URL, and color hex
 default to interactive prompts when omitted and stdin is a TTY.
 Pass --force to overwrite an existing profile directory.
 
+Because profiles move between machines (share/import), the id must
+be a valid directory name on every platform: not empty, "." or "..";
+no Windows device name (CON, PRN, AUX, NUL, COM1-9, LPT1-9, in any
+case, with or without an extension); none of < > : " / \ | ? * or
+control characters; no trailing dot or space. Invalid ids are
+rejected before anything is written.
+
 The --type flag sets the profile type discriminator (agent or
 human; empty means agent). The --reports-to flag links the profile
 into the reporting hierarchy: the target must be an existing
@@ -240,6 +247,11 @@ record (use --force to replace).`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
+		// Before prompts and the --force removal below: profiles/..
+		// resolves to the data dir itself.
+		if err := core.ValidateProfileID(id); err != nil {
+			return err
+		}
 		displayName, _ := cmd.Flags().GetString("display-name")
 		email, _ := cmd.Flags().GetString("email")
 		avatarVal, _ := cmd.Flags().GetString("avatar")

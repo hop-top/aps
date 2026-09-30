@@ -503,6 +503,10 @@ func CreateProfile(id string, config Profile) error {
 // It reads NoteFromContext(ctx) to populate the Note field on the
 // emitted ProfileCreatedPayload.
 func CreateProfileWithContext(ctx context.Context, id string, config Profile) error {
+	if err := ValidateProfileID(id); err != nil {
+		return err
+	}
+
 	dir, err := GetProfileDir(id)
 	if err != nil {
 		return err

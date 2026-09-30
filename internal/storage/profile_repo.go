@@ -39,6 +39,9 @@ func (r *ProfileRepo) Create(_ context.Context, p *core.Profile) error {
 	if p.ID == "" {
 		return fmt.Errorf("profile.ID is empty")
 	}
+	if err := core.ValidateProfileID(p.ID); err != nil {
+		return err
+	}
 	if _, err := core.LoadProfile(p.ID); err == nil {
 		return fmt.Errorf("%w: profile %q already exists", domain.ErrConflict, p.ID)
 	} else if !errors.Is(err, fs.ErrNotExist) {
