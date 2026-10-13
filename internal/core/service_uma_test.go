@@ -124,12 +124,20 @@ func TestUmaAdapterCatalogue(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestDescribeServiceRuntime_UmaServiceIsAComponentWithoutAMountedRoute(t *testing.T) {
-	info := DescribeServiceRuntime(umaTwilioSMSService())
-	assert.Equal(t, "component", info.Maturity)
-	assert.Empty(t, info.Routes, "aps serve does not mount a uma service's webhook yet")
-	assert.Contains(t, info.Receives, "uma")
+func TestDescribeServiceRuntime_UmaServiceIsReadyAtTheNativeWebhookRoute(t *testing.T) {
+	svc := umaTwilioSMSService()
+	info := DescribeServiceRuntime(svc)
+	assert.Equal(t, "ready", info.Maturity)
+	assert.Equal(t, []string{"/services/" + svc.ID + "/webhook"}, info.Routes,
+		"a uma service answers at the route its native predecessor had")
+	assert.Equal(t, "HTTP POST /services/"+svc.ID+"/webhook (uma verifies the provider signature)", info.Receives)
 	assert.Equal(t, "uma/twilio.sms", info.Metadata.Provider)
 	assert.Contains(t, info.Replies, "uma/twilio.sms")
 	assert.Equal(t, "webhook", info.Metadata.ReceiveMode)
+	assert.NotContains(t, info.Receives, "not mounted")
+
+	meta := umaTwilioSMSService()
+	meta.Options[OptionUmaAdapter] = "meta.whatsapp"
+	assert.Equal(t, "HTTP GET, POST /services/"+meta.ID+"/webhook (uma verifies the provider signature)", DescribeServiceRuntime(meta).Receives,
+		"WhatsApp Cloud verifies its subscription with a GET at the same URL")
 }

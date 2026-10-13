@@ -140,12 +140,14 @@ func validateUmaTwilioOptions(options map[string]string, result *ServiceValidati
 	}
 }
 
-// describeUmaServiceRuntime reports a uma-bridged message service. The
-// provider's webhook is received by the uma engine, which aps serve does not
-// mount yet, so no aps route is advertised.
+// describeUmaServiceRuntime reports a uma-bridged message service. Its
+// provider webhook is received by the uma engine at the same route the
+// native providers use, so operators keep the URL configured at the
+// provider.
 func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 	provider := AdapterUma
-	if key := strings.TrimSpace(service.Options[OptionUmaAdapter]); key != "" {
+	key := strings.TrimSpace(service.Options[OptionUmaAdapter])
+	if key != "" {
 		provider = AdapterUma + "/" + key
 	}
 	replyMode := "provider delivery"
@@ -158,11 +160,18 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		routing = "sender route table"
 		executes = "sender route table -> profile action"
 	}
+	route := ServiceWebhookPath(service)
+	methods := "POST"
+	if key == "meta.whatsapp" {
+		// Cloud API subscription verification is a GET at the same URL.
+		methods = "GET, POST"
+	}
 	return ServiceRuntimeInfo{
-		Receives: "provider webhook received by the in-process uma engine (not mounted by aps serve yet)",
+		Receives: "HTTP " + methods + " " + route + " (uma verifies the provider signature)",
 		Executes: executes,
 		Replies:  provider + " " + replyMode,
-		Maturity: "component",
+		Maturity: "ready",
+		Routes:   []string{route},
 		Metadata: ServiceRuntimeMetadata{
 			Runtime:       "message-provider",
 			Provider:      provider,
