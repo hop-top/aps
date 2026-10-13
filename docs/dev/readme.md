@@ -88,6 +88,7 @@ Test strategies and performance benchmarks.
 - [messenger-architecture.md](messenger-architecture.md) - Normalized message format, routing, platform comparison, permission models, and file layout
 - [message-routing.md](message-routing.md) - Sender route tables: schema, sender key normalization, contact snapshot, evaluation order, terminal fail-safe
 - [message-conversation-policy.md](message-conversation-policy.md) - Conversation and session identity for message services
+- [uma-history-mapping.md](uma-history-mapping.md) - Options and recommendation for mapping uma conversations onto aps session history
 
 ### 📚 Documentation
 Additional documentation and tools.
