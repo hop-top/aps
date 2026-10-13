@@ -1,0 +1,17 @@
+# Enforces the documented docs convention only: lines <= 100 chars. Table
+# rows are capped at 256 by convention, but MD013 cannot express a second
+# limit, so tables are exempt. Other rules are off until the existing docs
+# are brought in line; enable them here one at a time.
+config:
+  default: false
+  MD013:
+    line_length: 100
+    tables: false
+
+ignores:
+  - CHANGELOG.md
+  - "**/node_modules/**"
+  - vendor/**
+  - .research/**
+  - .xray_*.md
+  - site/**
