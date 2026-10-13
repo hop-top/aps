@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+// umaPlatformEmail is the aps platform of http.mail messages.
+const umaPlatformEmail = "email"
+
+// optionReply is the reply mode option, set by `service add --reply`.
+const optionReply = "reply"
+
 // AdapterUma is the message adapter name of services whose provider I/O is
 // hosted by an in-process uma engine instead of an aps-native provider.
 const AdapterUma = "uma"
@@ -38,8 +44,27 @@ type UmaAdapterSpec struct {
 	RequiredEnv []string
 	// OptionalEnv lists env bindings that are used when present.
 	OptionalEnv []string
-	// validate checks the adapter's options.
-	validate func(options map[string]string, result *ServiceValidationResult)
+	// ReceiveOnly marks an adapter with no send path: an action's reply on
+	// its service is refused, never sent.
+	ReceiveOnly bool
+	// GenericWebhook marks an adapter that takes webhooks from a relay the
+	// operator runs, authenticated by the generic webhook auth options
+	// (UmaWebhookAuthFor) instead of a provider signature.
+	GenericWebhook bool
+	// platform derives Platform from the options, when the adapter serves
+	// more than one.
+	platform func(options map[string]string) string
+	// validate checks the adapter's options and bindings.
+	validate func(service *ServiceConfig, result *ServiceValidationResult)
+}
+
+// PlatformFor is the aps platform the messages of a service of this adapter
+// carry.
+func (s UmaAdapterSpec) PlatformFor(options map[string]string) string {
+	if s.platform != nil {
+		return s.platform(options)
+	}
+	return s.Platform
 }
 
 var umaAdapterSpecs = map[string]UmaAdapterSpec{
@@ -47,17 +72,17 @@ var umaAdapterSpecs = map[string]UmaAdapterSpec{
 		Key:         "twilio.sms",
 		Platform:    "sms",
 		RequiredEnv: []string{EnvTwilioAccountSID, EnvTwilioAuthToken},
-		validate: func(o map[string]string, r *ServiceValidationResult) {
-			validateUmaTwilioOptions(o, r, "twilio.sms")
+		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
+			validateUmaTwilioOptions(svc.Options, r, "twilio.sms")
 		},
 	},
 	"twilio.whatsapp": {
 		Key:         "twilio.whatsapp",
 		Platform:    "whatsapp",
 		RequiredEnv: []string{EnvTwilioAccountSID, EnvTwilioAuthToken},
-		validate: func(o map[string]string, r *ServiceValidationResult) {
-			validateUmaTwilioOptions(o, r, "twilio.whatsapp")
-			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(o["from"])), "whatsapp:") {
+		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
+			validateUmaTwilioOptions(svc.Options, r, "twilio.whatsapp")
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(svc.Options["from"])), "whatsapp:") {
 				r.Issues = append(r.Issues, "uma twilio.whatsapp option from is configured without the whatsapp: prefix")
 			}
 		},
@@ -67,11 +92,29 @@ var umaAdapterSpecs = map[string]UmaAdapterSpec{
 		Platform:    "whatsapp",
 		RequiredEnv: []string{EnvWhatsAppToken, EnvWhatsAppSecret},
 		OptionalEnv: []string{EnvWhatsAppVerify},
-		validate: func(o map[string]string, r *ServiceValidationResult) {
-			if !looksNumericID(o["phone_number_id"]) {
+		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
+			if !looksNumericID(svc.Options["phone_number_id"]) {
 				r.Issues = append(r.Issues, "uma meta.whatsapp requires numeric option phone_number_id")
 			}
 		},
+	},
+	UmaAdapterRelay: {
+		Key:            UmaAdapterRelay,
+		GenericWebhook: true,
+		platform: func(o map[string]string) string {
+			if strings.TrimSpace(o[OptionMedium]) == UmaMediumWhatsApp {
+				return UmaMediumWhatsApp
+			}
+			return UmaMediumSMS
+		},
+		validate: validateUmaRelay,
+	},
+	UmaAdapterHTTPMail: {
+		Key:            UmaAdapterHTTPMail,
+		Platform:       umaPlatformEmail,
+		ReceiveOnly:    true,
+		GenericWebhook: true,
+		validate:       validateUmaHTTPMail,
 	},
 }
 
@@ -91,6 +134,15 @@ func UmaAdapterSpecFor(key string) (UmaAdapterSpec, bool) {
 	return spec, ok
 }
 
+// UmaAdapterSpecForService returns the contract of a uma service's adapter;
+// false for any other service or an unknown adapter.
+func UmaAdapterSpecForService(service *ServiceConfig) (UmaAdapterSpec, bool) {
+	if service == nil || service.Adapter != AdapterUma {
+		return UmaAdapterSpec{}, false
+	}
+	return UmaAdapterSpecFor(service.Options[OptionUmaAdapter])
+}
+
 // validateUmaMessageService checks a message service whose adapter is uma.
 // Generic message checks (default_action, receive and reply modes) have
 // already run in validateMessageServiceConfig.
@@ -108,10 +160,13 @@ func validateUmaMessageService(service *ServiceConfig, result *ServiceValidation
 	}
 	requireEnv(service.Env, result, spec.RequiredEnv...)
 	if spec.validate != nil {
-		spec.validate(options, result)
+		spec.validate(service, result)
 	}
-	if strings.TrimSpace(options["allowed_numbers"]) == "" && spec.Platform != "" {
-		result.Warnings = append(result.Warnings, "uma service has no allowed numbers; any sender can route inbound messages")
+	switch spec.PlatformFor(options) {
+	case UmaMediumSMS, UmaMediumWhatsApp:
+		if strings.TrimSpace(options["allowed_numbers"]) == "" {
+			result.Warnings = append(result.Warnings, "uma service has no allowed numbers; any sender can route inbound messages")
+		}
 	}
 	if key == "meta.whatsapp" && strings.TrimSpace(service.Env[EnvWhatsAppVerify]) == "" {
 		result.Warnings = append(result.Warnings, "whatsapp verify token not set; Cloud webhook verification will fail")
@@ -166,8 +221,17 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		// Cloud API subscription verification is a GET at the same URL.
 		methods = "GET, POST"
 	}
-	return ServiceRuntimeInfo{
-		Receives: "HTTP " + methods + " " + route + " (uma verifies the provider signature)",
+	spec, _ := UmaAdapterSpecFor(key)
+	verifies := "the provider signature"
+	if spec.GenericWebhook {
+		auth, _ := UmaWebhookAuthFor(service.Options)
+		verifies = "webhook auth: " + auth.Scheme
+		if auth.Scheme == "" {
+			verifies = "webhook auth: none configured, every request is refused"
+		}
+	}
+	info := ServiceRuntimeInfo{
+		Receives: "HTTP " + methods + " " + route + " (uma verifies " + verifies + ")",
 		Executes: executes,
 		Replies:  provider + " " + replyMode,
 		Maturity: "ready",
@@ -185,10 +249,22 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 			DeliveryModes: []string{"text"},
 		},
 	}
+	switch {
+	case spec.ReceiveOnly:
+		info.Replies = "disabled: " + provider + " receives only; an action's reply is refused, not sent"
+		info.Metadata.Delivery = "disabled: receive only; a reply is refused and logged"
+		info.Metadata.Retry = replyNone
+		info.Metadata.ErrorHooks = []string{"ingress", "normalize", "route", "execute"}
+		info.Metadata.DeliveryModes = nil
+	case key == UmaAdapterRelay:
+		info.Replies = provider + " " + replyMode + ", posted to the gateway's callback"
+		info.Metadata.Delivery = "uma reply, posted to the gateway's callback by the engine worker"
+	}
+	return info
 }
 
 // UmaIgnoredOption is an option a uma service carries but the uma bridge never
-// reads.
+// reads, or reads only to refuse what it asks for.
 type UmaIgnoredOption struct {
 	// Option is the service option key.
 	Option string
@@ -197,6 +273,12 @@ type UmaIgnoredOption struct {
 	Flag string
 	// Advice says why it has no effect and what to use instead.
 	Advice string
+	// Default reports that the option is unset and its default, Value, is
+	// what has no effect.
+	Default bool
+	// Value is the default in effect when Default is set; empty otherwise,
+	// since an operator's value is never repeated back.
+	Value string
 }
 
 // umaIgnoredRule is one option the bridge does not read. applies, when set,
@@ -207,8 +289,11 @@ type umaIgnoredRule struct {
 	flag   string
 	// boolean marks an option whose value false is its default.
 	boolean bool
-	applies func(adapterKey, value string) bool
-	advice  func(adapterKey string) string
+	// fallback, when set, is the value an unset option takes; the rule then
+	// judges it too.
+	fallback string
+	applies  func(adapterKey, value string) bool
+	advice   func(adapterKey string) string
 }
 
 func fixedAdvice(text string) func(string) string { return func(string) string { return text } }
@@ -217,10 +302,25 @@ const (
 	adviceTemplates   = "templates are not sent; a uma service replies with plain text"
 	adviceGenericAuth = "uma verifies the provider's own signature and aps applies no generic webhook " +
 		"auth to a uma route"
-	adviceSlack    = "it is a Slack option; a uma service is SMS or WhatsApp"
-	adviceTelegram = "it is a Telegram option; a uma service is SMS or WhatsApp"
+	adviceSlack    = "it is a Slack option; a uma service is SMS, WhatsApp or mail"
+	adviceTelegram = "it is a Telegram option; a uma service is SMS, WhatsApp or mail"
 	adviceTicket   = "it is a ticket option; a uma service is a message service"
+	adviceRelay    = "only the relay.messages adapter reads it"
+	adviceMail     = "only the http.mail adapter reads it"
+	adviceMailOnly = "http.mail receives only; an action's reply is refused and logged, never sent " +
+		"(set --reply none)"
 )
+
+// genericWebhookAdapter reports whether the adapter verifies the generic
+// webhook auth options rather than a provider signature.
+func genericWebhookAdapter(adapterKey string) bool {
+	spec, ok := UmaAdapterSpecFor(adapterKey)
+	return ok && spec.GenericWebhook
+}
+
+// notGenericWebhook narrows a generic webhook auth option to the adapters
+// that verify a provider signature instead.
+func notGenericWebhook(adapterKey, _ string) bool { return !genericWebhookAdapter(adapterKey) }
 
 func adviceVerifyToken(adapterKey string) string {
 	if adapterKey == "meta.whatsapp" {
@@ -230,11 +330,42 @@ func adviceVerifyToken(adapterKey string) string {
 }
 
 func adviceSigningSecret(adapterKey string) string {
-	if adapterKey == "meta.whatsapp" {
+	switch {
+	case adapterKey == "meta.whatsapp":
 		return "bind the app secret with --env " + EnvWhatsAppSecret + "=secret:NAME"
+	case genericWebhookAdapter(adapterKey):
+		return "set --signature-secret-env NAME and bind it with --env NAME=secret:NAME"
 	}
 	return "bind the auth token with --env " + EnvTwilioAuthToken + "=secret:NAME " +
 		"(Twilio signs with it)"
+}
+
+// adviceLiteralSecret is the advice for a secret written into the options.
+func adviceLiteralSecret(flag string) func(string) string {
+	return func(adapterKey string) string {
+		if genericWebhookAdapter(adapterKey) {
+			return "secrets are read from bindings only: set " + flag + " NAME and --env NAME=secret:NAME"
+		}
+		return adviceGenericAuth
+	}
+}
+
+// genericAuthRule is a generic webhook auth option: read by relay.messages and
+// http.mail, ignored by the adapters that check a provider signature.
+func genericAuthRule(option, flag string, boolean bool) umaIgnoredRule {
+	return umaIgnoredRule{
+		option: option, flag: flag, boolean: boolean,
+		applies: notGenericWebhook, advice: fixedAdvice(adviceGenericAuth),
+	}
+}
+
+// onlyFor is a rule for an option a single adapter reads.
+func onlyFor(option, adapterKey, advice string) umaIgnoredRule {
+	return umaIgnoredRule{
+		option:  option,
+		applies: func(key, _ string) bool { return key != adapterKey },
+		advice:  fixedAdvice(advice),
+	}
 }
 
 // umaIgnoredRules is every option a uma service accepts and the bridge does
@@ -253,12 +384,28 @@ var umaIgnoredRules = []umaIgnoredRule{
 	{option: "app_secret", advice: adviceSigningSecret},
 	{option: "app_secret_env", advice: adviceSigningSecret},
 	{option: "signing_secret", advice: adviceSigningSecret},
-	{option: "auth_scheme", flag: "auth-scheme", advice: fixedAdvice(adviceGenericAuth)},
-	{option: "auth_token_env", flag: "auth-token-env", advice: fixedAdvice(adviceGenericAuth)},
-	{option: "signature_secret_env", flag: "signature-secret-env", advice: fixedAdvice(adviceGenericAuth)},
-	{option: "auth_token", advice: fixedAdvice(adviceGenericAuth)},
-	{option: "auth_header", advice: fixedAdvice(adviceGenericAuth)},
-	{option: "signature_secret", advice: fixedAdvice(adviceGenericAuth)},
+	genericAuthRule(OptionAuthScheme, "auth-scheme", false),
+	genericAuthRule(OptionAuthTokenEnv, "auth-token-env", false),
+	genericAuthRule(OptionSignatureSecretEnv, "signature-secret-env", false),
+	genericAuthRule(OptionAuthHeader, "", false),
+	genericAuthRule(OptionTimestampHeader, "", false),
+	genericAuthRule(OptionRequireTimestamp, "", true),
+	genericAuthRule(OptionTimestampTolerance, "", false),
+	genericAuthRule(OptionReplayIDHeader, "", false),
+	genericAuthRule(OptionRequireReplayCheck, "", true),
+	genericAuthRule(OptionAuthPayload, "", false),
+	genericAuthRule(OptionAuthAllowUnsigned, "", true),
+	genericAuthRule(OptionAuthMinSecretBytes, "", false),
+	{option: OptionAuthToken, advice: adviceLiteralSecret("--auth-token-env")},
+	{option: OptionSignatureSecret, advice: adviceLiteralSecret("--signature-secret-env")},
+	onlyFor(OptionMedium, UmaAdapterRelay, adviceRelay),
+	onlyFor(OptionCallbackURL, UmaAdapterRelay, adviceRelay),
+	onlyFor(OptionCallbackHeader, UmaAdapterRelay, adviceRelay),
+	onlyFor(OptionRecipients, UmaAdapterHTTPMail, adviceMail),
+	onlyFor(OptionFormats, UmaAdapterHTTPMail, adviceMail),
+	onlyFor(OptionRecipientHeader, UmaAdapterHTTPMail, adviceMail),
+	onlyFor(OptionTrustedAuthservID, UmaAdapterHTTPMail, adviceMail),
+	onlyFor(OptionAuthResultsField, UmaAdapterHTTPMail, adviceMail),
 	{option: "webhook_secret_token", flag: "webhook-secret-token", advice: fixedAdvice(adviceTelegram)},
 	{option: "webhook_secret_token_env", flag: "webhook-secret-token-env", advice: fixedAdvice(adviceTelegram)},
 	{option: "bot_user_id", flag: "bot-user-id", advice: fixedAdvice(adviceSlack)},
@@ -284,19 +431,37 @@ var umaIgnoredRules = []umaIgnoredRule{
 	},
 	{
 		option: "from", flag: "from",
-		applies: func(key, _ string) bool { return key == "meta.whatsapp" },
-		advice:  fixedAdvice("meta.whatsapp sends from --phone-number-id"),
+		applies: func(key, _ string) bool { return key == "meta.whatsapp" || key == UmaAdapterHTTPMail },
+		advice: func(key string) string {
+			if key == UmaAdapterHTTPMail {
+				return "http.mail accepts mail for --option recipients"
+			}
+			return "meta.whatsapp sends from --phone-number-id"
+		},
 	},
 	{
 		option: "webhook_url", flag: "webhook-url",
-		applies: func(key, _ string) bool { return key == "meta.whatsapp" },
-		advice:  fixedAdvice("meta.whatsapp does not use it; the callback URL is set at Meta"),
+		applies: func(key, _ string) bool { return key == "meta.whatsapp" || genericWebhookAdapter(key) },
+		advice: func(key string) string {
+			if key == "meta.whatsapp" {
+				return "meta.whatsapp does not use it; the callback URL is set at Meta"
+			}
+			return key + " checks webhook auth, not a signed URL"
+		},
+	},
+	{
+		option: optionReply, flag: optionReply, fallback: "text",
+		applies: func(key, value string) bool {
+			return key == UmaAdapterHTTPMail && !strings.EqualFold(value, replyNone)
+		},
+		advice: fixedAdvice(adviceMailOnly),
 	},
 }
 
 // UmaIgnoredOptions lists the options set on a uma service that the bridge
 // ignores, in a stable order. An option that is unset, blank, or a boolean
-// left false is not listed. It is empty for any other service.
+// left false is not listed, unless its default has no effect either (an
+// http.mail service's reply mode). It is empty for any other service.
 func UmaIgnoredOptions(service *ServiceConfig) []UmaIgnoredOption {
 	if service == nil || service.Adapter != AdapterUma {
 		return nil
@@ -305,13 +470,21 @@ func UmaIgnoredOptions(service *ServiceConfig) []UmaIgnoredOption {
 	var out []UmaIgnoredOption
 	for _, rule := range umaIgnoredRules {
 		value := strings.TrimSpace(service.Options[rule.option])
+		defaulted := value == "" && rule.fallback != ""
+		if defaulted {
+			value = rule.fallback
+		}
 		if value == "" || (rule.boolean && !truthyServiceOption(value)) {
 			continue
 		}
 		if rule.applies != nil && !rule.applies(adapterKey, value) {
 			continue
 		}
-		out = append(out, UmaIgnoredOption{Option: rule.option, Flag: rule.flag, Advice: rule.advice(adapterKey)})
+		hit := UmaIgnoredOption{Option: rule.option, Flag: rule.flag, Advice: rule.advice(adapterKey), Default: defaulted}
+		if defaulted {
+			hit.Value = value
+		}
+		out = append(out, hit)
 	}
 	return out
 }

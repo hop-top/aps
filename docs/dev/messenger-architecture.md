@@ -142,11 +142,14 @@ validates without linking uma.
 - **Credentials.** A uma credential purpose maps to one env binding
   (`twilio.rest` and `twilio.webhook` to `TWILIO_AUTH_TOKEN`; `meta.graph`,
   `meta.app_secret`, `meta.webhook.verify_token` to `WHATSAPP_ACCESS_TOKEN`,
-  `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`). The binding value is a
+  `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`; `relay.webhook` and
+  `http.mail.webhook` to the binding `--auth-token-env` or
+  `--signature-secret-env` names, `relay.callback` to `RELAY_CALLBACK_TOKEN`).
+  The binding value is a
   literal or `secret:NAME`, resolved with `core.ResolveSecretValue` on every
   request; nothing is cached or logged by the bridge.
 - **Normalization.** The received uma message becomes a `NormalizedMessage`
-  with `platform` `sms` or `whatsapp`, the provider message id as `id`,
+  with `platform` `sms`, `whatsapp` or `email`, the provider message id as `id`,
   `messenger_name` set to the service id (routing keys on it), the sender
   address as `sender.id` and the receiving number or phone-number id as
   `channel.id`. Twilio WhatsApp ids keep their `whatsapp:` prefix, as the
@@ -278,11 +281,35 @@ Not done here: durable uma state across restarts (the store is in memory, so pro
 de-duplication also resets; history carries the redelivery guard above), retention for staged
 media, and retiring the native SMS and WhatsApp transports.
 
+### Generic relay and email relay
+
+`relay.messages` (generic SMS and WhatsApp relays) and `http.mail` (the email relay, receive
+only) are hosted by the same bridge. How aps's generic webhook auth flags map onto uma's
+`webhookauth`, where the callback host allowlist lives, what replay protection survives a
+restart, and why a bridged email service never replies:
+[uma-relay-mail-design.md](uma-relay-mail-design.md).
+
+- **Code.** Catalogue entries `relay.go` and `mail.go` in `internal/adapters/umabridge`; the
+  option mapping (`UmaWebhookAuthFor`) and validation in `internal/core/service_uma_webhook.go`,
+  so `service add` checks them without linking uma. The host settings (`uma.relay` in the global
+  configuration) reach the relay factory through `Config.Host`, loaded per webhook and part of
+  the mount's fingerprint.
+- **Client.** The relay gets an HTTP client that never follows a redirect; the provider
+  adapters keep the default.
+- **Replay.** Both factories get a `webhookauth.MemoryReplayStore`, which lives as long as the
+  bridge.
+- **Readiness.** A bearer, token or HMAC secret that resolves to nothing, or is shorter than
+  the service allows, stops the bridge from starting (`503`, cause in the log).
+- **Receive only.** `http.mail` replies are taken off by `receiveOnlyExecutor`: status
+  `reply_disabled`, a `warn` log line, no delivery and no outbound turn.
+
 ### The uma dependency
 
 hop.top/uma is unreleased and its repository is private, so `go.mod` points
 at a sibling checkout with `replace` directives (one commented block at the
-end of `go.mod`) and pins the matching pseudo-versions. The relative paths
+end of `go.mod`, one line per uma module aps imports: the root, the mail,
+Meta and Twilio adapter modules, and the test helpers) and pins the matching
+pseudo-versions. The relative paths
 resolve from `hops/<group>/<name>` worktrees. Until uma is resolvable, a
 build from any other layout, CI, and any consumer fails. To drop the
 dependency, delete `internal/adapters/umabridge`, the `uma` alias and

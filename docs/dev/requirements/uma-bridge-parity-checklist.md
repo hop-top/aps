@@ -17,7 +17,7 @@ since the merge of 2026-10-13 (see State as of).
 | aps | this repository, `internal/` | `ae9e407` (uma bridge tip `296ea84` plus this checklist); aps cites not re-read since |
 | uma | `hop-top/uma`, branch `integration/unmerged` | `1afff92` = `main` `650e527` plus 57 commits, for every row except G1, E1b, E4 |
 | uma, re-read | `hop-top/uma`, branch `main`, read only | `02ae8cb` (merged 2026-10-13), tree `a44af92` = `integration/unmerged` `d4d3542`; used for G1, E1b, E4 |
-| aps build | `go.mod:178-196` replace block | sibling checkout of uma `main`; at `02ae8cb` it carries the integration work, so that work IS in aps's build. The bridge hosts three adapters only |
+| aps build | `go.mod` uma replace block | sibling checkout of uma `main`, pinned at `02ae8cb`. The bridge hosts five adapters: the Twilio pair, `meta.whatsapp`, and since 2026-10-13 `relay.messages` and `http.mail` |
 | Previous grade | aps `599cd6f`, uma `main` `650e527` | 28 GREEN, 11 RED |
 
 Read dates: 2026-10-13. Every cite below was read, not recalled. Nothing in the
@@ -66,15 +66,16 @@ provider traffic. Twilio signature tests sign with aps's own `TwilioSignature`
 
 ## Totals
 
-39 rows: 18 GREEN, 19 WAIVED, 1 ACCEPTED, 1 AMBER, 0 RED. Before the 2026-10-13
-re-grade of G1 and E4: 18 GREEN, 18 WAIVED, 3 AMBER, 0 RED. Previous grade: 28
-GREEN, 11 RED. Before the waiver the same tree graded 18 GREEN, 16 AMBER, 5 RED.
+39 rows: 18 GREEN, 18 WAIVED, 2 ACCEPTED, 1 AMBER, 0 RED. Before E5 was accepted:
+18 GREEN, 19 WAIVED, 1 ACCEPTED, 1 AMBER. Before the 2026-10-13 re-grade of G1 and
+E4: 18 GREEN, 18 WAIVED, 3 AMBER, 0 RED. Previous grade: 28 GREEN, 11 RED. Before
+the waiver the same tree graded 18 GREEN, 16 AMBER, 5 RED.
 
 | Scope | Rows | GREEN | WAIVED | ACCEPTED | AMBER | RED |
 | --- | --- | --- | --- | --- | --- | --- |
 | SMS, generic relay, WhatsApp Cloud, WhatsApp over Twilio, V1 to V3 | 30 | 18 | 11 | 1 | 0 | 0 |
-| Email relay, V4 to V6 | 9 | 0 | 8 | 0 | 1 | 0 |
-| All | 39 | 18 | 19 | 1 | 1 | 0 |
+| Email relay, V4 to V6 | 9 | 0 | 7 | 1 | 1 | 0 |
+| All | 39 | 18 | 18 | 2 | 1 | 0 |
 
 - RED to GREEN `[i]` (2): S6, G2.
 - RED to ACCEPTED `[i]` (1): G1. It went RED, then AMBER once uma had
@@ -87,8 +88,13 @@ GREEN, 11 RED. Before the waiver the same tree graded 18 GREEN, 16 AMBER, 5 RED.
 - Moved on 2026-10-13: G1 AMBER to ACCEPTED (owner decision); E4 AMBER to WAIVED
   (uma `main` stages `http.mail` attachment bytes, cites on the row). E1b stays
   AMBER, re-read on `main`, no change in what it lacks.
-- Remaining AMBER (1), a behaviour residual, not about recordings: E1b
-  (`http.mail` receives only, authentication is mandatory, no form bodies).
+- Moved on 2026-10-13, owner decision: E5 WAIVED to ACCEPTED. A bridged
+  `http.mail` service is receive only with replies disabled; the native reply
+  JSON in the webhook answer is not reproduced (M11).
+- Remaining AMBER (1), a behaviour residual, not about recordings: E1b. Its
+  receive-only part is accepted under E5; authentication stays mandatory, so an
+  email bridge that posts without auth must add it. Form bodies are refused, as
+  natively.
 
 ## Retirement gate status
 
@@ -100,7 +106,7 @@ are not met.
 | --- | --- | --- |
 | (a) Every behaviour row green, waived or accepted; cassettes for `twilio.whatsapp`, `meta.whatsapp` waived 2026-10-13 | MET for SMS and WhatsApp; NOT MET for mail | SMS and WhatsApp: no AMBER or RED row (G1 accepted 2026-10-13). Mail: E1b AMBER |
 | (b) A tagged uma release | NOT MET | No tags; private and unresolvable; vanity server skips subpaths |
-| (c) Every operator yaml migrated to `uma`, with a migration note | NOT MET | Note exists; no inventory; generic relay cannot move until the aps bridge hosts `relay.messages` (not built) |
+| (c) Every operator yaml migrated to `uma`, with a migration note | NOT MET | Note exists and covers every shape, generic relay and email relay included; no inventory |
 
 ### Gate (a) detail
 
@@ -125,11 +131,16 @@ are not met.
   replies need a sending channel; authentication is mandatory; form bodies are
   refused. Retirement is scoped to SMS and WhatsApp; whether the mail rows gate
   it is the owner's call.
-- Rows that rest on adapters the aps bridge does not host: G1 and G2
-  (`relay.messages`), E1b and E4 (`http.mail`), E1a, E2, E3 and E5 (`imap.mail`,
-  `smtp.mail`, `google.mail`, `microsoft.mail`). They are graded on the uma
-  side; none can be used through `--type uma` until the bridge hosts its
-  adapter. Hosting `relay.messages` and `http.mail` is a separate task, not built.
+- Hosting, 2026-10-13: the aps bridge hosts `relay.messages` (G1, G2) and
+  `http.mail` (E1b, E2, E3, E4), so those rows are usable through `--type uma`
+  (`adapters/umabridge/relay.go`, `mail.go`; `core/service_uma_webhook.go`;
+  design `docs/dev/uma-relay-mail-design.md`). Still graded on the uma side and
+  not hosted: E1a and E5's sending adapters (`imap.mail`, `smtp.mail`,
+  `google.mail`, `microsoft.mail`).
+- E5, accepted by the owner on 2026-10-13: a bridged `http.mail` service is
+  receive only with replies disabled. An action's reply is refused, logged and
+  recorded as `reply_disabled`; no pairing with a sending adapter is built. An
+  email service whose bridge sends the reply JSON stays native (M11).
 - The mail rows' evidence: uma `main` now carries a live IMAP and SMTP test
   harness against local mail containers (`Dx/recording/imap-smtp.md`).
   This update read its description only and ran nothing, so it cites the
@@ -150,10 +161,10 @@ Verified 2026-10-13.
   adapter submodules until the server answers subpaths.
 - aps imports uma through a local replace block (`go.mod:178-196`) pinned to a
   sibling checkout of `main`. A build outside the hub layout fails.
-- aps needs three uma modules today (`hop.top/uma`,
-  `hop.top/uma/adapter/messaging/twilio`, `.../meta`). uma `main` also holds
-  `relay.messages` (root module) and `http.mail` (`hop.top/uma/adapter/mail`);
-  hosting them is a bridge task, not built.
+- aps needs four uma modules (`hop.top/uma`, which holds `relay.messages` and
+  `webhookauth`, `hop.top/uma/adapter/mail` for `http.mail`,
+  `hop.top/uma/adapter/messaging/twilio`, `.../meta`), plus the test helper
+  module. Each has a line in the replace block.
 
 Owner prerequisites: merge the integration work into uma `main` (done
 2026-10-13, `02ae8cb`); tag each module aps imports; make the repository public
@@ -170,14 +181,16 @@ Can an operator move each native shape today, with the build aps ships?
 | `sms`, `--provider twilio` | `twilio.sms` | yes | yes; JSON-bodied relays need uma integration |
 | `whatsapp`, `--provider twilio` | `twilio.whatsapp` | yes | yes; media staging, JSON bodies need integration |
 | `whatsapp`, `--provider whatsapp-cloud` | `meta.whatsapp` | yes | yes, without templates (F6) |
-| `sms` or `whatsapp`, `--provider generic` | `relay.messages` | no | no; callback-only reply accepted (G1), awaits the bridge |
-| `email` relay (outside retirement scope) | `http.mail` plus a sender | no | no |
+| `sms` or `whatsapp`, `--provider generic` | `relay.messages` | yes | yes; the gateway serves a callback (G1), posts JSON, binds its secret |
+| `email` relay (outside retirement scope) | `http.mail` | yes | yes, receive only (E5); stay native to keep the reply |
 
 The [migration note](../../user/uma-migration.md) tells operators how to move,
 and `service add`, `show` and `status` print a one-line deprecation hint
-pointing at it for the three shapes that move today. Nothing enumerates their
-services: the inventory of operator yamls
-(`services/*.yaml` under the aps data dir) is the owner's to collect.
+pointing at it for the three Twilio and Meta shapes; generic relay and email
+services get none, since their move needs a change outside aps (a callback; the
+loss of the email reply). Nothing enumerates their services: the inventory of
+operator yamls (`services/*.yaml` under the aps data dir) is the owner's to
+collect.
 
 ## 1. SMS over Twilio
 
@@ -235,12 +248,16 @@ aps: `provider: generic` on `sms` and `whatsapp` services.
   `CallbackHosts`, `https`, no query or fragment (M10;
   `D/relay.messages.md:56-65,133,142`). Re-read on uma `main` `02ae8cb`:
   `uma:adapter/messaging/relay` is unchanged since `1afff92`, so the cites
-  hold. The aps bridge does not host `relay.messages`, so no service can use
-  it yet.
+  hold. Hosted by the aps bridge since 2026-10-13 (`--uma-adapter
+  relay.messages`); the callback host allowlist is the global setting
+  `uma.relay.callback_hosts`, empty by default.
 - G2: uma's `webhookauth` expresses the aps conventions
   (`Dx/webhook-auth.md:84-94`). Differences: no unauthenticated mode, secrets
   under 16 bytes refused unless `MinSecretBytes` is set, replay store in
-  memory unless the host supplies one (`Dx/webhook-auth.md:109-125`).
+  memory unless the host supplies one (`Dx/webhook-auth.md:109-125`). The
+  bridge maps aps's options onto it with aps's headers and layout; the two
+  stricter defaults stay, with opt-ins `auth_allow_unsigned` and
+  `auth_min_secret_bytes` (`core/service_uma_webhook.go`).
 
 ## 3. WhatsApp Cloud (Meta)
 
@@ -307,7 +324,7 @@ scope (SMS and WhatsApp); graded because this checklist covers it.
 | E2 | `from` to sender, `to` to channel, `body` to text | `am/normalizer.go:598-628` | `D/smtp.mail.md:89-119`; `D/imap.mail.md:93-142` | no | WAIVED |
 | E3 | `subject` is the thread id | `am/normalizer.go:630-636` | `D/smtp.mail.md:98-100` | no | WAIVED, M3 |
 | E4 | Attachments `[{type,url,mime_type,size_bytes}]` reach the action | `am/normalizer.go:638-655` | `Ml/httpmail/stage.go:27-46`; `Ml/httpmail/handler.go:102-117`; `Ml/stage/stage.go:64-89`; `D/http.mail.md:226-261` | no | WAIVED `[i]`, M8, M11 |
-| E5 | Reply reaches the sender (aps: reply JSON to the bridge) | `am/normalizer.go:901-910` | `D/smtp.mail.md:124-130`; `D/imap.mail.md:144-152` | no | WAIVED |
+| E5 | Reply reaches the sender (aps: reply JSON to the bridge) | `am/normalizer.go:901-910` | `D/smtp.mail.md:124-130`; `D/imap.mail.md:144-152`; `D/http.mail.md:38` | no | ACCEPTED 2026-10-13, M11 |
 
 - E1a: `imap.mail` and `smtp.mail` `receive`; `google.mail` and
   `microsoft.mail` `receive` and `receive_http`. No recordings (V4 to V6).
@@ -323,8 +340,13 @@ scope (SMS and WhatsApp); graded because this checklist covers it.
   (`D/http.mail.md:38,300`). Hosted-service recipes are from their
   documentation, untried (`D/http.mail.md:92-101`); no record path. Re-read on
   uma `main` `02ae8cb` on 2026-10-13: the residuals above all stand, so the row
-  stays AMBER. Not hosted by the aps bridge.
-- E3: uma threads by `In-Reply-To` then `References`.
+  stays AMBER. Hosted by the aps bridge since 2026-10-13; receive only is
+  accepted (E5), mandatory authentication remains. Form bodies were never read
+  by the native relay either (`am/handler.go:1346-1360`).
+- E2, E3: through the bridge, `from` is the sender, the recipient that matched
+  `recipients` the channel and the subject the thread, as natively, so a
+  converted service keeps its sessions (`adapters/umabridge/mail.go`). uma itself
+  threads by `In-Reply-To` then `References`.
 - E4: bytes are staged for `smtp.mail` (`D/smtp.mail.md:101-111`), `imap.mail`
   (`D/imap.mail.md:130-139`), `google.mail` (`D/google.mail.md:147-159`) and
   `microsoft.mail` (`D/microsoft.mail.md:141-156`), at most 10 of 25 MiB each,
@@ -341,10 +363,16 @@ scope (SMS and WhatsApp); graded because this checklist covers it.
   aps never fetched it either, it passed the URL on (`am/normalizer.go:638-655`).
   WAIVED, not GREEN: Rec is `no`, and `D/http.mail.md:285-296` says nothing was
   tried against a hosted service or a real MTA. Package tests exist
-  (`Ml/httpmail/stage_test.go`); they were not run for this update. The aps
-  bridge does not host `http.mail`, so the attachments reach no action yet.
-- E5: uma sends itself, from `smtp.mail`, `imap.mail`, `google.mail` and
-  `microsoft.mail`. The `data` payload has no mail form. `http.mail` cannot send.
+  (`Ml/httpmail/stage_test.go`); they were not run for this update. Through the
+  aps bridge (2026-10-13) staged bytes reach the action as `file://` attachments
+  under the media dir, URL-only entries as their URL (bridge and serve tests).
+- E5: ACCEPTED by owner 2026-10-13: a bridged `http.mail` service is receive
+  only with replies disabled. The native relay returns the reply JSON in the
+  webhook answer; the uma path does not, and refuses an action's reply (logged,
+  `reply_disabled` in status, no outbound turn). Operators who rely on that
+  reply stay on the native email relay. uma sends mail itself from `smtp.mail`,
+  `imap.mail`, `google.mail` and `microsoft.mail`; none is paired with
+  `http.mail` by the bridge.
 
 ## 6. Recorded evidence
 
@@ -393,8 +421,9 @@ on the integration branch; State says what remains.
 
 V2 to V5 rode on the recording task, now skipped; no new task. One residual is
 named by uma as not built and has no task: `http.mail` `send`
-(`D/http.mail.md:38`). `http.mail` attachment staging, the other one at the
-last grade, is built on uma `main` (`D/http.mail.md:226-261`).
+(`D/http.mail.md:38`); the owner accepted a receive-only bridged service (E5).
+`http.mail` attachment staging, the other one at the last grade, is built on
+uma `main` (`D/http.mail.md:226-261`).
 
 ## Migration and bridge notes
 
@@ -411,8 +440,8 @@ Config translation the bridge (or the operator) must do. None is a uma gap.
 | M7 | Twilio `from` is configured without `whatsapp:` in uma |
 | M8 | Media staging needs an attachment sink (the aps bridge supplies one under the data dir) and, for WhatsApp windows, protocol state; without them media is summary-only |
 | M9 | The email bridge retires once uma holds the mailbox or MX; generic webhook auth (G2) is no longer used for email |
-| M10 | Generic relay: the gateway serves a callback URL (host in `CallbackHosts`, `https`) and authenticates webhooks via `auth`; form bodies, flat `NumMedia` keys unread. `relay.messages` is not in the aps bridge catalogue; migration awaits it |
-| M11 | Email via `http.mail`: receive only, so replies need a sending channel; form bodies refused; sender evidence `unverified` by default. `http.mail` is not in the aps bridge catalogue. Attachment bytes the relay embeds are staged on uma `main` (E4) |
+| M10 | Generic relay: the gateway serves a callback URL (host in `uma.relay.callback_hosts`, `https`) and keeps its webhook auth (aps flags mapped); form bodies, flat `NumMedia` keys unread. Hosted since 2026-10-13 |
+| M11 | Email via `http.mail`: receive only, replies disabled (owner, 2026-10-13); form bodies refused; sender `unverified` by default; embedded attachment bytes staged (E4). Hosted since 2026-10-13 |
 
 ## Retained by aps
 

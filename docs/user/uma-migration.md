@@ -3,21 +3,21 @@
 > Availability: unreleased. Requires a build newer than aps/v0.6.0-alpha.0.
 
 Use this when a message service runs on the aps-native SMS or WhatsApp
-transport (`--type sms`, `--type whatsapp`) and you want it hosted by an
-in-process uma engine instead. Migration is opt-in per service. The native
+transport (`--type sms`, `--type whatsapp`) or is the email relay, and you want
+it hosted by an in-process uma engine instead. Migration is opt-in per service. The native
 transports stay the default and keep working; nothing here sets a removal date.
 
 ## Quick path
 
-Find the row for your service. Only the first three move today.
+Find the row for your service.
 
 | Native service | Becomes | Moves today |
 | --- | --- | --- |
 | `--type sms --provider twilio` | `--type uma --uma-adapter twilio.sms` | yes |
 | `--type whatsapp --provider twilio` | `--type uma --uma-adapter twilio.whatsapp` | yes |
 | `--type whatsapp --provider whatsapp-cloud` | `--type uma --uma-adapter meta.whatsapp` | yes, no templates |
-| `--provider generic` (SMS, WhatsApp) | uma `relay.messages` | [not yet](#not-yet-generic-relay-and-email-relay) |
-| Email relay | uma `http.mail` plus a sending adapter | [not yet](#not-yet-generic-relay-and-email-relay) |
+| `--provider generic` (SMS, WhatsApp) | `--type uma --uma-adapter relay.messages` | yes; your gateway serves a [callback](#generic-relay-relaymessages) |
+| Email relay (`--adapter email`) | `--type uma --uma-adapter http.mail` | yes, [receive only](#email-relay-httpmail): no reply |
 
 1. Re-add the service under the **same id** with `--force`. The id is the URL:
    the route stays `/services/<id>/webhook`, so the provider console keeps its
@@ -35,8 +35,10 @@ Every `uma` service shares these changes:
   means queued; a later provider failure is not reported back to the action.
 - A sender your allowlist refuses is answered `200` (uma already recorded the
   event); native answers `403`. The refusal is in the server log.
-- `aps service show` prints `auth: none` for a `uma` service. That is aps's own
-  check, not the provider's; uma still verifies the signature.
+- `aps service show` prints `auth: none` for a Twilio or Meta `uma` service.
+  That is aps's own check, not the provider's; uma still verifies the
+  signature. For `relay.messages` and `http.mail` it prints the webhook auth uma
+  enforces.
 - `--provider`, `--verify-token-env` and `--signing-secret-env` are not read.
   Bindings come from `--env` only. `service add` warns for each such flag; see
   [Flags that do nothing](#flags-that-do-nothing-on-a-uma-service).
@@ -203,16 +205,27 @@ warning: --provider has no effect on a uma service: pick the provider with --uma
 | `--template-name`, `--language-code`, `--template-required` | The bridge sends text only; no template is ever sent | Nothing. Keep a service that needs templates native |
 | `--verify-token`, `--verify-token-env` | The verify token is read from its binding only | `--env WHATSAPP_VERIFY_TOKEN=secret:NAME` (`meta.whatsapp`) |
 | `--signing-secret-env` | Secrets are read from bindings only | `--env WHATSAPP_APP_SECRET=secret:NAME` (`meta.whatsapp`), `--env TWILIO_AUTH_TOKEN=secret:NAME` (Twilio) |
-| `--auth-scheme`, `--auth-token-env`, `--signature-secret-env` | Generic webhook auth does not run on a uma route; uma checks the provider signature | Nothing. The provider signature check is always on |
+| Generic webhook auth flags and options (below) on Twilio and Meta adapters | Generic webhook auth does not run there; uma checks the provider signature | Nothing. `relay.messages` and `http.mail` read them |
 | `--provider` | The uma adapter picks the provider | `--uma-adapter` |
 | `--receive polling` | A uma service receives by webhook only | Omit it, or `--receive webhook` |
 | `--phone-number-id` on `twilio.sms`, `twilio.whatsapp` | Only `meta.whatsapp` reads it | Omit it |
 | `--from`, `--webhook-url` on `meta.whatsapp` | Not read; the callback URL is set at Meta | Omit them |
+| `--webhook-url` on `relay.messages`, `http.mail`; `--from` on `http.mail` | They check webhook auth, not a signed URL; mail is accepted for `recipients` | Omit them |
+| `--option` `medium`, `callback_url`, `callback_header` | Only `relay.messages` reads them | Omit them elsewhere |
+| `--option` `recipients`, `formats`, `recipient_header`, `trusted_authserv_id`, `authentication_results_field` | Only `http.mail` reads them | Omit them elsewhere |
+| `--reply` other than `none` on `http.mail`, or unset | `http.mail` receives only: a reply is refused and logged, never sent | `--reply none` |
 | `--webhook-secret-token`, `--webhook-secret-token-env`, `--bot-user-id`, `--require-bot-mention`, `--dedup-ttl` | Telegram and Slack options | Omit them |
 | `--site`, `--project`, `--jql`, `--linear-workspace`, `--team`, `--group`, `--events` | Ticket options | Omit them |
 
+The generic webhook auth flags and options are `--auth-scheme`,
+`--auth-token-env`, `--signature-secret-env`, and the `--option` keys
+`auth_header`, `timestamp_header`, `require_timestamp`, `timestamp_tolerance`,
+`replay_id_header`, `require_replay_check`, `auth_payload`,
+`auth_allow_unsigned` and `auth_min_secret_bytes`.
+
 A key set with `--option` that falls in the table (`template_name`,
-`auth_token`, ...) warns as `--option <key>`. These flags are read: `--type`,
+`auth_token`, ...) warns as `--option <key>`; an unset `--reply` on `http.mail`
+warns as `the default --reply text`. These flags are read: `--type`,
 `--uma-adapter`, `--profile`, `--from` and `--webhook-url` (Twilio),
 `--phone-number-id` (`meta.whatsapp`), `--env` bindings, `--allowed-number`,
 `--allowed-sender`, `--default-action`, `--route-table`, `--contacts`, `--reply`,
@@ -225,46 +238,150 @@ sees it. Unlike the notice below, it is printed when output is piped, and
 `--no-hints` and `HOP_QUIET_HINTS=1` do not silence it: a flag with no effect is
 a mistake in the command, not a hint.
 
-## Not yet: generic relay and email relay
+## Generic relay (`relay.messages`)
 
-This build cannot host them. `--uma-adapter relay.messages` and `http.mail` are
-refused (`unsupported uma adapter ... one of meta.whatsapp, twilio.sms,
-twilio.whatsapp`). Leave `--provider generic` services and the email relay on
-the native transport. The uma side differs enough to plan for.
+The owner accepted on 2026-10-13 that replies leave by a callback your gateway
+serves, never in the webhook answer. Inbound keeps the payload and the auth
+headers your gateway sends today.
 
-### Generic relay (`relay.messages`)
+Before:
 
-Replies leave by a callback your gateway serves, never in the webhook answer.
-The owner accepted that on 2026-10-13: it is a planned change, not a blocker.
-Migration still waits for the aps bridge to host `relay.messages`, which it does
-not yet, so there is nothing to run today. When it does, your gateway needs:
+```bash
+aps service add sms-relay \
+  --type sms --profile assistant --provider generic \
+  --from +15559870002 \
+  --allowed-number +15551230001 \
+  --default-action handle-sms --reply text \
+  --auth-scheme hmac-sha256 --signature-secret-env RELAY_SIGNING_SECRET \
+  --option require_timestamp=true --option require_replay_check=true
+```
 
-- **A callback endpoint.** Each reply is one JSON `POST` to it (`medium`, `to`,
-  `body`, `in_reply_to`, `operation_id`, `attempt_id`) that you answer `2xx`. A
-  gateway that reads the reply out of the webhook answer must change.
-- **Authentication on its webhooks.** uma refuses a relay channel without one:
-  bearer, token, HMAC or Ed25519. There is no unauthenticated mode.
-- **The callback host on the allowlist.** The callback URL is `https`, with no
-  credentials, query or fragment, and its host (`host` or `host:port`) must be
-  on the uma host's callback host allowlist. With an empty list no reply can
-  leave. Redirects are not followed. The allowlist is a uma host setting, not a
-  service flag; the bridge sets none today.
-- **No resend of a lost answer.** uma cannot look a reply up, so one whose
-  answer was lost is not sent again. Each call carries an `Idempotency-Key`;
-  check your gateway's log for it.
+After, allow the callback host once in the global configuration
+(`~/.config/aps/config.yaml`; none is allowed by default):
 
-Inbound keeps the field names (`from`, `to`, `body`, `message_id`, `media`).
-Form bodies and flat `NumMedia` media keys are not read.
+```yaml
+uma:
+  relay:
+    callback_hosts: [gateway.example.com]
+```
 
-### Email relay (`http.mail`)
+```bash
+aps service add sms-relay --force \
+  --type uma --uma-adapter relay.messages --profile assistant \
+  --option medium=sms --from +15559870002 \
+  --option callback_url=https://gateway.example.com/aps/reply \
+  --allowed-number +15551230001 \
+  --default-action handle-sms --reply text \
+  --auth-scheme hmac-sha256 --signature-secret-env RELAY_SIGNING_SECRET \
+  --option require_timestamp=true --option require_replay_check=true \
+  --option auth_allow_unsigned=true \
+  --env RELAY_SIGNING_SECRET=secret:RELAY_SIGNING_SECRET \
+  --env RELAY_CALLBACK_TOKEN=secret:RELAY_CALLBACK_TOKEN
+```
 
-Receive only. Replies need a separate sending channel, and form-encoded routes
-(SendGrid Inbound Parse, the default Mailgun route) are not accepted. Attachment
-bytes the relay embeds (base64 `content`, or a raw `message/rfc822` body) are
-staged; an entry with only a URL is described and never fetched.
+Config: swap the type, drop `--provider`, add `--option medium` (`sms` or
+`whatsapp`: the type no longer says it), `--option callback_url` and two
+bindings. Keep every auth flag and option as it was.
 
-Details: [parity checklist](../dev/requirements/uma-bridge-parity-checklist.md),
-notes M10 and M11.
+What you will see:
+
+- **Replies are a `POST` to your callback.** JSON `medium`, `to`, `body`,
+  `in_reply_to` (your message id), `operation_id`, `attempt_id`, with
+  `Authorization: Bearer <RELAY_CALLBACK_TOKEN>` (or the header named by
+  `--option callback_header`) and `Idempotency-Key: <operation_id>`, the same on
+  every attempt. Answer `2xx`, optionally `{"message_id": "..."}`. The webhook
+  answer is `{"status":"accepted"}` and carries no reply. Redirects are not
+  followed. A reply whose answer was lost (timeout, `5xx`, `408`, `409`) is not
+  sent again; look the key up in your gateway's log.
+- **The callback host must be listed** in `uma.relay.callback_hosts` (`host` or
+  `host:port`, exactly as in the URL) and the URL must be `https`, with no
+  credentials, query or fragment. `service add` refuses it otherwise.
+  `uma.relay.allow_http: true` permits `http`, for local development only.
+- **The secret is a binding.** Natively `--signature-secret-env NAME` (or
+  `--auth-token-env`) reads the process variable; under uma bind it with
+  `--env NAME=secret:NAME`. `service add` refuses a service without auth.
+- **Unsigned timestamp and replay id need consent.** aps's HMAC signs the body
+  only, so `X-APS-Timestamp` and `X-APS-Delivery-ID` are outside the signature.
+  `--option auth_allow_unsigned=true` accepts that, as aps did; once your
+  gateway signs them, use `--option auth_payload={timestamp}.{body}` instead.
+  `service add` refuses the service with neither.
+- **Secrets under 16 bytes need `--option auth_min_secret_bytes=N`.** Without
+  it the route answers `503` and the server log names the option.
+- **Bad auth is `401`** (wrong or missing signature, stale timestamp), a
+  repeated delivery id `409`, a body over 64 KiB `413`.
+- **JSON only.** Form bodies are refused, and flat `NumMedia`/`MediaUrlN` keys
+  are not read: send media as `"media": ["https://..."]`. Media URLs reach the
+  action as attachments, never fetched. `From`/`from`, `To`/`to`,
+  `Body`/`body`/`text` and `MessageSid`/`SmsSid`/`message_id` are read as
+  before; a message without an id gets a generated one, and `WaId` is not used
+  as an id.
+- **`--from` must be the number your gateway sends as `to`.** uma routes
+  inbound by it.
+- **Replay protection is in memory**, as natively: a restart or a configuration
+  change forgets it. An answered message replayed after a restart is still not
+  run again: its reply is in history.
+
+## Email relay (`http.mail`)
+
+Receive only, by the owner's decision of 2026-10-13. The native email relay
+returns the action's reply as JSON in the webhook answer, for your bridge to
+send. The uma path does not: the answer is `{"accepted": 1}` and the reply is
+refused. **If your bridge sends that reply, stay on the native email relay for
+now.**
+
+Before:
+
+```bash
+aps service add mail-inbox \
+  --type message --adapter email --profile assistant \
+  --allowed-sender '*@partner.org' \
+  --default-action handle-email --reply text \
+  --auth-scheme bearer --auth-token-env MAIL_BRIDGE_TOKEN
+```
+
+After:
+
+```bash
+aps service add mail-inbox --force \
+  --type uma --uma-adapter http.mail --profile assistant \
+  --option recipients=support@example.com \
+  --allowed-sender '*@partner.org' \
+  --default-action handle-email --reply none \
+  --auth-scheme bearer --auth-token-env MAIL_BRIDGE_TOKEN \
+  --env MAIL_BRIDGE_TOKEN=secret:MAIL_BRIDGE_TOKEN
+```
+
+Config: swap the type, add `--option recipients` (the addresses you accept mail
+for) and the binding, set `--reply none`.
+
+What you will see:
+
+- **No reply, ever.** With a reply mode other than `none` the action still runs;
+  its reply is refused, logged on the server (`uma reply not sent`) and shown as
+  `reply_disabled` in `aps service status`. No outbound turn is written.
+  `service add` warns once, `aps service show` and `routes` say replies are
+  disabled.
+- **Authentication is mandatory.** Natively a missing auth only warned.
+- **Mail to an address not in `recipients` is refused (`422`).** A message to
+  two listed addresses reaches the action once, on the first.
+- **JSON as before, and raw messages.** The `from`, `to`, `subject`, `body`
+  and `attachments` members are read as before. With
+  `--option formats=json,rfc822` the relay may post the message itself as
+  `message/rfc822`. Form bodies (SendGrid Inbound Parse, the default Mailgun
+  route) are refused, as natively.
+- **Attachment bytes land on disk.** An attachment with base64 `content` (or in
+  a raw message) reaches the action as a `file://` URL under
+  `<aps data dir>/messenger/uma/<service-id>/`. One with only a `url` is passed
+  through, never fetched, as natively.
+- **The sender is unverified** (`platform_metadata.sender_assurance`), unless
+  `--option trusted_authserv_id` names the relay that stamps
+  `Authentication-Results` (`--option authentication_results_field` for JSON).
+- Sessions keep the native keys: the recipient is the channel and the subject
+  the thread.
+
+Details: [design](../dev/uma-relay-mail-design.md),
+[parity checklist](../dev/requirements/uma-bridge-parity-checklist.md) notes M10
+and M11.
 
 ## Verify
 
@@ -306,8 +423,9 @@ sent are lost, and the provider's own retries are not recognised as duplicates.
 ## Notice on native services
 
 On a terminal, `aps service add`, `show` and `status` print one line after
-their output for a native service of the three shapes that move today, pointing
-here. `--provider generic` and email services get none. It is a next-step hint:
+their output for a native service of the three Twilio and Meta shapes, pointing
+here. `--provider generic` and email services get none: their move needs a
+change outside aps (a callback; the loss of the email reply). It is a next-step hint:
 not printed when output is piped, with `--format json` or `--format yaml`, with
 `--quiet`, with `--no-hints`, or with `HOP_QUIET_HINTS=1`. It never changes an
 exit code.

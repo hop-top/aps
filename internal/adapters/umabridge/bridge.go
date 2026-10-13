@@ -13,6 +13,7 @@ import (
 	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/uma"
 	"hop.top/uma/adapter"
+	"hop.top/uma/adapter/web/webhookauth"
 	"hop.top/uma/companions/bot"
 	"hop.top/uma/companions/bot/host"
 	"hop.top/uma/model"
@@ -61,6 +62,9 @@ type Config struct {
 	// it (Blobs defaults to a file store there) and handed to actions as
 	// file:// attachments. Empty leaves media summary-only.
 	MediaDir string
+	// Host is the uma host settings (the relay callback host allowlist); nil
+	// reads them from the global aps configuration.
+	Host *core.UmaHostConfig
 }
 
 // Bridge is one uma engine serving one aps message service.
@@ -101,11 +105,21 @@ func New(ctx context.Context, cfg Config) (*Bridge, error) {
 	if store == nil {
 		store = core.ProfileSecretLookup(svc.Profile)
 	}
-	creds := newCredentials(ent.purposes, svc.Env, store)
+	creds := newCredentials(ent.purposes(svc.Options), svc.Env, store)
 	binding := func(name string) (string, bool) { return creds.value(name) }
 	extension, destination, err := ent.channel(svc.Options, binding)
 	if err != nil {
 		return nil, fmt.Errorf("uma bridge: %w", err)
+	}
+	if ent.webhookPurpose != "" {
+		if err := checkWebhookSecret(svc.Options, binding); err != nil {
+			return nil, fmt.Errorf("uma bridge: service %q: %w", svc.ID, err)
+		}
+	}
+	host := cfg.Host
+	if host == nil {
+		loaded := core.LoadUmaHostConfig()
+		host = &loaded
 	}
 
 	clock := cfg.Clock
@@ -118,16 +132,27 @@ func New(ctx context.Context, cfg Config) (*Bridge, error) {
 	}
 	httpClient := cfg.HTTP
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 30 * time.Second}
+		client := &http.Client{Timeout: 30 * time.Second}
+		if ent.noRedirect {
+			// The credential goes to the configured URL and nowhere else.
+			client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+		}
+		httpClient = client
 	}
 	blobs := cfg.Blobs
 	if blobs == nil && cfg.MediaDir != "" {
 		blobs = fileBlobs{dir: filepath.Join(cfg.MediaDir, "blobs")}
 	}
+	factory := ent.factory(factoryDeps{
+		opts: cfg.Options, host: *host,
+		// In memory, as the engine's store: replay rejection lasts as long
+		// as the bridge.
+		replay: webhookauth.NewMemoryReplayStore(0, clock),
+	})
 	engine, err := uma.New(uma.Config{
 		Store:       memory.New(memory.Options{Clock: clock}),
 		Authorizer:  authorizer{},
-		Adapters:    []adapter.Factory{ent.factory(cfg.Options)},
+		Adapters:    []adapter.Factory{factory},
 		Credentials: creds,
 		HTTP:        httpClient,
 		Clock:       clock,
@@ -148,10 +173,14 @@ func New(ctx context.Context, cfg Config) (*Bridge, error) {
 	validator := msgtypes.NewServiceValidator()
 	policy := msgtypes.ServiceValidationConfig{ID: svc.ID, Adapter: svc.Adapter, Profile: svc.Profile, Env: svc.Env, Options: svc.Options}
 	p := &provider{
-		platform: spec.Platform, entry: ent, key: key, service: svc.ID, receiving: destination, mediaDir: cfg.MediaDir,
+		platform: spec.PlatformFor(svc.Options), entry: ent, key: key, service: svc.ID, receiving: destination,
+		mediaDir: cfg.MediaDir, receiveOnly: spec.ReceiveOnly,
 		validate: func(msg *msgtypes.NormalizedMessage) error { return validator.ValidateMessage(policy, msg) },
 	}
 	executor := cfg.Executor
+	if spec.ReceiveOnly {
+		executor = receiveOnlyExecutor{next: executor, key: key}
+	}
 	if cfg.History != nil {
 		executor = dedupExecutor{next: executor, history: cfg.History}
 	}
@@ -300,7 +329,7 @@ func (b *Bridge) handle(ctx context.Context, client uma.Client, t *bot.Turn) err
 
 func (b *Bridge) providerName() string {
 	spec, _ := core.UmaAdapterSpecFor(b.cfg.Service.Options[core.OptionUmaAdapter])
-	return spec.Platform
+	return spec.PlatformFor(b.cfg.Service.Options)
 }
 
 // Webhook is the provider webhook receiver for the service's channel: it

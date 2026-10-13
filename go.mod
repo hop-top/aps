@@ -80,6 +80,8 @@ require (
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/emersion/go-message v0.18.2 // indirect
+	github.com/emersion/go-msgauth v0.7.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/failsafe-go/failsafe-go v0.9.8 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
@@ -179,17 +181,19 @@ require (
 // checkout instead of a published version. Everything that imports it lives in
 // internal/adapters/umabridge; dropping this block and that package removes the
 // dependency. The paths are relative to this worktree (hops/<group>/<name>)
-// and the versions pin the pseudo-version of the checkout's commit 650e527.
+// and the versions pin the pseudo-version of the checkout's commit 02ae8cb.
 // Until uma is resolvable, a build outside that layout fails.
 require (
-	hop.top/uma v0.0.0-20261013050236-650e5275c722
-	hop.top/uma/adapter/messaging/meta v0.0.0-20261013050236-650e5275c722
-	hop.top/uma/adapter/messaging/twilio v0.0.0-20261013050236-650e5275c722
-	hop.top/uma/testing/xrrtest v0.0.0-20261013050236-650e5275c722 // indirect
+	hop.top/uma v0.0.0-20261013084651-02ae8cb0dfcf
+	hop.top/uma/adapter/mail v0.0.0-20261013084651-02ae8cb0dfcf
+	hop.top/uma/adapter/messaging/meta v0.0.0-20261013084651-02ae8cb0dfcf
+	hop.top/uma/adapter/messaging/twilio v0.0.0-20261013084651-02ae8cb0dfcf
+	hop.top/uma/testing/xrrtest v0.0.0-20261013084651-02ae8cb0dfcf // indirect
 )
 
 replace (
 	hop.top/uma => ../../../../uma/hops/main
+	hop.top/uma/adapter/mail => ../../../../uma/hops/main/adapter/mail
 	hop.top/uma/adapter/messaging/meta => ../../../../uma/hops/main/adapter/messaging/meta
 	hop.top/uma/adapter/messaging/twilio => ../../../../uma/hops/main/adapter/messaging/twilio
 	hop.top/uma/testing/xrrtest => ../../../../uma/hops/main/testing/xrrtest

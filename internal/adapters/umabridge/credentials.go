@@ -2,6 +2,7 @@ package umabridge
 
 import (
 	"context"
+	"fmt"
 
 	"hop.top/aps/internal/core"
 	"hop.top/uma/model"
@@ -55,4 +56,36 @@ func (c *credentials) Resolve(_ context.Context, req ports.CredentialRequest) (p
 	default:
 		return nil, model.NewError(model.Unsupported, "credential kind not available for purpose")
 	}
+}
+
+// defaultMinSecretBytes is uma's webhookauth default: the shortest secret it
+// accepts for bearer, token and HMAC unless the service lowers it.
+const defaultMinSecretBytes = 16
+
+// checkWebhookSecret is a readiness check of a generic-webhook service's
+// secret, made when the bridge starts. uma resolves the secret on every
+// request and refuses one that is missing or too short with a 503 and no
+// reason; the bridge refuses to start instead, saying which binding and
+// which option to look at. The secret itself is never part of the error.
+// Ed25519 keys are left to uma, which checks their decoded size.
+func checkWebhookSecret(options map[string]string, binding func(string) (string, bool)) error {
+	auth, _ := core.UmaWebhookAuthFor(options)
+	switch auth.Scheme {
+	case core.UmaSchemeBearer, core.UmaSchemeToken, core.UmaSchemeHMAC:
+	default:
+		return nil
+	}
+	secret, ok := binding(auth.SecretBinding)
+	if !ok || secret == "" {
+		return fmt.Errorf("webhook secret binding %s resolves to nothing", auth.SecretBinding)
+	}
+	minimum := auth.MinSecretBytes
+	if minimum == 0 {
+		minimum = defaultMinSecretBytes
+	}
+	if len(secret) < minimum {
+		return fmt.Errorf("webhook secret bound to %s is %d bytes; uma requires at least %d. Use a longer secret, "+
+			"or set --option %s=%d deliberately", auth.SecretBinding, len(secret), minimum, core.OptionAuthMinSecretBytes, len(secret))
+	}
+	return nil
 }
