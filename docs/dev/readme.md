@@ -71,6 +71,7 @@ System requirements and specifications.
 - [session-inspection-requirements.md](requirements/session-inspection-requirements.md) - Session inspection requirements
 - [ssh-setup-requirements.md](requirements/ssh-setup-requirements.md) - SSH server setup requirements
 - [capability-requirements.md](requirements/capability-requirements.md) - Capability management requirements
+- [uma-bridge-parity-checklist.md](requirements/uma-bridge-parity-checklist.md) - SMS, WhatsApp and email relay parity with uma adapters
 
 ### 🔒 Security
 Security audits and compliance.
