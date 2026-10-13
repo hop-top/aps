@@ -400,6 +400,14 @@ What changes against the aps-native providers, and what to do about it:
   action as `attachments` with `file://` URLs under
   `<aps data dir>/messenger/uma/<service-id>/`. Files are written owner-only
   and nothing deletes them yet; clear old ones yourself.
+- **Flags the bridge ignores warn, not fail.** `--template-name`,
+  `--language-code`, `--template-required`, `--verify-token(-env)`,
+  `--signing-secret-env`, `--auth-scheme` and the other flags listed in
+  [Flags that do nothing](uma-migration.md#flags-that-do-nothing-on-a-uma-service)
+  are accepted and have no effect: replies are text only, templates are never
+  sent, and secrets come from `--env NAME=secret:NAME` bindings alone.
+  `service add` prints one `warning:` line per such flag on stderr, saves the
+  service and exits `0`; `--format json`, `--format yaml` and `--quiet` silence it.
 - **Not carried over:** JSON-bodied Twilio relays and `--provider generic`
   relays have no uma equivalent. `--allowed-number` and the route table keep
   working: they are aps's, applied to the normalized message.

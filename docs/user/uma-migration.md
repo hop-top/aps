@@ -38,7 +38,8 @@ Every `uma` service shares these changes:
 - `aps service show` prints `auth: none` for a `uma` service. That is aps's own
   check, not the provider's; uma still verifies the signature.
 - `--provider`, `--verify-token-env` and `--signing-secret-env` are not read.
-  Bindings come from `--env` only.
+  Bindings come from `--env` only. `service add` warns for each such flag; see
+  [Flags that do nothing](#flags-that-do-nothing-on-a-uma-service).
 - `aps service test --probe` does not apply; see [Verify](#verify).
 
 ## SMS over Twilio
@@ -130,7 +131,8 @@ signature), plus:
 
 - Replies are free-form text. uma can send Twilio Content Templates
   (`content_sid`); the aps bridge only sends text, so `content_sid` is
-  unreachable here, as it is natively.
+  unreachable here, as it is natively. `--template-name`, `--language-code`
+  and `--template-required` are accepted and ignored; `service add` warns.
 - Inbound media is not staged by this build's uma for WhatsApp; the action sees
   the text only.
 
@@ -180,10 +182,48 @@ What you will see:
   answers `400`, so Meta retried them.
 - **Do not migrate a service that depends on templates.** `--template-name`,
   `--language-code` and `--template-required` are accepted and ignored: the
-  bridge sends text only, with no warning. Outside the 24-hour window Meta
-  refuses free-form text.
+  bridge sends text only, and `service add` warns about each. Outside the
+  24-hour window Meta refuses free-form text.
 - **Replies are asynchronous**, as for Twilio; `delivery_status: accepted` is
   queued.
+
+## Flags that do nothing on a uma service
+
+`aps service add --type uma` takes every flag a message service takes, but the
+bridge reads only some of them. A flag it ignores is not refused: `service add`
+prints one `warning:` line per flag, saves the service and exits `0`. The line
+names the flag and what to use instead; it never prints the value.
+
+```text
+warning: --provider has no effect on a uma service: pick the provider with --uma-adapter
+```
+
+| Flag | Why it does nothing | Use instead |
+| --- | --- | --- |
+| `--template-name`, `--language-code`, `--template-required` | The bridge sends text only; no template is ever sent | Nothing. Keep a service that needs templates native |
+| `--verify-token`, `--verify-token-env` | The verify token is read from its binding only | `--env WHATSAPP_VERIFY_TOKEN=secret:NAME` (`meta.whatsapp`) |
+| `--signing-secret-env` | Secrets are read from bindings only | `--env WHATSAPP_APP_SECRET=secret:NAME` (`meta.whatsapp`), `--env TWILIO_AUTH_TOKEN=secret:NAME` (Twilio) |
+| `--auth-scheme`, `--auth-token-env`, `--signature-secret-env` | Generic webhook auth does not run on a uma route; uma checks the provider signature | Nothing. The provider signature check is always on |
+| `--provider` | The uma adapter picks the provider | `--uma-adapter` |
+| `--receive polling` | A uma service receives by webhook only | Omit it, or `--receive webhook` |
+| `--phone-number-id` on `twilio.sms`, `twilio.whatsapp` | Only `meta.whatsapp` reads it | Omit it |
+| `--from`, `--webhook-url` on `meta.whatsapp` | Not read; the callback URL is set at Meta | Omit them |
+| `--webhook-secret-token`, `--webhook-secret-token-env`, `--bot-user-id`, `--require-bot-mention`, `--dedup-ttl` | Telegram and Slack options | Omit them |
+| `--site`, `--project`, `--jql`, `--linear-workspace`, `--team`, `--group`, `--events` | Ticket options | Omit them |
+
+A key set with `--option` that falls in the table (`template_name`,
+`auth_token`, ...) warns as `--option <key>`. These flags are read: `--type`,
+`--uma-adapter`, `--profile`, `--from` and `--webhook-url` (Twilio),
+`--phone-number-id` (`meta.whatsapp`), `--env` bindings, `--allowed-number`,
+`--allowed-sender`, `--default-action`, `--route-table`, `--contacts`, `--reply`,
+`--history-turns`, `--description` and `--label`. A flag left unset, or a
+boolean left `false`, never warns.
+
+The warning goes to stderr. It is not printed with `--format json`,
+`--format yaml` or `--quiet`, so a script that parses the command's output never
+sees it. Unlike the notice below, it is printed when output is piped, and
+`--no-hints` and `HOP_QUIET_HINTS=1` do not silence it: a flag with no effect is
+a mistake in the command, not a hint.
 
 ## Not yet: generic relay and email relay
 
