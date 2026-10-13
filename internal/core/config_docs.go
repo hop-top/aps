@@ -40,6 +40,14 @@ var configFieldTable = map[string]ConfigFieldDoc{
 		Default:     "`[]`",
 		Description: "Additional directories to search for capability definitions",
 	},
+	callbackHostsSetting: {
+		Default:     "`[]`",
+		Description: "Hosts (`host` or `host:port`, as in the URL) a `relay.messages` service's `callback_url` may name; empty allows none",
+	},
+	"uma.relay.allow_http": {
+		Default:     "`false`",
+		Description: "Allow `http` callback URLs for `relay.messages`; local development only, the callback credential travels in clear text",
+	},
 }
 
 // Locations for config sections whose leaves are documented outside the

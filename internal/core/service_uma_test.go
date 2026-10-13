@@ -116,7 +116,7 @@ func TestValidateServiceConfig_UmaMetaWhatsApp(t *testing.T) {
 }
 
 func TestUmaAdapterCatalogue(t *testing.T) {
-	assert.Equal(t, []string{"meta.whatsapp", "twilio.sms", "twilio.whatsapp"}, UmaAdapterCatalogue())
+	assert.Equal(t, []string{"http.mail", "meta.whatsapp", "relay.messages", "twilio.sms", "twilio.whatsapp"}, UmaAdapterCatalogue())
 	spec, ok := UmaAdapterSpecFor("twilio.sms")
 	require.True(t, ok)
 	assert.Equal(t, []string{"TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"}, spec.RequiredEnv)

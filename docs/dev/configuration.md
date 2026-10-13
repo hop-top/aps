@@ -74,6 +74,8 @@ cog.out(subprocess.check_output(
 | `isolation.default_level` | `process` | Default isolation level for profiles that don't specify one |
 | `isolation.fallback_enabled` | `true` | Allow degraded-mode operation if preferred isolation is unavailable |
 | `capability_sources` | `[]` | Additional directories to search for capability definitions |
+| `uma.relay.callback_hosts` | `[]` | Hosts (`host` or `host:port`, as in the URL) a `relay.messages` service's `callback_url` may name; empty allows none |
+| `uma.relay.allow_http` | `false` | Allow `http` callback URLs for `relay.messages`; local development only, the callback credential travels in clear text |
 <!-- [[[end]]] -->
 
 ## Migration from Legacy Paths

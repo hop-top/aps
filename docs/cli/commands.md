@@ -6728,7 +6728,7 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
       --template-name string              WhatsApp template name for business-initiated replies
       --template-required                 Require WhatsApp outbound delivery to use a template
       --type string                       Service type or adapter alias
-      --uma-adapter string                uma service adapter: meta.whatsapp, twilio.sms, twilio.whatsapp
+      --uma-adapter string                uma service adapter: http.mail, meta.whatsapp, relay.messages, twilio.sms, twilio.whatsapp
       --verify-token string               WhatsApp Cloud webhook verification token
       --verify-token-env string           Environment variable holding WhatsApp Cloud verification token
       --webhook-secret-token string       Telegram webhook secret token

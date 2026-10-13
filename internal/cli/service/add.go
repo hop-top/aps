@@ -251,7 +251,11 @@ func warnIgnoredUmaOptions(cmd *cobra.Command, service *core.ServiceConfig) {
 	}
 	for _, ignored := range core.UmaIgnoredOptions(service) {
 		label := "--option " + ignored.Option
-		if ignored.Flag != "" && cmd.Flags().Changed(ignored.Flag) {
+		switch {
+		case ignored.Default:
+			// Unset, so its default is what has no effect.
+			label = "the default --" + ignored.Flag + " " + ignored.Value
+		case ignored.Flag != "" && cmd.Flags().Changed(ignored.Flag):
 			label = "--" + ignored.Flag
 		}
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s has no effect on a uma service: %s\n", label, ignored.Advice)

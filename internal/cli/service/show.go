@@ -76,6 +76,9 @@ func printAuth(cmd *cobra.Command, service *core.ServiceConfig) {
 		return
 	}
 	out := cmd.OutOrStdout()
+	if printUmaWebhookAuth(out, service) {
+		return
+	}
 	summary := msgtypes.NewServiceValidator().DescribeAuth(msgtypes.ServiceValidationConfig{
 		ID:      service.ID,
 		Adapter: service.Adapter,
@@ -177,6 +180,9 @@ Read-only: no service state mutation. Idempotent.`,
 			}
 			for _, route := range runtime.Routes {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", route)
+			}
+			if spec, ok := core.UmaAdapterSpecForService(service); ok && spec.ReceiveOnly {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "replies: %s\n", runtime.Replies)
 			}
 			return nil
 		},

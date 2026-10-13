@@ -51,6 +51,7 @@ type Config struct {
 	Secrets           SecretsConfig         `yaml:"secrets,omitempty"`
 	Profile           ProfileDefaultsConfig `yaml:"profile,omitempty"`
 	Idempotency       IdempotencyConfig     `yaml:"idempotency,omitempty"`
+	Uma               UmaHostConfig         `yaml:"uma,omitempty"`
 }
 
 // ProfileDefaultsConfig controls default behaviour when creating profiles.
