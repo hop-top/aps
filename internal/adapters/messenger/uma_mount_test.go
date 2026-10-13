@@ -43,9 +43,17 @@ type umaCore struct {
 	mu     sync.Mutex
 	runs   []protocol.RunInput
 	output string
+	// onRun, when set, sees each run as it starts, before it answers.
+	onRun func(protocol.RunInput)
 }
 
 func (c *umaCore) ExecuteRun(_ context.Context, in protocol.RunInput, _ protocol.StreamWriter) (*protocol.RunState, error) {
+	c.mu.Lock()
+	onRun := c.onRun
+	c.mu.Unlock()
+	if onRun != nil {
+		onRun(in)
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.runs = append(c.runs, in)
@@ -168,6 +176,20 @@ func newUmaRoutes(t *testing.T) *umaRoutes {
 	require.NoError(t, r.adapter.RegisterRoutes(r.mux, r.core))
 	t.Cleanup(func() { assert.NoError(t, r.adapter.Stop()) })
 	return r
+}
+
+// restart plays a new `aps serve` process over the same data dir and the
+// same provider and action core: a fresh adapter, so fresh uma engines with
+// empty memory, and a new mux in front of them. The previous adapter is
+// stopped first.
+func (r *umaRoutes) restart(t *testing.T) {
+	t.Helper()
+	require.NoError(t, r.adapter.Stop())
+	r.mux = http.NewServeMux()
+	r.adapter = NewAdapter(WithUmaOptions(umabridge.Options{TwilioBaseURL: r.twilio.srv.URL}))
+	require.NoError(t, r.adapter.Start(t.Context(), nil))
+	require.NoError(t, r.adapter.RegisterRoutes(r.mux, r.core))
+	t.Cleanup(func() { assert.NoError(t, r.adapter.Stop()) })
 }
 
 func (r *umaRoutes) do(t *testing.T, req *http.Request) *httptest.ResponseRecorder {
@@ -461,4 +483,113 @@ func TestUmaRoute_RepliesLandInTheServicesConversationHistory(t *testing.T) {
 	assert.Equal(t, "remember me", turns[0].Text)
 	assert.Equal(t, "on it", turns[1].Text)
 	assert.Equal(t, "sms-uma", turns[0].ServiceID)
+}
+
+// umaProbe is the native identity of the SMS conversation the uma service
+// carries on with umaSender.
+func umaProbe(service string) *msgtypes.NormalizedMessage {
+	return &msgtypes.NormalizedMessage{
+		Platform:         string(msgtypes.PlatformSMS),
+		Sender:           msgtypes.Sender{ID: umaSender},
+		Channel:          msgtypes.Channel{ID: umaNumber},
+		PlatformMetadata: map[string]any{"messenger_name": service},
+	}
+}
+
+// payloads records what each action run received on stdin, and whether the
+// inbound turn was already in history when the action started.
+type umaRunLog struct {
+	mu        sync.Mutex
+	payloads  []ActionPayload
+	inboundIn []bool
+}
+
+func (l *umaRunLog) watch(t *testing.T, r *umaRoutes) {
+	t.Helper()
+	r.core.onRun = func(in protocol.RunInput) {
+		var payload ActionPayload
+		assert.NoError(t, json.Unmarshal(in.Payload, &payload))
+		recorded := false
+		for _, turn := range recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma")) {
+			if turn.Direction == msgtypes.TurnDirectionInbound && turn.MessageID == payload.ID {
+				recorded = true
+			}
+		}
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.payloads = append(l.payloads, payload)
+		l.inboundIn = append(l.inboundIn, recorded)
+	}
+}
+
+func (l *umaRunLog) runs() ([]ActionPayload, []bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]ActionPayload(nil), l.payloads...), append([]bool(nil), l.inboundIn...)
+}
+
+func TestUmaRoute_InboundTurnPrecedesTheActionAndLaterMessagesSeeEarlierTurns(t *testing.T) {
+	r := newUmaRoutes(t)
+	require.NoError(t, core.SaveService(umaSMSService("sms-uma")))
+	var log umaRunLog
+	log.watch(t, r)
+
+	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", umaIncoming("SM10000000000000000000000000000016", umaSender, "first"), umaHookURL).Code)
+	umaWait(t, "first exchange recorded", func() bool {
+		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 2
+	})
+	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", umaIncoming("SM10000000000000000000000000000017", umaSender, "second"), umaHookURL).Code)
+	umaWait(t, "second exchange recorded", func() bool {
+		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 4
+	})
+
+	payloads, inboundFirst := log.runs()
+	require.Len(t, payloads, 2)
+	assert.Equal(t, []bool{true, true}, inboundFirst, "the router records the inbound turn before the action runs")
+	assert.Empty(t, payloads[0].PriorTurns)
+	prior := payloads[1].PriorTurns
+	require.Len(t, prior, 2, "the second message sees the first exchange, oldest first")
+	assert.Equal(t, msgtypes.TurnDirectionInbound, prior[0].Direction)
+	assert.Equal(t, "first", prior[0].Text)
+	assert.Equal(t, msgtypes.TurnDirectionOutbound, prior[1].Direction)
+	assert.Equal(t, "on it", prior[1].Text)
+	assert.Equal(t, payloads[0].Conversation.ConversationID, payloads[1].Conversation.ConversationID)
+	assert.Equal(t, payloads[0].Conversation.SessionID, payloads[1].Conversation.SessionID, "a direct sender has one session")
+}
+
+// uma's memory ends with the process; aps history does not. After a restart
+// the conversation continues from history, and the provider's redelivery of
+// an event already answered neither runs the action nor replies again.
+func TestUmaRoute_RestartKeepsTheConversationAndDoesNotAnswerARedeliveryTwice(t *testing.T) {
+	r := newUmaRoutes(t)
+	require.NoError(t, core.SaveService(umaSMSService("sms-uma")))
+	var log umaRunLog
+	log.watch(t, r)
+	form := umaIncoming("SM10000000000000000000000000000018", umaSender, "before the restart")
+	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", form, umaHookURL).Code)
+	umaWait(t, "first exchange recorded and sent", func() bool {
+		return len(r.twilio.sent()) == 1 && len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 2
+	})
+
+	r.restart(t)
+	var after umaRunLog
+	after.watch(t, r)
+	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", form, umaHookURL).Code, "uma records the redelivered event as new")
+	time.Sleep(300 * time.Millisecond)
+
+	assert.Len(t, r.core.calls(), 1, "the action does not run again")
+	assert.Len(t, r.twilio.sent(), 1, "no second reply")
+	assert.Len(t, recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma")), 2, "no turns for the redelivery")
+	svc, err := core.LoadService("sms-uma")
+	require.NoError(t, err)
+	assert.Equal(t, "accepted", svc.LastOutbound.Status, "the skipped event does not overwrite the service's last outbound event")
+
+	// The conversation carries on from history.
+	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", umaIncoming("SM10000000000000000000000000000019", umaSender, "after the restart"), umaHookURL).Code)
+	umaWait(t, "second reply", func() bool { return len(r.twilio.sent()) == 2 })
+	payloads, _ := after.runs()
+	require.Len(t, payloads, 1)
+	require.Len(t, payloads[0].PriorTurns, 2)
+	assert.Equal(t, "before the restart", payloads[0].PriorTurns[0].Text)
+	assert.Equal(t, "on it", payloads[0].PriorTurns[1].Text)
 }

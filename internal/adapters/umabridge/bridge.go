@@ -30,7 +30,9 @@ type Config struct {
 	// with reply policy. Required.
 	Router   msgtypes.MessageRouter
 	Executor msgtypes.MessageExecutor
-	// History records delivered replies as outbound turns; optional.
+	// History records replies as outbound turns and, read back, keeps an
+	// event already answered from being run again after a restart;
+	// optional.
 	History msgtypes.ConversationStore
 	// Hooks are the runtime's error, retry and delivery-attempt hooks;
 	// optional.
@@ -149,7 +151,11 @@ func New(ctx context.Context, cfg Config) (*Bridge, error) {
 		platform: spec.Platform, entry: ent, key: key, service: svc.ID, receiving: destination, mediaDir: cfg.MediaDir,
 		validate: func(msg *msgtypes.NormalizedMessage) error { return validator.ValidateMessage(policy, msg) },
 	}
-	b.runtime, err = msgtypes.NewRuntime(p, cfg.Router, cfg.Executor, msgtypes.RuntimeOptions{
+	executor := cfg.Executor
+	if cfg.History != nil {
+		executor = dedupExecutor{next: executor, history: cfg.History}
+	}
+	b.runtime, err = msgtypes.NewRuntime(p, cfg.Router, executor, msgtypes.RuntimeOptions{
 		ServiceID: svc.ID, History: cfg.History, Hooks: cfg.Hooks,
 	})
 	if err != nil {

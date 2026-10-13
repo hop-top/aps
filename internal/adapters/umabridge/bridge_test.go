@@ -42,6 +42,9 @@ type fakeTwilio struct {
 	posts []twilioPost
 	seq   int
 	media map[string][]byte // media SID -> bytes, set before the webhook is posted
+	// reject, when non-zero, answers every message create with this status
+	// and a Twilio error body.
+	reject int
 }
 
 type twilioPost struct {
@@ -78,6 +81,15 @@ func (f *fakeTwilio) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = r.ParseForm()
 	user, pass, _ := r.BasicAuth()
+	f.mu.Lock()
+	reject := f.reject
+	f.mu.Unlock()
+	if reject != 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(reject)
+		_, _ = w.Write([]byte(`{"code":21211,"message":"The 'To' number is not a valid phone number.","more_info":"https://www.twilio.com/docs/errors/21211","status":400}`))
+		return
+	}
 	f.mu.Lock()
 	f.seq++
 	n := f.seq
@@ -170,6 +182,9 @@ type harness struct {
 	hook   *httptest.Server
 	exec   *stubExecutor
 	twilio *fakeTwilio
+	// stop ends the bridge as a process exit would: its engine, and every
+	// message queued or recorded in it, are gone. Idempotent.
+	stop func()
 
 	mu      sync.Mutex
 	results []resultRecord
@@ -192,7 +207,14 @@ func newHarness(t *testing.T, svc *core.ServiceConfig, fn func(msgtypes.Executio
 
 func newHarnessWith(t *testing.T, svc *core.ServiceConfig, fn func(msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error), mutate func(*Config)) *harness {
 	t.Helper()
-	h := &harness{twilio: newFakeTwilio(t), exec: &stubExecutor{fn: fn}}
+	return newHarnessOn(t, newFakeTwilio(t), svc, fn, mutate)
+}
+
+// newHarnessOn is newHarnessWith against a given provider stand-in, so a
+// second harness can play the same service after a restart.
+func newHarnessOn(t *testing.T, twilio *fakeTwilio, svc *core.ServiceConfig, fn func(msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error), mutate func(*Config)) *harness {
+	t.Helper()
+	h := &harness{twilio: twilio, exec: &stubExecutor{fn: fn}}
 	cfg := Config{
 		Service:  svc,
 		Router:   stubRouter{},
@@ -218,16 +240,20 @@ func newHarnessWith(t *testing.T, svc *core.ServiceConfig, fn func(msgtypes.Exec
 	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- b.Run(ctx) }()
-	t.Cleanup(func() {
-		cancel()
-		select {
-		case err := <-done:
-			assert.NoError(t, err, "bridge run")
-		case <-time.After(15 * time.Second):
-			t.Error("bridge did not stop")
-		}
-		assert.NoError(t, b.Close(context.Background()))
-	})
+	var once sync.Once
+	h.stop = func() {
+		once.Do(func() {
+			cancel()
+			select {
+			case err := <-done:
+				assert.NoError(t, err, "bridge run")
+			case <-time.After(15 * time.Second):
+				t.Error("bridge did not stop")
+			}
+			assert.NoError(t, b.Close(context.Background()))
+		})
+	}
+	t.Cleanup(h.stop)
 	return h
 }
 
@@ -465,6 +491,12 @@ func TestNewFailsWhenAccountSIDBindingResolvesToNothing(t *testing.T) {
 	_, err := New(t.Context(), Config{Service: svc, Router: stubRouter{}, Executor: &stubExecutor{}, Store: tokenStore(testToken)})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), core.EnvTwilioAccountSID)
+}
+
+func (f *fakeTwilio) rejectWith(status int) {
+	f.mu.Lock()
+	f.reject = status
+	f.mu.Unlock()
 }
 
 func (f *fakeTwilio) setMedia(m map[string][]byte) {

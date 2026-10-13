@@ -267,6 +267,12 @@ func (m *umaMounts) record(serviceID string, result *msgtypes.RuntimeResult, err
 	}
 	msg := result.Message
 	_ = m.attempts.take(msg.ID)
+	if result.Result != nil && result.Result.Status == umabridge.StatusDuplicate {
+		// An event already answered, redelivered after a restart: nothing
+		// ran and nothing was sent, so the service's last inbound and
+		// outbound events stand.
+		return
+	}
 	_ = core.RecordServiceInboundEvent(serviceID, core.ServiceEventMeta{
 		MessageID: msg.ID,
 		Platform:  msg.Platform,
