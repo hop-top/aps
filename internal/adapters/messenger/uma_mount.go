@@ -31,8 +31,9 @@ var errUmaStopped = errors.New("uma bridges are stopped")
 // is built on the first request for its service, not when routes register: a
 // service added while `aps serve` runs is served without a restart. A bridge
 // is rebuilt when the service's provider configuration (profile, options,
-// env bindings) changes; its in-memory engine state goes with it, so events
-// pending at that moment are redelivered by the provider.
+// env bindings) or the uma host settings change; its in-memory engine state
+// goes with it, so events pending at that moment are redelivered by the
+// provider.
 type umaMounts struct {
 	router     *MessageRouter
 	chatRunner ChatTurnRunner
@@ -88,7 +89,8 @@ func (m *umaMounts) serve(w http.ResponseWriter, r *http.Request, service *core.
 // webhook returns the provider webhook of the service's bridge, building or
 // rebuilding the bridge when there is none or its configuration changed.
 func (m *umaMounts) webhook(service *core.ServiceConfig) (http.Handler, error) {
-	fingerprint := umaFingerprint(service)
+	host := core.LoadUmaHostConfig()
+	fingerprint := umaFingerprint(service, host)
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -102,7 +104,7 @@ func (m *umaMounts) webhook(service *core.ServiceConfig) (http.Handler, error) {
 		delete(m.bridges, service.ID)
 		m.retire(inst)
 	}
-	inst, err := m.start(service, fingerprint)
+	inst, err := m.start(service, host, fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +112,7 @@ func (m *umaMounts) webhook(service *core.ServiceConfig) (http.Handler, error) {
 	return inst.webhook, nil
 }
 
-func (m *umaMounts) start(service *core.ServiceConfig, fingerprint string) (*umaInstance, error) {
+func (m *umaMounts) start(service *core.ServiceConfig, host core.UmaHostConfig, fingerprint string) (*umaInstance, error) {
 	cfg := umabridge.Config{
 		Service:  service,
 		Router:   m.router,
@@ -127,6 +129,7 @@ func (m *umaMounts) start(service *core.ServiceConfig, fingerprint string) (*uma
 		},
 		Options:  m.options,
 		MediaDir: umaMediaDir(service.ID),
+		Host:     &host,
 	}
 	bridge, err := umabridge.New(m.ctx, cfg)
 	if err != nil {
@@ -195,16 +198,19 @@ func (m *umaMounts) close() {
 	}
 }
 
-// umaFingerprint identifies the part of a service a bridge is built from.
-// What the runtime writes back to the service after each message (last
-// inbound and outbound, delivery status and attempts) and routing, which is
-// resolved per message, are not part of it: a rebuild would drop the
-// engine's memory, its event de-duplication included, after every reply.
-func umaFingerprint(service *core.ServiceConfig) string {
+// umaFingerprint identifies the part of a service a bridge is built from,
+// with the uma host settings of the global configuration (the relay callback
+// host allowlist), so an edit to either rebuilds the bridge. What the runtime
+// writes back to the service after each message (last inbound and outbound,
+// delivery status and attempts) and routing, which is resolved per message,
+// are not part of it: a rebuild would drop the engine's memory, its event
+// de-duplication and replay window included, after every reply.
+func umaFingerprint(service *core.ServiceConfig, host core.UmaHostConfig) string {
 	view := struct {
 		Type, Adapter, Profile string
 		Env, Options           map[string]string
-	}{service.Type, service.Adapter, service.Profile, service.Env, service.Options}
+		Host                   core.UmaHostConfig
+	}{service.Type, service.Adapter, service.Profile, service.Env, service.Options, host}
 	data, _ := json.Marshal(view)
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
@@ -293,6 +299,17 @@ func (m *umaMounts) record(serviceID string, result *msgtypes.RuntimeResult, err
 				Status:    result.Delivery.Status,
 			})
 		}
+	case result.Result != nil && result.Result.Status == umabridge.StatusReplyDisabled:
+		// The action ran; its reply was refused because the adapter cannot
+		// send one. The refusal is the outbound event, so status shows it.
+		_ = core.RecordServiceOutboundEvent(serviceID, core.ServiceEventMeta{
+			MessageID: msg.ID,
+			Platform:  msg.Platform,
+			ChannelID: msg.Channel.ID,
+			SenderID:  msg.Sender.ID,
+			Status:    umabridge.StatusReplyDisabled,
+			Detail:    "reply refused, not sent: the service's uma adapter receives only",
+		})
 	case result.Result != nil:
 		_ = recordServiceExecutionEvent(serviceID, msg, result.Result)
 	}

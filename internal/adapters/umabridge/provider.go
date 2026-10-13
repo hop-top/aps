@@ -40,6 +40,8 @@ type provider struct {
 	receiving string
 	// mediaDir is where inbound media is materialized; empty means none.
 	mediaDir string
+	// receiveOnly marks an adapter with no send path: a delivery is refused.
+	receiveOnly bool
 	// validate is aps's service policy (allowed numbers, senders, channels),
 	// applied to the normalized message before anything else touches it.
 	validate func(*msgtypes.NormalizedMessage) error
@@ -51,12 +53,16 @@ var (
 )
 
 func (p *provider) Metadata() msgtypes.ProviderRuntimeMetadata {
-	return msgtypes.ProviderRuntimeMetadata{
+	meta := msgtypes.ProviderRuntimeMetadata{
 		Provider:      p.platform,
 		DisplayName:   "uma " + p.key,
 		IngressModes:  []msgtypes.IngressMode{msgtypes.IngressModeWebhook},
 		DeliveryModes: []msgtypes.DeliveryMode{msgtypes.DeliveryModeText},
 	}
+	if p.receiveOnly {
+		meta.DeliveryModes = nil
+	}
+	return meta
 }
 
 // NormalizeIngress maps the received uma message of the turn in context onto
@@ -100,6 +106,9 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 	if p.entry.thread != nil {
 		msg.Thread = p.entry.thread(m)
 	}
+	if p.entry.normalize != nil {
+		p.entry.normalize(m, msg)
+	}
 	// Policy first: a refused sender's media is never copied out of the
 	// engine.
 	if p.validate != nil {
@@ -108,9 +117,11 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 		}
 	}
 	if p.mediaDir != "" {
-		if msg.Attachments, err = materializeMedia(ctx, st, p.mediaDir, id); err != nil {
+		staged, err := materializeMedia(ctx, st, p.mediaDir, msg.ID)
+		if err != nil {
 			return nil, err
 		}
+		msg.Attachments = append(staged, msg.Attachments...)
 	}
 	return msg, nil
 }
@@ -120,6 +131,10 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 // retries, or a redelivered event) replays the one reply instead of sending
 // again. A uma reply is accepted when queued; the engine's worker sends it.
 func (p *provider) DeliverMessage(ctx context.Context, d msgtypes.DeliveryRequest) (*msgtypes.DeliveryReceipt, error) {
+	if p.receiveOnly {
+		// The executor already took the reply off; this is the backstop.
+		return nil, errReceiveOnly(p.key)
+	}
 	st, err := stateFrom(ctx)
 	if err != nil {
 		return nil, err
