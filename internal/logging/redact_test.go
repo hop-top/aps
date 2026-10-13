@@ -323,6 +323,67 @@ func TestApply_RedactsRoutableAddresses(t *testing.T) {
 	}
 }
 
+// TestApply_KeepsFixtureDomainEmailsReadable pins the rule-scoped
+// pass-through for reserved/first-party fixture domains, and the
+// published AWS documentation key.
+func TestApply_KeepsFixtureDomainEmailsReadable(t *testing.T) {
+	resetForTest()
+	tests := []struct{ name, in string }{
+		{"example-com", "owner alice@example.com ok"},
+		{"example-org", "to=bob@example.org"},
+		{"example-net", "cc carol@example.net"},
+		{"hop-top", "dave@hop.top"},
+		{"ideacrafters", "erin@ideacrafters.com"},
+		{"aws-doc-key", "key=AKIAIOSFODNN7EXAMPLE"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if out := Apply(tc.in); out != tc.in {
+				t.Fatalf("fixture value was mangled: %q -> %q", tc.in, out)
+			}
+		})
+	}
+}
+
+// TestApply_RedactsLookalikeEmailDomains is the counterpart: the
+// fixture-domain exemption must not cover real addresses or domains
+// that merely contain a fixture domain.
+func TestApply_RedactsLookalikeEmailDomains(t *testing.T) {
+	resetForTest()
+	tests := []struct{ name, in, secret string }{
+		{"real-provider", "d@gmail.com", "d@gmail.com"},
+		{"subdomain", "x@sub.example.com", "x@sub.example.com"},
+		{"fixture-prefix-of-longer-domain", "y@example.com.evil.test", "y@example.com.evil.test"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out := Apply(tc.in)
+			if strings.Contains(out, tc.secret) {
+				t.Fatalf("email was not redacted: %q", out)
+			}
+		})
+	}
+}
+
+// TestApply_RedactsCredentialsEmbeddingFixtureKey guards the
+// fixture-credential pass-through: a live value that merely starts or
+// ends with the published AWS documentation key must still redact.
+func TestApply_RedactsCredentialsEmbeddingFixtureKey(t *testing.T) {
+	resetForTest()
+	tests := []struct{ name, in, secret string }{
+		{"suffixed", "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLEq9Zk3Lm2Xv7", "AKIAIOSFODNN7EXAMPLEq9Zk3Lm2Xv7"},
+		{"prefixed", "AWS_ACCESS_KEY_ID=q9Zk3Lm2Xv7AKIAIOSFODNN7EXAMPLE", "q9Zk3Lm2Xv7AKIAIOSFODNN7EXAMPLE"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out := Apply(tc.in)
+			if strings.Contains(out, tc.secret) {
+				t.Fatalf("embedding credential survived: %q", out)
+			}
+		})
+	}
+}
+
 // TestApply_LeavesNonSecretLookalikesIntact is the negative control
 // for the added rules: ordinary prose and version strings that share
 // a prefix with a credential must not be mangled. Guards against the

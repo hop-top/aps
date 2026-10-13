@@ -179,6 +179,7 @@ var serviceTypeAliases = map[string]string{
 	"discord":  "message discord",
 	"sms":      "message sms",
 	"whatsapp": "message whatsapp",
+	"uma":      "message uma",
 	"email":    "ticket email",
 	"github":   "ticket github",
 	"gitlab":   "ticket gitlab",
@@ -520,6 +521,9 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 			}
 		}
 	case "message":
+		if service.Adapter == AdapterUma {
+			return describeUmaServiceRuntime(service)
+		}
 		route := "/services/" + service.ID + "/webhook"
 		provider := service.Adapter
 		receiveMode := "webhook"
@@ -660,6 +664,8 @@ func validateMessageServiceConfig(service *ServiceConfig, result *ServiceValidat
 		if provider == "twilio" || provider == "" {
 			requireEnv(env, result, "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN")
 		}
+	case AdapterUma:
+		validateUmaMessageService(service, result)
 	case "whatsapp":
 		provider := strings.TrimSpace(strings.ToLower(options["provider"]))
 		if provider == "" {
@@ -791,6 +797,7 @@ var knownMessageAdapters = map[string]bool{
 	"sms":      true,
 	"whatsapp": true,
 	"email":    true,
+	"uma":      true,
 }
 
 func validateMessageReceiveMode(value string, result *ServiceValidationResult) {

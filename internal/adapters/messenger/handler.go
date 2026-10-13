@@ -48,6 +48,7 @@ type Handler struct {
 	slackTransport    SlackTransport
 	teamsTransport    TeamsTransport
 	whatsappTransport msgtypes.WhatsAppTransport
+	umaWebhook        func(http.ResponseWriter, *http.Request, *core.ServiceConfig)
 }
 
 // NewHandler creates a Handler with the given router, normalizer, and optional
@@ -116,6 +117,13 @@ func WithWhatsAppTransport(t msgtypes.WhatsAppTransport) func(*Handler) {
 	return func(h *Handler) { h.whatsappTransport = t }
 }
 
+// WithUmaWebhook sets the receiver of uma-hosted services: the handler hands
+// it the untouched request, with the service, for every method. Without it a
+// uma service is refused with 501, since the native normalizers never serve it.
+func WithUmaWebhook(fn func(http.ResponseWriter, *http.Request, *core.ServiceConfig)) func(*Handler) {
+	return func(h *Handler) { h.umaWebhook = fn }
+}
+
 func WithChatTurnRunner(runner ChatTurnRunner) func(*Handler) {
 	return func(h *Handler) { h.chatRunner = runner }
 }
@@ -149,7 +157,8 @@ func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, se
 		h.handleWhatsAppVerification(w, r, serviceID, adapter)
 		return
 	}
-	if r.Method != http.MethodPost {
+	// uma verifies and answers the provider's GET as well as its POST.
+	if r.Method != http.MethodPost && adapter != core.AdapterUma {
 		writeError(w, http.StatusMethodNotAllowed, "only POST requests are accepted")
 		return
 	}
@@ -168,6 +177,17 @@ func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, se
 	}
 	if strings.TrimSpace(service.Adapter) != adapter {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q has adapter %q, not %q", serviceID, service.Adapter, adapter))
+		return
+	}
+	if adapter == core.AdapterUma {
+		// A uma-hosted service takes its provider traffic through the uma
+		// engine, never through the aps-native normalizers or validators:
+		// uma checks the provider signature.
+		if h.umaWebhook == nil {
+			writeError(w, http.StatusNotImplemented, fmt.Sprintf("service %q is a uma service; this handler has no uma receiver", serviceID))
+			return
+		}
+		h.umaWebhook(w, r, service)
 		return
 	}
 	h.handleWebhookForMessenger(w, r, adapter, serviceID, service)

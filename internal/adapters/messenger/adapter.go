@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"hop.top/aps/internal/adapters/umabridge"
 	"hop.top/aps/internal/core"
 	coremessenger "hop.top/aps/internal/core/messenger"
 	"hop.top/aps/internal/core/protocol"
@@ -17,14 +18,33 @@ type Adapter struct {
 	status  string
 	mu      sync.RWMutex
 	history *coremessenger.LazyConversationStore
+
+	umaOptions umabridge.Options
+	uma        *umaMounts
+}
+
+// AdapterOption configures an Adapter.
+type AdapterOption func(*Adapter)
+
+// WithUmaOptions sets the host-side settings of the uma provider factories
+// (REST origins, timeouts). They are test seams: no service option reaches
+// them, so a channel cannot redirect credentials to another origin.
+func WithUmaOptions(o umabridge.Options) AdapterOption {
+	return func(a *Adapter) { a.umaOptions = o }
 }
 
 var _ protocol.ProtocolServer = (*Adapter)(nil)
 var _ protocol.HTTPProtocolAdapter = (*Adapter)(nil)
 var _ ext.Extension = (*Adapter)(nil)
 
-func NewAdapter() *Adapter {
-	return &Adapter{status: "stopped"}
+func NewAdapter(opts ...AdapterOption) *Adapter {
+	a := &Adapter{status: "stopped"}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(a)
+		}
+	}
+	return a
 }
 
 func (a *Adapter) Meta() ext.Metadata {
@@ -60,6 +80,15 @@ func (a *Adapter) Start(ctx context.Context, config interface{}) error {
 
 func (a *Adapter) Stop() error {
 	a.mu.Lock()
+	uma := a.uma
+	a.uma = nil
+	a.mu.Unlock()
+	// Bridges first: a running turn still records to the history store.
+	if uma != nil {
+		uma.close()
+	}
+
+	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.status = "stopped"
 	if a.history != nil {
@@ -80,15 +109,27 @@ func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) e
 	normalizer := NewNormalizer()
 	router := NewMessageRouterWithExecutor(&serviceRouteResolver{base: coremessenger.NewManager()}, normalizer, apsCore,
 		WithConversationStore(a.conversationStore()))
-	handler := NewHandler(router, normalizer, nil)
+	mounts := a.mountUma(router)
+	handler := NewHandler(router, normalizer, nil, WithUmaWebhook(mounts.serve))
+	mounts.chatRunner = handler.chatRunner
 
 	// Only the per-service route is exposed. The platform-keyed
 	// Handler.ServeHTTP entrypoint has no service, so ValidateRequest
 	// (provider hooks, generic auth, allowlists) never runs on it; mounting
 	// it would hand untrusted callers an unauthenticated parse + routing
 	// surface.
-	mux.HandleFunc("POST /services/{service}/webhook", func(w http.ResponseWriter, r *http.Request) {
+	//
+	// The native providers take POST only. A uma service takes every method
+	// at this URL, so the provider's own GET (WhatsApp Cloud subscription
+	// verification) reaches the uma receiver; what answers a method is the
+	// receiver, which refuses the ones it does not serve.
+	mux.HandleFunc("/services/{service}/webhook", func(w http.ResponseWriter, r *http.Request) {
 		serviceID := r.PathValue("service")
+		if r.Method != http.MethodPost && !isUmaService(serviceID) {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
 		service, err := core.LoadService(serviceID)
 		if err != nil {
 			writeError(w, http.StatusNotFound, fmt.Sprintf("service %q not found", serviceID))
@@ -105,6 +146,27 @@ func (a *Adapter) RegisterRoutes(mux *http.ServeMux, apsCore protocol.APSCore) e
 		handler.ServeServiceWebhook(w, r, service.ID, service.Adapter)
 	})
 	return nil
+}
+
+// mountUma installs the uma bridge host for a router, closing the one a
+// previous registration left.
+func (a *Adapter) mountUma(router *MessageRouter) *umaMounts {
+	mounts := newUmaMounts(router, a.umaOptions)
+	a.mu.Lock()
+	previous := a.uma
+	a.uma = mounts
+	a.mu.Unlock()
+	if previous != nil {
+		previous.close()
+	}
+	return mounts
+}
+
+// isUmaService reports whether the id names a persisted message service
+// hosted by uma.
+func isUmaService(serviceID string) bool {
+	service, err := core.LoadService(serviceID)
+	return err == nil && service.Type == "message" && strings.TrimSpace(service.Adapter) == core.AdapterUma
 }
 
 // conversationStore returns the adapter-owned thread history store. It opens

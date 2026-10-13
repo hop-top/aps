@@ -63,6 +63,7 @@ var ticketAliasNoDocNote = map[string]bool{
 // are listed in messageAdapterNoDocNote.
 var messageAdapterDocNotes = map[string]string{
 	"email": "-- pass `--type message --adapter email`",
+	"uma":   "-- opt-in: provider I/O hosted by an in-process uma engine; also pass `--uma-adapter`",
 }
 
 // messageAdapterNoDocNote is the explicit allowlist of message adapters

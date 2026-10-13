@@ -44,6 +44,22 @@ func TestRoot_GlobalOfflineFlag(t *testing.T) {
 	}
 }
 
+// --offline is registered by kit/cli (reserved name) as a bool, so a
+// bare `--offline` parses before or after the subcommand and lands in
+// the viper key globals.IsOffline reads.
+func TestRoot_GlobalOfflineFlagIsBool(t *testing.T) {
+	f := rootCmd.PersistentFlags().Lookup("offline")
+	if f == nil {
+		t.Fatal("--offline persistent flag not registered on root")
+	}
+	if f.Value.Type() != "bool" {
+		t.Fatalf("--offline type = %q, want bool", f.Value.Type())
+	}
+	if f.NoOptDefVal != "true" {
+		t.Fatalf("--offline NoOptDefVal = %q, want true (bare flag form)", f.NoOptDefVal)
+	}
+}
+
 func TestRoot_GlobalInstanceFlag(t *testing.T) {
 	if f := rootCmd.PersistentFlags().Lookup("instance"); f == nil {
 		t.Fatal("--instance persistent flag not registered on root (T-0386)")

@@ -79,7 +79,7 @@ func TestServicePersistsChatSessionAndTurns(t *testing.T) {
 	if len(saved.Turns) != 2 {
 		t.Fatalf("saved turns = %#v", saved.Turns)
 	}
-	if client.req.Temperature != 0 || client.req.MaxTokens != 0 || client.req.Extensions != nil {
+	if client.req.Temperature != nil || client.req.MaxTokens != 0 || client.req.Extensions != nil {
 		t.Fatalf("unset sampling knobs leaked into request: %#v", client.req)
 	}
 }
@@ -110,7 +110,7 @@ func TestServiceRequestCarriesSamplingKnobs(t *testing.T) {
 	_, err = service.Send(context.Background(), "chat-2", "hello")
 	requireNoError(t, err)
 
-	if client.req.Temperature != 0.2 {
+	if client.req.Temperature == nil || *client.req.Temperature != 0.2 {
 		t.Fatalf("Temperature = %v, want 0.2", client.req.Temperature)
 	}
 	if client.req.MaxTokens != 900 {
@@ -144,8 +144,8 @@ func TestServiceRequestExplicitZeroTemperature(t *testing.T) {
 	_, err = service.Send(context.Background(), "chat-3", "hello")
 	requireNoError(t, err)
 
-	if client.req.Temperature != 0 {
-		t.Fatalf("Temperature = %v, want 0", client.req.Temperature)
+	if client.req.Temperature == nil || *client.req.Temperature != 0 {
+		t.Fatalf("Temperature = %v, want explicit 0", client.req.Temperature)
 	}
 	if client.req.Extensions != nil {
 		t.Fatalf("Extensions = %#v, want nil when effort/verbosity unset", client.req.Extensions)

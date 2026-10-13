@@ -1209,3 +1209,113 @@ func TestServiceShowAndTest_TicketServiceProbe(t *testing.T) {
 	assert.Contains(t, testOut.String(), "webhook_url: https://hooks.example.test/services/support-inbox/ticket/email")
 	assert.Contains(t, testOut.String(), "probe_status: 202")
 }
+
+func TestAddCmd_UmaServicePersistsBridgeConfig(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "sms-uma",
+		"--type", "uma",
+		"--uma-adapter", "twilio.sms",
+		"--profile", "assistant",
+		"--from", "+15558675310",
+		"--webhook-url", "https://hooks.example.com/twilio/sms",
+		"--env", "TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID",
+		"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN",
+		"--default-action", "triage",
+		"--receive", "webhook",
+		"--reply", "text",
+	})
+	require.NoError(t, cmd.Execute(), out.String())
+	assert.Contains(t, out.String(), "type: message")
+	assert.Contains(t, out.String(), "adapter: uma")
+
+	service, err := core.LoadService("sms-uma")
+	require.NoError(t, err)
+	assert.Equal(t, "message", service.Type)
+	assert.Equal(t, "uma", service.Adapter)
+	assert.Equal(t, "twilio.sms", service.Options["uma_adapter"])
+	assert.Equal(t, "secret:TWILIO_AUTH_TOKEN", service.Env["TWILIO_AUTH_TOKEN"])
+}
+
+func TestAddCmd_UmaServiceWithoutWebhookURLIsNotPersisted(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "sms-uma",
+		"--type", "uma",
+		"--uma-adapter", "twilio.sms",
+		"--profile", "assistant",
+		"--from", "+15558675310",
+		"--env", "TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID",
+		"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN",
+		"--default-action", "triage",
+	})
+	require.Error(t, cmd.Execute())
+	assert.Contains(t, out.String(), "webhook_url")
+	exists, err := core.ServiceExists("sms-uma")
+	require.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func addUmaSMS(t *testing.T, id string, extra ...string) (string, error) {
+	t.Helper()
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	args := append([]string{
+		"add", id,
+		"--type", "uma",
+		"--uma-adapter", "twilio.sms",
+		"--profile", "assistant",
+		"--from", "+15558675310",
+		"--webhook-url", "https://hooks.example.com/twilio/sms",
+		"--env", "TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID",
+		"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN",
+		"--default-action", "triage",
+	}, extra...)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+// Conversation history is keyed by service id: the operator converting a
+// native service keeps its history only by reusing the id.
+func TestAddCmd_UmaServiceSaysHistoryFollowsTheServiceID(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	out, err := addUmaSMS(t, "sms-uma")
+	require.NoError(t, err, out)
+	assert.Contains(t, out, "note: conversation history is keyed by the service id")
+	assert.Contains(t, out, "--force", "the way to keep a native service's history is named")
+	assert.NotContains(t, out, "continues under uma")
+
+	out, err = addUmaSMS(t, "sms-uma", "--force")
+	require.NoError(t, err, out)
+	assert.Contains(t, out, "note: replacing existing service sms-uma; its conversation history continues")
+}
+
+func TestAddCmd_NativeServiceHasNoHistoryNote(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+
+	cmd := newTestServiceCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"add", "support-bot", "--type", "telegram", "--profile", "assistant", "--default-action", "reply",
+		"--env", "TELEGRAM_BOT_TOKEN=secret:TELEGRAM_BOT_TOKEN",
+		"--webhook-secret-token-env", "TELEGRAM_WEBHOOK_SECRET",
+	})
+	require.NoError(t, cmd.Execute(), out.String())
+	assert.NotContains(t, out.String(), "note:")
+}
