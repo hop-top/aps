@@ -278,6 +278,14 @@ Not done here: durable uma state across restarts (the store is in memory, so pro
 de-duplication also resets; history carries the redelivery guard above), retention for staged
 media, and retiring the native SMS and WhatsApp transports.
 
+### Generic relay and email relay
+
+`relay.messages` (generic SMS and WhatsApp relays) and `http.mail` (the email relay, receive
+only) are hosted by the same bridge. How aps's generic webhook auth flags map onto uma's
+`webhookauth`, where the callback host allowlist lives, what replay protection survives a
+restart, and why a bridged email service never replies:
+[uma-relay-mail-design.md](uma-relay-mail-design.md).
+
 ### The uma dependency
 
 hop.top/uma is unreleased and its repository is private, so `go.mod` points
