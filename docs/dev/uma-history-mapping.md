@@ -1,6 +1,11 @@
 # uma and aps Conversation History: Mapping Options
 
-Status: proposal, awaiting a maintainer decision.
+Status: decided, Option A (dual-write). The decision, the answers to the
+[open questions](#open-questions) and what stays open are recorded in
+[messenger-architecture.md](messenger-architecture.md#conversation-history). The text below is the
+analysis as proposed; it is not rewritten. Since it was written: a host now mounts the bridge
+(`internal/adapters/messenger/uma_mount.go`), the bridge tests assert history, an answered
+event is not run again after a restart, and a quoted WhatsApp Cloud reply keeps its thread.
 
 A `--type uma` message service keeps its messages in two places: the uma engine the bridge hosts,
 and aps session history (`message_turns`). This page compares the ways to reconcile them and

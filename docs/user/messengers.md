@@ -403,9 +403,17 @@ What changes against the aps-native providers, and what to do about it:
 - **Not carried over:** JSON-bodied Twilio relays and `--provider generic`
   relays have no uma equivalent. `--allowed-number` and the route table keep
   working: they are aps's, applied to the normalized message.
-- **Sessions:** ids keep the aps shape (`whatsapp:` prefixes on Twilio
-  WhatsApp), but uma conversation state is in memory and aps history is not
-  yet mapped from it; see [uma bridge status](../dev/messenger-architecture.md#uma-bridge).
+- **Sessions and history:** ids keep the aps shape (`whatsapp:` prefixes on
+  Twilio WhatsApp). Conversation history is aps's own, in the same store as
+  native services: actions get `prior_turns` from it and `aps service
+  conversation` reads it. It survives a restart; uma's own in-memory state
+  does not. History is keyed by the service id, so a native service you
+  convert to uma keeps its history only if you add the uma service under the
+  same id with `--force`. A WhatsApp Cloud reply that quotes a message is its
+  own session, as before. An event the provider redelivers after a restart,
+  once answered, is not run or answered again. A reply uma accepted counts as
+  sent in history even if the provider later refuses it. See
+  [conversation history](../dev/messenger-architecture.md#conversation-history).
 
 `aps service show` and `aps service routes` report a uma service as `ready`
 at `/services/<service-id>/webhook`, with the provider webhook received by the

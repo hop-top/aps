@@ -217,12 +217,66 @@ native `ValidateRequest` path is not entered.
   before delivery leaves no service event, as on the native providers; the
   log carries it.
 
-Not done here: mapping uma conversations onto aps session history (history is
-the minimal existing wiring: the router records the inbound turn, the runtime
-the delivered reply, keyed as the native SMS/WhatsApp providers key them),
-durable uma state across restarts (the store is in memory, so provider-event
-de-duplication also resets), retention for staged media, and retiring the
-native SMS and WhatsApp transports.
+### Conversation history
+
+Decision: dual-write. aps history (`message_turns`, `<data-dir>/messages/conversations.db`)
+stays the only read model and is written from the aps runtime path, for a uma service exactly
+as for a native one. Read-through over uma `Messages.List` and a one-time import through uma's
+history capability are rejected; an event-fed projection waits for a durable uma store.
+Analysis, probes and rejected options: [uma-history-mapping.md](uma-history-mapping.md).
+
+- **Writers.** Router appends the inbound turn before the action runs (it reads `prior_turns`
+  first, so an action never sees its own message there). Runtime appends the outbound turn
+  once uma accepts the reply (`accepted`), under the answered provider message id.
+- **Keys.** `msgconv`/`msgsess` derive from the `NormalizedMessage`, never from uma. They
+  equal the native provider's for Twilio SMS, Twilio WhatsApp and WhatsApp Cloud, so a service
+  keeps its history only if it keeps its service id (`service add --type uma --force` over the
+  native service; `service add` says so). A new id starts a new history. No uma id is
+  persisted.
+- **WhatsApp Cloud replies.** `context.id` of a quoted message is the turn's `Thread`
+  (type `reply`), read from uma's `meta.whatsapp.inbound` message extension: a reply is its
+  own session, as on the native provider.
+- **Redelivery after a restart.** uma's de-duplication of provider events is in engine
+  memory and ends with the process, as does any bridge rebuilt on a configuration change; the
+  provider then redelivers an event and uma records it as new. `dedupExecutor` (in the bridge,
+  after normalization and allowlists, before the action) skips an event whose outbound turn
+  is already in history: status `duplicate`, no action, no reply, no turn, service events
+  untouched. Only an outbound turn counts, so an event whose action failed or sent no reply
+  runs again. History that cannot be read lets the message through, as the router does.
+  Window: a reply queued in uma's memory but not yet sent when the process dies has its turn
+  and is not retried.
+- **Reading.** `aps service conversation` opens the same SQLite file from its own process:
+  no engine involved, restart-safe.
+
+Open questions of the options doc, as decided:
+
+| # | Question | Answer | Source |
+| --- | --- | --- | --- |
+| 1 | Durable uma state (PostgreSQL)? | Not assumed. Memory store stays; event-fed projection deferred; history pre-check is the redelivery answer | conservative choice |
+| 2 | Outbound turn: queued or delivered? | Queued: written when uma accepts the reply. A later provider refusal leaves the turn; nothing revises it. Policy doc aligned | conservative choice |
+| 3 | Lose WhatsApp Cloud reply threads? | No: `context.id` mapped to `Thread` | conservative choice |
+| 4 | Converted service keeps history? | Yes, by reusing its service id; `service add --type uma` says so | doc default |
+| 5 | Double reply after restart acceptable? | No: pre-check ships with the mount | conservative choice |
+| 6 | Persist uma ids on turns? | No: no column, ids dangle after restart | doc default |
+| 7 | Where is the decision recorded? | This section; options doc and user guide reworded | doc default |
+
+Still open:
+
+- Delivered-not-queued outbound turns, edit/delete/redaction propagation, idempotent turns by
+  uma ref, and a unique index on turns need a durable uma store with a resumed subscription
+  (the event-fed projection). Until then a reply uma queued and the provider later refuses is
+  in history as sent.
+- The pre-check scans the newest 500 turns of the message's session; a redelivery older than
+  that window is answered again.
+- Privacy erasure in uma (`Privacy.Redact`) does not scrub aps history; an aps-side purge by
+  provider message id is not built.
+- WhatsApp Cloud sender display name: the bridge uses the address, the native path the profile
+  name (uma carries it as `profile_name` in the same extension).
+- Append order of two quick messages from one sender versus uma's recording order: unverified.
+
+Not done here: durable uma state across restarts (the store is in memory, so provider-event
+de-duplication also resets; history carries the redelivery guard above), retention for staged
+media, and retiring the native SMS and WhatsApp transports.
 
 ### The uma dependency
 
