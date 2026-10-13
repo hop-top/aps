@@ -3,8 +3,10 @@
 What aps SMS, WhatsApp and email-relay services do today, row by row, mapped
 to the uma adapters that would replace them. A RED row is a retirement
 blocker; an AMBER row has a uma equivalent in the tree read but a named
-residual stops it counting as parity; only GREEN rows count. A row marked
-`[i]` leans on uma work that is on the integration branch only.
+behaviour residual stops it counting as parity; a WAIVED row is implemented
+and cited but has no recorded cassette, which the owner waived on 2026-10-13.
+GREEN and WAIVED rows count. A row marked `[i]` leans on uma work that is on
+the integration branch only.
 
 ## State as of
 
@@ -26,16 +28,18 @@ from the integration tree, not `main`. Nothing in the uma repo was changed.
 | aps | Where it lives, `file:line` |
 | uma | Adapter doc page or source that covers it, `file:line`, integration tree |
 | Rec | Recorded cassette for the uma side: `yes`, `no` (fake or doc-written fixtures only), `n/a` (nothing for a cassette to record) |
-| Status | GREEN, AMBER, RED as below; `[i]` = depends on uma work not on uma `main` |
+| Status | GREEN, WAIVED, AMBER, RED as below; `[i]` = depends on uma work not on uma `main` |
 
 Grading is mechanical:
 
-- GREEN: uma implements the behaviour (cited) and Rec is `yes` or `n/a`. A
-  provider-facing path with Rec `no` is never GREEN.
-- AMBER: uma implements it (cited) but Rec is `no`, or the operator must
-  change a system outside aps to keep the behaviour. The residual is named.
-- RED: no uma equivalent, or uma refuses it, or the evidence row has no
-  recording.
+- GREEN: uma implements the behaviour (cited) and Rec is `yes` or `n/a`.
+- WAIVED: uma implements it (cited), Rec is `no`. Cassette waived by owner,
+  2026-10-13: the recording task was skipped ("no need to record; parity
+  evidence waived"). Evidence held: scripted fakes and the adapter docs, not
+  provider traffic. Behaviour against the real provider stays unverified.
+- AMBER: uma implements it (cited) but the operator must change a system
+  outside aps to keep the behaviour, or part of it is missing. Named.
+- RED: no uma equivalent, or uma refuses it.
 
 Cite prefixes. aps paths are relative to `internal/`: `cm/` is
 `core/messenger/`, `am/` is `adapters/messenger/`. uma paths: `T/` is
@@ -52,47 +56,55 @@ provider traffic. Twilio signature tests sign with aps's own `TwilioSignature`
 
 ## Totals
 
-39 rows: 18 GREEN, 16 AMBER, 5 RED (previous: 28 GREEN, 11 RED).
+39 rows: 18 GREEN, 18 WAIVED, 3 AMBER, 0 RED. Previous grade: 28 GREEN, 11 RED.
+Before the waiver the same tree graded 18 GREEN, 16 AMBER, 5 RED.
 
-| Scope | Rows | GREEN | AMBER | RED |
-| --- | --- | --- | --- | --- |
-| SMS, generic relay, WhatsApp Cloud, WhatsApp over Twilio, V1 to V3 | 30 | 18 | 10 | 2 |
-| Email relay, V4 to V6 | 9 | 0 | 6 | 3 |
-| All | 39 | 18 | 16 | 5 |
+| Scope | Rows | GREEN | WAIVED | AMBER | RED |
+| --- | --- | --- | --- | --- | --- |
+| SMS, generic relay, WhatsApp Cloud, WhatsApp over Twilio, V1 to V3 | 30 | 18 | 11 | 1 | 0 |
+| Email relay, V4 to V6 | 9 | 0 | 7 | 2 | 0 |
+| All | 39 | 18 | 18 | 3 | 0 |
 
 - RED to GREEN `[i]` (2): S6, G2.
-- RED to AMBER `[i]` (4): G1, T3, E1b, E4. The six behaviour REDs of the
-  previous grade (S6, G1, G2, T3, E1b, E4) are all answered on the integration
-  branch; none stays RED.
-- GREEN to AMBER (12): S7, C4, C6, C7, C8, C9, T4, T5, E1a, E2, E3, E5. No
-  behaviour changed: Rec is `no`, and a provider-facing row with no recording
-  is not GREEN under the rule above. C4 keeps the Rec value the previous grade
-  gave it.
-- Still RED (5): V2 to V6, the recording gaps. Same grade as before.
+- RED to AMBER `[i]` (3): G1, E1b, E4. The six behaviour REDs of the previous
+  grade (S6, G1, G2, T3, E1b, E4) are all answered on the integration branch;
+  none stays RED. T3 moved to WAIVED `[i]`.
+- GREEN to WAIVED (12): S7, C4, C6, C7, C8, C9, T4, T5, E1a, E2, E3, E5. No
+  behaviour changed: Rec is `no`, so the row rests on fakes and docs.
+- RED to WAIVED (5): V2 to V6, the recording rows.
+- Remaining AMBER (3), each a behaviour residual, none about recordings: G1
+  (reply by callback), E1b (`http.mail` receives only, no form bodies), E4
+  (`http.mail` stages no attachment bytes).
 
 ## Retirement gate status
 
 Retiring the aps-native SMS and WhatsApp transports needs all of (a), (b), (c).
-None holds today.
+None is met today; (a) is one decision away in the SMS and WhatsApp scope.
 
 | Gate | Status | What is missing |
 | --- | --- | --- |
-| (a) Checklist all green, recorded cassettes for `twilio.whatsapp`, `meta.whatsapp` | NOT MET | 10 AMBER, 2 RED in SMS and WhatsApp scope; V2, V3 have no cassettes |
+| (a) Every behaviour row green or waived; cassettes for `twilio.whatsapp`, `meta.whatsapp` waived by owner 2026-10-13 | NOT MET | G1 AMBER (callback reply); mail: E1b, E4 AMBER |
 | (b) A tagged uma release | NOT MET | No tags; private and unresolvable; vanity server skips subpaths |
 | (c) Every operator yaml migrated to `uma`, with a migration note | NOT MET | Note exists; no inventory; generic relay cannot move yet |
 
 ### Gate (a) detail
 
-- AMBER to GREEN needs recordings: S7, C4, C6 to C9, T3 to T5 wait on
-  `twilio.whatsapp` and `meta.whatsapp` cassettes (V2, V3). S7 also waits on a
-  `twilio.sms` media recording; V1 records none.
-- G1 is AMBER for another reason: the reply no longer rides the webhook
-  answer, so an operator gateway must serve a callback. The owner decides:
-  accept it as a documented change (M10), or keep a native generic relay.
-- Mail rows E1a to E5 wait on V4 to V6. V6 has no record path, so they cannot
-  reach GREEN until uma lands the `imap-smtp-evidence` task. Retirement is
-  scoped to SMS and WhatsApp; whether the mail rows gate it is the owner's
-  call.
+- Waiver, dated 2026-10-13: the owner set the uma task that recorded
+  `twilio.whatsapp`, `meta.whatsapp` and mail cassettes to skipped ("no need to
+  record; parity evidence waived"). Rows that lacked only a cassette (S7, C4,
+  C6 to C9, T3 to T5, E1a, E2, E3, E5, V2 to V6) are WAIVED, not blockers. The
+  evidence behind them is scripted fakes and the uma adapter docs; nothing was
+  tried against the real providers.
+- Zero RED rows. In the SMS and WhatsApp scope one AMBER row remains: G1. The
+  reply no longer rides the webhook answer, so an operator gateway must serve
+  a callback. The owner decides: accept it as a documented change (M10), or
+  keep a native generic relay. Until then (a) is not met in that scope.
+- Mail rows E1b and E4 stay AMBER for missing behaviour (`http.mail` receives
+  only; it stages no attachment bytes). Retirement is scoped to SMS and
+  WhatsApp; whether the mail rows gate it is the owner's call.
+- The mail rows' evidence: a uma task building live IMAP and SMTP evidence
+  against a local mail container is separate and still in progress. If it
+  lands, cite it on E1a to E5 and V6.
 - Bridge gap, not a uma row: the aps bridge sends text replies only, so
   WhatsApp templates (C8, T5) are unreachable through `--type uma` (F6).
 
@@ -145,7 +157,7 @@ Nothing here enumerates their services: the inventory of operator yamls
 | S4 | Auth token from option, env or `secret:` ref | `cm/sms.go:101-119` | `Ts/webhook.go:115-131` | n/a | GREEN, M4 |
 | S5 | Form inbound: `From`, `To`, `Body`, `MessageSid` | `am/normalizer.go:675-733`; `cm/sms.go:256-311` | `Ts/webhook.go:133-201` | n/a | GREEN |
 | S6 | JSON-bodied webhook, `bodySHA256` in the URL checked | `cm/sms.go:53,82-99`; native refuses it (F5) | `T/signature_json.go:49-77`; `Ts/webhook.go:80`; `D/twilio.sms.md:110-129` | n/a | GREEN `[i]` |
-| S7 | Inbound MMS media reaches the action | `am/normalizer.go:718-730`; `cm/sms.go:446-459` | `Ts/media.go:19-35`; `T/stage.go:44-88` | no | AMBER, M8 |
+| S7 | Inbound MMS media reaches the action | `am/normalizer.go:718-730`; `cm/sms.go:446-459` | `Ts/media.go:19-35`; `T/stage.go:44-88` | no | WAIVED, M8 |
 | S8 | Reply inline as TwiML; empty `<Response/>` when none | `am/handler.go:370-373,381-386,1228-1238` | `Ts/webhook.go:110-111`; `Ts/send.go:26-58` | yes | GREEN, M5 |
 | S9 | Messages REST outbound, basic auth (not on the SMS path, F2) | `cm/sms.go:332-384` | `Ts/send.go:26-58`; `D/twilio.sms.md:131-136` | yes | GREEN |
 | S10 | REST failure classes: 429, 5xx retriable; 4xx not | `cm/sms.go:374-377` | `D/twilio.sms.md:131-136,176-179`; `Ts/send.go:60-85` | yes | GREEN |
@@ -195,12 +207,12 @@ aps: `provider: generic` on `sms` and `whatsapp` services.
 | C1 | Verification: GET, `hub.mode`, verify token, `hub.challenge` echoed | `cm/whatsapp.go:50-79`; `am/handler.go:156-158,673-689` | `Mw/webhook.go:187-202`; `M/webhook.go:57-72` | n/a | GREEN |
 | C2 | `X-Hub-Signature-256` HMAC-SHA256 over the raw body | `cm/whatsapp.go:25-46`; `core/service.go:687-689` | `Mw/webhook.go:215-223`; `M/webhook.go:27-47` | n/a | GREEN, M2 |
 | C3 | Only the configured `phone_number_id` accepted | `cm/validation.go:231-235` | `Mw/webhook.go:248` | n/a | GREEN |
-| C4 | Inbound text: sender, profile name, `wamid`, timestamp | `cm/whatsapp.go:297-365`; `am/normalizer.go:735-808` | `Mw/webhook.go:302-377` | no | AMBER |
+| C4 | Inbound text: sender, profile name, `wamid`, timestamp | `cm/whatsapp.go:297-365`; `am/normalizer.go:735-808` | `Mw/webhook.go:302-377` | no | WAIVED |
 | C5 | Reply context: `context.id` becomes `thread.id` | `cm/whatsapp.go:359-363` | `Mw/webhook.go:312-314` | n/a | GREEN, M3 |
-| C6 | Inbound media, caption as text | `cm/whatsapp.go:568-588` | `Mw/webhook.go:354-362`; `Mw/media.go:40-92` | no | AMBER, M8 |
-| C7 | Outbound text: `POST {base}/{phone_number_id}/messages` | `cm/whatsapp.go:380-448` | `Mw/send.go:98-116,128-159` | no | AMBER |
-| C8 | Outbound template; reply text dropped; `template_required` | `cm/whatsapp.go:164-176,395-402`; `am/handler.go:986-995` | `Mw/send.go:176-187`; `D/meta.whatsapp.md:98-107` | no | AMBER, M6, F6 |
-| C9 | Graph failures: 429, 5xx retriable, message surfaced | `cm/whatsapp.go:438-441,613-619` | `Mw/outcome.go:82`; `D/meta.whatsapp.md:38` | no | AMBER |
+| C6 | Inbound media, caption as text | `cm/whatsapp.go:568-588` | `Mw/webhook.go:354-362`; `Mw/media.go:40-92` | no | WAIVED, M8 |
+| C7 | Outbound text: `POST {base}/{phone_number_id}/messages` | `cm/whatsapp.go:380-448` | `Mw/send.go:98-116,128-159` | no | WAIVED |
+| C8 | Outbound template; reply text dropped; `template_required` | `cm/whatsapp.go:164-176,395-402`; `am/handler.go:986-995` | `Mw/send.go:176-187`; `D/meta.whatsapp.md:98-107` | no | WAIVED, M6, F6 |
+| C9 | Graph failures: 429, 5xx retriable, message surfaced | `cm/whatsapp.go:438-441,613-619` | `Mw/outcome.go:82`; `D/meta.whatsapp.md:38` | no | WAIVED |
 
 - C1: unreachable for a native service through `aps serve` (F1). `GET` is
   answered by the uma receiver at the same URL.
@@ -225,9 +237,9 @@ aps: `provider: generic` on `sms` and `whatsapp` services.
 | --- | --- | --- | --- | --- | --- |
 | T1 | Same `X-Twilio-Signature` check as SMS when `provider: twilio` | `cm/validation.go:122-130,151-160` | `Tw/webhook.go:61-92` | n/a | GREEN |
 | T2 | Inbound text; `whatsapp:+1555` addresses | `cm/whatsapp.go:259-295` | `Tw/webhook.go:143-205,239-269` | n/a | GREEN, M3, M7 |
-| T3 | Inbound media reaches the action as attachments | `cm/whatsapp.go:269`; `cm/sms.go:446-459` | `Tw/media.go:19-35`; `T/stage.go:44-88`; `D/twilio.whatsapp.md:101-115` | no | AMBER `[i]`, M8 |
-| T4 | Outbound text through the Messages API, not TwiML | `cm/whatsapp.go:464-523`; `am/handler.go:691-779` | `Tw/send.go:48-90` | no | AMBER |
-| T5 | Outbound template: `content_sid` plus variables (F3) | `cm/whatsapp.go:479-491` | `Tw/send.go:24-38,154-174`; `Tw/window.go` | no | AMBER, F6 |
+| T3 | Inbound media reaches the action as attachments | `cm/whatsapp.go:269`; `cm/sms.go:446-459` | `Tw/media.go:19-35`; `T/stage.go:44-88`; `D/twilio.whatsapp.md:101-115` | no | WAIVED `[i]`, M8 |
+| T4 | Outbound text through the Messages API, not TwiML | `cm/whatsapp.go:464-523`; `am/handler.go:691-779` | `Tw/send.go:48-90` | no | WAIVED |
+| T5 | Outbound template: `content_sid` plus variables (F3) | `cm/whatsapp.go:479-491` | `Tw/send.go:24-38,154-174`; `Tw/window.go` | no | WAIVED, F6 |
 
 - T1: the JSON-bodied variant is S6 (`Tw/webhook.go:84`).
 - T2: prefix stripped in uma, a non-WhatsApp address is 400; buttons and
@@ -248,12 +260,12 @@ scope (SMS and WhatsApp); graded because this checklist covers it.
 
 | # | Behaviour | aps | uma | Rec | Status |
 | --- | --- | --- | --- | --- | --- |
-| E1a | Mail in from a mailbox or MX; uma replaces the bridge | `am/normalizer.go:597-658` | `D/imap.mail.md:93-142`; `D/smtp.mail.md:89-122` | no | AMBER, M9 |
+| E1a | Mail in from a mailbox or MX; uma replaces the bridge | `am/normalizer.go:597-658` | `D/imap.mail.md:93-142`; `D/smtp.mail.md:89-122` | no | WAIVED, M9 |
 | E1b | Mail in by HTTP POST of `{from,to,subject,body}` | `am/normalizer.go:597-608` | `D/http.mail.md:103-139`; `Ml/httpmail/handler.go:44-114` | no | AMBER `[i]`, M11 |
-| E2 | `from` to sender, `to` to channel, `body` to text | `am/normalizer.go:598-628` | `D/smtp.mail.md:89-119`; `D/imap.mail.md:93-142` | no | AMBER |
-| E3 | `subject` is the thread id | `am/normalizer.go:630-636` | `D/smtp.mail.md:98-100` | no | AMBER, M3 |
+| E2 | `from` to sender, `to` to channel, `body` to text | `am/normalizer.go:598-628` | `D/smtp.mail.md:89-119`; `D/imap.mail.md:93-142` | no | WAIVED |
+| E3 | `subject` is the thread id | `am/normalizer.go:630-636` | `D/smtp.mail.md:98-100` | no | WAIVED, M3 |
 | E4 | Attachments `[{type,url,mime_type,size_bytes}]` reach the action | `am/normalizer.go:638-655` | `Ml/stage/stage.go:66-91`; `D/http.mail.md:221-236` | no | AMBER `[i]`, M8, M11 |
-| E5 | Reply reaches the sender (aps: reply JSON to the bridge) | `am/normalizer.go:901-910` | `D/smtp.mail.md:124-130`; `D/imap.mail.md:144-152` | no | AMBER |
+| E5 | Reply reaches the sender (aps: reply JSON to the bridge) | `am/normalizer.go:901-910` | `D/smtp.mail.md:124-130`; `D/imap.mail.md:144-152` | no | WAIVED |
 
 - E1a: `imap.mail` and `smtp.mail` `receive`; `google.mail` and
   `microsoft.mail` `receive` and `receive_http`. No recordings (V4 to V6).
@@ -285,17 +297,20 @@ Twilio SMS only") and `D/README.md:147-169`.
 | # | Adapter | State | Status |
 | --- | --- | --- | --- |
 | V1 | `twilio.sms` | 7 cassette sets under `T/sms/testdata/cassettes/twilio/`; inbound webhook and media download not recorded | GREEN |
-| V2 | `twilio.whatsapp` | harness only, none recorded (`D/twilio.whatsapp.md:131-135`) | RED. uma task: record Twilio WhatsApp cassettes |
-| V3 | `meta.whatsapp` | harness skips, none recorded (`D/meta.whatsapp.md:123-130`) | RED. uma task: record Meta WhatsApp cassettes |
-| V4 | `google.mail` | `TestRecordedGmail` skips (`D/google.mail.md:187-193`) | RED. uma task: record Gmail cassettes |
-| V5 | `microsoft.mail` | `TestRecordedGraph` skips (`D/microsoft.mail.md:179-185`) | RED. uma task: record Graph cassettes |
-| V6 | `imap.mail`, `smtp.mail`, `http.mail` | no record path (`Dx/recording/imap-smtp.md`, `D/README.md:152-156`) | RED. Gap: `imap-smtp-evidence` |
+| V2 | `twilio.whatsapp` | harness only, none recorded (`D/twilio.whatsapp.md:131-135`) | WAIVED. Recording task skipped by owner |
+| V3 | `meta.whatsapp` | harness skips, none recorded (`D/meta.whatsapp.md:123-130`) | WAIVED. Recording task skipped by owner |
+| V4 | `google.mail` | `TestRecordedGmail` skips (`D/google.mail.md:187-193`) | WAIVED. Recording task skipped by owner |
+| V5 | `microsoft.mail` | `TestRecordedGraph` skips (`D/microsoft.mail.md:179-185`) | WAIVED. Recording task skipped by owner |
+| V6 | `imap.mail`, `smtp.mail`, `http.mail` | no record path (`Dx/recording/imap-smtp.md`, `D/README.md:152-156`) | WAIVED. Live evidence task in progress |
 
 - V1: sets `send-and-fetch`, `reconcile-sent`, `reconcile-none`, `rejected`,
   `refused-credentials`, `fetch-unknown`, `history-reply`. The inbound webhook
   is checked against Twilio's vector; media against a fake.
 - V2: `testdata/` holds hand-written signed webhook forms only.
-- V6: xrr cannot record IMAP or SMTP line protocols.
+- V6: xrr cannot record IMAP or SMTP line protocols. A separate uma task is
+  building live IMAP and SMTP evidence against a local mail container; cite
+  it here if it lands.
+- Waiver: V2 to V5 are WAIVED by the owner, 2026-10-13; see Gate (a) detail.
 - Premise check: `twilio.sms` is the only adapter with real cassettes among
   the SMS, WhatsApp and mail adapters. `github.issues` also has them
   (`uma:adapter/ticket/github/testdata/cassettes`), so "only adapter in uma"
@@ -304,7 +319,7 @@ Twilio SMS only") and `D/README.md:147-169`.
 
 ## Gap names
 
-Each RED row maps to one uma task whose title carries the name below and whose
+Each row that was RED maps to one uma task whose title carries the name below and whose
 description cites this file and the row number. The first six were answered
 on the integration branch; State says what remains.
 
@@ -313,12 +328,12 @@ on the integration branch; State says what remains.
 | `twilio-json-webhook` | S6, T1 | twilio.sms and twilio.whatsapp: accept JSON-bodied webhooks with bodySHA256 | answered `[i]` |
 | `generic-relay` | G1 | Generic JSON message relay adapter for SMS and WhatsApp providers | answered `[i]`; callback-only reply |
 | `generic-webhook-auth` | G2 | Generic webhook auth for receive_http adapters | answered `[i]` |
-| `twilio-whatsapp-media` | T3 | twilio.whatsapp: stage inbound media through the attachment sink | answered `[i]`; unrecorded |
+| `twilio-whatsapp-media` | T3 | twilio.whatsapp: stage inbound media through the attachment sink | answered `[i]`; recording waived |
 | `mail-http-ingress` | E1b | Mail HTTP ingress adapter for inbound-parse and MTA-hook relays | answered `[i]`; receive only |
 | `mail-attachments` | E4 | Mail adapters: stage inbound attachments through the sink | answered `[i]`; `http.mail` stages nothing |
-| `imap-smtp-evidence` | V6 | imap.mail and smtp.mail: live-server parity evidence without cassettes | open |
+| `imap-smtp-evidence` | V6 | imap.mail and smtp.mail: live-server parity evidence without cassettes | in progress, separate from the waived recordings |
 
-V2 to V5 ride on the existing recording tasks; no new task. Two residuals are
+V2 to V5 rode on the recording task, now skipped; no new task. Two residuals are
 named by uma as not built and have no task: `http.mail` `send`
 (`D/http.mail.md:38`) and `http.mail` attachment staging.
 
