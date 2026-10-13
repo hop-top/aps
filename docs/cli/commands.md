@@ -6678,7 +6678,9 @@ aliases are resolved through kit aliasing before APS persists the service.
 
 --type uma opts a message service into provider I/O hosted by an in-process
 uma engine instead of the aps-native provider; pick the provider with
---uma-adapter.
+--uma-adapter. A flag the uma bridge ignores (--template-name, for one) is
+accepted and warned about on stderr, once per flag; the service is still added.
+--format json, --format yaml and --quiet silence the warning.
 
 ```
 aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-id> [flags]

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/msgroute"
 )
@@ -25,7 +26,9 @@ aliases are resolved through kit aliasing before APS persists the service.
 
 --type uma opts a message service into provider I/O hosted by an in-process
 uma engine instead of the aps-native provider; pick the provider with
---uma-adapter.`,
+--uma-adapter. A flag the uma bridge ignores (--template-name, for one) is
+accepted and warned about on stderr, once per flag; the service is still added.
+--format json, --format yaml and --quiet silence the warning.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.profile, _ = cmd.Flags().GetString("profile")
@@ -204,6 +207,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 	printResolved(cmd, resolved)
 	validation := core.ValidateServiceConfig(service)
 	renderValidation(cmd, validation)
+	warnIgnoredUmaOptions(cmd, service)
 	if opts.dryRun {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "dry_run: true")
 		if err := refuseExisting(id, opts.force); err != nil {
@@ -234,6 +238,34 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		printHistoryNote(cmd, id, replacing)
 	}
 	return nil
+}
+
+// warnIgnoredUmaOptions writes one line to stderr for each option set on a uma
+// service that the uma bridge does not read, naming the flag the operator
+// passed. The service is added regardless: this is a warning, not a refusal.
+// Machine-readable output (--format json or yaml) and --quiet keep stderr
+// clean, so a script that parses the command never sees it.
+func warnIgnoredUmaOptions(cmd *cobra.Command, service *core.ServiceConfig) {
+	if globals.Quiet() || machineReadableFormat(globals.Format()) {
+		return
+	}
+	for _, ignored := range core.UmaIgnoredOptions(service) {
+		label := "--option " + ignored.Option
+		if ignored.Flag != "" && cmd.Flags().Changed(ignored.Flag) {
+			label = "--" + ignored.Flag
+		}
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s has no effect on a uma service: %s\n", label, ignored.Advice)
+	}
+}
+
+// machineReadableFormat reports whether --format asks for output a program
+// parses.
+func machineReadableFormat(format string) bool {
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "json", "yaml":
+		return true
+	}
+	return false
 }
 
 // printHistoryNote tells the operator what keeps conversation history across
