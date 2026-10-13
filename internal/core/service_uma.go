@@ -186,3 +186,132 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		},
 	}
 }
+
+// UmaIgnoredOption is an option a uma service carries but the uma bridge never
+// reads.
+type UmaIgnoredOption struct {
+	// Option is the service option key.
+	Option string
+	// Flag is the `service add` flag that sets it, without dashes; empty when
+	// only `--option` reaches it.
+	Flag string
+	// Advice says why it has no effect and what to use instead.
+	Advice string
+}
+
+// umaIgnoredRule is one option the bridge does not read. applies, when set,
+// narrows the rule to the values or uma adapters where that holds; a rule
+// without it applies whenever the option is set to a non-empty value.
+type umaIgnoredRule struct {
+	option string
+	flag   string
+	// boolean marks an option whose value false is its default.
+	boolean bool
+	applies func(adapterKey, value string) bool
+	advice  func(adapterKey string) string
+}
+
+func fixedAdvice(text string) func(string) string { return func(string) string { return text } }
+
+const (
+	adviceTemplates   = "templates are not sent; a uma service replies with plain text"
+	adviceGenericAuth = "uma verifies the provider's own signature and aps applies no generic webhook " +
+		"auth to a uma route"
+	adviceSlack    = "it is a Slack option; a uma service is SMS or WhatsApp"
+	adviceTelegram = "it is a Telegram option; a uma service is SMS or WhatsApp"
+	adviceTicket   = "it is a ticket option; a uma service is a message service"
+)
+
+func adviceVerifyToken(adapterKey string) string {
+	if adapterKey == "meta.whatsapp" {
+		return "bind the token with --env " + EnvWhatsAppVerify + "=secret:NAME"
+	}
+	return "this uma adapter has no verify token"
+}
+
+func adviceSigningSecret(adapterKey string) string {
+	if adapterKey == "meta.whatsapp" {
+		return "bind the app secret with --env " + EnvWhatsAppSecret + "=secret:NAME"
+	}
+	return "bind the auth token with --env " + EnvTwilioAuthToken + "=secret:NAME " +
+		"(Twilio signs with it)"
+}
+
+// umaIgnoredRules is every option a uma service accepts and the bridge does
+// not read, derived from what the bridge consumes: its channel configuration
+// (internal/adapters/umabridge catalogue), the env bindings it resolves, and
+// the routing, reply policy and allowlists aps applies to the normalized
+// message. The native providers read most of these; the uma route skips
+// their request validators and normalizers.
+var umaIgnoredRules = []umaIgnoredRule{
+	{option: "template_name", flag: "template-name", advice: fixedAdvice(adviceTemplates)},
+	{option: "language_code", flag: "language-code", advice: fixedAdvice(adviceTemplates)},
+	{option: "template_required", flag: "template-required", boolean: true, advice: fixedAdvice(adviceTemplates)},
+	{option: "verify_token", flag: "verify-token", advice: adviceVerifyToken},
+	{option: "verify_token_env", flag: "verify-token-env", advice: adviceVerifyToken},
+	{option: "signing_secret_env", flag: "signing-secret-env", advice: adviceSigningSecret},
+	{option: "app_secret", advice: adviceSigningSecret},
+	{option: "app_secret_env", advice: adviceSigningSecret},
+	{option: "signing_secret", advice: adviceSigningSecret},
+	{option: "auth_scheme", flag: "auth-scheme", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "auth_token_env", flag: "auth-token-env", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "signature_secret_env", flag: "signature-secret-env", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "auth_token", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "auth_header", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "signature_secret", advice: fixedAdvice(adviceGenericAuth)},
+	{option: "webhook_secret_token", flag: "webhook-secret-token", advice: fixedAdvice(adviceTelegram)},
+	{option: "webhook_secret_token_env", flag: "webhook-secret-token-env", advice: fixedAdvice(adviceTelegram)},
+	{option: "bot_user_id", flag: "bot-user-id", advice: fixedAdvice(adviceSlack)},
+	{option: "require_bot_mention", flag: "require-bot-mention", boolean: true, advice: fixedAdvice(adviceSlack)},
+	{option: "dedup_ttl", flag: "dedup-ttl", advice: fixedAdvice(adviceSlack)},
+	{option: "site", flag: "site", advice: fixedAdvice(adviceTicket)},
+	{option: "project", flag: "project", advice: fixedAdvice(adviceTicket)},
+	{option: "jql", flag: "jql", advice: fixedAdvice(adviceTicket)},
+	{option: "workspace", flag: "linear-workspace", advice: fixedAdvice(adviceTicket)},
+	{option: "team", flag: "team", advice: fixedAdvice(adviceTicket)},
+	{option: "group", flag: "group", advice: fixedAdvice(adviceTicket)},
+	{option: "events", flag: "events", advice: fixedAdvice(adviceTicket)},
+	{option: "provider", flag: "provider", advice: fixedAdvice("pick the provider with --uma-adapter")},
+	{
+		option: "receive", flag: "receive",
+		applies: func(_, value string) bool { return !strings.EqualFold(value, "webhook") },
+		advice:  fixedAdvice("a uma service receives by webhook only"),
+	},
+	{
+		option: "phone_number_id", flag: "phone-number-id",
+		applies: func(key, _ string) bool { return key != "meta.whatsapp" },
+		advice:  fixedAdvice("only the meta.whatsapp adapter reads it"),
+	},
+	{
+		option: "from", flag: "from",
+		applies: func(key, _ string) bool { return key == "meta.whatsapp" },
+		advice:  fixedAdvice("meta.whatsapp sends from --phone-number-id"),
+	},
+	{
+		option: "webhook_url", flag: "webhook-url",
+		applies: func(key, _ string) bool { return key == "meta.whatsapp" },
+		advice:  fixedAdvice("meta.whatsapp does not use it; the callback URL is set at Meta"),
+	},
+}
+
+// UmaIgnoredOptions lists the options set on a uma service that the bridge
+// ignores, in a stable order. An option that is unset, blank, or a boolean
+// left false is not listed. It is empty for any other service.
+func UmaIgnoredOptions(service *ServiceConfig) []UmaIgnoredOption {
+	if service == nil || service.Adapter != AdapterUma {
+		return nil
+	}
+	adapterKey := strings.TrimSpace(service.Options[OptionUmaAdapter])
+	var out []UmaIgnoredOption
+	for _, rule := range umaIgnoredRules {
+		value := strings.TrimSpace(service.Options[rule.option])
+		if value == "" || (rule.boolean && !truthyServiceOption(value)) {
+			continue
+		}
+		if rule.applies != nil && !rule.applies(adapterKey, value) {
+			continue
+		}
+		out = append(out, UmaIgnoredOption{Option: rule.option, Flag: rule.flag, Advice: rule.advice(adapterKey)})
+	}
+	return out
+}
