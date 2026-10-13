@@ -476,3 +476,29 @@ func TestExtractActionFromOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_ServeServiceWebhook_UmaServiceIsNotServedByNativeRoute(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+	if err := core.SaveService(&core.ServiceConfig{
+		ID:      "sms-uma",
+		Type:    "message",
+		Adapter: "uma",
+		Profile: "assistant",
+		Options: map[string]string{"default_action": "reply", "uma_adapter": "twilio.sms"},
+	}); err != nil {
+		t.Fatalf("SaveService: %v", err)
+	}
+	handler := newTestHandler(map[string]*msgtypes.ProfileMessengerLink{}, map[string]string{}, nil)
+
+	req := httptest.NewRequest(http.MethodPost, "/services/sms-uma/webhook", strings.NewReader("From=%2B15551230000&Body=hi"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	handler.ServeServiceWebhook(rec, req, "sms-uma", "uma")
+
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status code = %d, want %d; body: %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "uma") {
+		t.Errorf("body %q does not name uma", rec.Body.String())
+	}
+}

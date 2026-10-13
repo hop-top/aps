@@ -285,6 +285,73 @@ For Twilio WhatsApp, use `--provider twilio`, `--from whatsapp:+1555...`,
 `--webhook-url` matching the Twilio console URL, and the Twilio account SID/auth
 token env bindings. Twilio form posts and JSON-style relays are both accepted.
 
+### uma-Hosted Providers (opt-in)
+
+`--type uma` opts one SMS or WhatsApp service into provider I/O hosted by an
+in-process uma engine instead of the aps-native
+provider. The aps-native `--type sms` and `--type whatsapp` stay the default;
+nothing changes for services that do not ask for uma. Profiles, actions,
+routing (`--default-action`, `--route-table`) and reply policy (`--reply`)
+work as for any message service. `--uma-adapter` picks the uma adapter:
+
+| `--uma-adapter` | Provider | Required options | Required `--env` bindings |
+| --- | --- | --- | --- |
+| `twilio.sms` | Twilio SMS and MMS | `--from`, `--webhook-url` | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` |
+| `twilio.whatsapp` | Twilio WhatsApp | `--from` (no `whatsapp:` prefix), `--webhook-url` | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` |
+| `meta.whatsapp` | WhatsApp Cloud API | `--phone-number-id` | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`; `WHATSAPP_VERIFY_TOKEN` for webhook verification |
+
+```bash
+aps service add sms-uma \
+  --type uma \
+  --uma-adapter twilio.sms \
+  --profile assistant \
+  --from +15559870002 \
+  --webhook-url https://hooks.example.com/twilio/sms \
+  --allowed-number +15551230001 \
+  --default-action handle-sms \
+  --reply text \
+  --env TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID \
+  --env TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN
+```
+
+Credentials use the same `--env NAME=secret:NAME` bindings as every other
+service: a reference resolves against the profile secret store, then the
+environment, on each request. A reference that resolves to nothing denies the
+request; it never falls back to an unrelated variable.
+
+What changes against the aps-native providers, and what to do about it:
+
+- **`--webhook-url` is mandatory for Twilio and must carry no query or
+  fragment.** uma verifies `X-Twilio-Signature` over exactly this URL, where
+  the aps-native route rebuilds it from forwarded headers. Set the same base
+  URL in the Twilio console. `service add` refuses a service without it.
+- **Replies are asynchronous Messages API calls, not inline TwiML.** uma
+  answers Twilio's webhook at once with an empty TwiML response and sends the
+  action's reply afterwards, so the action no longer has to finish inside
+  Twilio's webhook timeout. The REST credential (`TWILIO_ACCOUNT_SID` plus
+  `TWILIO_AUTH_TOKEN`) and a `--from` number are required, and Twilio posts
+  delivery status callbacks to the same `--webhook-url`. A reply is accepted
+  when queued; a later provider failure is not reported back to the action.
+- **WhatsApp Cloud needs the app secret.** The aps-native route accepts
+  unsigned Cloud webhooks when none is set; under uma
+  `WHATSAPP_APP_SECRET` is required.
+- **MMS media needs a media directory.** An inbound MMS reaches the action
+  as `attachments` with `file://` URLs only when the host that runs the
+  bridge sets a media directory; without it the message carries its text and
+  nothing else. Files are written owner-only.
+- **Not carried over:** JSON-bodied Twilio relays and `--provider generic`
+  relays have no uma equivalent. `--allowed-number` and the route table keep
+  working: they are aps's, applied to the normalized message.
+- **Sessions:** ids keep the aps shape (`whatsapp:` prefixes on Twilio
+  WhatsApp), but uma conversation state is in memory and aps history is not
+  yet mapped from it; see [uma bridge status](../dev/messenger-architecture.md#uma-bridge).
+
+`aps service show` reports a uma service as a component whose provider
+webhook is received by the uma engine. `aps serve` does not mount that
+webhook yet, so such a service does not take inbound traffic from the
+standard route (which answers `501`), and `aps service test --probe` does not
+apply.
+
 ### Email
 
 ```bash

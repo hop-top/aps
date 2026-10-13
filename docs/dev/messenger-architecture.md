@@ -28,6 +28,7 @@ cog.out(subprocess.check_output(
 | `--type sms` | `message` | `sms` |
 | `--type teams` | `message` | `teams` |
 | `--type telegram` | `message` | `telegram` |
+| `--type uma` | `message` | `uma` |
 | `--type whatsapp` | `message` | `whatsapp` |
 <!-- [[[end]]] -->
 

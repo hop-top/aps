@@ -66,6 +66,7 @@ cog.out(subprocess.check_output(
 | `sms` | `type: message`, `adapter: sms` |
 | `teams` | `type: message`, `adapter: teams` |
 | `telegram` | `type: message`, `adapter: telegram` |
+| `uma` | `type: message`, `adapter: uma` -- opt-in: provider I/O hosted by an in-process uma engine; also pass `--uma-adapter` |
 | `whatsapp` | `type: message`, `adapter: whatsapp` |
 <!-- [[[end]]] -->
 

@@ -6676,6 +6676,10 @@ Add a profile-facing service.
 The --type flag accepts canonical service types and adapter aliases. Adapter
 aliases are resolved through kit aliasing before APS persists the service.
 
+--type uma opts a message service into provider I/O hosted by an in-process
+uma engine instead of the aps-native provider; pick the provider with
+--uma-adapter.
+
 ```
 aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-id> [flags]
 ```
@@ -6722,6 +6726,7 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
       --template-name string              WhatsApp template name for business-initiated replies
       --template-required                 Require WhatsApp outbound delivery to use a template
       --type string                       Service type or adapter alias
+      --uma-adapter string                uma service adapter: meta.whatsapp, twilio.sms, twilio.whatsapp
       --verify-token string               WhatsApp Cloud webhook verification token
       --verify-token-env string           Environment variable holding WhatsApp Cloud verification token
       --webhook-secret-token string       Telegram webhook secret token

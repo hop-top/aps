@@ -21,7 +21,11 @@ func newAddCmd() *cobra.Command {
 		Long: `Add a profile-facing service.
 
 The --type flag accepts canonical service types and adapter aliases. Adapter
-aliases are resolved through kit aliasing before APS persists the service.`,
+aliases are resolved through kit aliasing before APS persists the service.
+
+--type uma opts a message service into provider I/O hosted by an in-process
+uma engine instead of the aps-native provider; pick the provider with
+--uma-adapter.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.profile, _ = cmd.Flags().GetString("profile")
@@ -44,6 +48,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.events, "events", "", "Comma-separated ticket events to receive")
 	cmd.Flags().StringVar(&opts.receive, "receive", "", "Message receive mode: polling or webhook")
 	cmd.Flags().StringVar(&opts.provider, "provider", "", "Message provider, such as twilio or whatsapp-cloud")
+	cmd.Flags().StringVar(&opts.umaAdapter, "uma-adapter", "", "uma service adapter: "+strings.Join(core.UmaAdapterCatalogue(), ", "))
 	cmd.Flags().StringVar(&opts.from, "from", "", "Sender phone number or provider identity")
 	cmd.Flags().StringVar(&opts.webhookURL, "webhook-url", "", "Public provider webhook URL used for signature validation")
 	cmd.Flags().StringVar(&opts.phoneNumberID, "phone-number-id", "", "WhatsApp phone number ID")
@@ -123,6 +128,7 @@ type addOptions struct {
 	events                string
 	receive               string
 	provider              string
+	umaAdapter            string
 	from                  string
 	webhookURL            string
 	phoneNumberID         string
@@ -256,6 +262,7 @@ func serviceOptions(opts addOptions, raw map[string]string) map[string]string {
 	addOption(options, "events", opts.events)
 	addOption(options, "receive", opts.receive)
 	addOption(options, "provider", opts.provider)
+	addOption(options, core.OptionUmaAdapter, opts.umaAdapter)
 	addOption(options, "from", opts.from)
 	addOption(options, "webhook_url", opts.webhookURL)
 	addOption(options, "phone_number_id", opts.phoneNumberID)

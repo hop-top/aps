@@ -170,6 +170,12 @@ func (h *Handler) ServeServiceWebhook(w http.ResponseWriter, r *http.Request, se
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q has adapter %q, not %q", serviceID, service.Adapter, adapter))
 		return
 	}
+	if adapter == core.AdapterUma {
+		// A uma-bridged service takes its provider traffic through the uma
+		// engine, never through the aps-native normalizers.
+		writeError(w, http.StatusNotImplemented, fmt.Sprintf("service %q is a uma service; its provider webhook is not served by this route", serviceID))
+		return
+	}
 	h.handleWebhookForMessenger(w, r, adapter, serviceID, service)
 }
 
