@@ -29,6 +29,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -125,28 +126,16 @@ func Redactor() *redact.Redactor {
 		// Pass-through known-safe placeholders so docs/test fixtures
 		// don't get mangled.
 		//
-		// redact.Allow is SUBSTRING-matched (kit/core/redact
-		// Redactor.allowed -> contains), and it is global: every entry
-		// is tested against every rule's match text. Bare network
-		// fragments like "10." or "172.16." therefore exempt any match
-		// that merely contains them anywhere, including real secrets —
-		// token charsets permit both digits and dots, so
-		// "Bearer abcdef10.0123456789abcdefgh" escaped redaction
-		// entirely. The loopback/RFC1918 pass-through is now handled
-		// rule-scoped in apsCustomReplacement, which only exempts
-		// matches produced by the IP rules themselves.
-		//
-		// Entries kept here are full literal values, not prefixes, so
-		// they cannot be embedded in a longer live credential.
-		r.Allow(
-			// Published documentation fixtures. Exact values only:
-			// "ghp_test" as a prefix would exempt any real PAT spelled
-			// ghp_test<...>.
-			"AKIAIOSFODNN7EXAMPLE",
-			// Fixture/test domains. example.com is RFC2606-reserved.
-			"@example.com", "@example.org", "@example.net",
-			"@hop.top", "@ideacrafters.com",
-		)
+		// Kit's allowlist (AllowExact) exempts a match only when it
+		// equals an entry in full. That keeps a fixture from being
+		// extended into a live credential, but it also means a
+		// fixture inside a larger match ("KEY_ID=AKIA...EXAMPLE" is
+		// one generic-api-key match) is no longer exempt. Fixtures
+		// that appear that way, plus loopback/RFC1918 addresses and
+		// fixture-domain emails, are exempted in apsCustomReplacement
+		// instead, scoped to the match shape they can legitimately
+		// take.
+		r.AllowExact(fixtureSecrets...)
 		// aps-domain rules. Order matters: header-shape rules fire
 		// first so they keep the key name visible; the bare Bearer
 		// rule mops up tokens not in a header context.
@@ -219,6 +208,19 @@ var apsSecretRules = []struct{ id, pattern string }{
 	{"aps-stripe-live-key", `\b[sprk]k_live_[A-Za-z0-9]{20,}`},
 }
 
+// fixtureSecrets are published documentation credentials that stay
+// readable. Exact values only: "ghp_test" as a prefix would exempt any
+// real PAT spelled ghp_test<...>.
+var fixtureSecrets = []string{"AKIAIOSFODNN7EXAMPLE"}
+
+// fixtureEmailDomains are reserved or first-party fixture domains whose
+// addresses stay readable in logs and docs. example.{com,org,net} are
+// RFC 2606-reserved.
+var fixtureEmailDomains = []string{
+	"@example.com", "@example.org", "@example.net",
+	"@hop.top", "@ideacrafters.com",
+}
+
 // ipRuleIDs are the Presidio PII rule ids whose matches are plain
 // network addresses. Only matches from these rules are eligible for
 // the loopback/RFC1918 pass-through below.
@@ -254,6 +256,34 @@ func allowedNetworkAddr(m redact.Match) bool {
 	return ipRuleIDs[m.RuleID] && privateHostRE.MatchString(m.Original)
 }
 
+// allowedFixtureSecret reports whether a match is a fixture credential,
+// bare or as the value of a key assignment ("KEY=<value>",
+// "key: <value>"). The value after the last separator must equal a
+// fixture in full, so a longer token that merely embeds one still
+// redacts.
+func allowedFixtureSecret(m redact.Match) bool {
+	v := strings.Trim(m.Original, " \t\r\n\"'`;,")
+	if i := strings.LastIndexAny(v, "=: \t\"'"); i >= 0 {
+		v = v[i+1:]
+	}
+	return slices.Contains(fixtureSecrets, v)
+}
+
+// allowedFixtureEmail reports whether an email-rule match is an
+// address at a fixture domain. The domain must end the match, so
+// "a@example.com.evil.test" and "a@sub.example.com" stay redacted.
+func allowedFixtureEmail(m redact.Match) bool {
+	if m.RuleID != "email" {
+		return false
+	}
+	for _, d := range fixtureEmailDomains {
+		if strings.HasSuffix(m.Original, d) {
+			return true
+		}
+	}
+	return false
+}
+
 // apsCustomReplacement renders a redaction tag while preserving the
 // key portion of header-shape matches. For the rule classes:
 //
@@ -268,9 +298,10 @@ func allowedNetworkAddr(m redact.Match) bool {
 // the kit Tag default — the entire match is replaced with the rule
 // label.
 func apsCustomReplacement(m redact.Match) string {
-	// Rule-scoped pass-through for private/loopback addresses. Runs
-	// first so it can only ever affect IP-rule matches.
-	if allowedNetworkAddr(m) {
+	// Pass-through for fixture credentials, private/loopback
+	// addresses and fixture-domain emails. Runs first; the IP and
+	// email checks are scoped to their own rules.
+	if allowedFixtureSecret(m) || allowedNetworkAddr(m) || allowedFixtureEmail(m) {
 		return m.Original
 	}
 	switch m.RuleID {

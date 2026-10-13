@@ -49,15 +49,24 @@ seeing the bearer token's bytes.
 
 These doc/test fixtures pass through unchanged:
 
-- `sk-test` — OpenAI dummy key shape used in fixtures.
-- `AKIAIOSFODNN7EXAMPLE` — AWS canonical example access key.
-- `ghp_test` — GitHub personal-access-token placeholder.
+- `sk-test` — OpenAI dummy key shape used in fixtures (matches no
+  rule, so it needs no entry).
+- `AKIAIOSFODNN7EXAMPLE` — AWS canonical example access key, bare or
+  as the value of a `KEY=value` assignment.
+- Email addresses at `example.com`, `example.org`, `example.net`,
+  `hop.top` and `ideacrafters.com`.
+- Loopback, link-local and RFC1918 addresses.
 
-If you need to add a new fixture allowlist entry, edit the
-`r.Allow(...)` call in `internal/logging/redact.go`. The kit allowlist
-is substring-only — it cannot accept regex (a regex allowlist would
-be a ReDoS vector). Pick a substring that is unique to the fixture
-and not a prefix of any real-world secret class.
+The kit allowlist (`AllowExact`) is exact-match: an entry exempts a
+match only when it equals the whole match, so a fixture cannot be
+extended into a live credential. It cannot accept regex (a regex
+allowlist would be a ReDoS vector). Fixtures that only appear inside
+a larger match (`KEY=<fixture>`, an address at a fixture domain) are
+exempted in `apsCustomReplacement` instead, scoped to the rule that
+produced the match and compared against the value in full. To add a
+fixture, add its full literal value to `fixtureSecrets` (or a domain
+to `fixtureEmailDomains`) in `internal/logging/redact.go`, and add a
+test showing a longer token embedding it still redacts.
 
 ## Where redaction is wired
 
@@ -224,11 +233,11 @@ These are NOT covered because they are not stream egress:
   panics and degrades to Mask. aps's `apsCustomReplacement`
   function is panic-free (no map writes, no nil dereferences) but
   the safety net is there regardless.
-- **Match against allowlist fixture** — `Allow("sk-test")` causes
-  any match containing `sk-test` to pass through. This is by design
-  for docs/test fixtures. Production secrets are statistically
-  unlikely to contain that exact substring; if you find one that
-  does, narrow the allowlist.
+- **Match against allowlist fixture** — an allowlisted value passes
+  through only when it is the whole match (or the whole value of a
+  `KEY=value` match). A longer token that merely contains a fixture
+  is still redacted; add the fixture's full literal value, never a
+  prefix or fragment.
 
 ## Cross-references
 
