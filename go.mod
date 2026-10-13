@@ -35,7 +35,12 @@ require (
 	hop.top/cite v0.1.0
 	hop.top/cxr v0.1.0-alpha.0
 	hop.top/kit v0.5.0-alpha.1
-	hop.top/xrr v0.1.0-alpha.4
+	hop.top/xrr v0.1.0-alpha.5
+)
+
+require (
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/twilio/twilio-go v1.31.2 // indirect
 )
 
 require (
@@ -159,11 +164,31 @@ require (
 	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
-	google.golang.org/grpc v1.83.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/grpc v1.83.1 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	hop.top/aim v0.1.0-alpha.0 // indirect
 	modernc.org/libc v1.72.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.48.2 // indirect
+)
+
+// uma (hop.top/uma): unreleased and private, so it is wired to a sibling
+// checkout instead of a published version. Everything that imports it lives in
+// internal/adapters/umabridge; dropping this block and that package removes the
+// dependency. The paths are relative to this worktree (hops/<group>/<name>)
+// and the versions pin the pseudo-version of the checkout's commit 650e527.
+// Until uma is resolvable, a build outside that layout fails.
+require (
+	hop.top/uma v0.0.0-20261013050236-650e5275c722
+	hop.top/uma/adapter/messaging/meta v0.0.0-20261013050236-650e5275c722
+	hop.top/uma/adapter/messaging/twilio v0.0.0-20261013050236-650e5275c722
+	hop.top/uma/testing/xrrtest v0.0.0-20261013050236-650e5275c722 // indirect
+)
+
+replace (
+	hop.top/uma => ../../../../uma/hops/main
+	hop.top/uma/adapter/messaging/meta => ../../../../uma/hops/main/adapter/messaging/meta
+	hop.top/uma/adapter/messaging/twilio => ../../../../uma/hops/main/adapter/messaging/twilio
+	hop.top/uma/testing/xrrtest => ../../../../uma/hops/main/testing/xrrtest
 )

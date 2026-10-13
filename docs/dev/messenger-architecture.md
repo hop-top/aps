@@ -99,6 +99,87 @@ and executes through `protocol.APSCore.ExecuteRun`. There is no unauthenticated
 catch-all route; a ticket service without `default_action` or a routing block
 answers `422`. User guide: [Ticket services](../user/tickets.md).
 
+## uma Bridge
+
+`--type uma` (`type: message`, `adapter: uma`) hosts a uma engine in-process
+for one service instead of an aps-native provider. It is opt-in per service;
+the native providers stay the default. User guide:
+[uma-hosted providers](../user/messengers.md#uma-hosted-providers-opt-in).
+
+```text
+[Twilio / Meta webhook]
+        |
+        v
+Bridge.Webhook()            uma verifies the signature, records the event
+        |                   (message.received)
+        v
+bot companion (uma)         subscribed to message.received, one turn per message
+        |
+        v
+messenger.Runtime           provider = bridge: NormalizeIngress, then the
+        |                   router and executor aps already uses
+        v
+action reply  ---> DeliverMessage ---> uma Messages.Reply ---> delivery worker
+                                                                  |
+                                                                  v
+                                                      provider REST (Messages API / Graph)
+```
+
+Code: `internal/adapters/umabridge`, the only package that imports
+`hop.top/uma`. The static contract of each uma adapter as a service (options,
+env bindings) lives in `internal/core/service_uma.go`, so `service add`
+validates without linking uma.
+
+- **Engine.** One per service: memory store, an authorizer that admits only
+  the bridge's two actors (`aps-bridge` provisions the channel and inbox and
+  runs the receiver and delivery worker; `aps-bridge-bot` reads the
+  subscription and replies) for a fixed action list and denies everything
+  else, `ports.Credentials` over the service's `--env` bindings, an HTTP
+  client, and a file-backed media sink when `Config.MediaDir` is set.
+- **Credentials.** A uma credential purpose maps to one env binding
+  (`twilio.rest` and `twilio.webhook` to `TWILIO_AUTH_TOKEN`; `meta.graph`,
+  `meta.app_secret`, `meta.webhook.verify_token` to `WHATSAPP_ACCESS_TOKEN`,
+  `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`). The binding value is a
+  literal or `secret:NAME`, resolved with `core.ResolveSecretValue` on every
+  request; nothing is cached or logged by the bridge.
+- **Normalization.** The received uma message becomes a `NormalizedMessage`
+  with `platform` `sms` or `whatsapp`, the provider message id as `id`,
+  `messenger_name` set to the service id (routing keys on it), the sender
+  address as `sender.id` and the receiving number or phone-number id as
+  `channel.id`. Twilio WhatsApp ids keep their `whatsapp:` prefix, as the
+  native provider has them. Inbound media is copied to
+  `<media dir>/inbound/<message>/<n>` and listed as `file://` attachments.
+- **Reply.** The runtime's `DeliverMessage` calls `Messages.Reply` on the
+  turn's conversation with the turn's own operation id, so a repeated
+  delivery replays instead of sending twice. The receipt is `accepted` (uma
+  queued it); the engine's worker performs the send, and its
+  `outcome_unknown` handling (reconcile before any resend) is uma's.
+- **Errors.** The runtime's errors are final (it already retried delivery),
+  so the bot turn drops them after `Config.OnResult` has seen them. Only an
+  engine failure before the action ran is left to the bot's own retry.
+- **Seams the host wires.** `Config.Router`/`Executor` (the aps message
+  router and service executor), `Config.History`, `Config.Hooks` and
+  `Config.OnResult` (service event bookkeeping), `Config.MediaDir`.
+  `Bridge.Webhook()` is the provider receiver as an `http.Handler`: nothing
+  mounts it in `aps serve` yet, and the standard
+  `/services/<id>/webhook` route answers `501` for a uma service.
+
+Not done here: mounting `Bridge.Webhook()` in `aps serve` (including
+WhatsApp Cloud's GET verification, which the adapter already answers), mapping
+uma conversations onto aps session history, durable uma state across restarts
+(the store is in memory, so provider-event de-duplication also resets), and
+retiring the native SMS and WhatsApp transports.
+
+### The uma dependency
+
+hop.top/uma is unreleased and its repository is private, so `go.mod` points
+at a sibling checkout with `replace` directives (one commented block at the
+end of `go.mod`) and pins the matching pseudo-versions. The relative paths
+resolve from `hops/<group>/<name>` worktrees. Until uma is resolvable, a
+build from any other layout, CI, and any consumer fails. To drop the
+dependency, delete `internal/adapters/umabridge`, the `uma` alias and
+`internal/core/service_uma.go`, and the block in `go.mod`.
+
 ## Routing
 
 For service routes, the service ID becomes the route key and the service profile
