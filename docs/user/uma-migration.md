@@ -230,14 +230,38 @@ a mistake in the command, not a hint.
 This build cannot host them. `--uma-adapter relay.messages` and `http.mail` are
 refused (`unsupported uma adapter ... one of meta.whatsapp, twilio.sms,
 twilio.whatsapp`). Leave `--provider generic` services and the email relay on
-the native transport. The uma side differs enough to plan for:
+the native transport. The uma side differs enough to plan for.
 
-- Generic relay (`relay.messages`): replies leave by a callback your gateway
-  serves, never in the webhook answer; webhooks need authentication; form
-  bodies are not read.
-- Email relay (`http.mail`): receive only. Replies need a separate sending
-  channel, and form-encoded routes (SendGrid Inbound Parse, the default
-  Mailgun route) are not accepted.
+### Generic relay (`relay.messages`)
+
+Replies leave by a callback your gateway serves, never in the webhook answer.
+The owner accepted that on 2026-10-13: it is a planned change, not a blocker.
+Migration still waits for the aps bridge to host `relay.messages`, which it does
+not yet, so there is nothing to run today. When it does, your gateway needs:
+
+- **A callback endpoint.** Each reply is one JSON `POST` to it (`medium`, `to`,
+  `body`, `in_reply_to`, `operation_id`, `attempt_id`) that you answer `2xx`. A
+  gateway that reads the reply out of the webhook answer must change.
+- **Authentication on its webhooks.** uma refuses a relay channel without one:
+  bearer, token, HMAC or Ed25519. There is no unauthenticated mode.
+- **The callback host on the allowlist.** The callback URL is `https`, with no
+  credentials, query or fragment, and its host (`host` or `host:port`) must be
+  on the uma host's callback host allowlist. With an empty list no reply can
+  leave. Redirects are not followed. The allowlist is a uma host setting, not a
+  service flag; the bridge sets none today.
+- **No resend of a lost answer.** uma cannot look a reply up, so one whose
+  answer was lost is not sent again. Each call carries an `Idempotency-Key`;
+  check your gateway's log for it.
+
+Inbound keeps the field names (`from`, `to`, `body`, `message_id`, `media`).
+Form bodies and flat `NumMedia` media keys are not read.
+
+### Email relay (`http.mail`)
+
+Receive only. Replies need a separate sending channel, and form-encoded routes
+(SendGrid Inbound Parse, the default Mailgun route) are not accepted. Attachment
+bytes the relay embeds (base64 `content`, or a raw `message/rfc822` body) are
+staged; an entry with only a URL is described and never fetched.
 
 Details: [parity checklist](../dev/requirements/uma-bridge-parity-checklist.md),
 notes M10 and M11.
