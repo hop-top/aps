@@ -319,6 +319,67 @@ service: a reference resolves against the profile secret store, then the
 environment, on each request. A reference that resolves to nothing denies the
 request; it never falls back to an unrelated variable.
 
+#### Cutover: the webhook URL does not change
+
+A uma service answers at the route the native service had:
+`POST /services/<service-id>/webhook` on `aps serve` (or `aps service start`).
+Keep the service id and the URL configured at the provider stays valid, so
+cutover is a service change, not a provider-console change:
+
+```bash
+aps service add sms-main --force --type uma --uma-adapter twilio.sms ...   # same id as before
+aps serve --addr 127.0.0.1:8080                                            # restart; routes are unchanged
+aps service routes sms-main                                                # /services/sms-main/webhook
+```
+
+What to configure, per adapter:
+
+| Adapter | At the provider (unchanged) | In the service (new) |
+| --- | --- | --- |
+| `twilio.sms`, `twilio.whatsapp` | Webhook URL, e.g. `https://hooks.example.com/services/sms-main/webhook`; status callbacks may point at the same URL | `--webhook-url` equal to that URL, character for character |
+| `meta.whatsapp` | Callback URL `https://hooks.example.com/services/wa-main/webhook` and the verify token | `WHATSAPP_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET` bindings; Meta's `GET` verification and signed `POST`s both arrive at the one URL |
+
+How the request is verified:
+
+- **uma checks the signature, once.** aps hands the request to the uma engine
+  as it arrived (raw body, headers, query) and runs no signature check of its
+  own for a uma service; native services keep theirs. A bad or missing
+  signature never reaches routing or the action: Twilio answers `403`, WhatsApp
+  Cloud `401`.
+- **Twilio signs the public URL, not the host aps saw.** The check uses
+  `--webhook-url` plus the query the request arrived with, so a reverse proxy,
+  a TLS terminator or a tunnel that rewrites `Host`, `X-Forwarded-Host` or
+  `X-Forwarded-Proto` changes nothing. The route does not consult those
+  headers; a `--webhook-url` that differs from the URL configured at Twilio
+  makes every request `403`.
+- **WhatsApp Cloud signs the raw body.** Do not put anything in front of aps
+  that re-encodes the body (JSON re-serialisers, charset converters).
+- **Bodies over 1 MiB are refused with `413`** before verification.
+- **WhatsApp Cloud verification works at last.** The native route accepted
+  only `POST`, so Meta's `GET` handshake never reached it through `aps serve`;
+  a uma service answers it (`hub.challenge` echoed for the right
+  `WHATSAPP_VERIFY_TOKEN`, `403` otherwise). Other methods are refused by the
+  receiver.
+- **`aps serve --auth-token` applies here as to every route.** A provider
+  cannot send a bearer token, so a server started with `--auth-token` answers
+  `401` to provider webhooks, native or uma; put authentication for operator
+  routes in front of aps instead.
+
+Sender allowlists (`--allowed-number` and the others), routing, reply policy
+and conversation history behave as for any message service: they run on the
+normalized message after uma accepted the event. A refused sender is answered
+`200` (uma already recorded the event for the provider) and the action never
+runs; the refusal is in the server log. On Twilio WhatsApp the allowlist keeps
+the `whatsapp:` prefix, as it does natively (`--allowed-number whatsapp:+15551230001`).
+
+`aps serve` starts a service's uma engine on its first webhook, so a service
+added while the server runs is served without a restart, and rebuilds it when
+the service's options, env bindings or profile change. A restart or rebuild
+drops uma's in-memory state: replies not yet sent are lost, and the provider's
+own retries are not recognised as duplicates. If the engine cannot start (a
+binding that resolves to nothing, say) the route answers `503`, which providers
+retry; the reason is in the server log, never in the response.
+
 What changes against the aps-native providers, and what to do about it:
 
 - **`--webhook-url` is mandatory for Twilio and must carry no query or
@@ -335,10 +396,10 @@ What changes against the aps-native providers, and what to do about it:
 - **WhatsApp Cloud needs the app secret.** The aps-native route accepts
   unsigned Cloud webhooks when none is set; under uma
   `WHATSAPP_APP_SECRET` is required.
-- **MMS media needs a media directory.** An inbound MMS reaches the action
-  as `attachments` with `file://` URLs only when the host that runs the
-  bridge sets a media directory; without it the message carries its text and
-  nothing else. Files are written owner-only.
+- **MMS media lands in the data directory.** An inbound MMS reaches the
+  action as `attachments` with `file://` URLs under
+  `<aps data dir>/messenger/uma/<service-id>/`. Files are written owner-only
+  and nothing deletes them yet; clear old ones yourself.
 - **Not carried over:** JSON-bodied Twilio relays and `--provider generic`
   relays have no uma equivalent. `--allowed-number` and the route table keep
   working: they are aps's, applied to the normalized message.
@@ -346,11 +407,11 @@ What changes against the aps-native providers, and what to do about it:
   WhatsApp), but uma conversation state is in memory and aps history is not
   yet mapped from it; see [uma bridge status](../dev/messenger-architecture.md#uma-bridge).
 
-`aps service show` reports a uma service as a component whose provider
-webhook is received by the uma engine. `aps serve` does not mount that
-webhook yet, so such a service does not take inbound traffic from the
-standard route (which answers `501`), and `aps service test --probe` does not
-apply.
+`aps service show` and `aps service routes` report a uma service as `ready`
+at `/services/<service-id>/webhook`, with the provider webhook received by the
+uma engine. `aps service test --probe` does not apply: it has no synthetic
+payload for a uma service and says so. Check the route with a real signed
+event, or Meta's `GET` verification with `curl`.
 
 ### Email
 

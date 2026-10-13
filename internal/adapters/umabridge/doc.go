@@ -15,6 +15,7 @@
 // back as a uma Messages.Reply, which the engine's delivery worker sends
 // through the provider adapter.
 //
-// Not here: the production mount of the provider webhook (Bridge.Webhook is
-// the seam), and mapping uma conversations onto aps session history.
+// Not here: mounting the provider webhook at a URL (Bridge.Webhook is the
+// seam; the messenger adapter mounts it at the service's webhook route), and
+// mapping uma conversations onto aps session history.
 package umabridge

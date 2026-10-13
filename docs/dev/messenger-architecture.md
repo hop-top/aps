@@ -110,6 +110,9 @@ the native providers stay the default. User guide:
 [Twilio / Meta webhook]
         |
         v
+aps serve                   /services/<id>/webhook, request passed untouched
+        |
+        v
 Bridge.Webhook()            uma verifies the signature, records the event
         |                   (message.received)
         v
@@ -157,18 +160,69 @@ validates without linking uma.
 - **Errors.** The runtime's errors are final (it already retried delivery),
   so the bot turn drops them after `Config.OnResult` has seen them. Only an
   engine failure before the action ran is left to the bot's own retry.
-- **Seams the host wires.** `Config.Router`/`Executor` (the aps message
-  router and service executor), `Config.History`, `Config.Hooks` and
-  `Config.OnResult` (service event bookkeeping), `Config.MediaDir`.
-  `Bridge.Webhook()` is the provider receiver as an `http.Handler`: nothing
-  mounts it in `aps serve` yet, and the standard
-  `/services/<id>/webhook` route answers `501` for a uma service.
+- **Seams the host wires.** `internal/adapters/messenger/uma_mount.go` builds
+  one Bridge per uma service and fills `Config`: `Router`/`Executor` are the
+  messenger adapter's own `MessageRouter` and `serviceRuntimeExecutor` (route
+  table or `default_action`, reply policy, chat mode, prior turns), `History`
+  the adapter's lazily opened conversation store (the same one the native
+  providers record to), `Hooks.OnDeliveryAttempt` and `OnResult` the service
+  bookkeeping (`last_inbound`/`last_outbound`, delivery attempts, failures to
+  the log), `MediaDir` `<data dir>/messenger/uma/<service-id>`. `Options` is
+  the test seam for provider origins (`messenger.WithUmaOptions`).
+- **Allowlists.** `allowed_numbers`, `allowed_senders`, `allowed_channels` are
+  aps's: the bridge runs the native `ServiceValidator.ValidateMessage` on the
+  normalized message, before media is copied out of the engine. A refusal is
+  dropped, not retried; uma has already answered the provider.
 
-Not done here: mounting `Bridge.Webhook()` in `aps serve` (including
-WhatsApp Cloud's GET verification, which the adapter already answers), mapping
-uma conversations onto aps session history, durable uma state across restarts
-(the store is in memory, so provider-event de-duplication also resets), and
-retiring the native SMS and WhatsApp transports.
+### Webhook mount
+
+`Adapter.RegisterRoutes` registers `/services/{service}/webhook` for every
+method and dispatches in the handler:
+
+- POST, any service: unchanged checks (404 unknown, 400 wrong type or no
+  adapter), then the native handler. A uma service goes to
+  `Handler.umaWebhook` instead (`WithUmaWebhook`), which is
+  `umaMounts.serve`. A handler built without it answers `501` for a uma
+  service.
+- GET and every other method: a uma service is dispatched like a POST, so
+  the provider's own methods reach its receiver (WhatsApp Cloud's GET
+  subscription verification; the receiver answers `405` for what it does not
+  serve). Any other service gets the mux's own refusal, replicated exactly
+  (`405`, `Allow: POST`).
+
+`umaMounts.serve` passes the request to `Bridge.Webhook()` untouched, so the
+raw body, query and headers are what uma verifies; aps middleware that wraps
+the adapter mux (request id, recovery, optional bearer auth) sees it first and
+does not read the body. No aps signature check runs for a uma service: the
+native `ValidateRequest` path is not entered.
+
+- **Public URL.** uma verifies Twilio over `webhook_url` (mandatory, no query)
+  plus the request's own query; the host, scheme and `X-Forwarded-*` headers
+  the request carried are not consulted. The route's path is not part of the
+  signature either, so a proxy path rewrite is harmless as long as
+  `webhook_url` is the URL Twilio is configured with.
+- **Body limit.** uma bounds the body (1 MiB default, `413`) before the adapter
+  reads it; the native routes have no limit. The server's 15 s read and write
+  timeouts bound the rest.
+- **Lifecycle.** Services are loaded per request, like the native routes, so a
+  bridge is built on a service's first request and kept in `umaMounts`,
+  keyed by service id with a fingerprint of the provider-facing configuration
+  (type, adapter, profile, options, env bindings, delivery). A changed
+  fingerprint retires the bridge in the background and builds a new one;
+  `last_inbound`/`last_outbound` writes and routing, which is read per message,
+  are not part of it. A bridge that fails to build answers `503` (nothing about
+  the cause in the body) and is retried on the next request. `Adapter.Stop`
+  closes every bridge before the history store, waiting up to 10 s.
+- **Not recorded by the bridge.** An event refused by the allowlist or failed
+  before delivery leaves no service event, as on the native providers; the
+  log carries it.
+
+Not done here: mapping uma conversations onto aps session history (history is
+the minimal existing wiring: the router records the inbound turn, the runtime
+the delivered reply, keyed as the native SMS/WhatsApp providers key them),
+durable uma state across restarts (the store is in memory, so provider-event
+de-duplication also resets), retention for staged media, and retiring the
+native SMS and WhatsApp transports.
 
 ### The uma dependency
 
