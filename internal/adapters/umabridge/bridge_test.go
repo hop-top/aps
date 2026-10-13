@@ -336,6 +336,60 @@ func TestInboundWithBadSignatureNeverReachesTheAction(t *testing.T) {
 	assert.Empty(t, h.twilio.sent())
 }
 
+func TestSenderOutsideTheAllowlistNeverRunsTheAction(t *testing.T) {
+	h := newHarness(t, smsService(), replyWith("on it"))
+	stranger := incomingSMS("SM10000000000000000000000000000020", "let me in")
+	stranger.Set("From", "+15559998888")
+
+	// uma verified and recorded the event, so the provider is answered; the
+	// allowlist is aps's and refuses it before routing.
+	assert.Equal(t, http.StatusOK, h.postSigned(t, stranger).StatusCode)
+	waitFor(t, "refusal recorded", func() bool { return len(h.outcomes()) == 1 })
+	out := h.outcomes()[0]
+	require.Error(t, out.err)
+	assert.True(t, msgtypes.IsSenderNotAllowed(out.err), "got %v", out.err)
+	assert.Nil(t, out.result)
+	assert.Empty(t, h.exec.calls())
+
+	// The bridge keeps serving: the allowed sender still gets through.
+	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000021", "hello")).StatusCode)
+	waitFor(t, "reply", func() bool { return len(h.twilio.sent()) == 1 })
+	assert.Equal(t, testSender, h.twilio.sent()[0].Form.Get("To"))
+	assert.Len(t, h.exec.calls(), 1)
+}
+
+func TestAllowedNumbersAndSendersAreCheckedOnTheNormalizedMessage(t *testing.T) {
+	tests := map[string]struct {
+		option string
+		value  string
+		sender string
+		allow  bool
+	}{
+		"number listed":      {"allowed_numbers", testSender, testSender, true},
+		"number not listed":  {"allowed_numbers", "+15550000001", testSender, false},
+		"sender not listed":  {core.OptionAllowedSenders, "+15550000001", testSender, false},
+		"channel not listed": {"allowed_channels", "+15550000001", testSender, false},
+		"channel is ours":    {"allowed_channels", testNumber, testSender, true},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			svc := smsService()
+			delete(svc.Options, "allowed_numbers")
+			svc.Options[tc.option] = tc.value
+			h := newHarness(t, svc, replyWith("ok"))
+			assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000022", "hi")).StatusCode)
+			waitFor(t, "result", func() bool { return len(h.outcomes()) == 1 })
+			if tc.allow {
+				require.NoError(t, h.outcomes()[0].err)
+				assert.Len(t, h.exec.calls(), 1)
+				return
+			}
+			assert.True(t, msgtypes.IsSenderNotAllowed(h.outcomes()[0].err))
+			assert.Empty(t, h.exec.calls())
+		})
+	}
+}
+
 func TestActionWithoutReplySendsNothing(t *testing.T) {
 	h := newHarness(t, smsService(), func(msgtypes.ExecutionHandoff) (*msgtypes.ExecutionResult, error) {
 		return &msgtypes.ExecutionResult{Status: "success", Output: "done"}, nil

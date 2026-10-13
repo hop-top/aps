@@ -23,6 +23,9 @@ func TestTwilioWhatsAppKeepsAPSAddressPrefixesAndRepliesWithThem(t *testing.T) {
 	svc := smsService()
 	svc.ID = "wa-twilio"
 	svc.Options[core.OptionUmaAdapter] = "twilio.whatsapp"
+	// aps ids keep the prefix, so the allowlist does too, as on the native
+	// Twilio WhatsApp provider.
+	svc.Options["allowed_numbers"] = "whatsapp:" + testSender
 	h := newHarness(t, svc, replyWith("hello back"))
 
 	form := incomingSMS("SM20000000000000000000000000000001", "hola")

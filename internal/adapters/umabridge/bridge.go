@@ -141,7 +141,14 @@ func New(ctx context.Context, cfg Config) (*Bridge, error) {
 		return nil, errors.Join(err, engine.Close(context.WithoutCancel(ctx)))
 	}
 
-	p := &provider{platform: spec.Platform, entry: ent, key: key, service: svc.ID, receiving: destination, mediaDir: cfg.MediaDir}
+	// The service's allowlists are aps's, not uma's: the same validator the
+	// native providers' messages pass through, on the normalized message.
+	validator := msgtypes.NewServiceValidator()
+	policy := msgtypes.ServiceValidationConfig{ID: svc.ID, Adapter: svc.Adapter, Profile: svc.Profile, Env: svc.Env, Options: svc.Options}
+	p := &provider{
+		platform: spec.Platform, entry: ent, key: key, service: svc.ID, receiving: destination, mediaDir: cfg.MediaDir,
+		validate: func(msg *msgtypes.NormalizedMessage) error { return validator.ValidateMessage(policy, msg) },
+	}
 	b.runtime, err = msgtypes.NewRuntime(p, cfg.Router, cfg.Executor, msgtypes.RuntimeOptions{
 		ServiceID: svc.ID, History: cfg.History, Hooks: cfg.Hooks,
 	})

@@ -40,6 +40,9 @@ type provider struct {
 	receiving string
 	// mediaDir is where inbound media is materialized; empty means none.
 	mediaDir string
+	// validate is aps's service policy (allowed numbers, senders, channels),
+	// applied to the normalized message before anything else touches it.
+	validate func(*msgtypes.NormalizedMessage) error
 }
 
 var (
@@ -77,13 +80,7 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 			break
 		}
 	}
-	var attachments []msgtypes.Attachment
-	if p.mediaDir != "" {
-		if attachments, err = materializeMedia(ctx, st, p.mediaDir, id); err != nil {
-			return nil, err
-		}
-	}
-	return &msgtypes.NormalizedMessage{
+	msg := &msgtypes.NormalizedMessage{
 		ID:        id,
 		Timestamp: m.OccurredAt.UTC(),
 		Platform:  p.platform,
@@ -91,8 +88,7 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 		Channel: msgtypes.Channel{
 			ID: channel, Name: channel, Type: msgtypes.ChannelTypeDirect, PlatformID: channel,
 		},
-		Text:        strings.TrimSpace(bot.Text(m.Content)),
-		Attachments: attachments,
+		Text: strings.TrimSpace(bot.Text(m.Content)),
 		PlatformMetadata: map[string]any{
 			"messenger_name":   p.service,
 			"engine":           "uma",
@@ -100,7 +96,20 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 			"uma_message":      string(m.Ref.ID),
 			"uma_conversation": string(st.turn.Conversation.ID),
 		},
-	}, nil
+	}
+	// Policy first: a refused sender's media is never copied out of the
+	// engine.
+	if p.validate != nil {
+		if err := p.validate(msg); err != nil {
+			return nil, err
+		}
+	}
+	if p.mediaDir != "" {
+		if msg.Attachments, err = materializeMedia(ctx, st, p.mediaDir, id); err != nil {
+			return nil, err
+		}
+	}
+	return msg, nil
 }
 
 // DeliverMessage queues the reply on the turn's conversation. The operation
