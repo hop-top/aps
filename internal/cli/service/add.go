@@ -200,6 +200,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Routing:     routing,
 	}
 
+	noteNativeTransport(service)
 	printResolved(cmd, resolved)
 	validation := core.ValidateServiceConfig(service)
 	renderValidation(cmd, validation)

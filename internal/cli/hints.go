@@ -4,6 +4,8 @@ import (
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
+
+	"hop.top/aps/internal/cli/service"
 )
 
 // registerHints wires contextual next-step hints for key commands.
@@ -14,6 +16,16 @@ func registerHints(hints *output.HintSet) {
 	hints.Register("profile list", output.Hint{
 		Message: "Run `aps profile show <id>` for details.",
 	})
+	// Deprecation notice for services on an aps-native SMS or WhatsApp
+	// transport. A hint, so kit keeps it out of json/yaml output, pipes, and
+	// anything --no-hints, --quiet or HOP_QUIET_HINTS silences; it only
+	// applies when the command handled such a service.
+	for _, key := range []string{"service add", "service show", "service status"} {
+		hints.Register(key, output.Hint{
+			Message:   service.NativeTransportNotice,
+			Condition: service.NativeTransportNoted,
+		})
+	}
 	// Note: `aps workspace list` is not yet implemented (only `activity`
 	// and `sync` exist under workspace). When list lands, register:
 	//   hints.Register("workspace list", output.Hint{

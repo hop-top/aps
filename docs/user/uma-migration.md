@@ -239,6 +239,15 @@ native command (the "Before" blocks above) and `--force`, then restart
 change. A restart or a rebuild drops uma's in-memory state: replies not yet
 sent are lost, and the provider's own retries are not recognised as duplicates.
 
+## Notice on native services
+
+On a terminal, `aps service add`, `show` and `status` print one line after
+their output for a native service of the three shapes that move today, pointing
+here. `--provider generic` and email services get none. It is a next-step hint:
+not printed when output is piped, with `--format json` or `--format yaml`, with
+`--quiet`, with `--no-hints`, or with `HOP_QUIET_HINTS=1`. It never changes an
+exit code.
+
 ## History at cutover
 
 > TO CONFIRM. Not stated as fact: how a uma conversation maps onto aps session

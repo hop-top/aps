@@ -143,8 +143,10 @@ Can an operator move each native shape today, with the build aps ships?
 | `sms` or `whatsapp`, `--provider generic` | `relay.messages` | no | no |
 | `email` relay (outside retirement scope) | `http.mail` plus a sender | no | no |
 
-The [migration note](../../user/uma-migration.md) tells operators how to move.
-Nothing here enumerates their services: the inventory of operator yamls
+The [migration note](../../user/uma-migration.md) tells operators how to move,
+and `service add`, `show` and `status` print a one-line deprecation hint
+pointing at it for the three shapes that move today. Nothing enumerates their
+services: the inventory of operator yamls
 (`services/*.yaml` under the aps data dir) is the owner's to collect.
 
 ## 1. SMS over Twilio
