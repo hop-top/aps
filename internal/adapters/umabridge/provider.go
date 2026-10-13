@@ -97,6 +97,9 @@ func (p *provider) NormalizeIngress(ctx context.Context, _ msgtypes.NativeIngres
 			"uma_conversation": string(st.turn.Conversation.ID),
 		},
 	}
+	if p.entry.thread != nil {
+		msg.Thread = p.entry.thread(m)
+	}
 	// Policy first: a refused sender's media is never copied out of the
 	// engine.
 	if p.validate != nil {

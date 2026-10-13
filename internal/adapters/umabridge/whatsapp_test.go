@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"hop.top/aps/internal/core"
+	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/uma/adapter/messaging/meta"
 )
 
@@ -173,4 +174,66 @@ func TestMetaWhatsAppVerifiesSubscriptionAndRepliesThroughGraph(t *testing.T) {
 	assert.Equal(t, "Bearer "+metaAccessToken, sent.Auth)
 	assert.Equal(t, metaSender, sent.Body["to"])
 	assert.Equal(t, "hi from aps", sent.Body["text"].(map[string]any)["body"])
+}
+
+// metaReply is an inbound Cloud message that quotes an earlier one.
+func metaReply(id, text, quoted string) []byte {
+	return fmt.Appendf(nil, `{"object":"whatsapp_business_account","entry":[{"id":"102290129340398","changes":[{"value":{"messaging_product":"whatsapp","metadata":{"display_phone_number":"15550783881","phone_number_id":%q},"contacts":[{"profile":{"name":"Peer"},"wa_id":%q}],"messages":[{"from":%q,"id":%q,"timestamp":"%d","type":"text","context":{"from":"15550783881","id":%q},"text":{"body":%q}}]},"field":"messages"}]}]}`,
+		metaPhoneNumberID, metaSender, metaSender, id, time.Now().Unix(), quoted, text)
+}
+
+func postMeta(t *testing.T, h *harness, raw []byte) {
+	t.Helper()
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, h.hook.URL, strings.NewReader(string(raw)))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(meta.SignatureHeader, meta.Sign([]byte(metaAppSecret), raw))
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+// The native Cloud provider scopes a reply to the message it quotes: the
+// quoted message is the session's thread. The bridge keeps that scoping, so a
+// service converted to uma, under the same id, sees the same sessions.
+func TestMetaWhatsAppReplyContextIsTheSessionThread(t *testing.T) {
+	graph := newFakeGraph(t)
+	h := newHarnessWith(t, metaService(), replyWith("ok"), func(c *Config) {
+		c.Store = metaStore
+		c.Options = Options{GraphBaseURL: graph.srv.URL}
+	})
+
+	raw := metaReply("wamid.IN0002", "and the second one?", "wamid.PARENT")
+	postMeta(t, h, raw)
+	postMeta(t, h, metaInbound("wamid.IN0003", "plain message"))
+	waitFor(t, "both run", func() bool { return len(h.exec.calls()) == 2 })
+
+	var replied, plain *msgtypes.NormalizedMessage
+	for _, call := range h.exec.calls() {
+		switch call.Message.ID {
+		case "wamid.IN0002":
+			replied = call.Message
+		case "wamid.IN0003":
+			plain = call.Message
+		}
+	}
+	require.NotNil(t, replied)
+	require.NotNil(t, plain)
+
+	require.NotNil(t, replied.Thread)
+	assert.Equal(t, "wamid.PARENT", replied.Thread.ID)
+	assert.Equal(t, msgtypes.ThreadTypeReply, replied.Thread.Type)
+	assert.Nil(t, plain.Thread, "a message that quotes nothing has no thread")
+
+	var parsed map[string]any
+	require.NoError(t, json.Unmarshal(raw, &parsed))
+	native, err := msgtypes.NormalizeWhatsAppPayload(parsed, time.Now())
+	require.NoError(t, err)
+	native.PlatformMetadata["messenger_name"] = "wa-cloud"
+	assert.Equal(t, native.ConversationState().ConversationID, replied.ConversationState().ConversationID)
+	assert.Equal(t, native.ConversationState().SessionID, replied.ConversationState().SessionID,
+		"same session as the native Cloud provider's")
+	assert.NotEqual(t, replied.ConversationState().SessionID, plain.ConversationState().SessionID)
+	assert.Equal(t, replied.ConversationState().ConversationID, plain.ConversationState().ConversationID, "one conversation, two sessions")
 }

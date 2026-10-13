@@ -1,11 +1,13 @@
 package umabridge
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"hop.top/aps/internal/core"
+	msgtypes "hop.top/aps/internal/core/messenger"
 	"hop.top/uma/adapter"
 	"hop.top/uma/adapter/messaging/meta/whatsapp"
 	"hop.top/uma/adapter/messaging/twilio/sms"
@@ -41,6 +43,10 @@ type entry struct {
 	// address renders a provider address as aps carries it in sender and
 	// channel ids.
 	address func(string) string
+	// thread is the thread a received message belongs to, when the provider
+	// scopes replies to the message they quote; nil for a provider that does
+	// not, or a message that quotes nothing.
+	thread func(*model.Message) *msgtypes.Thread
 }
 
 var catalogue = map[string]entry{
@@ -114,6 +120,25 @@ var catalogue = map[string]entry{
 			return cfg.Extension(), cfg.PhoneNumberID, nil
 		},
 		address: func(s string) string { return s },
+		// The native Cloud provider scopes a reply to the message it quotes
+		// (context.id); uma keeps that context in the inbound payload
+		// extension of the message.
+		thread: func(m *model.Message) *msgtypes.Thread {
+			for _, ext := range m.Metadata {
+				if ext.Name != whatsapp.InboundSchema {
+					continue
+				}
+				var inbound struct {
+					Context struct {
+						ID string `json:"id"`
+					} `json:"context"`
+				}
+				if json.Unmarshal(ext.Data, &inbound) == nil && inbound.Context.ID != "" {
+					return &msgtypes.Thread{ID: inbound.Context.ID, Type: msgtypes.ThreadTypeReply}
+				}
+			}
+			return nil
+		},
 	},
 }
 
