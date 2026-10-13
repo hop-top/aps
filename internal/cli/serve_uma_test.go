@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha1" // #nosec G505 -- Twilio's documented webhook signature algorithm
@@ -19,12 +20,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"hop.top/aps/internal/adapters"
 	"hop.top/aps/internal/adapters/messenger"
 	"hop.top/aps/internal/adapters/umabridge"
+	"hop.top/aps/internal/cli/service"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/protocol"
 )
@@ -362,4 +365,60 @@ func TestServeUma_AuthTokenGatesTheWebhookLikeEveryAdapterRoute(t *testing.T) {
 	})
 	assert.Equal(t, http.StatusUnauthorized, status)
 	assert.Empty(t, twilio.sent())
+}
+
+// runConversationQuery runs `aps service conversation <args>` in this
+// process, as the CLI runs separately from the server: it opens the history
+// file by path and shares nothing else with it.
+func runConversationQuery(t *testing.T, args ...string) []map[string]any {
+	t.Helper()
+	root := &cobra.Command{Use: "aps"}
+	root.PersistentFlags().String("profile", "", "profile id")
+	root.PersistentFlags().String("workspace", "", "workspace id")
+	root.PersistentFlags().Bool("dry-run", false, "preview side effects")
+	root.PersistentFlags().String("format", "", "output format")
+	root.AddCommand(service.NewServiceCmd())
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs(append([]string{"service", "conversation"}, append(args, "--format", "json")...))
+	require.NoError(t, root.Execute(), out.String())
+	var rows []map[string]any
+	require.NoError(t, json.Unmarshal(out.Bytes(), &rows), out.String())
+	return rows
+}
+
+// A uma service's exchange is in the same history file as a native one's,
+// so `aps service conversation` reads it with no engine to reach.
+func TestServeUma_TwilioSMS_ConversationQueryShowsTheExchange(t *testing.T) {
+	srv, twilio, _ := newUmaServer(t, "")
+	saveUmaSMS(t)
+	form := smsForm("SM10000000000000000000000000000003", serveSender, "where is my order")
+	status, body, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(form.Encode()), map[string]string{
+		"Content-Type":       "application/x-www-form-urlencoded",
+		"X-Twilio-Signature": signTwilioForm(serveToken, servePublic, form),
+	})
+	require.Equal(t, http.StatusOK, status, body)
+	serveWait(t, "reply", func() bool { return len(twilio.sent()) == 1 })
+
+	var conversations []map[string]any
+	serveWait(t, "both turns listed", func() bool {
+		conversations = runConversationQuery(t, "list", "--service", "sms-uma")
+		return len(conversations) == 1 && conversations[0]["turn_count"] == float64(2)
+	})
+	assert.Equal(t, "sms", conversations[0]["platform"])
+	assert.Equal(t, serveNumber, conversations[0]["channel_id"])
+	assert.Equal(t, "outbound", conversations[0]["last_direction"])
+	assert.Equal(t, "routed", conversations[0]["last_text"])
+
+	turns := runConversationQuery(t, "show", conversations[0]["conversation_id"].(string))
+	require.Len(t, turns, 2)
+	assert.Equal(t, "inbound", turns[0]["direction"])
+	assert.Equal(t, "where is my order", turns[0]["text"])
+	assert.Equal(t, serveSender, turns[0]["sender_id"])
+	assert.Equal(t, "SM10000000000000000000000000000003", turns[0]["message_id"])
+	assert.Equal(t, "outbound", turns[1]["direction"])
+	assert.Equal(t, "routed", turns[1]["text"])
+	assert.Equal(t, "triage", turns[1]["action_name"])
+	assert.Equal(t, "sms-uma", turns[1]["service_id"])
 }
