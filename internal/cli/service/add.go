@@ -220,6 +220,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return fmt.Errorf("service config is invalid")
 	}
 
+	replacing, _ := core.ServiceExists(id)
 	if err := core.SaveService(service); err != nil {
 		return err
 	}
@@ -228,7 +229,23 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return err
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved: %s\n", path)
+	if service.Adapter == core.AdapterUma {
+		printHistoryNote(cmd, id, replacing)
+	}
 	return nil
+}
+
+// printHistoryNote tells the operator what keeps conversation history across
+// a conversion: history is keyed by the service id, uma or native alike.
+func printHistoryNote(cmd *cobra.Command, id string, replacing bool) {
+	if replacing {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(),
+			"note: replacing existing service %s; its conversation history continues under the same id\n", id)
+		return
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(),
+		"note: conversation history is keyed by the service id; to keep the history of a native service "+
+			"you convert, add the uma service under its id with --force")
 }
 
 // refuseExisting rejects re-adding an existing service ID unless --force
