@@ -32,6 +32,7 @@ prints it. Idempotent.`,
 			if err != nil {
 				return err
 			}
+			noteNativeTransport(service)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "id: %s\n", service.ID)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "type: %s\n", service.Type)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "adapter: %s\n", service.Adapter)
