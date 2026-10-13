@@ -20,6 +20,7 @@ Quick navigation to all APS documentation.
 - [**Messenger Quick Reference**](MESSENGER_SETUP_QUICK_REF.md) — One-liners and troubleshooting for all platforms
 - [**Ticket Services**](user/tickets.md) — Email, Jira, Linear, GitLab inbound routes: auth, payloads, sender routing
 - [**Message Services**](user/messengers.md) — Service setup, routes, testing, conversation history
+- [**Move SMS and WhatsApp to uma**](user/uma-migration.md) — Opt-in migration of native services, verify, rollback
 
 ### Scripts
 - [**Scripts Documentation**](../scripts/README.md) — `setup-telegram.sh`, `setup-messenger.sh`

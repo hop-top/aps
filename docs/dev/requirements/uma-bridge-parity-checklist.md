@@ -131,10 +131,9 @@ Can an operator move each native shape today, with the build aps ships?
 | `sms` or `whatsapp`, `--provider generic` | `relay.messages` | no | no |
 | `email` relay (outside retirement scope) | `http.mail` plus a sender | no | no |
 
-The deprecation notice points operators with native services at the
-[migration note](../../user/uma-migration.md); it enumerates nothing. The
-inventory of operator yamls (`services/*.yaml` under the aps data dir) is the
-owner's to collect.
+The [migration note](../../user/uma-migration.md) tells operators how to move.
+Nothing here enumerates their services: the inventory of operator yamls
+(`services/*.yaml` under the aps data dir) is the owner's to collect.
 
 ## 1. SMS over Twilio
 
@@ -145,7 +144,7 @@ owner's to collect.
 | S3 | Signed URL: `webhook_url`, else rebuilt from forwarded headers | `cm/sms.go:45`; `am/handler.go:1388-1409` | `Ts/webhook.go:57,76-79`; `Ts/config.go:68-74` | n/a | GREEN, M1 |
 | S4 | Auth token from option, env or `secret:` ref | `cm/sms.go:101-119` | `Ts/webhook.go:115-131` | n/a | GREEN, M4 |
 | S5 | Form inbound: `From`, `To`, `Body`, `MessageSid` | `am/normalizer.go:675-733`; `cm/sms.go:256-311` | `Ts/webhook.go:133-201` | n/a | GREEN |
-| S6 | JSON-bodied webhook, `bodySHA256` in the URL checked | `cm/sms.go:53,82-99`; no aps test (F5) | `T/signature_json.go:49-77`; `Ts/webhook.go:80`; `D/twilio.sms.md:110-129` | n/a | GREEN `[i]` |
+| S6 | JSON-bodied webhook, `bodySHA256` in the URL checked | `cm/sms.go:53,82-99`; native refuses it (F5) | `T/signature_json.go:49-77`; `Ts/webhook.go:80`; `D/twilio.sms.md:110-129` | n/a | GREEN `[i]` |
 | S7 | Inbound MMS media reaches the action | `am/normalizer.go:718-730`; `cm/sms.go:446-459` | `Ts/media.go:19-35`; `T/stage.go:44-88` | no | AMBER, M8 |
 | S8 | Reply inline as TwiML; empty `<Response/>` when none | `am/handler.go:370-373,381-386,1228-1238` | `Ts/webhook.go:110-111`; `Ts/send.go:26-58` | yes | GREEN, M5 |
 | S9 | Messages REST outbound, basic auth (not on the SMS path, F2) | `cm/sms.go:332-384` | `Ts/send.go:26-58`; `D/twilio.sms.md:131-136` | yes | GREEN |
@@ -359,11 +358,11 @@ Surprises found while verifying. Not uma gaps; fixes belong in aps.
 
 | # | Finding | Evidence |
 | --- | --- | --- |
-| F1 | WhatsApp Cloud GET verification is unreachable for a native service through `aps serve`: GET answers 405. A `uma` service answers it at the same URL | `am/adapter.go:126-132`; `am/handler.go:156-158`; `docs/user/messengers.md:279-280` |
+| F1 | WhatsApp Cloud GET verification is unreachable natively via `aps serve`: GET answers 405 (probed). A `uma` service answers it: 200, challenge echoed | `am/adapter.go:126-132`; `am/handler.go:156-158`; `docs/user/messengers.md:279-280` |
 | F2 | Messages REST for SMS (`SMSProvider`, `TwilioSMSTransport`) is on no production path; SMS replies are TwiML only. `core/service.go:530` says "provider delivery" | `cm/sms.go:176`; `tools/messengermd/main.go:112`; `am/handler.go:370-373` |
 | F3 | Twilio WhatsApp `content_sid` is unreachable from a service config: `template_required` passes and the message still goes out free-form | `cm/whatsapp.go:171,479-491`; `am/handler.go:986-995` |
-| F4 | Cloud status-only notifications fail normalisation and answer 400, so Meta retries them. uma maps them to status envelopes and answers 200 | `cm/whatsapp.go:306-308`; `am/handler.go:1115-1120`; `Mw/webhook.go:268-276` |
-| F5 | The `bodySHA256` JSON path has no aps test | no `bodySHA256` hit in any aps `_test.go` |
+| F4 | Cloud status-only notifications fail normalisation and answer 400 (probed), so Meta retries them. uma maps them to status envelopes and answers 200 | `cm/whatsapp.go:306-308`; `am/handler.go:1115-1120`; `Mw/webhook.go:268-276` |
+| F5 | The `bodySHA256` JSON path has no aps test; a Twilio-signed JSON request gets 401 from a native service (body parsed as a query string; probed) | `cm/sms.go:49-52`; `am/handler.go:1365-1374`; no `bodySHA256` hit in any aps `_test.go` |
 | F6 | A `uma` service ignores `template_name`, `language_code`, `template_required`: the bridge sends text only and `service add` accepts the flags silently | `internal/adapters/umabridge/provider.go` (`DeliverMessage`); `core/service_uma.go` |
 
 ## Line-ref notes
