@@ -144,6 +144,7 @@ action sees.
 | Turn record | `seq`, `conversation_id`, `session_id`, `service_id`, `platform`, `profile_id`, `action_name`, `direction` (`inbound`/`outbound`), `message_id`, `channel_id`, `sender_id`, `sender_name`, `text`, `attachments`, `timestamp`. |
 | Inbound turns | Recorded when a message is routed to a profile action (action execution mode) or handed to the chat runtime (chat execution mode). Unsupported events never become turns. |
 | Outbound turns | Recorded when a reply is actually sent: after successful provider delivery on the runtime path, or when the webhook response carries the reply (Twilio TwiML, provider reply JSON). Failed deliveries, empty replies, and `--reply none` do not create turns. Outbound `sender_id` is the profile ID and `message_id` is the inbound message being answered. |
+| uma-hosted services | Outbound turn written when uma accepts the reply (queued); a later provider refusal does not revise it. Redelivered event with an outbound turn already present is not run again. |
 | Retention | Newest 500 turns per conversation; older turns are pruned on append. |
 | Failure mode | Store errors are logged and never block routing, execution, or delivery. |
 

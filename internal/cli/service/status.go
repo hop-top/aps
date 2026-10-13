@@ -49,6 +49,7 @@ or upstream state is touched. Idempotent.`,
 			if err != nil {
 				return err
 			}
+			noteNativeTransport(service)
 			renderStatus(cmd, service, opts.baseURL)
 			return nil
 		},

@@ -187,7 +187,9 @@ var root = kitcli.New(kitcli.Config{
 		// flag set.
 		{Name: profileFlagName, Short: "p", Usage: "profile id (defaults to active profile)"},
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
-		{Name: "offline", Usage: "disable all network calls"},
+		// --offline is a kit-reserved global (registered by kit/cli,
+		// bound to the "offline" viper key that globals.IsOffline
+		// reads). Do not redeclare: pflag panics on the duplicate.
 		{Name: "instance", Usage: "backend instance to target (defaults to config)"},
 		// T-0460 — emergency bypass for kit/core/redact filtering.
 		// Default false (redaction ON). See docs/cli/redaction.md.

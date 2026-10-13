@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	kitcli "hop.top/kit/go/console/cli"
 
+	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/msgroute"
 )
@@ -21,7 +22,13 @@ func newAddCmd() *cobra.Command {
 		Long: `Add a profile-facing service.
 
 The --type flag accepts canonical service types and adapter aliases. Adapter
-aliases are resolved through kit aliasing before APS persists the service.`,
+aliases are resolved through kit aliasing before APS persists the service.
+
+--type uma opts a message service into provider I/O hosted by an in-process
+uma engine instead of the aps-native provider; pick the provider with
+--uma-adapter. A flag the uma bridge ignores (--template-name, for one) is
+accepted and warned about on stderr, once per flag; the service is still added.
+--format json, --format yaml and --quiet silence the warning.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.profile, _ = cmd.Flags().GetString("profile")
@@ -44,6 +51,7 @@ aliases are resolved through kit aliasing before APS persists the service.`,
 	cmd.Flags().StringVar(&opts.events, "events", "", "Comma-separated ticket events to receive")
 	cmd.Flags().StringVar(&opts.receive, "receive", "", "Message receive mode: polling or webhook")
 	cmd.Flags().StringVar(&opts.provider, "provider", "", "Message provider, such as twilio or whatsapp-cloud")
+	cmd.Flags().StringVar(&opts.umaAdapter, "uma-adapter", "", "uma service adapter: "+strings.Join(core.UmaAdapterCatalogue(), ", "))
 	cmd.Flags().StringVar(&opts.from, "from", "", "Sender phone number or provider identity")
 	cmd.Flags().StringVar(&opts.webhookURL, "webhook-url", "", "Public provider webhook URL used for signature validation")
 	cmd.Flags().StringVar(&opts.phoneNumberID, "phone-number-id", "", "WhatsApp phone number ID")
@@ -123,6 +131,7 @@ type addOptions struct {
 	events                string
 	receive               string
 	provider              string
+	umaAdapter            string
 	from                  string
 	webhookURL            string
 	phoneNumberID         string
@@ -194,9 +203,11 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		Routing:     routing,
 	}
 
+	noteNativeTransport(service)
 	printResolved(cmd, resolved)
 	validation := core.ValidateServiceConfig(service)
 	renderValidation(cmd, validation)
+	warnIgnoredUmaOptions(cmd, service)
 	if opts.dryRun {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "dry_run: true")
 		if err := refuseExisting(id, opts.force); err != nil {
@@ -214,6 +225,7 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return fmt.Errorf("service config is invalid")
 	}
 
+	replacing, _ := core.ServiceExists(id)
 	if err := core.SaveService(service); err != nil {
 		return err
 	}
@@ -222,7 +234,55 @@ func runAdd(cmd *cobra.Command, id string, opts addOptions) error {
 		return err
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved: %s\n", path)
+	if service.Adapter == core.AdapterUma {
+		printHistoryNote(cmd, id, replacing)
+	}
 	return nil
+}
+
+// warnIgnoredUmaOptions writes one line to stderr for each option set on a uma
+// service that the uma bridge does not read, naming the flag the operator
+// passed. The service is added regardless: this is a warning, not a refusal.
+// Machine-readable output (--format json or yaml) and --quiet keep stderr
+// clean, so a script that parses the command never sees it.
+func warnIgnoredUmaOptions(cmd *cobra.Command, service *core.ServiceConfig) {
+	if globals.Quiet() || machineReadableFormat(globals.Format()) {
+		return
+	}
+	for _, ignored := range core.UmaIgnoredOptions(service) {
+		label := "--option " + ignored.Option
+		switch {
+		case ignored.Default:
+			// Unset, so its default is what has no effect.
+			label = "the default --" + ignored.Flag + " " + ignored.Value
+		case ignored.Flag != "" && cmd.Flags().Changed(ignored.Flag):
+			label = "--" + ignored.Flag
+		}
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s has no effect on a uma service: %s\n", label, ignored.Advice)
+	}
+}
+
+// machineReadableFormat reports whether --format asks for output a program
+// parses.
+func machineReadableFormat(format string) bool {
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "json", "yaml":
+		return true
+	}
+	return false
+}
+
+// printHistoryNote tells the operator what keeps conversation history across
+// a conversion: history is keyed by the service id, uma or native alike.
+func printHistoryNote(cmd *cobra.Command, id string, replacing bool) {
+	if replacing {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(),
+			"note: replacing existing service %s; its conversation history continues under the same id\n", id)
+		return
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(),
+		"note: conversation history is keyed by the service id; to keep the history of a native service "+
+			"you convert, add the uma service under its id with --force")
 }
 
 // refuseExisting rejects re-adding an existing service ID unless --force
@@ -256,6 +316,7 @@ func serviceOptions(opts addOptions, raw map[string]string) map[string]string {
 	addOption(options, "events", opts.events)
 	addOption(options, "receive", opts.receive)
 	addOption(options, "provider", opts.provider)
+	addOption(options, core.OptionUmaAdapter, opts.umaAdapter)
 	addOption(options, "from", opts.from)
 	addOption(options, "webhook_url", opts.webhookURL)
 	addOption(options, "phone_number_id", opts.phoneNumberID)

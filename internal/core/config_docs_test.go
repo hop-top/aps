@@ -34,6 +34,16 @@ func TestConfigFieldDocsPinned(t *testing.T) {
 			Default:     "`[]`",
 			Description: "Additional directories to search for capability definitions",
 		},
+		{
+			Path:        "uma.relay.callback_hosts",
+			Default:     "`[]`",
+			Description: "Hosts (`host` or `host:port`, as in the URL) a `relay.messages` service's `callback_url` may name; empty allows none",
+		},
+		{
+			Path:        "uma.relay.allow_http",
+			Default:     "`false`",
+			Description: "Allow `http` callback URLs for `relay.messages`; local development only, the callback credential travels in clear text",
+		},
 	}
 	if !reflect.DeepEqual(docs, want) {
 		t.Errorf("ConfigFieldDocs mismatch:\n got: %#v\nwant: %#v", docs, want)

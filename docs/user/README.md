@@ -22,6 +22,7 @@ Welcome to the APS (Adaptive Platform System) User Documentation. This section c
 *   **[CLI Command Reference](../cli/reference.md)**: Detailed usage for all `aps` commands.
 *   **Profile Schema**: Reference for `profile.yaml`.
 *   **[Messenger Integration](messengers.md)**: Setup guides for Telegram, Discord, Slack, SMS, and WhatsApp message services.
+*   **[Move SMS and WhatsApp to uma](uma-migration.md)**: Per-transport before/after, behaviour changes, verify and rollback.
 *   **[Ticket Services](tickets.md)**: Email, Jira, Linear, and GitLab ticket services: route, auth, payloads, sender routing.
 
 ---

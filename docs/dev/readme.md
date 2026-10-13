@@ -71,6 +71,7 @@ System requirements and specifications.
 - [session-inspection-requirements.md](requirements/session-inspection-requirements.md) - Session inspection requirements
 - [ssh-setup-requirements.md](requirements/ssh-setup-requirements.md) - SSH server setup requirements
 - [capability-requirements.md](requirements/capability-requirements.md) - Capability management requirements
+- [uma-bridge-parity-checklist.md](requirements/uma-bridge-parity-checklist.md) - SMS, WhatsApp and email relay parity with uma adapters
 
 ### 🔒 Security
 Security audits and compliance.
@@ -88,6 +89,7 @@ Test strategies and performance benchmarks.
 - [messenger-architecture.md](messenger-architecture.md) - Normalized message format, routing, platform comparison, permission models, and file layout
 - [message-routing.md](message-routing.md) - Sender route tables: schema, sender key normalization, contact snapshot, evaluation order, terminal fail-safe
 - [message-conversation-policy.md](message-conversation-policy.md) - Conversation and session identity for message services
+- [uma-history-mapping.md](uma-history-mapping.md) - Options and recommendation for mapping uma conversations onto aps session history
 
 ### 📚 Documentation
 Additional documentation and tools.

@@ -95,3 +95,10 @@ is the norm.
 
 Be respectful and constructive. We are all here to build
 something great together.
+
+**Current exception**: `hop.top/uma` (unreleased, private repository) is
+wired to a sibling checkout by one commented `replace` block at the end of
+`go.mod`, for the uma bridge in `internal/adapters/umabridge`. Until uma is
+resolvable, builds outside the `hops/<group>/<name>` layout, CI, and
+consumers fail. Remove the block as soon as uma publishes a version; add no
+other `replace`.

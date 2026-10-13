@@ -28,6 +28,7 @@ cog.out(subprocess.check_output(
 | `--type sms` | `message` | `sms` |
 | `--type teams` | `message` | `teams` |
 | `--type telegram` | `message` | `telegram` |
+| `--type uma` | `message` | `uma` |
 | `--type whatsapp` | `message` | `whatsapp` |
 <!-- [[[end]]] -->
 
@@ -97,6 +98,222 @@ message services, no provider hooks), `Normalizer` produces the
 and executes through `protocol.APSCore.ExecuteRun`. There is no unauthenticated
 catch-all route; a ticket service without `default_action` or a routing block
 answers `422`. User guide: [Ticket services](../user/tickets.md).
+
+## uma Bridge
+
+`--type uma` (`type: message`, `adapter: uma`) hosts a uma engine in-process
+for one service instead of an aps-native provider. It is opt-in per service;
+the native providers stay the default. User guide:
+[uma-hosted providers](../user/messengers.md#uma-hosted-providers-opt-in).
+
+```text
+[Twilio / Meta webhook]
+        |
+        v
+aps serve                   /services/<id>/webhook, request passed untouched
+        |
+        v
+Bridge.Webhook()            uma verifies the signature, records the event
+        |                   (message.received)
+        v
+bot companion (uma)         subscribed to message.received, one turn per message
+        |
+        v
+messenger.Runtime           provider = bridge: NormalizeIngress, then the
+        |                   router and executor aps already uses
+        v
+action reply  ---> DeliverMessage ---> uma Messages.Reply ---> delivery worker
+                                                                  |
+                                                                  v
+                                                      provider REST (Messages API / Graph)
+```
+
+Code: `internal/adapters/umabridge`, the only package that imports
+`hop.top/uma`. The static contract of each uma adapter as a service (options,
+env bindings) lives in `internal/core/service_uma.go`, so `service add`
+validates without linking uma.
+
+- **Engine.** One per service: memory store, an authorizer that admits only
+  the bridge's two actors (`aps-bridge` provisions the channel and inbox and
+  runs the receiver and delivery worker; `aps-bridge-bot` reads the
+  subscription and replies) for a fixed action list and denies everything
+  else, `ports.Credentials` over the service's `--env` bindings, an HTTP
+  client, and a file-backed media sink when `Config.MediaDir` is set.
+- **Credentials.** A uma credential purpose maps to one env binding
+  (`twilio.rest` and `twilio.webhook` to `TWILIO_AUTH_TOKEN`; `meta.graph`,
+  `meta.app_secret`, `meta.webhook.verify_token` to `WHATSAPP_ACCESS_TOKEN`,
+  `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`; `relay.webhook` and
+  `http.mail.webhook` to the binding `--auth-token-env` or
+  `--signature-secret-env` names, `relay.callback` to `RELAY_CALLBACK_TOKEN`).
+  The binding value is a
+  literal or `secret:NAME`, resolved with `core.ResolveSecretValue` on every
+  request; nothing is cached or logged by the bridge.
+- **Normalization.** The received uma message becomes a `NormalizedMessage`
+  with `platform` `sms`, `whatsapp` or `email`, the provider message id as `id`,
+  `messenger_name` set to the service id (routing keys on it), the sender
+  address as `sender.id` and the receiving number or phone-number id as
+  `channel.id`. Twilio WhatsApp ids keep their `whatsapp:` prefix, as the
+  native provider has them. Inbound media is copied to
+  `<media dir>/inbound/<message>/<n>` and listed as `file://` attachments.
+- **Reply.** The runtime's `DeliverMessage` calls `Messages.Reply` on the
+  turn's conversation with the turn's own operation id, so a repeated
+  delivery replays instead of sending twice. The receipt is `accepted` (uma
+  queued it); the engine's worker performs the send, and its
+  `outcome_unknown` handling (reconcile before any resend) is uma's.
+- **Errors.** The runtime's errors are final (it already retried delivery),
+  so the bot turn drops them after `Config.OnResult` has seen them. Only an
+  engine failure before the action ran is left to the bot's own retry.
+- **Seams the host wires.** `internal/adapters/messenger/uma_mount.go` builds
+  one Bridge per uma service and fills `Config`: `Router`/`Executor` are the
+  messenger adapter's own `MessageRouter` and `serviceRuntimeExecutor` (route
+  table or `default_action`, reply policy, chat mode, prior turns), `History`
+  the adapter's lazily opened conversation store (the same one the native
+  providers record to), `Hooks.OnDeliveryAttempt` and `OnResult` the service
+  bookkeeping (`last_inbound`/`last_outbound`, delivery attempts, failures to
+  the log), `MediaDir` `<data dir>/messenger/uma/<service-id>`. `Options` is
+  the test seam for provider origins (`messenger.WithUmaOptions`).
+- **Allowlists.** `allowed_numbers`, `allowed_senders`, `allowed_channels` are
+  aps's: the bridge runs the native `ServiceValidator.ValidateMessage` on the
+  normalized message, before media is copied out of the engine. A refusal is
+  dropped, not retried; uma has already answered the provider.
+
+### Webhook mount
+
+`Adapter.RegisterRoutes` registers `/services/{service}/webhook` for every
+method and dispatches in the handler:
+
+- POST, any service: unchanged checks (404 unknown, 400 wrong type or no
+  adapter), then the native handler. A uma service goes to
+  `Handler.umaWebhook` instead (`WithUmaWebhook`), which is
+  `umaMounts.serve`. A handler built without it answers `501` for a uma
+  service.
+- GET and every other method: a uma service is dispatched like a POST, so
+  the provider's own methods reach its receiver (WhatsApp Cloud's GET
+  subscription verification; the receiver answers `405` for what it does not
+  serve). Any other service gets the mux's own refusal, replicated exactly
+  (`405`, `Allow: POST`).
+
+`umaMounts.serve` passes the request to `Bridge.Webhook()` untouched, so the
+raw body, query and headers are what uma verifies; aps middleware that wraps
+the adapter mux (request id, recovery, optional bearer auth) sees it first and
+does not read the body. No aps signature check runs for a uma service: the
+native `ValidateRequest` path is not entered.
+
+- **Public URL.** uma verifies Twilio over `webhook_url` (mandatory, no query)
+  plus the request's own query; the host, scheme and `X-Forwarded-*` headers
+  the request carried are not consulted. The route's path is not part of the
+  signature either, so a proxy path rewrite is harmless as long as
+  `webhook_url` is the URL Twilio is configured with.
+- **Body limit.** uma bounds the body (1 MiB default, `413`) before the adapter
+  reads it; the native routes have no limit. The server's 15 s read and write
+  timeouts bound the rest.
+- **Lifecycle.** Services are loaded per request, like the native routes, so a
+  bridge is built on a service's first request and kept in `umaMounts`,
+  keyed by service id with a fingerprint of the provider-facing configuration
+  (type, adapter, profile, options, env bindings, delivery). A changed
+  fingerprint retires the bridge in the background and builds a new one;
+  `last_inbound`/`last_outbound` writes and routing, which is read per message,
+  are not part of it. A bridge that fails to build answers `503` (nothing about
+  the cause in the body) and is retried on the next request. `Adapter.Stop`
+  closes every bridge before the history store, waiting up to 10 s.
+- **Not recorded by the bridge.** An event refused by the allowlist or failed
+  before delivery leaves no service event, as on the native providers; the
+  log carries it.
+
+### Conversation history
+
+Decision: dual-write. aps history (`message_turns`, `<data-dir>/messages/conversations.db`)
+stays the only read model and is written from the aps runtime path, for a uma service exactly
+as for a native one. Read-through over uma `Messages.List` and a one-time import through uma's
+history capability are rejected; an event-fed projection waits for a durable uma store.
+Analysis, probes and rejected options: [uma-history-mapping.md](uma-history-mapping.md).
+
+- **Writers.** Router appends the inbound turn before the action runs (it reads `prior_turns`
+  first, so an action never sees its own message there). Runtime appends the outbound turn
+  once uma accepts the reply (`accepted`), under the answered provider message id.
+- **Keys.** `msgconv`/`msgsess` derive from the `NormalizedMessage`, never from uma. They
+  equal the native provider's for Twilio SMS, Twilio WhatsApp and WhatsApp Cloud, so a service
+  keeps its history only if it keeps its service id (`service add --type uma --force` over the
+  native service; `service add` says so). A new id starts a new history. No uma id is
+  persisted.
+- **WhatsApp Cloud replies.** `context.id` of a quoted message is the turn's `Thread`
+  (type `reply`), read from uma's `meta.whatsapp.inbound` message extension: a reply is its
+  own session, as on the native provider.
+- **Redelivery after a restart.** uma's de-duplication of provider events is in engine
+  memory and ends with the process, as does any bridge rebuilt on a configuration change; the
+  provider then redelivers an event and uma records it as new. `dedupExecutor` (in the bridge,
+  after normalization and allowlists, before the action) skips an event whose outbound turn
+  is already in history: status `duplicate`, no action, no reply, no turn, service events
+  untouched. Only an outbound turn counts, so an event whose action failed or sent no reply
+  runs again. History that cannot be read lets the message through, as the router does.
+  Window: a reply queued in uma's memory but not yet sent when the process dies has its turn
+  and is not retried.
+- **Reading.** `aps service conversation` opens the same SQLite file from its own process:
+  no engine involved, restart-safe.
+
+Open questions of the options doc, as decided:
+
+| # | Question | Answer | Source |
+| --- | --- | --- | --- |
+| 1 | Durable uma state (PostgreSQL)? | Not assumed. Memory store stays; event-fed projection deferred; history pre-check is the redelivery answer | conservative choice |
+| 2 | Outbound turn: queued or delivered? | Queued: written when uma accepts the reply. A later provider refusal leaves the turn; nothing revises it. Policy doc aligned | conservative choice |
+| 3 | Lose WhatsApp Cloud reply threads? | No: `context.id` mapped to `Thread` | conservative choice |
+| 4 | Converted service keeps history? | Yes, by reusing its service id; `service add --type uma` says so | doc default |
+| 5 | Double reply after restart acceptable? | No: pre-check ships with the mount | conservative choice |
+| 6 | Persist uma ids on turns? | No: no column, ids dangle after restart | doc default |
+| 7 | Where is the decision recorded? | This section; options doc and user guide reworded | doc default |
+
+Still open:
+
+- Delivered-not-queued outbound turns, edit/delete/redaction propagation, idempotent turns by
+  uma ref, and a unique index on turns need a durable uma store with a resumed subscription
+  (the event-fed projection). Until then a reply uma queued and the provider later refuses is
+  in history as sent.
+- The pre-check scans the newest 500 turns of the message's session; a redelivery older than
+  that window is answered again.
+- Privacy erasure in uma (`Privacy.Redact`) does not scrub aps history; an aps-side purge by
+  provider message id is not built.
+- WhatsApp Cloud sender display name: the bridge uses the address, the native path the profile
+  name (uma carries it as `profile_name` in the same extension).
+- Append order of two quick messages from one sender versus uma's recording order: unverified.
+
+Not done here: durable uma state across restarts (the store is in memory, so provider-event
+de-duplication also resets; history carries the redelivery guard above), retention for staged
+media, and retiring the native SMS and WhatsApp transports.
+
+### Generic relay and email relay
+
+`relay.messages` (generic SMS and WhatsApp relays) and `http.mail` (the email relay, receive
+only) are hosted by the same bridge. How aps's generic webhook auth flags map onto uma's
+`webhookauth`, where the callback host allowlist lives, what replay protection survives a
+restart, and why a bridged email service never replies:
+[uma-relay-mail-design.md](uma-relay-mail-design.md).
+
+- **Code.** Catalogue entries `relay.go` and `mail.go` in `internal/adapters/umabridge`; the
+  option mapping (`UmaWebhookAuthFor`) and validation in `internal/core/service_uma_webhook.go`,
+  so `service add` checks them without linking uma. The host settings (`uma.relay` in the global
+  configuration) reach the relay factory through `Config.Host`, loaded per webhook and part of
+  the mount's fingerprint.
+- **Client.** The relay gets an HTTP client that never follows a redirect; the provider
+  adapters keep the default.
+- **Replay.** Both factories get a `webhookauth.MemoryReplayStore`, which lives as long as the
+  bridge.
+- **Readiness.** A bearer, token or HMAC secret that resolves to nothing, or is shorter than
+  the service allows, stops the bridge from starting (`503`, cause in the log).
+- **Receive only.** `http.mail` replies are taken off by `receiveOnlyExecutor`: status
+  `reply_disabled`, a `warn` log line, no delivery and no outbound turn.
+
+### The uma dependency
+
+hop.top/uma is unreleased and its repository is private, so `go.mod` points
+at a sibling checkout with `replace` directives (one commented block at the
+end of `go.mod`, one line per uma module aps imports: the root, the mail,
+Meta and Twilio adapter modules, and the test helpers) and pins the matching
+pseudo-versions. The relative paths
+resolve from `hops/<group>/<name>` worktrees. Until uma is resolvable, a
+build from any other layout, CI, and any consumer fails. To drop the
+dependency, delete `internal/adapters/umabridge`, the `uma` alias and
+`internal/core/service_uma.go`, and the block in `go.mod`.
 
 ## Routing
 

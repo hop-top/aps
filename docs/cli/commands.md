@@ -37,7 +37,7 @@ aps [flags]
 ```
       --format string      Output format (csv, human, json, table, text, yaml) (default "table")
   -h, --help               help for aps
-      --help-all           Show all commands including management
+      --help-all           Show all commands and global flags
       --help-instance      Show only instance commands
       --help-interact      Show only interact commands
       --help-management    Show only management commands
@@ -48,7 +48,7 @@ aps [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -121,7 +121,7 @@ The a2a command group provides operations for:
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -158,7 +158,7 @@ Show local profile cards or fetch remote agent cards.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -201,7 +201,7 @@ aps a2a card fetch [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -238,7 +238,7 @@ aps a2a card show [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -283,7 +283,7 @@ aps a2a server [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -316,7 +316,7 @@ List, inspect, send, cancel, and subscribe to A2A tasks.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -360,7 +360,7 @@ aps a2a tasks cancel <task-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -399,7 +399,7 @@ aps a2a tasks list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -443,7 +443,7 @@ aps a2a tasks send [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -481,7 +481,7 @@ aps a2a tasks show <task-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -521,7 +521,7 @@ aps a2a tasks stream [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -563,7 +563,7 @@ aps a2a tasks subscribe <task-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -614,7 +614,7 @@ aps a2a toggle [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -652,7 +652,7 @@ The acp command group provides operations for:
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -697,7 +697,7 @@ aps acp server [profile] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -746,7 +746,7 @@ aps acp toggle [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -775,7 +775,7 @@ Manage and execute profile actions
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -825,7 +825,7 @@ aps action list [profile] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -876,7 +876,7 @@ aps action run [profile] [action] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -919,7 +919,7 @@ aps action show [profile] [action] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -963,7 +963,7 @@ of this tree.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1037,7 +1037,7 @@ aps adapter approve <device-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1082,7 +1082,7 @@ aps adapter attach <device-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1120,7 +1120,7 @@ aps adapter channels <messenger> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1178,7 +1178,7 @@ aps adapter create <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1222,7 +1222,7 @@ aps adapter detach <device-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1285,7 +1285,7 @@ aps adapter exec <adapter> <action> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1321,7 +1321,7 @@ and profile are the parties.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1384,7 +1384,7 @@ aps adapter link add <device> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1439,7 +1439,7 @@ aps adapter link delete <device> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1477,7 +1477,7 @@ aps adapter link list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1525,7 +1525,7 @@ aps adapter list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1573,7 +1573,7 @@ aps adapter logs <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1609,7 +1609,7 @@ pre-filtered for messenger-type devices.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1656,7 +1656,7 @@ aps adapter messenger channels <messenger> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1714,7 +1714,7 @@ aps adapter messenger create <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1750,7 +1750,7 @@ and profile are the parties.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1813,7 +1813,7 @@ aps adapter messenger link add <device> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1868,7 +1868,7 @@ aps adapter messenger link delete <device> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1906,7 +1906,7 @@ aps adapter messenger link list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -1954,7 +1954,7 @@ aps adapter messenger list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2002,7 +2002,7 @@ aps adapter messenger logs <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2059,7 +2059,7 @@ aps adapter messenger start <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2107,7 +2107,7 @@ aps adapter messenger status <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2163,7 +2163,7 @@ aps adapter messenger stop <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2205,7 +2205,7 @@ aps adapter messenger test <messenger> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2255,7 +2255,7 @@ aps adapter pair [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2306,7 +2306,7 @@ aps adapter pending [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2343,7 +2343,7 @@ aps adapter status / show.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2398,7 +2398,7 @@ aps adapter permissions set <device-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2438,7 +2438,7 @@ aps adapter presence [workspace-id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2488,7 +2488,7 @@ aps adapter reject <device-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2531,7 +2531,7 @@ aps adapter revoke [device-id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2588,7 +2588,7 @@ aps adapter start <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2636,7 +2636,7 @@ aps adapter status <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2692,7 +2692,7 @@ aps adapter stop <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2734,7 +2734,7 @@ aps adapter test <messenger> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2780,7 +2780,7 @@ aps alias [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2821,7 +2821,7 @@ aps alias add <name> <target...> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2858,7 +2858,7 @@ aps alias delete <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2895,7 +2895,7 @@ aps alias list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2936,7 +2936,7 @@ aps alias shell [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -2965,7 +2965,7 @@ Manage capability bundles
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3020,7 +3020,7 @@ aps bundle create <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3069,7 +3069,7 @@ aps bundle delete <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3119,7 +3119,7 @@ aps bundle edit <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3169,7 +3169,7 @@ aps bundle list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3215,7 +3215,7 @@ aps bundle show <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3262,7 +3262,7 @@ aps bundle validate <file> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3291,7 +3291,7 @@ Manage capabilities (tools, configs, dotfiles)
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3351,7 +3351,7 @@ aps capability adopt <path> --name <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3400,7 +3400,7 @@ aps capability delete <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3449,7 +3449,7 @@ aps capability disable <profile> <capability> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3497,7 +3497,7 @@ aps capability enable <profile> <capability> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3546,7 +3546,7 @@ aps capability install <source> --name <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3595,7 +3595,7 @@ aps capability link <name> [--target <path>] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3647,7 +3647,7 @@ aps capability list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3676,7 +3676,7 @@ Smart patterns + builtin capabilities
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3721,7 +3721,7 @@ aps capability patterns list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3765,7 +3765,7 @@ aps capability show <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3816,7 +3816,7 @@ aps capability watch <path> --name <name> | --tool <tool> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3887,7 +3887,7 @@ aps chat <profile-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3945,7 +3945,7 @@ aps completion [bash|zsh|fish|powershell]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -3974,7 +3974,7 @@ Inspect aps configuration
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4019,7 +4019,7 @@ aps config path [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4064,7 +4064,7 @@ aps config paths [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4100,7 +4100,7 @@ Dispatches to the configured contacts adapter backend
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4158,7 +4158,7 @@ aps contact add <email> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4204,7 +4204,7 @@ aps contact delete <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4247,7 +4247,7 @@ aps contact find <query> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4300,7 +4300,7 @@ aps contact list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4344,7 +4344,7 @@ aps contact note <id> <text> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4387,7 +4387,7 @@ aps contact show <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4438,7 +4438,7 @@ aps contact update <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4474,7 +4474,7 @@ discover agents by capability, and manage directory records.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4519,7 +4519,7 @@ aps directory delete [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4563,7 +4563,7 @@ aps directory discover [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4606,7 +4606,7 @@ aps directory register [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4646,7 +4646,7 @@ aps directory show [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4694,7 +4694,7 @@ aps docs [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4732,7 +4732,7 @@ aps env [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4768,7 +4768,7 @@ badges (Verifiable Credentials) to attest agent capabilities.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4805,7 +4805,7 @@ Issue and verify agent badges (Verifiable Credentials) for capability attestatio
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4848,7 +4848,7 @@ aps identity badge issue [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4888,7 +4888,7 @@ aps identity badge verify <badge-file> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4935,7 +4935,7 @@ aps identity init [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -4975,7 +4975,7 @@ aps identity show [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5015,7 +5015,7 @@ aps identity verify <did> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5063,7 +5063,7 @@ aps listen [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5092,7 +5092,7 @@ Migrate legacy configurations to new formats
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5139,7 +5139,7 @@ aps migrate messengers [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5175,7 +5175,7 @@ Supports OTLP (gRPC) and stdout exporters.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5227,7 +5227,7 @@ aps observability toggle [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5256,7 +5256,7 @@ Inspect the reporting hierarchy across profiles
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5307,7 +5307,7 @@ aps org check [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5360,7 +5360,7 @@ aps org show <profile-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5423,7 +5423,7 @@ aps org snapshot [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5462,7 +5462,7 @@ they can do. Modes:
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5510,7 +5510,7 @@ aps policy list <workspace-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5565,7 +5565,7 @@ aps policy set [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5607,7 +5607,7 @@ aps policy show [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5640,7 +5640,7 @@ Configure trust verification for inbound A2A requests using DID-based identity.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5690,7 +5690,7 @@ aps policy trust set [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5730,7 +5730,7 @@ aps policy trust show [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5763,7 +5763,7 @@ Create, list, and inspect agent profiles.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5804,7 +5804,7 @@ Manage capabilities on a profile
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5852,7 +5852,7 @@ aps profile capability add <profile> <capability> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5897,7 +5897,7 @@ aps profile capability remove <profile> <capability> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -5970,7 +5970,7 @@ aps profile create [id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6021,7 +6021,7 @@ aps profile delete <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6083,7 +6083,7 @@ aps profile edit [id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6134,7 +6134,7 @@ aps profile export <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6206,7 +6206,7 @@ aps profile import [bundle|AGENTS.md] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6262,7 +6262,7 @@ aps profile list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6311,7 +6311,7 @@ aps profile share [id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6356,7 +6356,7 @@ aps profile show [id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6404,7 +6404,7 @@ aps profile status [id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6456,7 +6456,7 @@ aps profile trust <profile-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6485,7 +6485,7 @@ Manage workspace link for a profile
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6524,7 +6524,7 @@ aps profile workspace set <profile-id> <workspace-name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6577,7 +6577,7 @@ aps run [profile] -- [command] [args...] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6617,7 +6617,7 @@ aps serve [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6646,7 +6646,7 @@ Manage profile-facing services
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6675,6 +6675,12 @@ Add a profile-facing service.
 
 The --type flag accepts canonical service types and adapter aliases. Adapter
 aliases are resolved through kit aliasing before APS persists the service.
+
+--type uma opts a message service into provider I/O hosted by an in-process
+uma engine instead of the aps-native provider; pick the provider with
+--uma-adapter. A flag the uma bridge ignores (--template-name, for one) is
+accepted and warned about on stderr, once per flag; the service is still added.
+--format json, --format yaml and --quiet silence the warning.
 
 ```
 aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-id> [flags]
@@ -6722,6 +6728,7 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
       --template-name string              WhatsApp template name for business-initiated replies
       --template-required                 Require WhatsApp outbound delivery to use a template
       --type string                       Service type or adapter alias
+      --uma-adapter string                uma service adapter: http.mail, meta.whatsapp, relay.messages, twilio.sms, twilio.whatsapp
       --verify-token string               WhatsApp Cloud webhook verification token
       --verify-token-env string           Environment variable holding WhatsApp Cloud verification token
       --webhook-secret-token string       Telegram webhook secret token
@@ -6737,7 +6744,7 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6775,7 +6782,7 @@ action runs as prior_turns.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6824,7 +6831,7 @@ aps service conversation list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6870,7 +6877,7 @@ aps service conversation show <conversation-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6913,7 +6920,7 @@ aps service routes <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -6959,7 +6966,7 @@ aps service show <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7003,7 +7010,7 @@ aps service start <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7049,7 +7056,7 @@ aps service status <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7093,7 +7100,7 @@ aps service stop <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7151,7 +7158,7 @@ aps service test <service-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7180,7 +7187,7 @@ Manage sessions
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7244,7 +7251,7 @@ aps session attach <session-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7301,7 +7308,7 @@ aps session delete <session-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7352,7 +7359,7 @@ aps session detach [session-id] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7402,7 +7409,7 @@ aps session inspect <session-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7453,7 +7460,7 @@ aps session list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7511,7 +7518,7 @@ aps session logs <session-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7569,7 +7576,7 @@ aps session terminate <session-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7602,7 +7609,7 @@ Manage Agent Skills - discover, install, run, and configure skills for your prof
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7647,7 +7654,7 @@ aps skill install <path> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7685,7 +7692,7 @@ aps skill list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7722,7 +7729,7 @@ aps skill run <skill-name> -- <script> [args...] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7767,7 +7774,7 @@ aps skill show <skill-name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7813,7 +7820,7 @@ aps skill stats [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7850,7 +7857,7 @@ aps skill suggest [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7887,7 +7894,7 @@ aps skill validate <path> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7916,7 +7923,7 @@ Manage agent squads (topology, membership, scope)
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -7969,7 +7976,7 @@ aps squad check [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8023,7 +8030,7 @@ aps squad create <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8070,7 +8077,7 @@ aps squad delete <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8118,7 +8125,7 @@ aps squad list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8147,7 +8154,7 @@ Manage squad membership
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8198,7 +8205,7 @@ aps squad members add <squad-id> <profile-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8246,7 +8253,7 @@ aps squad members remove <squad-id> <profile-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8289,7 +8296,7 @@ aps squad show <id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8333,7 +8340,7 @@ aps status [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8373,7 +8380,7 @@ aps toolspec [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8411,7 +8418,7 @@ aps upgrade [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8453,7 +8460,7 @@ aps upgrade preamble [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8491,7 +8498,7 @@ aps version [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8520,7 +8527,7 @@ Manage voice sessions and the voice backend service
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8551,7 +8558,7 @@ Control the voice backend service
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8601,7 +8608,7 @@ aps voice service start [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8642,7 +8649,7 @@ aps voice service status [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8686,7 +8693,7 @@ aps voice service stop [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8734,7 +8741,7 @@ aps voice start [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8772,7 +8779,7 @@ The webhook command group provides operations for:
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8826,7 +8833,7 @@ aps webhook server [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8872,7 +8879,7 @@ aps webhook toggle [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8912,7 +8919,7 @@ workspace to avoid repeating its name:
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -8980,7 +8987,7 @@ aps workspace activity <workspace-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9023,7 +9030,7 @@ aps workspace agents [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9064,7 +9071,7 @@ aps workspace archive [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9111,7 +9118,7 @@ aps workspace audit [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9152,7 +9159,7 @@ aps workspace caps [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9189,7 +9196,7 @@ commands to list, inspect, and resolve them.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9237,7 +9244,7 @@ aps workspace conflicts list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9284,7 +9291,7 @@ aps workspace conflicts resolve <conflict-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9322,7 +9329,7 @@ aps workspace conflicts show <conflict-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9366,7 +9373,7 @@ aps workspace create <name> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9402,7 +9409,7 @@ Changes are tracked with version history and ACL enforcement.
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9462,7 +9469,7 @@ aps workspace ctx delete <key> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9511,7 +9518,7 @@ aps workspace ctx get <key> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9560,7 +9567,7 @@ aps workspace ctx history <key> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9602,7 +9609,7 @@ aps workspace ctx list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9647,7 +9654,7 @@ aps workspace ctx set <key> <value> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9688,7 +9695,7 @@ aps workspace join <workspace> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9730,7 +9737,7 @@ aps workspace leave [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9771,7 +9778,7 @@ aps workspace list [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9809,7 +9816,7 @@ aps workspace members [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9862,7 +9869,7 @@ aps workspace policy [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9903,7 +9910,7 @@ aps workspace remove <agent> [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9946,7 +9953,7 @@ aps workspace role <agent> [role] [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -9995,7 +10002,7 @@ aps workspace send <recipient> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -10033,7 +10040,7 @@ aps workspace show [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -10079,7 +10086,7 @@ aps workspace sync <workspace-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -10117,7 +10124,7 @@ aps workspace task <task-id> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -10158,7 +10165,7 @@ aps workspace tasks [workspace] [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
@@ -10199,7 +10206,7 @@ aps workspace use <workspace> [flags]
       --no-color           Disable ANSI color
       --no-hints           Suppress next-step hints after command output
       --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline string     disable all network calls
+      --offline            Disable network access
   -p, --profile string     profile id (defaults to active profile)
       --quiet              Suppress non-essential output
   -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)

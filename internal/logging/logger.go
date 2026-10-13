@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"os"
 
@@ -20,6 +21,12 @@ func NewLogger() *Logger {
 	return &Logger{
 		logger: log.New(os.Stderr),
 	}
+}
+
+// NewLoggerTo creates a structured logger writing to w, for a caller that
+// keeps the lines (tests read them back).
+func NewLoggerTo(w io.Writer) *Logger {
+	return &Logger{logger: log.New(w)}
 }
 
 // Error logs an error with context
