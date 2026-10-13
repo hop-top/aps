@@ -196,14 +196,15 @@ func (m *umaMounts) close() {
 }
 
 // umaFingerprint identifies the part of a service a bridge is built from.
-// Event bookkeeping the runtime writes back to the service (last inbound and
-// outbound) and routing, which is resolved per message, are not part of it.
+// What the runtime writes back to the service after each message (last
+// inbound and outbound, delivery status and attempts) and routing, which is
+// resolved per message, are not part of it: a rebuild would drop the
+// engine's memory, its event de-duplication included, after every reply.
 func umaFingerprint(service *core.ServiceConfig) string {
 	view := struct {
 		Type, Adapter, Profile string
 		Env, Options           map[string]string
-		Delivery               *core.ServiceDelivery
-	}{service.Type, service.Adapter, service.Profile, service.Env, service.Options, service.Delivery}
+	}{service.Type, service.Adapter, service.Profile, service.Env, service.Options}
 	data, _ := json.Marshal(view)
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
