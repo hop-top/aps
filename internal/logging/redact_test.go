@@ -365,6 +365,25 @@ func TestApply_RedactsLookalikeEmailDomains(t *testing.T) {
 	}
 }
 
+// TestApply_RedactsCredentialsEmbeddingFixtureKey guards the
+// fixture-credential pass-through: a live value that merely starts or
+// ends with the published AWS documentation key must still redact.
+func TestApply_RedactsCredentialsEmbeddingFixtureKey(t *testing.T) {
+	resetForTest()
+	tests := []struct{ name, in, secret string }{
+		{"suffixed", "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLEq9Zk3Lm2Xv7", "AKIAIOSFODNN7EXAMPLEq9Zk3Lm2Xv7"},
+		{"prefixed", "AWS_ACCESS_KEY_ID=q9Zk3Lm2Xv7AKIAIOSFODNN7EXAMPLE", "q9Zk3Lm2Xv7AKIAIOSFODNN7EXAMPLE"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out := Apply(tc.in)
+			if strings.Contains(out, tc.secret) {
+				t.Fatalf("embedding credential survived: %q", out)
+			}
+		})
+	}
+}
+
 // TestApply_LeavesNonSecretLookalikesIntact is the negative control
 // for the added rules: ordinary prose and version strings that share
 // a prefix with a credential must not be mangled. Guards against the

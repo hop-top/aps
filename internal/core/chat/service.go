@@ -208,11 +208,11 @@ func (s *Service) request(turns []Turn) llm.Request {
 	}
 	req := llm.Request{Messages: messages, Model: s.model, MaxTokens: s.maxTokens}
 	if s.temperature != nil {
-		// kit providers treat temperature 0 as "use provider default"
-		// (anthropic/google gate on >0, openai on !=0), so an explicit
-		// 0 here reaches the provider default rather than a literal 0
-		// on the wire. That is a kit transport contract, not ours.
-		req.Temperature = *s.temperature
+		// kit's Request.Temperature is a pointer: an explicit 0 is
+		// sent as a literal 0, unset falls back to the provider
+		// default. Copy so the request never aliases service state.
+		t := *s.temperature
+		req.Temperature = &t
 	}
 	// Forward contract: kit providers currently ignore unknown
 	// Extensions keys, but "reasoning_effort" and "verbosity" are the
