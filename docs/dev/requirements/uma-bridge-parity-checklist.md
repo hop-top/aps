@@ -17,8 +17,11 @@ since the merge of 2026-10-13 (see State as of).
 | aps | this repository, `internal/` | `ae9e407` (uma bridge tip `296ea84` plus this checklist); aps cites not re-read since |
 | uma | `hop-top/uma`, branch `integration/unmerged` | `1afff92` = `main` `650e527` plus 57 commits, for every row except G1, E1b, E4 |
 | uma, re-read | `hop-top/uma`, branch `main`, read only | `02ae8cb` (merged 2026-10-13), tree `a44af92` = `integration/unmerged` `d4d3542`; used for G1, E1b, E4 |
-| aps build | `go.mod` uma replace block | sibling checkout of uma `main`, pinned at `02ae8cb`. The bridge hosts five adapters: the Twilio pair, `meta.whatsapp`, and since 2026-10-13 `relay.messages` and `http.mail` |
+| aps build | untracked `go.work` (since 2026-10-14) | uma checkout, builds against `main` `f52fb50`; hosts the Twilio pair, `meta.whatsapp`, `relay.messages`, `http.mail` |
 | Previous grade | aps `599cd6f`, uma `main` `650e527` | 28 GREEN, 11 RED |
+
+uma history was reset on 2026-10-13: uma SHAs cited before that date resolve through the
+local tag `pre-squash-backup-20261013`.
 
 Read dates: 2026-10-13. Every cite below was read, not recalled. Nothing in the
 uma repo was changed. G1, E1b and E4 were re-read on uma `main` the same day.
@@ -159,12 +162,12 @@ Verified 2026-10-13.
   `hop.top/uma/adapter/messaging/twilio` and `.../meta` return the site page
   with no `go-import` tag. A tagged public release still would not resolve the
   adapter submodules until the server answers subpaths.
-- aps imports uma through a local replace block (`go.mod:178-196`) pinned to a
-  sibling checkout of `main`. A build outside the hub layout fails.
+- aps does not name uma in `go.mod`; an untracked `go.work` supplies it from
+  a uma checkout. A build without that `go.work` fails.
 - aps needs four uma modules (`hop.top/uma`, which holds `relay.messages` and
   `webhookauth`, `hop.top/uma/adapter/mail` for `http.mail`,
   `hop.top/uma/adapter/messaging/twilio`, `.../meta`), plus the test helper
-  module. Each has a line in the replace block.
+  module. Each has a `use` line in the `go.work`.
 
 Owner prerequisites: merge the integration work into uma `main` (done
 2026-10-13, `02ae8cb`); tag each module aps imports; make the repository public

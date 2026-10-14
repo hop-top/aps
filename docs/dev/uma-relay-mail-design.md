@@ -234,6 +234,6 @@ Keys follow the history decision: derived from the `NormalizedMessage`, equal to
 
 ## Dependency
 
-`relay` and `webhookauth` are in the root module, already replaced. `httpmail` is in module
-`hop.top/uma/adapter/mail`, which joins the replace block. Every uma pin moves to the checkout's
-commit, `02ae8cb`.
+`relay` and `webhookauth` are in the root module. `httpmail` is in module
+`hop.top/uma/adapter/mail`. Since 2026-10-14 uma comes from an untracked `go.work`, not from
+`replace` lines and pins in `go.mod`; see the dependency section of the messenger architecture.

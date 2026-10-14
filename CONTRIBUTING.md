@@ -96,9 +96,25 @@ is the norm.
 Be respectful and constructive. We are all here to build
 something great together.
 
-**Current exception**: `hop.top/uma` (unreleased, private repository) is
-wired to a sibling checkout by one commented `replace` block at the end of
-`go.mod`, for the uma bridge in `internal/adapters/umabridge`. Until uma is
-resolvable, builds outside the `hops/<group>/<name>` layout, CI, and
-consumers fail. Remove the block as soon as uma publishes a version; add no
-other `replace`.
+**Unreleased uma**: `hop.top/uma` (unreleased, private repository) is not
+in `go.mod` at all. The uma bridge in `internal/adapters/umabridge` builds
+only with an untracked `go.work` that uses a uma checkout:
+
+```text
+go 1.26.6
+
+use (
+	.
+	<uma checkout>
+	<uma checkout>/adapter/mail
+	<uma checkout>/adapter/messaging/meta
+	<uma checkout>/adapter/messaging/twilio
+	<uma checkout>/testing/xrrtest
+)
+```
+
+Do not add `require` lines for uma modules while it is supplied this way: a
+requirement on the nested module `hop.top/uma/adapter/mail` makes workspace
+mode look it up remotely, and the lookup fails. Without the `go.work`, CI
+and consumers cannot build the bridge. Once uma publishes a version, a
+plain `require` replaces the `go.work`.

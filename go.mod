@@ -177,24 +177,8 @@ require (
 	modernc.org/sqlite v1.60.1 // indirect
 )
 
-// uma (hop.top/uma): unreleased and private, so it is wired to a sibling
-// checkout instead of a published version. Everything that imports it lives in
-// internal/adapters/umabridge; dropping this block and that package removes the
-// dependency. The paths are relative to this worktree (hops/<group>/<name>)
-// and the versions pin the pseudo-version of the checkout's commit 02ae8cb.
-// Until uma is resolvable, a build outside that layout fails.
-require (
-	hop.top/uma v0.0.0-20261013084651-02ae8cb0dfcf
-	hop.top/uma/adapter/mail v0.0.0-20261013084651-02ae8cb0dfcf
-	hop.top/uma/adapter/messaging/meta v0.0.0-20261013084651-02ae8cb0dfcf
-	hop.top/uma/adapter/messaging/twilio v0.0.0-20261013084651-02ae8cb0dfcf
-	hop.top/uma/testing/xrrtest v0.0.0-20261013084651-02ae8cb0dfcf // indirect
-)
-
-replace (
-	hop.top/uma => ../../../../uma/hops/main
-	hop.top/uma/adapter/mail => ../../../../uma/hops/main/adapter/mail
-	hop.top/uma/adapter/messaging/meta => ../../../../uma/hops/main/adapter/messaging/meta
-	hop.top/uma/adapter/messaging/twilio => ../../../../uma/hops/main/adapter/messaging/twilio
-	hop.top/uma/testing/xrrtest => ../../../../uma/hops/main/testing/xrrtest
-)
+// uma (hop.top/uma) is unreleased and private, so it is not required here:
+// a local, untracked go.work supplies it from a uma checkout (see
+// CONTRIBUTING.md). Everything that imports it lives in
+// internal/adapters/umabridge. Without that go.work, packages importing uma do
+// not build; once uma is published, a plain require replaces the go.work.
