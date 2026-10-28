@@ -15,7 +15,7 @@ containers, no background services required for the base install.
 
 ### 1. Go
 
-APS builds from source with Go **1.26.1 or later** (matches the
+APS builds from source with Go **1.27.3 or later** (matches the
 project's `go.mod`).
 
 - [Download and install Go](https://go.dev/doc/install)
@@ -165,7 +165,7 @@ Put that in `~/.zshrc` or `~/.bashrc` to make it permanent.
 
 ### `go install` fails with module errors
 
-Make sure Go is **1.26.1 or later**. Older versions will fail on
+Make sure Go is **1.27.3 or later**. Older versions will fail on
 APS's generics and toolchain pins.
 
 ```bash
