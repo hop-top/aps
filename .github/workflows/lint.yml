@@ -31,6 +31,6 @@ jobs:
         with:
           # Pinned in lockstep with mise.toml so local + CI agree
           # on enabled linters and formatter rules.
-          version: v2.12.2
+          version: v2.14.0
           args: --timeout=5m ./...
           only-new-issues: true

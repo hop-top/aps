@@ -282,7 +282,7 @@ Auth: `Authorization: Bearer <token>` if `--auth-token` set.
 
 ### CI (`.github/workflows/`)
 
-`build.yml` (govulncheck + Go 1.26), `ci.yml` (multi-OS test matrix), `coverage.yml` (codecov), `lint.yml` (golangci-lint), `platform-adapter-tests.yml`, `release.yml` (goreleaser on `v*` tags), `security.yml` (gosec weekly), `docker-user-journey.yml` (E2E in Docker).
+`build.yml` (govulncheck + Go 1.27), `ci.yml` (multi-OS test matrix), `coverage.yml` (codecov), `lint.yml` (golangci-lint), `platform-adapter-tests.yml`, `release.yml` (goreleaser on `v*` tags), `security.yml` (gosec weekly), `docker-user-journey.yml` (E2E in Docker).
 
 ### Code stats
 
