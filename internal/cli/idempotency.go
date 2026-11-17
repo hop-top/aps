@@ -10,6 +10,7 @@ import (
 
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/cli/idemstore"
+	idemsqlite "hop.top/kit/go/console/cli/idemstore/sqlite"
 )
 
 // idemstoreFileName is the on-disk filename for the sqlite-backed
@@ -55,7 +56,7 @@ func newIdempotencyStore(cfg *core.Config) (idemstore.Store, string, error) {
 			path = filepath.Join(stateDir, idemstoreFileName)
 		}
 		ttl := parseIdempotencyTTL(cfg)
-		s, err := idemstore.OpenSQLite(path, ttl)
+		s, err := idemsqlite.Open(path, ttl)
 		if err != nil {
 			return nil, path, fmt.Errorf("idempotency: open sqlite store: %w", err)
 		}
@@ -66,7 +67,7 @@ func newIdempotencyStore(cfg *core.Config) (idemstore.Store, string, error) {
 	}
 }
 
-// parseIdempotencyTTL returns the parsed TTL or 0 (which OpenSQLite
+// parseIdempotencyTTL returns the parsed TTL or 0 (which sqlite.Open
 // interprets as idemstore.DefaultTTL).
 func parseIdempotencyTTL(cfg *core.Config) time.Duration {
 	if cfg == nil || cfg.Idempotency.TTL == "" {
