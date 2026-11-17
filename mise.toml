@@ -3,11 +3,11 @@
 # Docs: https://mise.jdx.dev
 
 [tools]
-go = "1.26.6"
+go = "1.27.4"
 goreleaser = "latest"
 # Pin minor version so local + CI agree on enabled linters and
 # formatter rules. Bump in lockstep with .github/workflows/lint.yml.
-golangci-lint = "2.12.2"
+golangci-lint = "2.15.0"
 act = "latest"
 # Pinned exactly: this is the single source of truth for the lychee
 # version — CI installs it from here via jdx/mise-action (lint.yml).

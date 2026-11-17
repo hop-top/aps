@@ -101,7 +101,7 @@ in `go.mod` at all. The uma bridge in `internal/adapters/umabridge` builds
 only with an untracked `go.work` that uses a uma checkout:
 
 ```text
-go 1.26.6
+go 1.27.4
 
 use (
 	.

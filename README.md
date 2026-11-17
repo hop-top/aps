@@ -87,7 +87,7 @@ shell as that profile, and `aps` with no arguments opens the interactive TUI.
 
 ## Install
 
-Prebuilt binaries need nothing else. Building from source or `go install` needs Go 1.26.6
+Prebuilt binaries need nothing else. Building from source or `go install` needs Go 1.27.4
 or later. Platform and container isolation have their own requirements, listed in
 [docs/user/isolation.md](docs/user/isolation.md).
 
@@ -421,7 +421,7 @@ on the aps codebase itself.
 |---|---|---|
 | `warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled` on every command | No event-bus token in the environment | Set `APS_BUS_TOKEN` to enable the bus (`aps listen`, event publishing), or `APS_NO_BUS_WARN=1` to silence the warning |
 | `aps: command not found` after `go install` | `$(go env GOPATH)/bin` is not on `PATH` | Add it in your shell profile |
-| `go install` fails with module or toolchain errors | Go older than 1.26.6 | Upgrade Go |
+| `go install` fails with module or toolchain errors | Go older than 1.27.4 | Upgrade Go |
 | Profiles from an older install are missing | Data moved from `~/.agents/profiles` to `~/.local/share/aps/profiles` | Copy the profile directories over, or `export APS_DATA_PATH="$HOME/.agents"` |
 | `GENERIC: missing '--' separator` | `aps run` needs `--` between the profile and the command | `aps run reviewer -- git status` |
 | `aps voice start` reports the backend unreachable | The voice backend daemon is not running | Run `aps voice service start` first |
