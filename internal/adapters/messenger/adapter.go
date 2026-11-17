@@ -37,6 +37,7 @@ var _ protocol.ProtocolServer = (*Adapter)(nil)
 var _ protocol.HTTPProtocolAdapter = (*Adapter)(nil)
 var _ ext.Extension = (*Adapter)(nil)
 
+// NewAdapter returns a stopped Adapter configured by opts.
 func NewAdapter(opts ...AdapterOption) *Adapter {
 	a := &Adapter{status: "stopped"}
 	for _, opt := range opts {
@@ -71,6 +72,7 @@ func (a *Adapter) Name() string {
 	return "messenger"
 }
 
+// Start marks the adapter running.
 func (a *Adapter) Start(ctx context.Context, config interface{}) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -78,6 +80,7 @@ func (a *Adapter) Start(ctx context.Context, config interface{}) error {
 	return nil
 }
 
+// Stop stops the adapter and closes its uma mounts.
 func (a *Adapter) Stop() error {
 	a.mu.Lock()
 	uma := a.uma

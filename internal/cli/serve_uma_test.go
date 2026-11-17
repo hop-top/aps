@@ -139,10 +139,10 @@ func signMetaBody(secret string, body []byte) string {
 	return "sha256=" + hex.EncodeToString(m.Sum(nil))
 }
 
-func smsForm(sid, from, body string) url.Values {
+func smsForm(sid, body string) url.Values {
 	return url.Values{
 		"MessageSid": {sid}, "SmsSid": {sid}, "AccountSid": {serveAccount}, "SmsStatus": {"received"},
-		"From": {from}, "To": {serveNumber}, "Body": {body}, "NumMedia": {"0"}, "NumSegments": {"1"},
+		"From": {serveSender}, "To": {serveNumber}, "Body": {body}, "NumMedia": {"0"}, "NumSegments": {"1"},
 		"ApiVersion": {"2010-04-01"},
 	}
 }
@@ -232,7 +232,7 @@ func TestServeUma_TwilioSMS_KeepsThePublicWebhookURL(t *testing.T) {
 	path := core.ServiceWebhookPath(&core.ServiceConfig{ID: "sms-uma", Type: "message"})
 	require.Equal(t, "/services/sms-uma/webhook", path)
 
-	form := smsForm("SM10000000000000000000000000000001", serveSender, "where is my order")
+	form := smsForm("SM10000000000000000000000000000001", "where is my order")
 	status, body, header := doServe(t, http.MethodPost, srv.URL+path, []byte(form.Encode()), map[string]string{
 		"Content-Type":       "application/x-www-form-urlencoded",
 		"X-Twilio-Signature": signTwilioForm(serveToken, servePublic, form),
@@ -256,7 +256,7 @@ func TestServeUma_TwilioSMS_KeepsThePublicWebhookURL(t *testing.T) {
 func TestServeUma_TwilioSMS_BadSignatureIsRefusedAndNothingRuns(t *testing.T) {
 	srv, twilio, _ := newUmaServer(t, "")
 	saveUmaSMS(t)
-	form := smsForm("SM10000000000000000000000000000002", serveSender, "hi")
+	form := smsForm("SM10000000000000000000000000000002", "hi")
 	post := func(sig string) int {
 		status, _, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(form.Encode()), map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded", "X-Twilio-Signature": sig,
@@ -268,7 +268,7 @@ func TestServeUma_TwilioSMS_BadSignatureIsRefusedAndNothingRuns(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, post(signTwilioForm(serveToken, "https://evil.example.com/twilio/sms", form)))
 
 	// A signed message afterwards is the only one answered.
-	good := smsForm("SM10000000000000000000000000000003", serveSender, "later")
+	good := smsForm("SM10000000000000000000000000000003", "later")
 	status, _, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(good.Encode()), map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded", "X-Twilio-Signature": signTwilioForm(serveToken, servePublic, good),
 	})
@@ -280,7 +280,7 @@ func TestServeUma_TwilioSMS_BadSignatureIsRefusedAndNothingRuns(t *testing.T) {
 func TestServeUma_TwilioSMS_OversizedBodyIsRefusedBeforeVerification(t *testing.T) {
 	srv, twilio, _ := newUmaServer(t, "")
 	saveUmaSMS(t)
-	form := smsForm("SM10000000000000000000000000000004", serveSender, strings.Repeat("a", 2<<20))
+	form := smsForm("SM10000000000000000000000000000004", strings.Repeat("a", 2<<20))
 
 	status, _, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(form.Encode()), map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded", "X-Twilio-Signature": signTwilioForm(serveToken, servePublic, form),
@@ -359,7 +359,7 @@ func TestServeUma_NativeServicesKeepTheirRoutes(t *testing.T) {
 func TestServeUma_AuthTokenGatesTheWebhookLikeEveryAdapterRoute(t *testing.T) {
 	srv, twilio, _ := newUmaServer(t, "operator-token")
 	saveUmaSMS(t)
-	form := smsForm("SM10000000000000000000000000000005", serveSender, "hi")
+	form := smsForm("SM10000000000000000000000000000005", "hi")
 	status, _, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(form.Encode()), map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded", "X-Twilio-Signature": signTwilioForm(serveToken, servePublic, form),
 	})
@@ -393,7 +393,7 @@ func runConversationQuery(t *testing.T, args ...string) []map[string]any {
 func TestServeUma_TwilioSMS_ConversationQueryShowsTheExchange(t *testing.T) {
 	srv, twilio, _ := newUmaServer(t, "")
 	saveUmaSMS(t)
-	form := smsForm("SM10000000000000000000000000000003", serveSender, "where is my order")
+	form := smsForm("SM10000000000000000000000000000003", "where is my order")
 	status, body, _ := doServe(t, http.MethodPost, srv.URL+"/services/sms-uma/webhook", []byte(form.Encode()), map[string]string{
 		"Content-Type":       "application/x-www-form-urlencoded",
 		"X-Twilio-Signature": signTwilioForm(serveToken, servePublic, form),

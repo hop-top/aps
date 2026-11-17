@@ -17,8 +17,6 @@ import (
 // gateway in the field keeps its payload. WaId is left out: it is the
 // sender's number, and as a message id it would make every later message of
 // that sender a duplicate under uma, whose event id binds sender and id.
-//
-//nolint:goconst // the native relay's names, listed once
 var relayFields = relay.Fields{
 	From:      []string{"From", "from"},
 	To:        []string{"To", "to"},

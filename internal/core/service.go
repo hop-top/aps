@@ -539,7 +539,7 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 				replyMode = value
 			}
 		}
-		executes := "normalized message execution handoff"
+		executes := handoffNormalized
 		routing := OptionDefaultAction
 		if HasRouteTable(service) {
 			executes = "sender route table -> profile action"
@@ -555,14 +555,14 @@ func DescribeServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 				Runtime:     "message-provider",
 				Provider:    provider,
 				Ingress:     "native provider " + receiveMode + " ingress",
-				Handoff:     "normalized message execution handoff",
+				Handoff:     handoffNormalized,
 				Delivery:    "provider delivery interface",
 				Retry:       "provider delivery retry policy max_attempts=3 base_delay=1s max_delay=30s",
 				Routing:     routing,
-				ErrorHooks:  []string{"ingress", "normalize", "route", "execute", "deliver", "retry"},
+				ErrorHooks:  []string{hookIngress, hookNormalize, hookRoute, hookExecute, hookDeliver, hookRetry},
 				ReceiveMode: receiveMode,
 				DeliveryModes: []string{
-					"text",
+					probeWhatsAppTextType,
 					"reaction",
 					"file",
 				},
@@ -1003,7 +1003,7 @@ func describeTicketServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 			Ingress:     "HTTP POST " + route,
 			Handoff:     "normalized ticket on action stdin",
 			Routing:     routing,
-			ErrorHooks:  []string{"auth", "normalize", "route", "execute"},
+			ErrorHooks:  []string{hookAuth, hookNormalize, hookRoute, hookExecute},
 			ReceiveMode: "webhook",
 		},
 	}

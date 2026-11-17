@@ -22,7 +22,7 @@ var _ ports.BlobStore = fileBlobs{}
 
 func (b fileBlobs) path(key ports.BlobKey) (string, error) {
 	if err := key.Validate(); err != nil {
-		return "", err
+		return "", err //nolint:wrapcheck // typed uma error; the engine classifies it by code
 	}
 	tenantDir := string(key.Tenant)
 	if tenantDir != filepath.Base(tenantDir) || strings.HasPrefix(tenantDir, ".") {
@@ -100,7 +100,7 @@ type readerWithContext struct {
 
 func (r readerWithContext) Read(p []byte) (int, error) {
 	if err := r.ctx.Err(); err != nil {
-		return 0, err
+		return 0, err //nolint:wrapcheck // reader decorator: the context error passes through
 	}
-	return r.r.Read(p)
+	return r.r.Read(p) //nolint:wrapcheck // reader decorator: io.EOF must stay exact
 }

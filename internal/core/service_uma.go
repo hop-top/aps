@@ -17,6 +17,23 @@ const optionReply = "reply"
 // hosted by an in-process uma engine instead of an aps-native provider.
 const AdapterUma = "uma"
 
+// Names shared by the runtime descriptions of native and uma services.
+const (
+	umaKeyMetaWhatsApp = "meta.whatsapp"
+	providerTwilio     = "twilio"
+	handoffNormalized  = "normalized message execution handoff"
+	maturityReady      = "ready"
+	receiveModeWebhook = "webhook"
+	hookIngress        = "ingress"
+	hookAuth           = "auth"
+	hookNormalize      = "normalize"
+	hookRoute          = "route"
+	hookExecute        = "execute"
+	hookDeliver        = "deliver"
+	hookRetry          = "retry"
+	optionEvents       = "events"
+)
+
 // OptionUmaAdapter names the uma adapter a uma-bridged message service runs
 // (a key of UmaAdapterCatalogue).
 const OptionUmaAdapter = "uma_adapter"
@@ -70,7 +87,7 @@ func (s UmaAdapterSpec) PlatformFor(options map[string]string) string {
 var umaAdapterSpecs = map[string]UmaAdapterSpec{
 	"twilio.sms": {
 		Key:         "twilio.sms",
-		Platform:    "sms",
+		Platform:    probeAdapterSMS,
 		RequiredEnv: []string{EnvTwilioAccountSID, EnvTwilioAuthToken},
 		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
 			validateUmaTwilioOptions(svc.Options, r, "twilio.sms")
@@ -78,7 +95,7 @@ var umaAdapterSpecs = map[string]UmaAdapterSpec{
 	},
 	"twilio.whatsapp": {
 		Key:         "twilio.whatsapp",
-		Platform:    "whatsapp",
+		Platform:    probeAdapterWhatsApp,
 		RequiredEnv: []string{EnvTwilioAccountSID, EnvTwilioAuthToken},
 		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
 			validateUmaTwilioOptions(svc.Options, r, "twilio.whatsapp")
@@ -87,9 +104,9 @@ var umaAdapterSpecs = map[string]UmaAdapterSpec{
 			}
 		},
 	},
-	"meta.whatsapp": {
-		Key:         "meta.whatsapp",
-		Platform:    "whatsapp",
+	umaKeyMetaWhatsApp: {
+		Key:         umaKeyMetaWhatsApp,
+		Platform:    probeAdapterWhatsApp,
 		RequiredEnv: []string{EnvWhatsAppToken, EnvWhatsAppSecret},
 		OptionalEnv: []string{EnvWhatsAppVerify},
 		validate: func(svc *ServiceConfig, r *ServiceValidationResult) {
@@ -168,7 +185,7 @@ func validateUmaMessageService(service *ServiceConfig, result *ServiceValidation
 			result.Warnings = append(result.Warnings, "uma service has no allowed numbers; any sender can route inbound messages")
 		}
 	}
-	if key == "meta.whatsapp" && strings.TrimSpace(service.Env[EnvWhatsAppVerify]) == "" {
+	if key == umaKeyMetaWhatsApp && strings.TrimSpace(service.Env[EnvWhatsAppVerify]) == "" {
 		result.Warnings = append(result.Warnings, "whatsapp verify token not set; Cloud webhook verification will fail")
 	}
 }
@@ -210,14 +227,14 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		replyMode = value
 	}
 	routing := OptionDefaultAction
-	executes := "normalized message execution handoff"
+	executes := handoffNormalized
 	if HasRouteTable(service) {
 		routing = "sender route table"
 		executes = "sender route table -> profile action"
 	}
 	route := ServiceWebhookPath(service)
 	methods := "POST"
-	if key == "meta.whatsapp" {
+	if key == umaKeyMetaWhatsApp {
 		// Cloud API subscription verification is a GET at the same URL.
 		methods = "GET, POST"
 	}
@@ -234,19 +251,19 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		Receives: "HTTP " + methods + " " + route + " (uma verifies " + verifies + ")",
 		Executes: executes,
 		Replies:  provider + " " + replyMode,
-		Maturity: "ready",
+		Maturity: maturityReady,
 		Routes:   []string{route},
 		Metadata: ServiceRuntimeMetadata{
 			Runtime:       "message-provider",
 			Provider:      provider,
 			Ingress:       "uma engine webhook receiver",
-			Handoff:       "normalized message execution handoff",
+			Handoff:       handoffNormalized,
 			Delivery:      "uma reply, sent asynchronously by the engine worker",
 			Retry:         "provider delivery retry policy max_attempts=3 base_delay=1s max_delay=30s",
 			Routing:       routing,
-			ErrorHooks:    []string{"ingress", "normalize", "route", "execute", "deliver", "retry"},
-			ReceiveMode:   "webhook",
-			DeliveryModes: []string{"text"},
+			ErrorHooks:    []string{hookIngress, hookNormalize, hookRoute, hookExecute, hookDeliver, hookRetry},
+			ReceiveMode:   receiveModeWebhook,
+			DeliveryModes: []string{probeWhatsAppTextType},
 		},
 	}
 	switch {
@@ -254,7 +271,7 @@ func describeUmaServiceRuntime(service *ServiceConfig) ServiceRuntimeInfo {
 		info.Replies = "disabled: " + provider + " receives only; an action's reply is refused, not sent"
 		info.Metadata.Delivery = "disabled: receive only; a reply is refused and logged"
 		info.Metadata.Retry = replyNone
-		info.Metadata.ErrorHooks = []string{"ingress", "normalize", "route", "execute"}
+		info.Metadata.ErrorHooks = []string{hookIngress, hookNormalize, hookRoute, hookExecute}
 		info.Metadata.DeliveryModes = nil
 	case key == UmaAdapterRelay:
 		info.Replies = provider + " " + replyMode + ", posted to the gateway's callback"
@@ -323,7 +340,7 @@ func genericWebhookAdapter(adapterKey string) bool {
 func notGenericWebhook(adapterKey, _ string) bool { return !genericWebhookAdapter(adapterKey) }
 
 func adviceVerifyToken(adapterKey string) string {
-	if adapterKey == "meta.whatsapp" {
+	if adapterKey == umaKeyMetaWhatsApp {
 		return "bind the token with --env " + EnvWhatsAppVerify + "=secret:NAME"
 	}
 	return "this uma adapter has no verify token"
@@ -331,7 +348,7 @@ func adviceVerifyToken(adapterKey string) string {
 
 func adviceSigningSecret(adapterKey string) string {
 	switch {
-	case adapterKey == "meta.whatsapp":
+	case adapterKey == umaKeyMetaWhatsApp:
 		return "bind the app secret with --env " + EnvWhatsAppSecret + "=secret:NAME"
 	case genericWebhookAdapter(adapterKey):
 		return "set --signature-secret-env NAME and bind it with --env NAME=secret:NAME"
@@ -417,21 +434,21 @@ var umaIgnoredRules = []umaIgnoredRule{
 	{option: "workspace", flag: "linear-workspace", advice: fixedAdvice(adviceTicket)},
 	{option: "team", flag: "team", advice: fixedAdvice(adviceTicket)},
 	{option: "group", flag: "group", advice: fixedAdvice(adviceTicket)},
-	{option: "events", flag: "events", advice: fixedAdvice(adviceTicket)},
+	{option: optionEvents, flag: optionEvents, advice: fixedAdvice(adviceTicket)},
 	{option: "provider", flag: "provider", advice: fixedAdvice("pick the provider with --uma-adapter")},
 	{
 		option: "receive", flag: "receive",
-		applies: func(_, value string) bool { return !strings.EqualFold(value, "webhook") },
+		applies: func(_, value string) bool { return !strings.EqualFold(value, receiveModeWebhook) },
 		advice:  fixedAdvice("a uma service receives by webhook only"),
 	},
 	{
 		option: "phone_number_id", flag: "phone-number-id",
-		applies: func(key, _ string) bool { return key != "meta.whatsapp" },
+		applies: func(key, _ string) bool { return key != umaKeyMetaWhatsApp },
 		advice:  fixedAdvice("only the meta.whatsapp adapter reads it"),
 	},
 	{
 		option: "from", flag: "from",
-		applies: func(key, _ string) bool { return key == "meta.whatsapp" || key == UmaAdapterHTTPMail },
+		applies: func(key, _ string) bool { return key == umaKeyMetaWhatsApp || key == UmaAdapterHTTPMail },
 		advice: func(key string) string {
 			if key == UmaAdapterHTTPMail {
 				return "http.mail accepts mail for --option recipients"
@@ -441,9 +458,9 @@ var umaIgnoredRules = []umaIgnoredRule{
 	},
 	{
 		option: "webhook_url", flag: "webhook-url",
-		applies: func(key, _ string) bool { return key == "meta.whatsapp" || genericWebhookAdapter(key) },
+		applies: func(key, _ string) bool { return key == umaKeyMetaWhatsApp || genericWebhookAdapter(key) },
 		advice: func(key string) string {
-			if key == "meta.whatsapp" {
+			if key == umaKeyMetaWhatsApp {
 				return "meta.whatsapp does not use it; the callback URL is set at Meta"
 			}
 			return key + " checks webhook auth, not a signed URL"

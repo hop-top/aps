@@ -324,7 +324,7 @@ func (b *Bridge) handle(ctx context.Context, client uma.Client, t *bot.Turn) err
 			return rerr.Err
 		}
 	}
-	return bot.Drop(err)
+	return bot.Drop(err) //nolint:wrapcheck // typed uma error; the engine classifies it by code
 }
 
 func (b *Bridge) providerName() string {

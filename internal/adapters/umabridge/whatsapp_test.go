@@ -32,7 +32,7 @@ func TestTwilioWhatsAppKeepsAPSAddressPrefixesAndRepliesWithThem(t *testing.T) {
 	form := incomingSMS("SM20000000000000000000000000000001", "hola")
 	form.Set("From", "whatsapp:"+testSender)
 	form.Set("To", "whatsapp:"+testNumber)
-	assert.Equal(t, http.StatusOK, h.postSigned(t, form).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, form))
 
 	waitFor(t, "twilio create", func() bool { return len(h.twilio.sent()) == 1 })
 	msg := h.exec.calls()[0].Message

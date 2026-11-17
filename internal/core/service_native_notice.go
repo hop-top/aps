@@ -7,12 +7,12 @@ import "strings"
 // uma bridge hosts today are listed: a generic relay has no uma adapter in
 // UmaAdapterCatalogue yet, so a service on it has nowhere to move to.
 var nativeUmaAdapters = map[string]map[string]string{
-	"sms": {
-		"twilio": "twilio.sms",
+	probeAdapterSMS: {
+		providerTwilio: "twilio.sms",
 	},
-	"whatsapp": {
-		"twilio":         "twilio.whatsapp",
-		"whatsapp-cloud": "meta.whatsapp",
+	probeAdapterWhatsApp: {
+		providerTwilio:   "twilio.whatsapp",
+		"whatsapp-cloud": umaKeyMetaWhatsApp,
 	},
 }
 

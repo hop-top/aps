@@ -114,7 +114,7 @@ func (f *umaTwilio) sent() []url.Values {
 }
 
 // umaSignTwilio computes X-Twilio-Signature independently of the adapter.
-func umaSignTwilio(token, rawURL string, form url.Values) string {
+func umaSignTwilio(rawURL string, form url.Values) string {
 	keys := make([]string, 0, len(form))
 	for k := range form {
 		keys = append(keys, k)
@@ -124,7 +124,7 @@ func umaSignTwilio(token, rawURL string, form url.Values) string {
 	for _, k := range keys {
 		s += k + form.Get(k)
 	}
-	m := hmac.New(sha1.New, []byte(token))
+	m := hmac.New(sha1.New, []byte(umaToken))
 	m.Write([]byte(s))
 	return base64.StdEncoding.EncodeToString(m.Sum(nil))
 }
@@ -204,7 +204,7 @@ func (r *umaRoutes) postForm(t *testing.T, id string, form url.Values, signedURL
 	t.Helper()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/services/"+id+"/webhook", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaToken, signedURL, form))
+	req.Header.Set("X-Twilio-Signature", umaSignTwilio(signedURL, form))
 	return r.do(t, req)
 }
 
@@ -264,7 +264,7 @@ func TestUmaRoute_SignatureCoversConfiguredURLNotForwardedHeaders(t *testing.T) 
 	// signed; only the service's webhook_url counts.
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://10.0.0.7:8080/services/sms-uma/webhook", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaToken, umaHookURL, form))
+	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaHookURL, form))
 	req.Header.Set("X-Forwarded-Proto", "http")
 	req.Header.Set("X-Forwarded-Host", "internal.example.net")
 	assert.Equal(t, http.StatusOK, r.do(t, req).Code)
@@ -273,7 +273,7 @@ func TestUmaRoute_SignatureCoversConfiguredURLNotForwardedHeaders(t *testing.T) 
 	form = umaIncoming("SM10000000000000000000000000000005", umaSender, "forwarded")
 	req = httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/services/sms-uma/webhook", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaToken, "http://internal.example.net/services/sms-uma/webhook", form))
+	req.Header.Set("X-Twilio-Signature", umaSignTwilio("http://internal.example.net/services/sms-uma/webhook", form))
 	req.Header.Set("X-Forwarded-Proto", "http")
 	req.Header.Set("X-Forwarded-Host", "internal.example.net")
 	assert.Equal(t, http.StatusForbidden, r.do(t, req).Code)
@@ -286,7 +286,7 @@ func TestUmaRoute_RequestQueryIsPartOfTheSignedURL(t *testing.T) {
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/services/sms-uma/webhook?op=abc&attempt=1", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaToken, umaHookURL+"?op=abc&attempt=1", form))
+	req.Header.Set("X-Twilio-Signature", umaSignTwilio(umaHookURL+"?op=abc&attempt=1", form))
 	assert.Equal(t, http.StatusOK, r.do(t, req).Code, "status callbacks carry the query uma put on the callback URL")
 }
 
@@ -487,12 +487,12 @@ func TestUmaRoute_RepliesLandInTheServicesConversationHistory(t *testing.T) {
 
 // umaProbe is the native identity of the SMS conversation the uma service
 // carries on with umaSender.
-func umaProbe(service string) *msgtypes.NormalizedMessage {
+func umaProbe() *msgtypes.NormalizedMessage {
 	return &msgtypes.NormalizedMessage{
 		Platform:         string(msgtypes.PlatformSMS),
 		Sender:           msgtypes.Sender{ID: umaSender},
 		Channel:          msgtypes.Channel{ID: umaNumber},
-		PlatformMetadata: map[string]any{"messenger_name": service},
+		PlatformMetadata: map[string]any{"messenger_name": "sms-uma"},
 	}
 }
 
@@ -510,7 +510,7 @@ func (l *umaRunLog) watch(t *testing.T, r *umaRoutes) {
 		var payload ActionPayload
 		assert.NoError(t, json.Unmarshal(in.Payload, &payload))
 		recorded := false
-		for _, turn := range recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma")) {
+		for _, turn := range recentTurnsFor(t, r.adapter.conversationStore(), umaProbe()) {
 			if turn.Direction == msgtypes.TurnDirectionInbound && turn.MessageID == payload.ID {
 				recorded = true
 			}
@@ -536,11 +536,11 @@ func TestUmaRoute_InboundTurnPrecedesTheActionAndLaterMessagesSeeEarlierTurns(t 
 
 	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", umaIncoming("SM10000000000000000000000000000016", umaSender, "first"), umaHookURL).Code)
 	umaWait(t, "first exchange recorded", func() bool {
-		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 2
+		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe())) == 2
 	})
 	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", umaIncoming("SM10000000000000000000000000000017", umaSender, "second"), umaHookURL).Code)
 	umaWait(t, "second exchange recorded", func() bool {
-		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 4
+		return len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe())) == 4
 	})
 
 	payloads, inboundFirst := log.runs()
@@ -568,7 +568,7 @@ func TestUmaRoute_RestartKeepsTheConversationAndDoesNotAnswerARedeliveryTwice(t 
 	form := umaIncoming("SM10000000000000000000000000000018", umaSender, "before the restart")
 	require.Equal(t, http.StatusOK, r.postForm(t, "sms-uma", form, umaHookURL).Code)
 	umaWait(t, "first exchange recorded and sent", func() bool {
-		return len(r.twilio.sent()) == 1 && len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma"))) == 2
+		return len(r.twilio.sent()) == 1 && len(recentTurnsFor(t, r.adapter.conversationStore(), umaProbe())) == 2
 	})
 
 	r.restart(t)
@@ -579,7 +579,7 @@ func TestUmaRoute_RestartKeepsTheConversationAndDoesNotAnswerARedeliveryTwice(t 
 
 	assert.Len(t, r.core.calls(), 1, "the action does not run again")
 	assert.Len(t, r.twilio.sent(), 1, "no second reply")
-	assert.Len(t, recentTurnsFor(t, r.adapter.conversationStore(), umaProbe("sms-uma")), 2, "no turns for the redelivery")
+	assert.Len(t, recentTurnsFor(t, r.adapter.conversationStore(), umaProbe()), 2, "no turns for the redelivery")
 	svc, err := core.LoadService("sms-uma")
 	require.NoError(t, err)
 	assert.Equal(t, "accepted", svc.LastOutbound.Status, "the skipped event does not overwrite the service's last outbound event")

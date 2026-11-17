@@ -71,11 +71,15 @@ func TestNativeNotice_AddUmaDoesNotNoteIt(t *testing.T) {
 
 func TestNativeNotice_AddOtherServicesDoNotNoteIt(t *testing.T) {
 	cases := map[string][]string{
-		"slack": {"--type", "slack", "--default-action", "triage",
+		"slack": {
+			"--type", "slack", "--default-action", "triage",
 			"--env", "SLACK_BOT_TOKEN=secret:SLACK_BOT_TOKEN",
-			"--env", "SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET"},
-		"sms generic": {"--type", "sms", "--provider", "generic", "--from", "+15550100002",
-			"--default-action", "triage"},
+			"--env", "SLACK_SIGNING_SECRET=secret:SLACK_SIGNING_SECRET",
+		},
+		"sms generic": {
+			"--type", "sms", "--provider", "generic", "--from", "+15550100002",
+			"--default-action", "triage",
+		},
 		"email relay": {"--type", "message", "--adapter", "email", "--default-action", "triage"},
 	}
 	for name, args := range cases {

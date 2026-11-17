@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -281,7 +282,9 @@ func incomingSMS(sid, body string) url.Values {
 	}
 }
 
-func (h *harness) post(t *testing.T, form url.Values, signature string) *http.Response {
+// post sends the signed form to the webhook and returns the status code;
+// the body is drained and closed here so callers never hold a response.
+func (h *harness) post(t *testing.T, form url.Values, signature string) int {
 	t.Helper()
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, h.hook.URL, strings.NewReader(form.Encode()))
 	require.NoError(t, err)
@@ -289,11 +292,12 @@ func (h *harness) post(t *testing.T, form url.Values, signature string) *http.Re
 	req.Header.Set("X-Twilio-Signature", signature)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = resp.Body.Close() })
-	return resp
+	defer func() { _ = resp.Body.Close() }()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return resp.StatusCode
 }
 
-func (h *harness) postSigned(t *testing.T, form url.Values) *http.Response {
+func (h *harness) postSigned(t *testing.T, form url.Values) int {
 	t.Helper()
 	return h.post(t, form, signTwilio(testToken, testHookURL, form))
 }
@@ -306,8 +310,7 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 func TestInboundSMSRunsActionAndRepliesThroughMessagesAPI(t *testing.T) {
 	h := newHarness(t, smsService(), replyWith("on it"))
 
-	resp := h.postSigned(t, incomingSMS("SM10000000000000000000000000000001", "where is my order"))
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000001", "where is my order")))
 
 	waitFor(t, "twilio create", func() bool { return len(h.twilio.sent()) == 1 })
 
@@ -353,8 +356,7 @@ func TestInboundWithBadSignatureNeverReachesTheAction(t *testing.T) {
 		"empty": "",
 	} {
 		t.Run(name, func(t *testing.T) {
-			resp := h.post(t, form, signature)
-			assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+			assert.Equal(t, http.StatusForbidden, h.post(t, form, signature))
 		})
 	}
 	time.Sleep(200 * time.Millisecond)
@@ -369,7 +371,7 @@ func TestSenderOutsideTheAllowlistNeverRunsTheAction(t *testing.T) {
 
 	// uma verified and recorded the event, so the provider is answered; the
 	// allowlist is aps's and refuses it before routing.
-	assert.Equal(t, http.StatusOK, h.postSigned(t, stranger).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, stranger))
 	waitFor(t, "refusal recorded", func() bool { return len(h.outcomes()) == 1 })
 	out := h.outcomes()[0]
 	require.Error(t, out.err)
@@ -378,7 +380,7 @@ func TestSenderOutsideTheAllowlistNeverRunsTheAction(t *testing.T) {
 	assert.Empty(t, h.exec.calls())
 
 	// The bridge keeps serving: the allowed sender still gets through.
-	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000021", "hello")).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000021", "hello")))
 	waitFor(t, "reply", func() bool { return len(h.twilio.sent()) == 1 })
 	assert.Equal(t, testSender, h.twilio.sent()[0].Form.Get("To"))
 	assert.Len(t, h.exec.calls(), 1)
@@ -403,7 +405,7 @@ func TestAllowedNumbersAndSendersAreCheckedOnTheNormalizedMessage(t *testing.T) 
 			delete(svc.Options, "allowed_numbers")
 			svc.Options[tc.option] = tc.value
 			h := newHarness(t, svc, replyWith("ok"))
-			assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000022", "hi")).StatusCode)
+			assert.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000022", "hi")))
 			waitFor(t, "result", func() bool { return len(h.outcomes()) == 1 })
 			if tc.allow {
 				require.NoError(t, h.outcomes()[0].err)
@@ -456,8 +458,8 @@ func TestRedeliveredProviderEventRunsTheActionOnce(t *testing.T) {
 	h := newHarness(t, smsService(), replyWith("once"))
 	form := incomingSMS("SM10000000000000000000000000000006", "dup")
 
-	assert.Equal(t, http.StatusOK, h.postSigned(t, form).StatusCode)
-	assert.Equal(t, http.StatusOK, h.postSigned(t, form).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, form))
+	assert.Equal(t, http.StatusOK, h.postSigned(t, form))
 
 	waitFor(t, "reply", func() bool { return len(h.twilio.sent()) >= 1 })
 	time.Sleep(300 * time.Millisecond)

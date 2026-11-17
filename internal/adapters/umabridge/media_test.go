@@ -34,7 +34,7 @@ func TestInboundMMSIsStagedAndReachesTheActionAsAFileAttachment(t *testing.T) {
 	h := newHarnessWith(t, smsService(), replyWith("got it"), func(c *Config) { c.MediaDir = dir })
 	h.twilio.setMedia(map[string][]byte{testMediaSID: payload})
 
-	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingMMS(t, h)).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingMMS(t, h)))
 
 	waitFor(t, "action", func() bool { return len(h.exec.calls()) == 1 })
 	msg := h.exec.calls()[0].Message
@@ -59,7 +59,7 @@ func TestInboundMMSWithoutMediaDirIsSummaryOnly(t *testing.T) {
 		return &msgtypes.ExecutionResult{Status: "success"}, nil
 	})
 	h.twilio.setMedia(map[string][]byte{testMediaSID: []byte("bytes")})
-	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingMMS(t, h)).StatusCode)
+	assert.Equal(t, http.StatusOK, h.postSigned(t, incomingMMS(t, h)))
 
 	waitFor(t, "action", func() bool { return len(h.exec.calls()) == 1 })
 	assert.Empty(t, h.exec.calls()[0].Message.Attachments)

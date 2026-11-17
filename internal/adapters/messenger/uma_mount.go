@@ -133,7 +133,7 @@ func (m *umaMounts) start(service *core.ServiceConfig, host core.UmaHostConfig, 
 	}
 	bridge, err := umabridge.New(m.ctx, cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("uma bridge %q: %w", service.ID, err)
 	}
 	runCtx, cancel := context.WithCancel(m.ctx)
 	inst := &umaInstance{
@@ -285,7 +285,7 @@ func (m *umaMounts) record(serviceID string, result *msgtypes.RuntimeResult, err
 		Platform:  msg.Platform,
 		ChannelID: msg.Channel.ID,
 		SenderID:  msg.Sender.ID,
-		Status:    "received",
+		Status:    inboundStatusReceived,
 	})
 	switch {
 	case result.Delivery != nil:

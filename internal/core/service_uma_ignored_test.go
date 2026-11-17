@@ -28,8 +28,9 @@ func umaMetaWhatsAppService() *ServiceConfig {
 }
 
 func ignoredKeys(service *ServiceConfig) []string {
-	var keys []string
-	for _, hit := range UmaIgnoredOptions(service) {
+	hits := UmaIgnoredOptions(service)
+	keys := make([]string, 0, len(hits))
+	for _, hit := range hits {
 		keys = append(keys, hit.Option)
 	}
 	return keys

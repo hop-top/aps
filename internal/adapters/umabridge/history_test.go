@@ -38,13 +38,13 @@ func withHistory(store msgtypes.ConversationStore) func(*Config) {
 
 // nativeSMS is the message the native SMS provider normalizes from the same
 // Twilio event: the identity continuity is measured against.
-func nativeSMS(t *testing.T, service, sid, body string) *msgtypes.NormalizedMessage {
+func nativeSMS(t *testing.T, sid, body string) *msgtypes.NormalizedMessage {
 	t.Helper()
 	msg, err := msgtypes.NormalizeSMSPayload(map[string]any{
 		"MessageSid": sid, "From": testSender, "To": testNumber, "Body": body,
 	}, time.Now())
 	require.NoError(t, err)
-	msg.PlatformMetadata["messenger_name"] = service
+	msg.PlatformMetadata["messenger_name"] = "sms-uma"
 	return msg
 }
 
@@ -77,7 +77,7 @@ func TestReplyIsRecordedUnderTheKeysTheNativeProviderUses(t *testing.T) {
 		"twilio.sms": {
 			adapter: "twilio.sms",
 			native: func(t *testing.T) *msgtypes.NormalizedMessage {
-				return nativeSMS(t, "sms-uma", "SM10000000000000000000000000000031", "keys")
+				return nativeSMS(t, "SM10000000000000000000000000000031", "keys")
 			},
 			form: func(url.Values) {},
 		},
@@ -110,7 +110,7 @@ func TestReplyIsRecordedUnderTheKeysTheNativeProviderUses(t *testing.T) {
 
 			form := incomingSMS("SM10000000000000000000000000000031", "keys")
 			tc.form(form)
-			require.Equal(t, http.StatusOK, h.postSigned(t, form).StatusCode)
+			require.Equal(t, http.StatusOK, h.postSigned(t, form))
 			waitFor(t, "reply recorded", func() bool { return len(outboundTurns(turnsOf(t, store, tc.native(t)))) == 1 })
 
 			// Same conversation and session as the native provider's, so
@@ -139,13 +139,13 @@ func TestReplyTheProviderRefusesIsStillRecordedAsQueued(t *testing.T) {
 	h := newHarnessWith(t, smsService(), replyWith("on it"), withHistory(store))
 	h.twilio.rejectWith(http.StatusBadRequest)
 
-	require.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000032", "refused")).StatusCode)
+	require.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000032", "refused")))
 
 	waitFor(t, "result", func() bool { return len(h.outcomes()) == 1 })
 	out := h.outcomes()[0]
 	require.NoError(t, out.err)
 	assert.Equal(t, "accepted", out.result.Delivery.Status)
-	turns := turnsOf(t, store, nativeSMS(t, "sms-uma", "SM10000000000000000000000000000032", "refused"))
+	turns := turnsOf(t, store, nativeSMS(t, "SM10000000000000000000000000000032", "refused"))
 	require.Len(t, outboundTurns(turns), 1)
 	assert.Equal(t, "on it", outboundTurns(turns)[0].Text)
 }
@@ -159,18 +159,18 @@ func TestActionWithoutReplyRecordsNoOutboundTurn(t *testing.T) {
 	h.postSigned(t, incomingSMS("SM10000000000000000000000000000033", "quiet"))
 
 	waitFor(t, "result", func() bool { return len(h.outcomes()) == 1 })
-	assert.Empty(t, turnsOf(t, store, nativeSMS(t, "sms-uma", "SM10000000000000000000000000000033", "quiet")))
+	assert.Empty(t, turnsOf(t, store, nativeSMS(t, "SM10000000000000000000000000000033", "quiet")))
 }
 
 func TestAnsweredEventRedeliveredAfterARestartIsNotRunAgain(t *testing.T) {
 	path := historyFile(t)
 	twilio := newFakeTwilio(t)
 	form := incomingSMS("SM10000000000000000000000000000034", "once only")
-	native := nativeSMS(t, "sms-uma", "SM10000000000000000000000000000034", "once only")
+	native := nativeSMS(t, "SM10000000000000000000000000000034", "once only")
 
 	reader := openHistory(t, path)
 	first := newHarnessOn(t, twilio, smsService(), replyWith("first"), withHistory(openHistory(t, path)))
-	require.Equal(t, http.StatusOK, first.postSigned(t, form).StatusCode)
+	require.Equal(t, http.StatusOK, first.postSigned(t, form))
 	waitFor(t, "first reply", func() bool { return len(twilio.sent()) == 1 })
 	waitFor(t, "first reply recorded", func() bool { return len(outboundTurns(turnsOf(t, reader, native))) == 1 })
 	first.stop()
@@ -179,7 +179,7 @@ func TestAnsweredEventRedeliveredAfterARestartIsNotRunAgain(t *testing.T) {
 	// gone. The provider delivers the event again.
 	store := openHistory(t, path)
 	second := newHarnessOn(t, twilio, smsService(), replyWith("second"), withHistory(store))
-	require.Equal(t, http.StatusOK, second.postSigned(t, form).StatusCode)
+	require.Equal(t, http.StatusOK, second.postSigned(t, form))
 	waitFor(t, "second result", func() bool { return len(second.outcomes()) == 1 })
 
 	assert.Empty(t, second.exec.calls(), "the action does not run for an event whose reply is already queued")
@@ -227,7 +227,7 @@ func TestNewEventsAndUnansweredEventsStillRunAfterARestart(t *testing.T) {
 func TestUnreadableHistoryDoesNotBlockTheAction(t *testing.T) {
 	h := newHarnessWith(t, smsService(), replyWith("on it"), withHistory(brokenReads{}))
 
-	require.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000038", "hi")).StatusCode)
+	require.Equal(t, http.StatusOK, h.postSigned(t, incomingSMS("SM10000000000000000000000000000038", "hi")))
 
 	waitFor(t, "reply", func() bool { return len(h.twilio.sent()) == 1 })
 	assert.Len(t, h.exec.calls(), 1)

@@ -265,7 +265,7 @@ func (h *Handler) handleWebhookForMessenger(w http.ResponseWriter, r *http.Reque
 			Platform:  platform,
 			ChannelID: msg.Channel.ID,
 			SenderID:  msg.Sender.ID,
-			Status:    "received",
+			Status:    inboundStatusReceived,
 		})
 	}
 	if service != nil {
@@ -429,7 +429,7 @@ func (h *Handler) handleTelegramServiceWebhook(w http.ResponseWriter, r *http.Re
 			Platform:  string(msgtypes.PlatformTelegram),
 			ChannelID: result.Message.Channel.ID,
 			SenderID:  result.Message.Sender.ID,
-			Status:    "received",
+			Status:    inboundStatusReceived,
 		})
 		if result.Delivery != nil {
 			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
@@ -521,7 +521,7 @@ func (h *Handler) handleSlackServiceWebhook(w http.ResponseWriter, r *http.Reque
 			Platform:  string(msgtypes.PlatformSlack),
 			ChannelID: result.Message.Channel.ID,
 			SenderID:  result.Message.Sender.ID,
-			Status:    "received",
+			Status:    inboundStatusReceived,
 		})
 		if result.Delivery != nil {
 			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
@@ -615,7 +615,7 @@ func (h *Handler) handleTeamsServiceWebhook(w http.ResponseWriter, r *http.Reque
 			Platform:  string(msgtypes.PlatformTeams),
 			ChannelID: result.Message.Channel.ID,
 			SenderID:  result.Message.Sender.ID,
-			Status:    "received",
+			Status:    inboundStatusReceived,
 		})
 		if result.Delivery != nil {
 			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
@@ -741,7 +741,7 @@ func (h *Handler) handleWhatsAppServiceWebhook(w http.ResponseWriter, r *http.Re
 			Platform:  string(msgtypes.PlatformWhatsApp),
 			ChannelID: result.Message.Channel.ID,
 			SenderID:  result.Message.Sender.ID,
-			Status:    "received",
+			Status:    inboundStatusReceived,
 		})
 		if result.Delivery != nil {
 			_ = recordServiceDeliveryAttempts(serviceID, result.DeliveryAttempts, result.Message)
@@ -1034,6 +1034,9 @@ const replyModeNone = "none"
 // and WhatsApp services. Twilio only honours TwiML webhook responses,
 // so handlers branch on it when rendering the reply body.
 const providerTwilio = "twilio"
+
+// inboundStatusReceived is the status recorded for an inbound message event.
+const inboundStatusReceived = "received"
 
 func replyMode(service *core.ServiceConfig) string {
 	if service == nil || service.Options == nil {

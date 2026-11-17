@@ -37,7 +37,7 @@ func (d dedupExecutor) ExecuteMessage(ctx context.Context, handoff msgtypes.Exec
 			"service_id", handoff.ServiceID, "message_id", handoff.Message.ID)
 		return &msgtypes.ExecutionResult{Status: StatusDuplicate}, nil
 	}
-	return d.next.ExecuteMessage(ctx, handoff)
+	return d.next.ExecuteMessage(ctx, handoff) //nolint:wrapcheck // a decorator: the executor's own outcome passes through
 }
 
 // answered reports whether history holds the reply to handoff's message. The

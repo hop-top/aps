@@ -60,10 +60,12 @@ func TestHints_NativeTransportNotice(t *testing.T) {
 	cmd.PersistentFlags().Bool("dry-run", false, "")
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"add", "sms-main", "--dry-run", "--type", "sms", "--profile", "assistant",
+	cmd.SetArgs([]string{
+		"add", "sms-main", "--dry-run", "--type", "sms", "--profile", "assistant",
 		"--provider", "twilio", "--from", "+15559870002", "--default-action", "triage",
 		"--env", "TWILIO_ACCOUNT_SID=secret:TWILIO_ACCOUNT_SID",
-		"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN"})
+		"--env", "TWILIO_AUTH_TOKEN=secret:TWILIO_AUTH_TOKEN",
+	})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("service add: %v", err)
 	}

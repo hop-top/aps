@@ -48,6 +48,9 @@ linters:
         - .WithStack(
         - hop.top/aps/internal/cli/listing.RenderList
         - hop.top/kit/go/console/output.Render
+        # uma's typed error constructor: it builds the error the uma
+        # engine classifies by code, it does not wrap a cause.
+        - hop.top/uma/model.NewError
   exclusions:
     rules:
       - path: _test\.go
