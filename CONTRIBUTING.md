@@ -96,25 +96,7 @@ is the norm.
 Be respectful and constructive. We are all here to build
 something great together.
 
-**Unreleased uma**: `hop.top/uma` (unreleased, private repository) is not
-in `go.mod` at all. The uma bridge in `internal/adapters/umabridge` builds
-only with an untracked `go.work` that uses a uma checkout:
-
-```text
-go 1.27.4
-
-use (
-	.
-	<uma checkout>
-	<uma checkout>/adapter/mail
-	<uma checkout>/adapter/messaging/meta
-	<uma checkout>/adapter/messaging/twilio
-	<uma checkout>/testing/xrrtest
-)
-```
-
-Do not add `require` lines for uma modules while it is supplied this way: a
-requirement on the nested module `hop.top/uma/adapter/mail` makes workspace
-mode look it up remotely, and the lookup fails. Without the `go.work`, CI
-and consumers cannot build the bridge. Once uma publishes a version, a
-plain `require` replaces the `go.work`.
+**uma**: `hop.top/uma` and the uma modules aps imports (`adapter/mail`,
+`adapter/messaging/meta`, `adapter/messaging/twilio`) are plain `require`
+lines in `go.mod`. To work against a local uma checkout, add an untracked
+`go.work` that `use`s `.` and those uma module directories.

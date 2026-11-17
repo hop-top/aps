@@ -305,13 +305,11 @@ restart, and why a bridged email service never replies:
 
 ### The uma dependency
 
-hop.top/uma is unreleased and its repository is private, so `go.mod` does
-not name it. An untracked `go.work` supplies it from a uma checkout: one
-`use` line per uma module aps imports (the root, the mail, Meta and Twilio
-adapter modules, and the test helpers); the template is in
-`CONTRIBUTING.md`. Without that `go.work`, CI and any consumer cannot build
-the bridge. To drop the dependency, delete `internal/adapters/umabridge`,
-the `uma` alias and `internal/core/service_uma.go`.
+hop.top/uma is a versioned dependency: `go.mod` requires the root module and
+the mail, Meta and Twilio adapter modules. A local uma checkout can stand in
+through an untracked `go.work` (see `CONTRIBUTING.md`). To drop the
+dependency, delete `internal/adapters/umabridge`, the `uma` alias and
+`internal/core/service_uma.go`.
 
 ## Routing
 
