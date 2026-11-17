@@ -557,13 +557,8 @@ func TestRunActionPayloadHandling(t *testing.T) {
 
 // TestLoadConfigDefault tests loading config returns defaults
 func TestLoadConfigDefault(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	config, err := LoadConfig()
 	require.NoError(t, err)
@@ -575,10 +570,7 @@ func TestLoadConfigDefault(t *testing.T) {
 // TestLoadConfigFromDisk tests loading saved config
 func TestLoadConfigFromDisk(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	configData := &Config{
 		Prefix: "CUSTOM_PREFIX",
@@ -600,13 +592,8 @@ func TestLoadConfigFromDisk(t *testing.T) {
 
 // TestLoadConfigMalformed returns defaults on malformed YAML
 func TestLoadConfigMalformed(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	configDir := filepath.Join(tmpDir, "aps")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
@@ -622,10 +609,7 @@ func TestLoadConfigMalformed(t *testing.T) {
 // TestSaveConfig saves config correctly
 func TestSaveConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	config := &Config{
 		Prefix: "TEST_PREFIX",
@@ -653,13 +637,8 @@ func TestSaveConfig(t *testing.T) {
 
 // TestMigrateConfigNoExisting returns false when no config exists
 func TestMigrateConfigNoExisting(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	migrated, err := MigrateConfig()
 	require.NoError(t, err)
@@ -669,10 +648,7 @@ func TestMigrateConfigNoExisting(t *testing.T) {
 // TestMigrateConfigExisting migrates old config format
 func TestMigrateConfigExisting(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	configDir := filepath.Join(tmpDir, "aps")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
@@ -698,10 +674,7 @@ func TestMigrateConfigExisting(t *testing.T) {
 // TestConcurrentConfigOperations tests concurrent config access
 func TestConcurrentConfigOperations(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
-
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 10)
@@ -888,9 +861,7 @@ func TestProfileYAMLMarshaling(t *testing.T) {
 
 func TestProfileWithWorkspaceLink(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "profiles", "ws-test"), 0755)
 
@@ -915,9 +886,7 @@ func TestProfileWithWorkspaceLink(t *testing.T) {
 
 func TestProfileWithoutWorkspaceLink(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	t.Cleanup(func() { os.Setenv("HOME", oldHome) })
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "profiles", "no-ws-test"), 0755)
 

@@ -18,15 +18,7 @@ func writeInstancesFile(t *testing.T, body string) string {
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("write %s: %v", path, err)
 	}
-	prev, had := os.LookupEnv("APS_INSTANCES_PATH")
-	os.Setenv("APS_INSTANCES_PATH", path)
-	t.Cleanup(func() {
-		if had {
-			os.Setenv("APS_INSTANCES_PATH", prev)
-		} else {
-			os.Unsetenv("APS_INSTANCES_PATH")
-		}
-	})
+	t.Setenv("APS_INSTANCES_PATH", path)
 	return path
 }
 
@@ -34,15 +26,7 @@ func writeInstancesFile(t *testing.T, body string) string {
 // exist (used to verify the missing-file branch).
 func pointInstancesPathAt(t *testing.T, path string) {
 	t.Helper()
-	prev, had := os.LookupEnv("APS_INSTANCES_PATH")
-	os.Setenv("APS_INSTANCES_PATH", path)
-	t.Cleanup(func() {
-		if had {
-			os.Setenv("APS_INSTANCES_PATH", prev)
-		} else {
-			os.Unsetenv("APS_INSTANCES_PATH")
-		}
-	})
+	t.Setenv("APS_INSTANCES_PATH", path)
 }
 
 func TestResolve_EmptyName(t *testing.T) {
