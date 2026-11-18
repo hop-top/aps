@@ -198,3 +198,49 @@ func TestRedact_AuthorizationHeaderKeyAware(t *testing.T) {
 func TestRedact_LoggerSinkRedactsBearerToken(t *testing.T) {
 	t.Skip("covered by unit test internal/logging/redact_test.go")
 }
+
+// TestRedact_RunSplitSecretRedacted: a child that echoes a secret in
+// two separate writes (pipe chunk boundary inside the value) must
+// still have it redacted.
+func TestRedact_RunSplitSecretRedacted(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+
+	_, _, err := runAPS(t, home, "profile", "create", "redact-split")
+	require.NoError(t, err)
+
+	half := len(secretValue) / 2
+	script := "printf 'KEY=%s' '" + secretValue[:half] + "'; sleep 0.2; " +
+		"printf '%s\\n' '" + secretValue[half:] + "'"
+	stdout, _, err := runAPS(t, home, "run", "redact-split", "--",
+		"sh", "-c", script)
+	require.NoError(t, err)
+
+	assert.NotContains(t, stdout, secretValue[:half],
+		"first half of split secret leaked")
+	assert.NotContains(t, stdout, secretValue[half+8:],
+		"second half of split secret leaked")
+}
+
+// TestRedact_RunBinaryStreamByteIdentical: binary child output passes
+// through untouched even with redaction on, incl. a large stream.
+func TestRedact_RunBinaryStreamByteIdentical(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+
+	_, _, err := runAPS(t, home, "profile", "create", "redact-bin")
+	require.NoError(t, err)
+
+	data := make([]byte, 2<<20)
+	for i := range data {
+		data[i] = byte((i*131 + i>>8) % 251)
+	}
+	data[5] = 0
+	copy(data[1000:], []byte(`"supplier":"Organization: Go Authors","externalRefs":[{"a":1}]`))
+	path := filepath.Join(t.TempDir(), "blob.bin")
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+
+	stdout, _, err := runAPS(t, home, "run", "redact-bin", "--", "cat", path)
+	require.NoError(t, err)
+	assert.True(t, stdout == string(data), "binary stdout not byte-identical")
+}
