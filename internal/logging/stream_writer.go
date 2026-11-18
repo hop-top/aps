@@ -2,6 +2,7 @@ package logging
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"unicode/utf8"
 )
@@ -46,7 +47,7 @@ func (s *StreamWriter) Write(p []byte) (int, error) {
 			return 0, err
 		}
 		if _, err := s.inner.Write(p); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("stream write: %w", err)
 		}
 		return len(p), nil
 	}
@@ -88,8 +89,10 @@ func (s *StreamWriter) flush(redact bool) error {
 	if redact && Enabled() {
 		return s.emit(seg)
 	}
-	_, err := s.inner.Write(seg)
-	return err
+	if _, err := s.inner.Write(seg); err != nil {
+		return fmt.Errorf("stream flush: %w", err)
+	}
+	return nil
 }
 
 // emit writes seg, redacted unless it is binary.
@@ -100,6 +103,8 @@ func (s *StreamWriter) emit(seg []byte) error {
 	if bytes.IndexByte(seg, 0) < 0 && utf8.Valid(seg) {
 		seg = Redactor().ApplyBytes(seg)
 	}
-	_, err := s.inner.Write(seg)
-	return err
+	if _, err := s.inner.Write(seg); err != nil {
+		return fmt.Errorf("stream flush: %w", err)
+	}
+	return nil
 }
