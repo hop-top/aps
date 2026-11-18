@@ -109,6 +109,27 @@ Four canonical choke points cover every surface in
    `OPENAI_API_KEY=sk-…` to the parent terminal, which a tailing
    agent then absorbed into chat context.
 
+## Machine callers: byte-exact child output
+
+`aps run` writes its progress envelope (`[exec]` / `[exit]`) to
+stderr and passes the child's stdout through on stdout. When stdout
+is not a terminal, child output is redacted. Redaction is
+boundary-safe: text is held to line boundaries (cap 64 KiB, flushed
+on exit), so a secret split across writes is still caught, and
+binary data (NUL or invalid UTF-8) passes through byte-identical.
+
+Pattern rules can still rewrite benign text (false positives).
+Callers that parse stdout (JSON, SBOMs, archives) should:
+
+- keep stdout and stderr separate (no `2>&1`);
+- pass `--quiet` to drop the envelope entirely;
+- pass `--no-redact` (or `APS_DEBUG_NO_REDACT=1`) for byte-exact
+  stdout: `aps run --no-redact noor -- gh api ...`.
+
+Trade-off: with `--no-redact` the caller owns secret handling; any
+secret the child prints reaches the caller's pipe verbatim. The flag
+applies to that single invocation only.
+
 ## How to bypass
 
 ### Persistent flag

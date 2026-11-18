@@ -26,11 +26,17 @@ environment (secrets, bundle env vars, profile-scoped settings).
 The "--" separator is required; everything before it is parsed by
 aps, everything after is the user command and its arguments.
 
-A structured progress envelope (exec start + exit) is emitted on
-stdout per kit's JSONL progress contract so agents that read the
-stream observe a uniform lifecycle without aps touching the child
-process's stdio. The child's exit code is propagated as the aps
-exit code on failure.
+A progress envelope (exec start + exit) is written to stderr; the
+child's stdout passes through on stdout. Use --quiet to drop the
+envelope, and keep the two streams separate (no 2>&1) when parsing.
+
+Secrets the child prints are redacted by default when its output is
+not a terminal (pipes, files). Redaction is boundary-safe and leaves
+binary data untouched, but its pattern rules can still rewrite
+benign text. Machine callers that need byte-exact output pass
+--no-redact (or APS_DEBUG_NO_REDACT=1) and take responsibility for
+any secret in the child's output. The child's exit code is
+propagated as the aps exit code on failure.
 
 Mutating: spawns an opaque subprocess whose side effects aps cannot
 enumerate; idempotency is conditional on the spawned command.
