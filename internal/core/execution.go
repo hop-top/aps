@@ -27,11 +27,16 @@ import (
 // The wrapper is a transparent pass-through when redaction is
 // disabled at write-time, so the --no-redact bypass costs nothing
 // extra on the child path.
-func stdioWriter(w *os.File) io.Writer {
+//
+// The returned closer flushes any held partial line and MUST be called
+// after the child exits. Redaction is boundary-safe (secrets split
+// across writes are caught) and passes binary data through untouched.
+func stdioWriter(w *os.File) (io.Writer, func()) {
 	if isatty.IsTerminal(w.Fd()) {
-		return w
+		return w, func() {}
 	}
-	return logging.NewWriter(w)
+	sw := logging.NewStreamWriter(w)
+	return sw, func() { _ = sw.Close() }
 }
 
 // buildEnvVars assembles the full environment slice (KEY=VALUE) for a profile.
@@ -285,8 +290,12 @@ func runCommandWithProcessIsolation(profile *Profile, command string, args []str
 
 	cmd := exec.CommandContext(context.Background(), command, args...) //nolint:gosec // command from profile config
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = stdioWriter(os.Stdout)
-	cmd.Stderr = stdioWriter(os.Stderr)
+	stdout, closeOut := stdioWriter(os.Stdout)
+	stderr, closeErr := stdioWriter(os.Stderr)
+	defer closeOut()
+	defer closeErr()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	cmd.Env = env
 
 	return cmd.Run()
@@ -384,8 +393,12 @@ func runActionWithProcessIsolation(profile *Profile, action *Action, payload []b
 		cmd.Stdin = os.Stdin
 	}
 
-	cmd.Stdout = stdioWriter(os.Stdout)
-	cmd.Stderr = stdioWriter(os.Stderr)
+	stdout, closeOut := stdioWriter(os.Stdout)
+	stderr, closeErr := stdioWriter(os.Stderr)
+	defer closeOut()
+	defer closeErr()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	return cmd.Run()
 }
