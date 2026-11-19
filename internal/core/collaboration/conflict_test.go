@@ -47,6 +47,10 @@ func TestConflictDetector_DetectWriteConflicts_OutsideWindow(t *testing.T) {
 	ws.Context.Set("deploy-key", "v1", "agent-a", collaboration.RoleOwner)
 	ws.Context.Set("deploy-key", "v2", "agent-b", collaboration.RoleContributor)
 
+	// Windows wall-clock ticks are coarse: without a pause the mutations can
+	// share the detector's "now" and fall inside a zero-width window.
+	time.Sleep(50 * time.Millisecond)
+
 	detector := collaboration.NewConflictDetector()
 	// Use zero window so everything is outside
 	conflicts := detector.DetectWriteConflicts(ws, 0)

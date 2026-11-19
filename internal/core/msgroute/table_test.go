@@ -166,6 +166,7 @@ routes:
 func TestLoad_ExternalFileTildeExpansion(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir on Windows
 	writeFile(t, filepath.Join(home, "routes.yaml"), `
 routes:
   - match: unknown

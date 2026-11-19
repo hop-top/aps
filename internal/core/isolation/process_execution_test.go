@@ -1414,7 +1414,7 @@ func TestExecuteCommandWithFileRedirection(t *testing.T) {
 	}
 	proc.context = context
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo 'test content' > %s", outputFile))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo 'test content' > %s", filepath.ToSlash(outputFile)))
 	err := proc.SetupEnvironment(cmd)
 	require.NoError(t, err)
 

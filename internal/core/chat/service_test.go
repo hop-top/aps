@@ -26,6 +26,8 @@ func TestServicePersistsChatSessionAndTurns(t *testing.T) {
 	dataDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", dataDir)
 	registry := session.NewForTesting()
+	// Windows cannot delete registry.db while the sqlite handle is open.
+	t.Cleanup(func() { _ = registry.Close() })
 	client := &fakeCompleter{}
 	now := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 

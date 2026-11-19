@@ -1429,11 +1429,12 @@ func TestSessionState_TimestampTracking(t *testing.T) {
 
 // TestSessionState_Updates tests SessionState updates
 func TestSessionState_Updates(t *testing.T) {
+	created := time.Now().Add(-time.Minute) // explicit gap: Windows clock ticks are coarse
 	session := &SessionState{
 		SessionID:  "sess-1",
 		ProfileID:  "profile-1",
-		CreatedAt:  time.Now(),
-		LastSeenAt: time.Now(),
+		CreatedAt:  created,
+		LastSeenAt: created,
 		Metadata:   map[string]string{"count": "1"},
 	}
 
