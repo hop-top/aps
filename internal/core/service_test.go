@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -184,10 +185,22 @@ func TestSaveServiceUsesRestrictedPermissions(t *testing.T) {
 
 	fileInfo, err := os.Stat(path)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0), fileInfo.Mode().Perm()&0o077)
-
 	dirInfo, err := os.Stat(filepath.Dir(path))
 	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// Windows has no POSIX mode bits: os.Chmod only toggles the
+		// read-only attribute and Perm() reports 0666/0444 regardless of
+		// the requested 0600/0750. Access is governed by ACLs inherited
+		// from the per-user data dir, which Go does not set. Assert what
+		// is guaranteed: a regular, owner-writable file in a directory.
+		assert.True(t, fileInfo.Mode().IsRegular())
+		assert.NotZero(t, fileInfo.Mode().Perm()&0o200, "file must not be read-only")
+		assert.True(t, dirInfo.IsDir())
+		return
+	}
+
+	assert.Equal(t, os.FileMode(0), fileInfo.Mode().Perm()&0o077)
 	assert.Equal(t, os.FileMode(0), dirInfo.Mode().Perm()&0o027)
 }
 
