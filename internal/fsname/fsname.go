@@ -45,24 +45,25 @@ func Decode(name string) (string, error) {
 		if i+2 >= len(name) {
 			return "", fmt.Errorf("fsname: truncated escape in %q", name)
 		}
-		hi, lo := unhex(name[i+1]), unhex(name[i+2])
-		if hi < 0 || lo < 0 {
+		hi, okHi := unhex(name[i+1])
+		lo, okLo := unhex(name[i+2])
+		if !okHi || !okLo {
 			return "", fmt.Errorf("fsname: bad escape in %q", name)
 		}
-		b.WriteByte(byte(hi<<4 | lo))
+		b.WriteByte(hi<<4 | lo)
 		i += 2
 	}
 	return b.String(), nil
 }
 
-func unhex(c byte) int {
+func unhex(c byte) (byte, bool) {
 	switch {
 	case c >= '0' && c <= '9':
-		return int(c - '0')
+		return c - '0', true
 	case c >= 'A' && c <= 'F':
-		return int(c-'A') + 10
+		return c - 'A' + 10, true
 	case c >= 'a' && c <= 'f':
-		return int(c-'a') + 10
+		return c - 'a' + 10, true
 	}
-	return -1
+	return 0, false
 }
