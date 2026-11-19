@@ -14,6 +14,7 @@ import (
 func TestInjectEnvironmentKnowledgeSubscriptions(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	profile := Profile{
 		ID:          "env-knowledge",
