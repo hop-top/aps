@@ -51,11 +51,11 @@ isolation:
 
 func TestConfigSaveWithIsolation(t *testing.T) {
 	tempHome := t.TempDir()
-	os.Setenv("HOME", tempHome)
+	require.NoError(t, os.Setenv("HOME", tempHome))
 	// Must be an absolute path: an empty value falls back to the real
 	// per-user config dir on Windows (HOME is ignored there), which this
 	// test would then overwrite.
-	os.Setenv("XDG_CONFIG_HOME", filepath.Join(tempHome, ".config"))
+	require.NoError(t, os.Setenv("XDG_CONFIG_HOME", filepath.Join(tempHome, ".config")))
 
 	config := &core.Config{
 		Prefix: "MYAPP",

@@ -67,7 +67,7 @@ func TestLoadUserOverrides_LoadsYAML(t *testing.T) {
 description: A user-defined test bundle
 version: "1.0"
 `
-	require.NoError(t, os.WriteFile(filepath.Join(bundlesDir, "custom-test.yaml"), []byte(bundleYAML), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(bundlesDir, "custom-test.yaml"), []byte(bundleYAML), 0o644))
 
 	bundles, err := LoadUserOverrides()
 	require.NoError(t, err)

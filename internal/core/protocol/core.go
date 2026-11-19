@@ -451,8 +451,10 @@ func (a *APSAdapter) ListSessions(profileID string) ([]SessionState, error) {
 // namespaces; each segment is encoded so reserved characters (e.g. ':')
 // never reach the file system.
 func (a *APSAdapter) namespaceDir(namespace string) string {
-	parts := []string{a.storeDir}
-	for _, seg := range strings.Split(namespace, "/") {
+	segs := strings.Split(namespace, "/")
+	parts := make([]string, 0, len(segs)+1)
+	parts = append(parts, a.storeDir)
+	for _, seg := range segs {
 		parts = append(parts, fsname.Encode(seg))
 	}
 	return filepath.Join(parts...)
