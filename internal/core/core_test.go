@@ -810,10 +810,13 @@ func TestGetConfigDir(t *testing.T) {
 	oldXDG := os.Getenv("XDG_CONFIG_HOME")
 	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
 
-	os.Setenv("XDG_CONFIG_HOME", "/tmp/xdg")
+	// XDG_CONFIG_HOME must be absolute to be honored (relative values are
+	// ignored per the XDG spec; "/tmp/xdg" has no drive on Windows).
+	xdgHome := t.TempDir()
+	os.Setenv("XDG_CONFIG_HOME", xdgHome)
 	dir, err := GetConfigDir()
 	require.NoError(t, err)
-	assert.Equal(t, "/tmp/xdg/aps", dir)
+	assert.Equal(t, filepath.Join(xdgHome, "aps"), dir)
 
 	os.Unsetenv("XDG_CONFIG_HOME")
 	dir, err = GetConfigDir()
