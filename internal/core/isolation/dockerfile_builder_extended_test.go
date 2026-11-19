@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -844,8 +845,15 @@ func TestDockerfileWritePermissionError(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	readOnlyDir := filepath.Join(tmpDir, "readonly")
-	require.NoError(t, os.Mkdir(readOnlyDir, 0444))
-	defer os.Chmod(readOnlyDir, 0755)
+	if runtime.GOOS == "windows" {
+		// Windows ignores the read-only attribute on directories, so a
+		// mode-0444 dir is still writable. A regular file in place of the
+		// directory fails the write on every OS.
+		require.NoError(t, os.WriteFile(readOnlyDir, []byte("x"), 0644))
+	} else {
+		require.NoError(t, os.Mkdir(readOnlyDir, 0444))
+		defer os.Chmod(readOnlyDir, 0755)
+	}
 
 	builder := NewDockerfileBuilder()
 	profile := &core.Profile{

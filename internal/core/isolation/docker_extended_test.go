@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -1127,6 +1128,12 @@ func TestSSHPermissionsValidation(t *testing.T) {
 
 	info, err := os.Stat(keyPath)
 	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// No POSIX mode bits on Windows; Perm() is always 0666/0444.
+		assert.True(t, info.Mode().IsRegular())
+		return
+	}
 
 	// Check permissions are restrictive
 	assert.False(t, (info.Mode() & 0077) != 0)
