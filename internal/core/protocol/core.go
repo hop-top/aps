@@ -14,6 +14,7 @@ import (
 
 	"hop.top/aps/internal/core"
 	"hop.top/aps/internal/core/session"
+	"hop.top/aps/internal/fsname"
 
 	"github.com/google/uuid"
 )
@@ -446,6 +447,17 @@ func (a *APSAdapter) ListSessions(profileID string) ([]SessionState, error) {
 	return states, nil
 }
 
+// namespaceDir maps a namespace to its directory. "/" separates nested
+// namespaces; each segment is encoded so reserved characters (e.g. ':')
+// never reach the file system.
+func (a *APSAdapter) namespaceDir(namespace string) string {
+	parts := []string{a.storeDir}
+	for _, seg := range strings.Split(namespace, "/") {
+		parts = append(parts, fsname.Encode(seg))
+	}
+	return filepath.Join(parts...)
+}
+
 func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error {
 	if namespace == "" {
 		return fmt.Errorf("namespace is required")
@@ -454,12 +466,12 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 		return fmt.Errorf("key is required")
 	}
 
-	profileDir := filepath.Join(a.storeDir, namespace)
+	profileDir := a.namespaceDir(namespace)
 	if err := os.MkdirAll(profileDir, 0755); err != nil {
 		return err
 	}
 
-	filePath := filepath.Join(profileDir, key+".json")
+	filePath := filepath.Join(profileDir, fsname.Encode(key)+".json")
 	data, err := json.Marshal(StoreItem{
 		Namespace: namespace,
 		Key:       key,
@@ -474,7 +486,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 }
 
 func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
-	filePath := filepath.Join(a.storeDir, namespace, key+".json")
+	filePath := filepath.Join(a.namespaceDir(namespace), fsname.Encode(key)+".json")
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -492,12 +504,12 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 }
 
 func (a *APSAdapter) StoreDelete(namespace string, key string) error {
-	filePath := filepath.Join(a.storeDir, namespace, key+".json")
+	filePath := filepath.Join(a.namespaceDir(namespace), fsname.Encode(key)+".json")
 	return os.Remove(filePath)
 }
 
 func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]byte, error) {
-	profileDir := filepath.Join(a.storeDir, namespace)
+	profileDir := a.namespaceDir(namespace)
 	entries, err := os.ReadDir(profileDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -515,8 +527,8 @@ func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]
 		if !strings.HasSuffix(name, ".json") {
 			continue
 		}
-		key := name[:len(name)-5]
-		if prefix != "" && key[:len(prefix)] != prefix {
+		key, err := fsname.Decode(name[:len(name)-5])
+		if err != nil || !strings.HasPrefix(key, prefix) {
 			continue
 		}
 
@@ -548,7 +560,11 @@ func (a *APSAdapter) StoreListNamespaces() ([]string, error) {
 	var namespaces []string
 	for _, entry := range entries {
 		if entry.IsDir() {
-			namespaces = append(namespaces, entry.Name())
+			ns, err := fsname.Decode(entry.Name())
+			if err != nil {
+				continue
+			}
+			namespaces = append(namespaces, ns)
 		}
 	}
 

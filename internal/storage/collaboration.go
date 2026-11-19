@@ -11,6 +11,7 @@ import (
 
 	"hop.top/aps/internal/core"
 	collab "hop.top/aps/internal/core/collaboration"
+	"hop.top/aps/internal/fsname"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,12 +20,12 @@ import (
 // The Workspace struct contains unexported fields (mutex, WorkspaceContext) that
 // cannot be serialized directly, so we project the exportable fields here.
 type workspaceState struct {
-	ID        string                   `json:"id"`
-	State     collab.WorkspaceState    `json:"state"`
-	Agents    []collab.AgentInfo       `json:"agents"`
-	Policy    collab.PolicyConfig      `json:"policy"`
-	CreatedAt time.Time                `json:"created_at"`
-	UpdatedAt time.Time                `json:"updated_at"`
+	ID        string                `json:"id"`
+	State     collab.WorkspaceState `json:"state"`
+	Agents    []collab.AgentInfo    `json:"agents"`
+	Policy    collab.PolicyConfig   `json:"policy"`
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
 }
 
 // CollaborationStorage implements the collaboration.Storage interface using
@@ -55,7 +56,7 @@ func NewCollaborationStorage(root string) (*CollaborationStorage, error) {
 
 // workspaceDir returns the directory for a specific workspace.
 func (s *CollaborationStorage) workspaceDir(id string) string {
-	return filepath.Join(s.root, id)
+	return filepath.Join(s.root, fsname.Encode(id))
 }
 
 // SaveWorkspace persists a workspace to disk as manifest.yaml + state.json.
@@ -166,7 +167,11 @@ func (s *CollaborationStorage) ListWorkspaces() ([]string, error) {
 		// Only include directories that contain a manifest.yaml
 		manifestPath := filepath.Join(s.root, entry.Name(), "manifest.yaml")
 		if _, err := os.Stat(manifestPath); err == nil {
-			ids = append(ids, entry.Name())
+			id, err := fsname.Decode(entry.Name())
+			if err != nil {
+				continue
+			}
+			ids = append(ids, id)
 		}
 	}
 
