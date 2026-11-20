@@ -34,7 +34,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	hop.top/cite v0.1.1
 	hop.top/cxr v0.1.0-alpha.0
-	hop.top/kit v0.5.0-beta.14
+	hop.top/kit v0.5.0-beta.15
 	hop.top/uma v0.1.0-alpha.0
 	hop.top/uma/adapter/mail v0.1.0-alpha.0
 	hop.top/uma/adapter/messaging/meta v0.1.0-alpha.0
@@ -139,6 +139,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sahilm/fuzzy v0.1.3 // indirect
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
