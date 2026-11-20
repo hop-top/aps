@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"hop.top/aps/internal/fsperm"
 )
 
 // GenerateKeyPair generates an Ed25519 key pair.
@@ -24,7 +26,7 @@ func SaveKeyPair(keyPath string, pub ed25519.PublicKey, priv ed25519.PrivateKey)
 		return fmt.Errorf("failed to create key directory: %w", err)
 	}
 
-	if err := os.WriteFile(keyPath, priv.Seed(), 0600); err != nil {
+	if err := fsperm.WriteSecret(keyPath, priv.Seed(), 0600); err != nil {
 		return fmt.Errorf("failed to write private key: %w", err)
 	}
 

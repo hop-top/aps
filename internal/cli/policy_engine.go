@@ -13,6 +13,7 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/storage"
 
+	"hop.top/aps/internal/fsperm"
 	"hop.top/kit/go/runtime/bus"
 	"hop.top/kit/go/runtime/policy"
 	"hop.top/kit/go/runtime/policy/withcel"
@@ -146,7 +147,7 @@ func ensureDefaultPoliciesFile() (string, error) {
 	}
 	out := make([]byte, len(policyEngineFile))
 	copy(out, policyEngineFile)
-	if err := os.WriteFile(path, out, 0o600); err != nil {
+	if err := fsperm.WriteSecret(path, out, 0o600); err != nil {
 		return "", fmt.Errorf("write %s: %w", path, err)
 	}
 	return path, nil

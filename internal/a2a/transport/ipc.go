@@ -11,6 +11,7 @@ import (
 	a2a "github.com/a2aproject/a2a-go/a2a"
 	"github.com/google/uuid"
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/fsperm"
 )
 
 // IPCConfig holds IPC transport configuration
@@ -98,7 +99,7 @@ func (t *IPCTransport) Send(ctx context.Context, message *a2a.Message) error {
 	filename := fmt.Sprintf("%d_%s.json", timestamp, uuid.New().String())
 	messagePath := filepath.Join(t.config.QueuePath, filename)
 
-	if err := os.WriteFile(messagePath, messageData, 0600); err != nil {
+	if err := fsperm.WriteSecret(messagePath, messageData, 0600); err != nil {
 		return fmt.Errorf("failed to write message: %w", err)
 	}
 
