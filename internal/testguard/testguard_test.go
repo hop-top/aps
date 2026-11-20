@@ -26,17 +26,13 @@ func TestRunSandboxesEnv(t *testing.T) {
 }
 
 func TestRunFailsWhenTestLeaksEnv(t *testing.T) {
-	prev, had := os.LookupEnv("XDG_CONFIG_HOME")
-	t.Cleanup(func() {
-		if had {
-			os.Setenv("XDG_CONFIG_HOME", prev)
-		} else {
-			os.Unsetenv("XDG_CONFIG_HOME")
-		}
-	})
+	// t.Setenv registers restore of the original state (set or unset).
+	t.Setenv("XDG_CONFIG_HOME", "")
 	code := Run(fakeM{func() {
 		// Simulates a test restoring a "real" dir with os.Setenv.
-		os.Setenv("XDG_CONFIG_HOME", "/real/home/.config")
+		if err := os.Setenv("XDG_CONFIG_HOME", "/real/home/.config"); err != nil {
+			t.Errorf("setenv: %v", err)
+		}
 	}})
 	if code == 0 {
 		t.Fatal("Run returned 0 though a test left XDG_CONFIG_HOME outside the sandbox")
