@@ -71,7 +71,10 @@ func (lazyPublisher) Publish(ctx context.Context, topic, source string, payload 
 	if b == nil {
 		return nil
 	}
-	return publisher.Publish(ctx, topic, source, payload)
+	if err := publisher.Publish(ctx, topic, source, payload); err != nil {
+		return fmt.Errorf("bus publish: %w", err)
+	}
+	return nil
 }
 
 func init() {
