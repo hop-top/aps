@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -14,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
+	"hop.top/kit/go/storage/secret/ref"
 
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
@@ -540,7 +542,18 @@ func writeProfileShowHuman(w io.Writer, profile *core.Profile) error {
 	if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
 		_, _ = fmt.Fprintln(w, "- Secrets: present")
 		secrets, _ := core.LoadProfileSecrets(profile.ID)
+		keys := make([]string, 0, len(secrets))
 		for k := range secrets {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			// A vault reference names where the value lives, not the value;
+			// show it as written. Literals stay redacted.
+			if v := secrets[k]; ref.IsRef(v) {
+				_, _ = fmt.Fprintf(w, "  - %s: %s\n", k, strings.TrimSpace(v))
+				continue
+			}
 			_, _ = fmt.Fprintf(w, "  - %s: ***redacted***\n", k)
 		}
 	} else {
