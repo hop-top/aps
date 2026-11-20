@@ -2,11 +2,17 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	apsjobs "hop.top/aps/internal/runtime/jobs"
 
@@ -85,4 +91,80 @@ func TestStartJobs_OpensQueueForServingProcess(t *testing.T) {
 	require.NotNil(t, jobEngine)
 	require.NotNil(t, apsjobs.Get())
 	require.FileExists(t, filepath.Join(dataHome, "aps", "jobs.db"))
+}
+
+// freeAddr returns a loopback address with a free port.
+func freeAddr(t *testing.T) string {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := l.Addr().String()
+	require.NoError(t, l.Close())
+	return addr
+}
+
+// serveAndStop runs `aps serve` in a child process, waits for /health,
+// lets the 500ms pollers run for settle, sends SIGTERM and returns the
+// child's stderr after it exits.
+func serveAndStop(t *testing.T, settle time.Duration) string {
+	t.Helper()
+	dataHome := t.TempDir()
+	addr := freeAddr(t)
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestExecuteHelperProcess$")
+	cmd.Env = append(os.Environ(),
+		execHelperEnv+"=serve --addr "+addr,
+		"XDG_DATA_HOME="+dataHome,
+		"XDG_STATE_HOME="+filepath.Join(dataHome, "state"),
+		"APS_DATA_PATH="+filepath.Join(dataHome, "aps"),
+		"APS_NO_BUS_WARN=1",
+		"APS_JOBS_DISABLE=",
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	require.NoError(t, cmd.Start())
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+
+	require.Eventually(t, func() bool {
+		resp, err := http.Get("http://" + addr + "/health")
+		if err != nil {
+			return false
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode == http.StatusOK
+	}, 15*time.Second, 50*time.Millisecond, stderr.String())
+
+	// settle positions the signal inside a poll tick so a cancelled
+	// in-flight query is exercised.
+	time.Sleep(settle)
+	require.NoError(t, cmd.Process.Signal(syscall.SIGTERM))
+
+	select {
+	case err := <-done:
+		require.NoError(t, err, stderr.String())
+	case <-time.After(20 * time.Second):
+		_ = cmd.Process.Kill()
+		t.Fatalf("serve did not exit after SIGTERM: %s", stderr.String())
+	}
+	return stderr.String()
+}
+
+// TestServeShutdownLogsNoPollerError pins that stopping `aps serve`
+// while the job pollers are polling does not log the cancelled poll
+// as an error: shutdown cancellation is normal.
+func TestServeShutdownLogsNoPollerError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("SIGTERM not supported")
+	}
+	// Pollers tick every 500ms from startJobs. Sweep the signal across
+	// the second tick so some runs land mid-query.
+	for i := 0; i < 17; i++ {
+		settle := time.Duration(400+10*i) * time.Millisecond
+		t.Run(fmt.Sprintf("settle_%dms", settle.Milliseconds()), func(t *testing.T) {
+			stderr := serveAndStop(t, settle)
+			require.NotContains(t, stderr, "ERRO job poller")
+			require.NotContains(t, stderr, "context canceled")
+		})
+	}
 }
