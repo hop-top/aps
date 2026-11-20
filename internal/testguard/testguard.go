@@ -31,13 +31,18 @@ func sandboxed(root string) map[string]string {
 // Run redirects HOME and the XDG/AppData dirs into a temp dir, runs the
 // tests, and returns the exit code (non-zero when a test left the
 // sandboxed env altered). Use as: os.Exit(testguard.Run(m)).
-func Run(m runner) int {
+func Run(m runner) (code int) {
 	root, err := os.MkdirTemp("", "aps-testguard-")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "testguard: %v\n", err)
 		return 1
 	}
-	defer os.RemoveAll(root)
+	defer func() {
+		if err := os.RemoveAll(root); err != nil {
+			fmt.Fprintf(os.Stderr, "testguard: remove sandbox %s: %v\n", root, err)
+			code = 1
+		}
+	}()
 	// Resolve symlinks (macOS /var -> /private/var) so comparisons are stable.
 	if r, err := filepath.EvalSymlinks(root); err == nil {
 		root = r
@@ -51,9 +56,12 @@ func Run(m runner) int {
 		}
 	}
 	// Tests must not inherit an explicit data-path override either.
-	os.Unsetenv("APS_DATA_PATH")
+	if err := os.Unsetenv("APS_DATA_PATH"); err != nil {
+		fmt.Fprintf(os.Stderr, "testguard: unsetenv APS_DATA_PATH: %v\n", err)
+		return 1
+	}
 
-	code := m.Run()
+	code = m.Run()
 
 	for k, v := range want {
 		if got := os.Getenv(k); got != v {
