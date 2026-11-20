@@ -110,7 +110,11 @@ func (l *lazyIdempotencyStore) Lookup(ctx context.Context, key string) (idemstor
 	if err != nil {
 		return idemstore.Result{}, false, err
 	}
-	return s.Lookup(ctx, key)
+	r, hit, err := s.Lookup(ctx, key)
+	if err != nil {
+		return idemstore.Result{}, false, fmt.Errorf("idempotency lookup %s: %w", key, err)
+	}
+	return r, hit, nil
 }
 
 func (l *lazyIdempotencyStore) Record(ctx context.Context, key string, r idemstore.Result) error {
@@ -118,7 +122,10 @@ func (l *lazyIdempotencyStore) Record(ctx context.Context, key string, r idemsto
 	if err != nil {
 		return err
 	}
-	return s.Record(ctx, key, r)
+	if err := s.Record(ctx, key, r); err != nil {
+		return fmt.Errorf("idempotency record %s: %w", key, err)
+	}
+	return nil
 }
 
 // Close releases the backend if it was ever opened; it never opens one.
@@ -126,7 +133,10 @@ func (l *lazyIdempotencyStore) Close() error {
 	if l.store == nil {
 		return nil
 	}
-	return l.store.Close()
+	if err := l.store.Close(); err != nil {
+		return fmt.Errorf("idempotency close: %w", err)
+	}
+	return nil
 }
 
 // withIdempotencyStore is the cli.New opt that installs the kit
