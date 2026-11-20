@@ -34,7 +34,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	hop.top/cite v0.1.1
 	hop.top/cxr v0.1.0-alpha.0
-	hop.top/kit v0.5.0-beta.15
+	hop.top/kit v0.5.0-beta.16
 	hop.top/uma v0.1.0-alpha.0
 	hop.top/uma/adapter/mail v0.1.0-alpha.0
 	hop.top/uma/adapter/messaging/meta v0.1.0-alpha.0
