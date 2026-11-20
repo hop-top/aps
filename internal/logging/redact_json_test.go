@@ -74,3 +74,14 @@ func TestJSONLWriter_MultiLineAndBypass(t *testing.T) {
 		t.Fatalf("got %q", buf.String())
 	}
 }
+
+func TestApplyJSONLinePolicy_RedactKeysNotExempt(t *testing.T) {
+	in := `{"channel_id":"+14155550123","event_id":"9f1c2d3e-4a5b-9131-824401265021"}`
+	got := string(ApplyJSONLinePolicy([]byte(in), JSONLPolicy{RedactKeys: []string{"Channel_ID"}}))
+	if strings.Contains(got, "4155550123") {
+		t.Fatalf("phone kept: %s", got)
+	}
+	if !strings.Contains(got, `"event_id":"9f1c2d3e-4a5b-9131-824401265021"`) {
+		t.Fatalf("other structural key mangled: %s", got)
+	}
+}

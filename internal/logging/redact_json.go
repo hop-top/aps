@@ -71,7 +71,7 @@ type valueSpan struct{ start, end int }
 // values held by structural keys in the JSON document b. Spans are in
 // document order and never overlap. ok is false when b is not a valid
 // JSON document.
-func structuralSpans(b []byte) (spans []valueSpan, ok bool) {
+func structuralSpans(b []byte, p JSONLPolicy) (spans []valueSpan, ok bool) {
 	type frame struct{ obj, expectKey bool }
 	var (
 		stack      []frame
@@ -109,7 +109,7 @@ func structuralSpans(b []byte) (spans []valueSpan, ok bool) {
 		top := &stack[n-1]
 		if top.obj && top.expectKey {
 			key, _ := tok.(string)
-			structural = isStructuralKey(key)
+			structural = isStructuralKey(key) && !p.redacts(key)
 			top.expectKey = false
 			continue
 		}
@@ -148,10 +148,32 @@ func sentinelFor(salt string, i int) string {
 // matches them. Non-JSON input falls back to ApplyBytes. Output keeps
 // the input's key order and spacing.
 func ApplyJSONLine(b []byte) []byte {
+	return ApplyJSONLinePolicy(b, JSONLPolicy{})
+}
+
+// JSONLPolicy narrows the structural-field exemption of ApplyJSONLine.
+type JSONLPolicy struct {
+	// RedactKeys names structural keys (case-insensitive) whose values
+	// are NOT exempted from PII rules: they carry personal data (for
+	// example phone-number IDs) and go through normal redaction.
+	RedactKeys []string
+}
+
+func (p JSONLPolicy) redacts(key string) bool {
+	for _, k := range p.RedactKeys {
+		if strings.EqualFold(k, key) {
+			return true
+		}
+	}
+	return false
+}
+
+// ApplyJSONLinePolicy is ApplyJSONLine with a per-call policy.
+func ApplyJSONLinePolicy(b []byte, p JSONLPolicy) []byte {
 	if !Enabled() || len(b) == 0 {
 		return b
 	}
-	spans, ok := structuralSpans(b)
+	spans, ok := structuralSpans(b, p)
 	if !ok || len(spans) == 0 {
 		return Redactor().ApplyBytes(b)
 	}
@@ -184,14 +206,20 @@ func ApplyJSONLine(b []byte) []byte {
 // timestamps). Each newline-terminated line is redacted via
 // ApplyJSONLine; see there for the structural-field rule.
 func NewJSONLWriter(w io.Writer) io.Writer {
+	return NewJSONLWriterPolicy(w, JSONLPolicy{})
+}
+
+// NewJSONLWriterPolicy is NewJSONLWriter with a per-writer policy.
+func NewJSONLWriterPolicy(w io.Writer, p JSONLPolicy) io.Writer {
 	if w == nil {
 		return io.Discard
 	}
-	return &jsonlWriter{inner: w}
+	return &jsonlWriter{inner: w, policy: p}
 }
 
 type jsonlWriter struct {
-	inner io.Writer
+	inner  io.Writer
+	policy JSONLPolicy
 }
 
 func (jw *jsonlWriter) Write(p []byte) (int, error) {
@@ -208,7 +236,7 @@ func (jw *jsonlWriter) Write(p []byte) (int, error) {
 		} else {
 			rest = nil
 		}
-		out.Write(ApplyJSONLine(line))
+		out.Write(ApplyJSONLinePolicy(line, jw.policy))
 		if nl >= 0 {
 			out.WriteByte('\n')
 		}
