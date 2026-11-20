@@ -9,7 +9,10 @@ import (
 	"testing"
 )
 
-import "hop.top/aps/internal/testguard"
+import (
+	"hop.top/aps/internal/core/session"
+	"hop.top/aps/internal/testguard"
+)
 
 var (
 	apsBinary string
@@ -26,6 +29,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// 2. Run tests
+	testguard.OnExit(session.CloseRegistry)
 	code := testguard.Run(m)
 
 	// 3. Cleanup
