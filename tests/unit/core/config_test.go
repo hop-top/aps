@@ -15,8 +15,8 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("default configuration when file missing", func(t *testing.T) {
 		// Ensure config file doesn't exist in a temp home
 		tempHome := t.TempDir()
-		os.Setenv("HOME", tempHome)
-		os.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("HOME", tempHome)
+		t.Setenv("XDG_CONFIG_HOME", "")
 
 		config, err := core.LoadConfig()
 		assert.NoError(t, err)
@@ -25,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("custom prefix from config file", func(t *testing.T) {
 		tempHome := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempHome)
+		t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 		configDir := filepath.Join(tempHome, "aps")
 		err := os.MkdirAll(configDir, 0755)
@@ -44,8 +44,7 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfigLayered(t *testing.T) {
 	t.Run("project layer overrides user layer", func(t *testing.T) {
 		tempHome := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempHome)
-		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+		t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 		userDir := filepath.Join(tempHome, "aps")
 		assert.NoError(t, os.MkdirAll(userDir, 0o755))
@@ -69,8 +68,7 @@ func TestLoadConfigLayered(t *testing.T) {
 
 	t.Run("malformed YAML returns defaults", func(t *testing.T) {
 		tempHome := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempHome)
-		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+		t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 		userDir := filepath.Join(tempHome, "aps")
 		assert.NoError(t, os.MkdirAll(userDir, 0o755))
@@ -87,8 +85,7 @@ func TestLoadConfigLayered(t *testing.T) {
 func TestLoadConfig_CLIOverrides(t *testing.T) {
 	t.Run("override wins over file", func(t *testing.T) {
 		tempHome := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempHome)
-		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+		t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 		userDir := filepath.Join(tempHome, "aps")
 		assert.NoError(t, os.MkdirAll(userDir, 0o755))
@@ -112,8 +109,7 @@ func TestLoadConfig_CLIOverrides(t *testing.T) {
 
 	t.Run("extra config path layers in", func(t *testing.T) {
 		tempHome := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempHome)
-		t.Cleanup(func() { os.Unsetenv("XDG_CONFIG_HOME") })
+		t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 		extra := filepath.Join(tempHome, "extra.yaml")
 		assert.NoError(t, os.WriteFile(extra, []byte("prefix: FROM_EXTRA\n"), 0o644))
@@ -130,7 +126,7 @@ func TestLoadConfig_CLIOverrides(t *testing.T) {
 func TestGetConfigDir(t *testing.T) {
 	t.Run("respects XDG_CONFIG_HOME", func(t *testing.T) {
 		tempDir := t.TempDir()
-		os.Setenv("XDG_CONFIG_HOME", tempDir)
+		t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 		dir, err := core.GetConfigDir()
 		assert.NoError(t, err)
@@ -138,7 +134,7 @@ func TestGetConfigDir(t *testing.T) {
 	})
 
 	t.Run("falls back to UserConfigDir", func(t *testing.T) {
-		os.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("XDG_CONFIG_HOME", "")
 		// os.UserConfigDir() behavior depends on OS, but we can verify it's not empty
 		dir, err := core.GetConfigDir()
 		assert.NoError(t, err)

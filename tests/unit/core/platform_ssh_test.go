@@ -22,10 +22,8 @@ func TestPlatformSSH_AttachToPlatformSandbox(t *testing.T) {
 	registry := session.GetRegistry()
 
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "ssh-attach-test"
 	profileDir := filepath.Join(tempDir, ".agents", "profiles", profileID)

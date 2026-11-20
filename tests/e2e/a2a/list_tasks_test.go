@@ -27,6 +27,8 @@ import (
 	"time"
 )
 
+import "hop.top/aps/internal/testguard"
+
 var (
 	apsBinary string
 	// binDir is a per-run temp dir holding the compiled binary, so
@@ -39,7 +41,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "compile aps binary: %v\n", err)
 		os.Exit(1)
 	}
-	code := m.Run()
+	code := testguard.Run(m)
 	_ = os.RemoveAll(binDir)
 	os.Exit(code)
 }

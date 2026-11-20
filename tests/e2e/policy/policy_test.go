@@ -30,6 +30,8 @@ import (
 	collab "hop.top/aps/internal/core/collaboration"
 )
 
+import "hop.top/aps/internal/testguard"
+
 // destructiveToken mirrors kit's destructiveTokenSha (kit
 // go/console/cli/policy_runE.go) for the kit/destructive-token gate
 // (T-0654): the first 12 hex chars of sha256(cmd.CommandPath()).
@@ -50,7 +52,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "compile aps binary: %v\n", err)
 		os.Exit(1)
 	}
-	code := m.Run()
+	code := testguard.Run(m)
 	_ = os.RemoveAll(binDir)
 	os.Exit(code)
 }

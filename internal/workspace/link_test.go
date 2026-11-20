@@ -13,8 +13,7 @@ import (
 
 func TestLinkProfile(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "link-test")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
@@ -34,8 +33,7 @@ func TestLinkProfile(t *testing.T) {
 
 func TestUnlinkProfile(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "unlink-test")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
@@ -60,8 +58,7 @@ func TestUnlinkProfile(t *testing.T) {
 
 func TestGetLinkedWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "linked-test")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
@@ -84,8 +81,7 @@ func TestGetLinkedWorkspace(t *testing.T) {
 
 func TestGetLinkedWorkspaceNone(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	profileDir := filepath.Join(tmpDir, ".agents", "profiles", "nolink-test")
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
