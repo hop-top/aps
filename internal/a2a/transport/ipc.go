@@ -99,7 +99,7 @@ func (t *IPCTransport) Send(ctx context.Context, message *a2a.Message) error {
 	filename := fmt.Sprintf("%d_%s.json", timestamp, uuid.New().String())
 	messagePath := filepath.Join(t.config.QueuePath, filename)
 
-	if err := fsperm.WriteSecret(messagePath, messageData, 0600); err != nil {
+	if err := fsperm.WriteSecret(messagePath, messageData, 0o600); err != nil {
 		return fmt.Errorf("failed to write message: %w", err)
 	}
 

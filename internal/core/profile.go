@@ -543,7 +543,7 @@ func CreateProfileWithContext(ctx context.Context, id string, config Profile) er
 	// Create default secrets.env
 	secretsPath := filepath.Join(dir, "secrets.env")
 	defaultSecrets := "# Add your secrets here. Format: KEY=VALUE\n# GITHUB_TOKEN=...\n"
-	if err := fsperm.WriteSecret(secretsPath, []byte(defaultSecrets), 0600); err != nil {
+	if err := fsperm.WriteSecret(secretsPath, []byte(defaultSecrets), 0o600); err != nil {
 		return fmt.Errorf("failed to create secrets.env: %w", err)
 	}
 

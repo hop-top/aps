@@ -49,7 +49,7 @@ func TrackEvent(name string, properties map[string]string) error {
 	}
 
 	metricsPath := filepath.Join(metricsDir, metricsFileName)
-	file, err := fsperm.OpenSecret(metricsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := fsperm.OpenSecret(metricsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open metrics file: %w", err)
 	}

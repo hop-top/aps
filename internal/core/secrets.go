@@ -252,7 +252,10 @@ func (d *dotenvStore) write(m map[string]string) error {
 		b.WriteString(v)
 		b.WriteByte('\n')
 	}
-	return fsperm.WriteSecret(d.path, []byte(b.String()), 0o600)
+	if err := fsperm.WriteSecret(d.path, []byte(b.String()), 0o600); err != nil {
+		return fmt.Errorf("write secrets %s: %w", d.path, err)
+	}
+	return nil
 }
 
 func (d *dotenvStore) Get(_ context.Context, key string) (*secret.Secret, error) {

@@ -160,7 +160,7 @@ func (tm *TokenManager) generateKeys(privPath, pubPath string) error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	})
-	if err := fsperm.WriteSecret(privPath, privPEM, 0600); err != nil {
+	if err := fsperm.WriteSecret(privPath, privPEM, 0o600); err != nil {
 		return fmt.Errorf("failed to write private key: %w", err)
 	}
 

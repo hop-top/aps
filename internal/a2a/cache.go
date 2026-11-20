@@ -137,7 +137,7 @@ func (c *Cache) persist(profileID string, card *a2a.AgentCard) error {
 		return ErrStorageFailed("marshal card", err)
 	}
 
-	if err := fsperm.WriteSecret(cardPath, data, 0600); err != nil {
+	if err := fsperm.WriteSecret(cardPath, data, 0o600); err != nil {
 		return ErrStorageFailed("write card", err)
 	}
 
