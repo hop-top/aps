@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -60,8 +61,10 @@ func wantUpgradeNotice(cmd *cobra.Command, stderrTTY bool) bool {
 	if os.Getenv("CI") != "" || os.Getenv("APS_NO_UPDATE_NOTIFIER") != "" {
 		return false
 	}
-	if f := cmd.Flag("quiet"); f != nil && f.Value.String() == "true" {
-		return false
+	if f := cmd.Flag("quiet"); f != nil {
+		if q, _ := strconv.ParseBool(f.Value.String()); q {
+			return false
+		}
 	}
 	if f := cmd.Flag(formatFlagName); f != nil && f.Changed {
 		switch f.Value.String() {

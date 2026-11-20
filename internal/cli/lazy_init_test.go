@@ -30,9 +30,9 @@ var isolatedEnvKeys = []string{
 
 // runIsolated runs `aps <args>` in a child process whose HOME and XDG
 // dirs all live under home, with the bus token and warning opt-outs
-// scrubbed (extra overrides them). It returns stdout, stderr and the
+// scrubbed (extra overrides them). It returns stderr and the
 // exit error.
-func runIsolated(t *testing.T, home string, extra map[string]string, args ...string) (string, string, error) {
+func runIsolated(t *testing.T, home string, extra map[string]string, args ...string) (stderrOut string, err error) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestExecuteHelperProcess$")
 	for _, kv := range os.Environ() {
@@ -59,10 +59,10 @@ func runIsolated(t *testing.T, home string, extra map[string]string, args ...str
 	for k, v := range extra {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	return stderr.String(), err
 }
 
 // tree lists every file and dir under root, relative, for failure output.
@@ -89,7 +89,7 @@ func TestNonUsingCommandsDoNotInitialise(t *testing.T) {
 		t.Run(strings.Join(args, "_"), func(t *testing.T) {
 			home := t.TempDir()
 
-			_, stderr, err := runIsolated(t, home, nil, args...)
+			stderr, err := runIsolated(t, home, nil, args...)
 			require.NoError(t, err, stderr)
 
 			files := tree(t, home)
@@ -132,7 +132,7 @@ func TestLazyCapabilityCache_OpensOnFirstUse(t *testing.T) {
 func TestBusDisabled_WarnsWhereUsed(t *testing.T) {
 	home := t.TempDir()
 
-	_, stderr, err := runIsolated(t, home, nil, "profile", "create", "lazy1")
+	stderr, err := runIsolated(t, home, nil, "profile", "create", "lazy1")
 	require.NoError(t, err, stderr)
 
 	assert.Equal(t, 1, strings.Count(stderr, "bus disabled"), stderr)
@@ -148,7 +148,7 @@ func TestBusEnabled_BuildsOnFirstUse(t *testing.T) {
 	home := t.TempDir()
 	env := map[string]string{"BUS_TOKEN": "t", "APS_BUS_ADDR": "ws://127.0.0.1:1/ws/bus"}
 
-	_, stderr, err := runIsolated(t, home, env, "profile", "create", "lazy2")
+	stderr, err := runIsolated(t, home, env, "profile", "create", "lazy2")
 	require.NoError(t, err, stderr)
 
 	files := tree(t, home)
@@ -164,7 +164,7 @@ func TestBusEnabled_VersionDoesNotBuild(t *testing.T) {
 	home := t.TempDir()
 	env := map[string]string{"BUS_TOKEN": "t", "APS_BUS_ADDR": "ws://127.0.0.1:1/ws/bus"}
 
-	_, stderr, err := runIsolated(t, home, env, "version")
+	stderr, err := runIsolated(t, home, env, "version")
 	require.NoError(t, err, stderr)
 
 	assert.Empty(t, stderr)
