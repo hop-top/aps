@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -225,7 +226,11 @@ type jsonlWriter struct {
 
 func (jw *jsonlWriter) Write(p []byte) (int, error) {
 	if !Enabled() {
-		return jw.inner.Write(p)
+		n, err := jw.inner.Write(p)
+		if err != nil {
+			return n, fmt.Errorf("jsonl write: %w", err)
+		}
+		return n, nil
 	}
 	var out bytes.Buffer
 	rest := p
@@ -243,7 +248,7 @@ func (jw *jsonlWriter) Write(p []byte) (int, error) {
 		}
 	}
 	if _, err := jw.inner.Write(out.Bytes()); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("jsonl write: %w", err)
 	}
 	return len(p), nil
 }
