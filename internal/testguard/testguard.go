@@ -9,7 +9,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
+
+var (
+	hooksMu sync.Mutex
+	hooks   []func() error
+)
+
+// OnExit registers fn to run after the tests finish and before the
+// sandbox is removed. Use it to close files the code under test keeps
+// open in package-level state (Windows cannot delete open files). A
+// non-nil error fails the run. Call from TestMain before Run.
+func OnExit(fn func() error) {
+	hooksMu.Lock()
+	defer hooksMu.Unlock()
+	hooks = append(hooks, fn)
+}
 
 // runner is satisfied by *testing.M.
 type runner interface{ Run() int }
@@ -62,6 +78,20 @@ func Run(m runner) (code int) {
 	}
 
 	code = m.Run()
+
+	hooksMu.Lock()
+	hs := hooks
+	hooksMu.Unlock()
+	for _, fn := range hs {
+		if err := fn(); err != nil {
+			fmt.Fprintf(os.Stderr, "testguard: exit hook: %v\n", err)
+			code = 1
+		}
+	}
+	if open := openHandles(root); len(open) > 0 {
+		fmt.Fprintf(os.Stderr, "testguard: files under sandbox still open at exit: %v\n", open)
+		code = 1
+	}
 
 	for k, v := range want {
 		if got := os.Getenv(k); got != v {
