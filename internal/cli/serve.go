@@ -109,6 +109,12 @@ func bearerTokenAuth(token string) kitapi.AuthFunc {
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
+	// This process serves jobs: open the queue and run the pollers.
+	// Deferred drain runs after the HTTP server has shut down, so no
+	// in-flight request enqueues into a closed engine.
+	startJobs()
+	defer drainJobs()
+
 	mgr := adapters.DefaultManager()
 	if err := mgr.InitAll(cmd.Context()); err != nil {
 		return fmt.Errorf("initialising adapters: %w", err)
