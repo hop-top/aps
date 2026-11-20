@@ -41,7 +41,7 @@ func isPIIRule(id string) bool {
 // isStructuralKey reports whether a JSON object key names a field whose
 // value is an identifier, reference, or timestamp rather than free
 // text: "id", "*_id", "resource", "caused_by", "signature", "version",
-// "event_type", "timestamp", "*_at".
+// "event_type", "timestamp", "*_at", "*_hmac" (keyed ID hashes).
 func isStructuralKey(key string) bool {
 	k := strings.ToLower(key)
 	switch k {
@@ -49,7 +49,8 @@ func isStructuralKey(key string) bool {
 		"event_type", "timestamp":
 		return true
 	}
-	return strings.HasSuffix(k, "_id") || strings.HasSuffix(k, "_at")
+	return strings.HasSuffix(k, "_id") || strings.HasSuffix(k, "_at") ||
+		strings.HasSuffix(k, "_hmac")
 }
 
 // structuralValueSafe reports whether s may be stored verbatim: any

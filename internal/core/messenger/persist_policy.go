@@ -3,7 +3,12 @@ package messenger
 import "hop.top/aps/internal/logging"
 
 // idKeys are the persisted-record keys that carry platform identifiers.
-var idKeys = []string{"message_id", "sender_id", "channel_id", "thread_id"}
+const (
+	keyChannelID = "channel_id"
+	keyMessageID = "message_id"
+)
+
+var idKeys = []string{keyMessageID, "sender_id", keyChannelID, "thread_id"}
 
 // verbatimIDPlatforms are platforms whose identifiers are opaque,
 // non-personal tokens (workspace/chat/snowflake IDs, org/repo). Their

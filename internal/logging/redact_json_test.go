@@ -85,3 +85,11 @@ func TestApplyJSONLinePolicy_RedactKeysNotExempt(t *testing.T) {
 		t.Fatalf("other structural key mangled: %s", got)
 	}
 }
+
+func TestApplyJSONLine_HMACFieldVerbatim(t *testing.T) {
+	// all-digit hex digest: digit-run PII rules would otherwise rewrite it
+	in := `{"channel_id_hmac":"4111111111111111","message_id_hmac":"40123456789012345678901234567890"}`
+	if got := string(ApplyJSONLine([]byte(in))); got != in {
+		t.Fatalf("hmac field mangled:\n in: %s\ngot: %s", in, got)
+	}
+}

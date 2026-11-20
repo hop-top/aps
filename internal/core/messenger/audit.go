@@ -55,9 +55,11 @@ func (a *AuditLogger) LogLinkCreated(messengerName, profileID string, mappings m
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
-		list := make([]map[string]string, 0, len(keys))
+		list := make([]map[string]any, 0, len(keys))
 		for _, k := range keys {
-			list = append(list, map[string]string{"channel_id": k, "target_action": mappings[k]})
+			m := map[string]any{keyChannelID: k, "target_action": mappings[k]}
+			withIDHashes(string(a.platform), m)
+			list = append(list, m)
 		}
 		entry["mappings"] = list
 	}
@@ -95,6 +97,7 @@ func (a *AuditLogger) LogMappingChanged(messengerName, profileID, channelID, old
 		"profile_id":     profileID,
 		"channel_id":     channelID,
 	}
+	withIDHashes(string(a.platform), entry)
 
 	if oldAction != "" {
 		entry["old_action"] = oldAction
