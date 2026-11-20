@@ -1038,13 +1038,9 @@ func TestGetAgentsDirPathComprehensive(t *testing.T) {
 
 // TestLoadConfigDefaultsComprehensive tests LoadConfig returns default values
 func TestLoadConfigDefaultsComprehensive(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
 
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	config, err := LoadConfig()
 	require.NoError(t, err)
@@ -1057,10 +1053,8 @@ func TestLoadConfigDefaultsComprehensive(t *testing.T) {
 // TestSaveAndLoadConfigComprehensive tests saving and loading configuration
 func TestSaveAndLoadConfigComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
 
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	original := &Config{
 		Prefix: "CUSTOM_PREFIX",
@@ -1084,10 +1078,8 @@ func TestSaveAndLoadConfigComprehensive(t *testing.T) {
 // TestConfigMigrationComprehensive tests config migration functionality
 func TestConfigMigrationComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	t.Cleanup(func() { os.Setenv("XDG_CONFIG_HOME", oldXDG) })
 
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	configDir := filepath.Join(tmpDir, "aps")
 	require.NoError(t, os.MkdirAll(configDir, 0755))
@@ -1111,13 +1103,9 @@ func TestConfigMigrationComprehensive(t *testing.T) {
 
 // TestConfigMigrationNoExistingComprehensive tests migration returns false when no existing config
 func TestConfigMigrationNoExistingComprehensive(t *testing.T) {
-	t.Parallel()
-
 	tmpDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_CONFIG_HOME")
-	defer os.Setenv("XDG_CONFIG_HOME", oldXDG)
 
-	os.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	migrated, err := MigrateConfig()
 	require.NoError(t, err)
@@ -1157,10 +1145,8 @@ func BenchmarkResolveActionTypeComprehensive(b *testing.B) {
 // BenchmarkLoadProfileComprehensive benchmarks profile loading
 func BenchmarkLoadProfileComprehensive(b *testing.B) {
 	tmpDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
 
-	os.Setenv("HOME", tmpDir)
+	b.Setenv("HOME", tmpDir)
 
 	profile := &Profile{
 		ID:          "bench-profile",
@@ -1180,10 +1166,8 @@ func BenchmarkLoadProfileComprehensive(b *testing.B) {
 // BenchmarkSaveProfileComprehensive benchmarks profile saving
 func BenchmarkSaveProfileComprehensive(b *testing.B) {
 	tmpDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", oldHome)
 
-	os.Setenv("HOME", tmpDir)
+	b.Setenv("HOME", tmpDir)
 
 	profile := &Profile{
 		ID:          "bench-save",
