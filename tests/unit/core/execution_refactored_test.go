@@ -14,32 +14,23 @@ import (
 )
 
 // makeProfileDir creates a profile directory under the XDG data path and
-// returns both the profile directory and a cleanup function that restores
-// XDG_DATA_HOME and APS_DATA_PATH.
+// returns the profile directory, pointing
+// XDG_DATA_HOME at it (restored by t.Setenv).
 func makeProfileDir(t *testing.T, tempDir, profileID string) string {
 	t.Helper()
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
 	require.NoError(t, os.MkdirAll(profileDir, 0755))
 
-	orig := os.Getenv("XDG_DATA_HOME")
-	origAPS := os.Getenv("APS_DATA_PATH")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
-	os.Unsetenv("APS_DATA_PATH")
-	t.Cleanup(func() {
-		os.Setenv("XDG_DATA_HOME", orig)
-		if origAPS != "" {
-			os.Setenv("APS_DATA_PATH", origAPS)
-		}
-	})
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
 
 	return profileDir
 }
 
 func TestRunCommandWithProcessIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "test-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -62,9 +53,8 @@ isolation:
 
 func TestRunCommandWithDefaultIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "default-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -85,9 +75,8 @@ display_name: Default Profile
 
 func TestRunCommandPlatformIsolationNotImplemented(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "platform-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -111,9 +100,8 @@ isolation:
 
 func TestRunCommandContainerIsolationNotImplemented(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "container-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -139,9 +127,8 @@ isolation:
 
 func TestRunCommandInvalidIsolationLevel(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "invalid-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -166,9 +153,8 @@ isolation:
 
 func TestRunActionWithProcessIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "action-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -210,9 +196,8 @@ accepts_stdin: false
 
 func TestRunActionWithPayload(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "payload-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -260,9 +245,8 @@ func TestRunActionInvalidProfile(t *testing.T) {
 
 func TestRunActionInvalidAction(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "no-action-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)
@@ -284,9 +268,8 @@ display_name: No Action Profile
 
 func TestBackwardCompatibility_InjectEnvironment(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "compat-profile"
 	profileDir := makeProfileDir(t, tempDir, profileID)

@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+import "hop.top/aps/internal/testguard"
+
 var (
 	apsBinary string
 	// binDir is a per-run temp dir holding the compiled binary, so
@@ -24,7 +26,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// 2. Run tests
-	code := m.Run()
+	code := testguard.Run(m)
 
 	// 3. Cleanup
 	_ = os.RemoveAll(binDir)

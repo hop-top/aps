@@ -31,12 +31,10 @@ func TestDarwinSandbox_IsAvailable(t *testing.T) {
 
 func TestDarwinSandbox_PrepareContext(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "darwin-test-profile"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
@@ -69,12 +67,10 @@ isolation:
 
 func TestDarwinSandbox_Validate(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "darwin-validate-test"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
@@ -122,12 +118,10 @@ func TestDarwinSandbox_PasswordGeneration(t *testing.T) {
 
 func TestDarwinSandbox_Cleanup(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "darwin-cleanup-test"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)
@@ -157,12 +151,10 @@ isolation:
 
 func TestDarwinSandbox_ManagerIntegration(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-	os.Setenv("XDG_DATA_HOME", "")
-	os.Unsetenv("APS_DATA_PATH")
-	os.Setenv("XDG_CONFIG_HOME", "")
-	defer os.Setenv("HOME", os.Getenv("HOME"))
-	defer os.Setenv("XDG_CONFIG_HOME", os.Getenv("XDG_CONFIG_HOME"))
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("APS_DATA_PATH", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	profileID := "darwin-manager-test"
 	profileDir := filepath.Join(tempDir, ".local", "share", "aps", "profiles", profileID)

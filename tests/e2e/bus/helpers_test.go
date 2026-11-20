@@ -38,6 +38,8 @@ import (
 	kitbus "hop.top/kit/go/runtime/bus"
 )
 
+import "hop.top/aps/internal/testguard"
+
 // destructiveTokenFor mirrors kit's destructiveTokenSha for the
 // kit/destructive-token=required gate (T-0654). The token is the
 // first 12 hex chars of sha256(cmd.CommandPath()).
@@ -62,7 +64,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "compile aps binary: %v\n", err)
 		os.Exit(1)
 	}
-	code := m.Run()
+	code := testguard.Run(m)
 	_ = os.RemoveAll(binDir)
 	os.Exit(code)
 }

@@ -13,8 +13,8 @@ import (
 
 func TestConfigDefaultIsolation(t *testing.T) {
 	tempHome := t.TempDir()
-	os.Setenv("HOME", tempHome)
-	os.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", tempHome)
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	config, err := core.LoadConfig()
 	require.NoError(t, err)
@@ -26,7 +26,7 @@ func TestConfigDefaultIsolation(t *testing.T) {
 
 func TestConfigLoadWithIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -51,11 +51,11 @@ isolation:
 
 func TestConfigSaveWithIsolation(t *testing.T) {
 	tempHome := t.TempDir()
-	require.NoError(t, os.Setenv("HOME", tempHome))
+	t.Setenv("HOME", tempHome)
 	// Must be an absolute path: an empty value falls back to the real
 	// per-user config dir on Windows (HOME is ignored there), which this
 	// test would then overwrite.
-	require.NoError(t, os.Setenv("XDG_CONFIG_HOME", filepath.Join(tempHome, ".config")))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tempHome, ".config"))
 
 	config := &core.Config{
 		Prefix: "MYAPP",
@@ -78,7 +78,7 @@ func TestConfigSaveWithIsolation(t *testing.T) {
 
 func TestConfigMigrate(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -109,7 +109,7 @@ func TestConfigMigrate(t *testing.T) {
 
 func TestConfigMigrateNoExisting(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	migrated, err := core.MigrateConfig()
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestConfigMigrateNoExisting(t *testing.T) {
 
 func TestConfigInvalidIsolationLevel(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
@@ -142,7 +142,7 @@ isolation:
 
 func TestConfigPartialIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempDir)
+	t.Setenv("XDG_CONFIG_HOME", tempDir)
 
 	configDir := filepath.Join(tempDir, "aps")
 	err := os.MkdirAll(configDir, 0755)
