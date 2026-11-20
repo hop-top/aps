@@ -5,11 +5,17 @@ package testguard
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
+
+// lsofTimeout bounds the open-handle probe so a wedged lsof cannot hang
+// the test binary's exit.
+const lsofTimeout = 10 * time.Second
 
 // openHandles lists files under root this process still holds open, via
 // lsof. Windows refuses to delete open files; POSIX does not, so this
@@ -18,7 +24,9 @@ func openHandles(root string) []string {
 	if _, err := exec.LookPath("lsof"); err != nil {
 		return nil
 	}
-	out, err := exec.Command("lsof", "-p", strconv.Itoa(os.Getpid()), "-Fn").Output() //nolint:gosec // G204: fixed binary and flags; the only variable is this process's own pid
+	ctx, cancel := context.WithTimeout(context.Background(), lsofTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "lsof", "-p", strconv.Itoa(os.Getpid()), "-Fn").Output() //nolint:gosec // G204: fixed binary and flags; the only variable is this process's own pid
 
 	if err != nil && len(out) == 0 {
 		return nil
