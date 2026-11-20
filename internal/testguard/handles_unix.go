@@ -26,7 +26,7 @@ func openHandles(root string) []string {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), lsofTimeout)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, "lsof", "-p", strconv.Itoa(os.Getpid()), "-Fn").Output() //nolint:gosec // G204: fixed binary and flags; the only variable is this process's own pid
+	out, err := exec.CommandContext(ctx, "lsof", "-p", strconv.Itoa(os.Getpid()), "-Fn").Output() // #nosec G204 -- fixed binary and flags; the only variable is this process's own pid
 
 	if err != nil && len(out) == 0 {
 		return nil
