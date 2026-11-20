@@ -10,8 +10,10 @@
 //
 // Contract:
 //
-//   - SetBus(b) is called once from internal/cli (bus.go init) once
-//     the process bus is constructed; nil-safe.
+//   - SetBusProvider(f) is called once from internal/cli at init. f
+//     builds the process bus on first call, so processes that never
+//     publish a pre_persisted event never construct it. SetBus(b)
+//     wires a ready bus directly (tests); nil-safe.
 //   - Publish(ctx, kind, op, id) fires kit.runtime.entity.pre_persisted
 //     synchronously. The kit/runtime/policy engine subscribes to that
 //     topic and vetoes via *policy.PolicyDeniedError when a rule denies.
@@ -36,8 +38,27 @@ import (
 // nil means publishes short-circuit — see package doc.
 var processBus bus.Bus
 
-// SetBus wires the process bus. Idempotent; nil disables enforcement.
-func SetBus(b bus.Bus) { processBus = b }
+// busProvider, when set, resolves the bus (and any bootstrap error)
+// on demand. It takes precedence over processBus.
+var busProvider func() (bus.Bus, error)
+
+// SetBus wires the process bus directly. Idempotent; nil disables
+// enforcement. Clears any provider.
+func SetBus(b bus.Bus) {
+	processBus = b
+	busProvider = nil
+}
+
+// SetBusProvider wires a lazy bus source. A provider error is returned
+// from Publish* so a delete never runs against an unenforced ruleset.
+func SetBusProvider(f func() (bus.Bus, error)) { busProvider = f }
+
+func resolveBus() (bus.Bus, error) {
+	if busProvider != nil {
+		return busProvider()
+	}
+	return processBus, nil
+}
 
 // PublishDeletePrePersisted fires kit.runtime.entity.pre_persisted with
 // Op=delete on the process bus. ctx is enriched in-place with the kind
@@ -67,7 +88,11 @@ func PublishDeletePrePersisted(ctx context.Context, kind, id string) (context.Co
 // rules read context.request_attrs.<key>.
 func PublishDeletePrePersistedWithAttrs(ctx context.Context, kind, id string, extra map[string]any) (context.Context, error) {
 	ctx = withRequestAttrs(ctx, kind, extra)
-	if processBus == nil {
+	b, err := resolveBus()
+	if err != nil {
+		return ctx, asCLIError(err)
+	}
+	if b == nil {
 		return ctx, nil
 	}
 	payload := domain.PreEntityPayload{
@@ -76,7 +101,7 @@ func PublishDeletePrePersistedWithAttrs(ctx context.Context, kind, id string, ex
 		EntityID: id,
 	}
 	ev := bus.NewEvent("kit.runtime.entity.pre_persisted", "aps.cli", payload)
-	if err := processBus.Publish(ctx, ev); err != nil {
+	if err := b.Publish(ctx, ev); err != nil {
 		return ctx, asCLIError(err)
 	}
 	return ctx, nil

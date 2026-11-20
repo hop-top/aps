@@ -85,7 +85,13 @@ func runListen(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("loading profile %q: %w", profileID, err)
 	}
 
-	if eventBus == nil {
+	// listen is a bus consumer: build it here. A disabled bus is the
+	// error below, so no separate warning.
+	b, err := ensureBus()
+	if err != nil {
+		return err
+	}
+	if b == nil {
 		return fmt.Errorf("bus disabled (set BUS_TOKEN or APS_BUS_TOKEN to enable subscribe)")
 	}
 
