@@ -585,7 +585,13 @@ func TestPolicyEngine_BadYAMLFailsLoud(t *testing.T) {
 		t.Fatalf("write broken policy: %v", err)
 	}
 
-	_, stderr, err := runAPS(t, home, policyFile, "version")
+	// The engine loads when the bus is first used, so the misconfig
+	// surfaces on the veto-gated delete (which must fail rather than
+	// run unenforced), not on bus-free commands like `version`.
+	writeRegistry(t, home, sessionFixture)
+	_, stderr, err := runAPS(t, home, policyFile, "session", "delete", "s-x",
+		"--force", "--note", "n",
+		"--confirm-token", destructiveToken("aps session delete"))
 	if err == nil {
 		t.Fatalf("expected non-zero exit on misconfig; stderr=%q", stderr)
 	}

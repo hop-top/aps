@@ -85,15 +85,16 @@ func orNone(v string) string {
 }
 
 // busState reports the event-bus wiring as one of "configured" (token
-// present + adapter constructed) or "disabled" (no token in env). The
-// init path in bus.go creates eventBus and netAdapter together when
-// the token is set, so there is no observable "local bus only" state.
-// The network adapter retries on its own, so "configured" here means
-// "wired", not "currently linked to the hub" — a real liveness probe
-// would require a synchronous round-trip we don't want to add to a
-// read-only command.
+// present) or "disabled" (no token in env). The bus is built lazily by
+// the first command that publishes, so this reads the token rather than
+// building the bus: a read-only status must not connect to the hub or
+// warn. bus.go builds eventBus and netAdapter together when the token is
+// set, so there is no observable "local bus only" state. The network
+// adapter retries on its own, so "configured" means "wired", not
+// "currently linked to the hub" — a real liveness probe would require a
+// synchronous round-trip we don't want to add to a read-only command.
 func busState() string {
-	if netAdapter != nil {
+	if busToken() != "" {
 		return "configured"
 	}
 	return "disabled"

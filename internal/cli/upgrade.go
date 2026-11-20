@@ -1,9 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/version"
@@ -11,6 +16,8 @@ import (
 	"hop.top/kit/go/core/upgrade"
 	"hop.top/kit/go/core/upgrade/skill"
 	"hop.top/kit/go/core/xdg"
+
+	"golang.org/x/term"
 )
 
 const apsGitHubRepo = "hop-top/aps"
@@ -20,6 +27,66 @@ func newChecker() *upgrade.Checker {
 		upgrade.WithBinary("aps", version.Short()),
 		upgrade.WithGitHub(apsGitHubRepo),
 	)
+}
+
+// upgradeNoticeSkipCommands are the top-level commands that never print
+// the update notice: version/upgrade (they are the update surface),
+// serve/listen (long-running, machine consumed), run (the child owns
+// the terminal), completion/help (shell and help plumbing), and
+// docs/env/toolspec (output meant to be captured or evaluated).
+var upgradeNoticeSkipCommands = []string{
+	"version", "upgrade", "serve", "listen", "run",
+	"completion", "help", "docs", "env", "toolspec",
+}
+
+// Seams for tests.
+var (
+	stderrIsTerminal = func() bool { return term.IsTerminal(int(os.Stderr.Fd())) }
+	upgradeNotifier  = func(ctx context.Context, w io.Writer) {
+		upgrade.NotifyIfAvailable(ctx, newChecker(), w)
+	}
+)
+
+// wantUpgradeNotice reports whether cmd should print the update notice.
+// Convention (gh, npm update-notifier): only interactive, human-facing
+// invocations. The notice goes to stderr, so it needs stderr on a
+// terminal; it is withheld in CI, under --quiet, for machine formats
+// (--format json/yaml), for the commands in upgradeNoticeSkipCommands,
+// for the bare root (TUI / profile dispatch) and when
+// APS_NO_UPDATE_NOTIFIER is set.
+func wantUpgradeNotice(cmd *cobra.Command, stderrTTY bool) bool {
+	if !stderrTTY || cmd == nil || cmd.Parent() == nil {
+		return false
+	}
+	if os.Getenv("CI") != "" || os.Getenv("APS_NO_UPDATE_NOTIFIER") != "" {
+		return false
+	}
+	if f := cmd.Flag("quiet"); f != nil {
+		if q, _ := strconv.ParseBool(f.Value.String()); q {
+			return false
+		}
+	}
+	if f := cmd.Flag(formatFlagName); f != nil && f.Changed {
+		switch f.Value.String() {
+		case "", "table":
+		default:
+			return false
+		}
+	}
+	top := cmd
+	for top.Parent().Parent() != nil {
+		top = top.Parent()
+	}
+	name := top.Name()
+	return !strings.HasPrefix(name, "__") && !slices.Contains(upgradeNoticeSkipCommands, name)
+}
+
+// maybeNotifyUpgrade prints the update notice when wantUpgradeNotice
+// allows it. Called from the pre-run hook, never from package init.
+func maybeNotifyUpgrade(cmd *cobra.Command) {
+	if wantUpgradeNotice(cmd, stderrIsTerminal()) {
+		upgradeNotifier(cmd.Context(), os.Stderr)
+	}
 }
 
 func newUpgradeCmd() *cobra.Command {

@@ -687,4 +687,3 @@ icacls $env:USERPROFILE\.ssh\aps_server_key /grant:r "$env:USERNAME:F"
 
 - [OpenSSH Documentation](https://www.openssh.com/manual.html)
 - [SSH Configuration](https://man.openbsd.org/sshd_config)
-- [Docker Samples](https://docs.docker.com/samples/)

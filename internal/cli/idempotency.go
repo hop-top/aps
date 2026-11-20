@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"hop.top/aps/internal/core"
@@ -80,21 +82,82 @@ func parseIdempotencyTTL(cfg *core.Config) time.Duration {
 	return d
 }
 
+// lazyIdempotencyStore defers opening the real backend until the first
+// Lookup or Record. kit only reaches the store when a command carries
+// --idempotency-key, so every other invocation (version, list, show,
+// --help) never loads config, creates the state dir or opens sqlite.
+// Resolving at first use also means -c/--config overrides parsed by the
+// persistent pre-run hook are in effect when the backend is chosen.
+type lazyIdempotencyStore struct {
+	once  sync.Once
+	store idemstore.Store
+	err   error
+}
+
+func (l *lazyIdempotencyStore) open() (idemstore.Store, error) {
+	l.once.Do(func() {
+		cfg, _ := core.LoadConfig()
+		l.store, _, l.err = newIdempotencyStore(cfg)
+		if l.err != nil {
+			idempotencyOpenErr = l.err
+		}
+	})
+	return l.store, l.err
+}
+
+func (l *lazyIdempotencyStore) Lookup(ctx context.Context, key string) (idemstore.Result, bool, error) {
+	s, err := l.open()
+	if err != nil {
+		return idemstore.Result{}, false, err
+	}
+	r, hit, err := s.Lookup(ctx, key)
+	if err != nil {
+		return idemstore.Result{}, false, fmt.Errorf("idempotency lookup %s: %w", key, err)
+	}
+	return r, hit, nil
+}
+
+func (l *lazyIdempotencyStore) Record(ctx context.Context, key string, r idemstore.Result) error {
+	s, err := l.open()
+	if err != nil {
+		return err
+	}
+	if err := s.Record(ctx, key, r); err != nil {
+		return fmt.Errorf("idempotency record %s: %w", key, err)
+	}
+	return nil
+}
+
+// Close releases the backend if it was ever opened; it never opens one.
+func (l *lazyIdempotencyStore) Close() error {
+	if l.store == nil {
+		return nil
+	}
+	if err := l.store.Close(); err != nil {
+		return fmt.Errorf("idempotency close: %w", err)
+	}
+	return nil
+}
+
 // withIdempotencyStore is the cli.New opt that installs the kit
-// idempotency replay backend on Root. Failure to open the store does
-// not panic at construction time — that would refuse all invocations
-// when the on-disk db is malformed. Instead the error is captured and
-// surfaced once via PrePersistentRunE, leaving --help / completion /
-// other read-only paths usable for recovery.
+// idempotency replay backend on Root. The backend is opened lazily (see
+// lazyIdempotencyStore). A failure to open does not refuse invocations
+// that do not use --idempotency-key; it is captured and surfaced by
+// applyNoRedactToggle on a mutating leaf that supplies a key, leaving
+// --help / completion / read-only paths usable for recovery.
 func withIdempotencyStore() func(*kitcli.Root) {
 	return func(r *kitcli.Root) {
-		cfg, _ := core.LoadConfig()
-		store, _, err := newIdempotencyStore(cfg)
-		if err != nil {
-			idempotencyOpenErr = err
-			return
-		}
-		r.IdemStore = store
+		idempotencyStore = &lazyIdempotencyStore{}
+		r.IdemStore = idempotencyStore
+	}
+}
+
+// probeIdempotencyStore forces the lazy store open so an open failure
+// is captured in idempotencyOpenErr before the command runs. Called
+// only for invocations that carry an idempotency key.
+func probeIdempotencyStore() {
+	if l := idempotencyStore; l != nil {
+		_, _ = l.open()
 	}
 }
 
@@ -112,3 +175,9 @@ func idempotencyHealthErr() error {
 	}
 	return errors.Join(errors.New("idempotency: replay store unavailable"), idempotencyOpenErr)
 }
+
+// idempotencyStore is the lazy store installed on Root. Held here (not
+// read back from root.IdemStore) because the pre-run hook that probes it
+// is declared inside the root initializer; referencing root there would
+// be an initialization cycle.
+var idempotencyStore *lazyIdempotencyStore
