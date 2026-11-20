@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/cobra"
 	"hop.top/aps/internal/cli/adapter"
 	"hop.top/aps/internal/cli/policygate"
 	"hop.top/aps/internal/core"
@@ -15,7 +16,6 @@ import (
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/storage"
-	"github.com/spf13/cobra"
 	"hop.top/kit/go/runtime/bus"
 )
 
