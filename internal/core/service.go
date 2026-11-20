@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"hop.top/aps/internal/core/msgroute"
+	"hop.top/aps/internal/fsperm"
 	"hop.top/aps/internal/logging"
 	kitalias "hop.top/kit/go/console/alias"
 )
@@ -349,7 +350,7 @@ func SaveService(service *ServiceConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal service: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	if err := fsperm.WriteSecret(path, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write service: %w", err)
 	}
 	return nil

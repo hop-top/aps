@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/fsperm"
 	"hop.top/aps/internal/version"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/core/upgrade"
@@ -117,7 +118,7 @@ func installAPSPreamble(preamble string) error {
 		return fmt.Errorf("upgrade preamble: mkdir: %w", err)
 	}
 	path := filepath.Join(dir, "upgrade-preamble.md")
-	if err := os.WriteFile(path, []byte(preamble), 0o600); err != nil {
+	if err := fsperm.WriteSecret(path, []byte(preamble), 0o600); err != nil {
 		return fmt.Errorf("upgrade preamble: write: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Installed upgrade preamble → %s\n", path)

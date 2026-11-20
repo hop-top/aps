@@ -13,6 +13,7 @@ import (
 	"hop.top/kit/go/runtime/domain"
 
 	"hop.top/aps/internal/events"
+	"hop.top/aps/internal/fsperm"
 )
 
 // ErrProfileHasActiveSessions is returned when DeleteProfile finds active
@@ -542,7 +543,7 @@ func CreateProfileWithContext(ctx context.Context, id string, config Profile) er
 	// Create default secrets.env
 	secretsPath := filepath.Join(dir, "secrets.env")
 	defaultSecrets := "# Add your secrets here. Format: KEY=VALUE\n# GITHUB_TOKEN=...\n"
-	if err := os.WriteFile(secretsPath, []byte(defaultSecrets), 0600); err != nil {
+	if err := fsperm.WriteSecret(secretsPath, []byte(defaultSecrets), 0600); err != nil {
 		return fmt.Errorf("failed to create secrets.env: %w", err)
 	}
 
