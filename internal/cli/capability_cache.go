@@ -37,7 +37,11 @@ func (l *lazyCapabilityCache) Get(ctx context.Context, name string) (capability.
 	if c == nil {
 		return capability.Capability{}, false, nil
 	}
-	return c.Get(ctx, name)
+	got, hit, err := c.Get(ctx, name)
+	if err != nil {
+		return capability.Capability{}, false, fmt.Errorf("capability cache get: %w", err)
+	}
+	return got, hit, nil
 }
 
 func (l *lazyCapabilityCache) Put(ctx context.Context, cp capability.Capability) error {
@@ -45,7 +49,10 @@ func (l *lazyCapabilityCache) Put(ctx context.Context, cp capability.Capability)
 	if c == nil {
 		return nil
 	}
-	return c.Put(ctx, cp)
+	if err := c.Put(ctx, cp); err != nil {
+		return fmt.Errorf("capability cache put: %w", err)
+	}
+	return nil
 }
 
 func init() {
