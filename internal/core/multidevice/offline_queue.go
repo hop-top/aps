@@ -87,7 +87,7 @@ func (q *OfflineQueue) Enqueue(event *WorkspaceEvent) error {
 
 	// Wrap the file in the redacting writer so future payload fields
 	// that may carry secrets do not persist in the clear.
-	if _, err := logging.NewWriter(f).Write(append(data, '\n')); err != nil {
+	if _, err := logging.NewJSONLWriter(f).Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("writing to offline queue: %w", err)
 	}
 

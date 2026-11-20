@@ -524,6 +524,83 @@ func TestEventStore_QueryByResource(t *testing.T) {
 	assert.Equal(t, e2.ID, results[0].ID)
 }
 
+// fixedCardShapedID is an event ID whose tail ("9131-824401265021") is a
+// 16-digit run across a hyphen, the shape the kit credit-card rule
+// matches. Random UUIDs hit this ~1 run in N; pinning one makes the
+// regression deterministic.
+const fixedCardShapedID = "evt-bffab4c3-9d88-4349-9131-824401265021"
+
+func TestEventStore_IdentifiersRoundTrip(t *testing.T) {
+	setupTestHome(t)
+
+	store := NewEventStore("ws-1")
+
+	e := NewEvent("ws-1", "dev-1", EventProfileUpdated, map[string]interface{}{
+		"resource": "profile:test-profile",
+		"id":       "9131-824401265021",
+	})
+	e.ID = fixedCardShapedID
+	e.CausedBy = fixedCardShapedID
+	require.NoError(t, store.Store(e))
+
+	got, err := store.GetByID(fixedCardShapedID)
+	require.NoError(t, err)
+	assert.Equal(t, fixedCardShapedID, got.ID)
+	assert.Equal(t, fixedCardShapedID, got.CausedBy)
+	assert.Equal(t, "9131-824401265021", got.Payload["id"])
+	assert.True(t, got.Timestamp.Equal(e.Timestamp), "timestamp must round-trip")
+
+	results, err := store.QueryByResource("ws-1", "profile:test-profile")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, fixedCardShapedID, results[0].ID)
+}
+
+func TestOfflineQueue_IdentifiersRoundTrip(t *testing.T) {
+	setupTestHome(t)
+
+	q := NewOfflineQueue("dev-1", "ws-1")
+	e := NewEvent("ws-1", "dev-1", EventProfileUpdated, nil)
+	e.ID = fixedCardShapedID
+	require.NoError(t, q.Enqueue(e))
+
+	got, err := q.Dequeue()
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, fixedCardShapedID, got[0].ID)
+}
+
+func TestAuditLogger_ResourceRoundTrip(t *testing.T) {
+	setupTestHome(t)
+
+	logger := NewAuditLogger("ws-1")
+	require.NoError(t, logger.Log(&AuditEntry{
+		DeviceID: "dev-1",
+		Action:   "read",
+		Resource: fixedCardShapedID,
+		Result:   "allow",
+	}))
+
+	entries, err := logger.ListEntries(time.Time{}, "", "", "", 0)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, fixedCardShapedID, entries[0].Resource)
+}
+
+func TestEventStore_FreeTextStillRedacted(t *testing.T) {
+	setupTestHome(t)
+
+	store := NewEventStore("ws-1")
+	e := NewEvent("ws-1", "dev-1", EventProfileUpdated, map[string]interface{}{
+		"note": "card 4111 1111 1111 1111 on file",
+	})
+	require.NoError(t, store.Store(e))
+
+	got, err := store.GetByID(e.ID)
+	require.NoError(t, err)
+	assert.NotContains(t, got.Payload["note"], "4111")
+}
+
 // ============================================================================
 // Presence Tests
 // ============================================================================

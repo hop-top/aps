@@ -159,7 +159,7 @@ func (t *Telemetry) writeEvent(event TelemetryEvent) error {
 	}
 
 	// Write as single line (JSONL) through the redacting writer.
-	w := logging.NewWriter(f)
+	w := logging.NewJSONLWriter(f)
 	if _, err := w.Write(append(eventJSON, '\n')); err != nil {
 		return fmt.Errorf("failed to write event: %w", err)
 	}
