@@ -152,6 +152,7 @@ func (l *WorkspaceMessageLogger) writeEntryFor(platform MessengerPlatform, profi
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	withIDHashes(string(platform), entry)
 	line, err := json.Marshal(entry)
 	if err != nil {
 		return &MessengerError{
