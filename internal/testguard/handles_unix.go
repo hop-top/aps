@@ -15,11 +15,11 @@ import (
 // lsof. Windows refuses to delete open files; POSIX does not, so this
 // surfaces the same leak there. Returns nil when lsof is unavailable.
 func openHandles(root string) []string {
-	bin, err := exec.LookPath("lsof")
-	if err != nil {
+	if _, err := exec.LookPath("lsof"); err != nil {
 		return nil
 	}
-	out, err := exec.Command(bin, "-p", strconv.Itoa(os.Getpid()), "-Fn").Output()
+	out, err := exec.Command("lsof", "-p", strconv.Itoa(os.Getpid()), "-Fn").Output() //nolint:gosec // G204: fixed binary and flags; the only variable is this process's own pid
+
 	if err != nil && len(out) == 0 {
 		return nil
 	}
