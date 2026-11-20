@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
+	"sync"
 	"time"
 
 	"hop.top/aps/internal/cli/adapter"
@@ -13,6 +15,7 @@ import (
 	"hop.top/aps/internal/core/session"
 	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/storage"
+	"github.com/spf13/cobra"
 	"hop.top/kit/go/runtime/bus"
 )
 
@@ -44,32 +47,117 @@ var (
 // publisher wraps eventBus for structured event publishing.
 var publisher *events.Publisher
 
+// Lazy bus state. The bus is built by ensureBus on first use, never at
+// package init, so a command that does not touch the bus (version,
+// profile list, ...) neither connects the network adapter, opens the
+// collaboration store, loads the policy engine, nor warns about a
+// missing token.
+var (
+	busOnce     sync.Once
+	busErr      error
+	busWarnOnce sync.Once
+)
+
+// lazyPublisher is the events seam handed to core, session and the
+// adapter CLI layer. Each Publish resolves the bus through useBus, so
+// the first event a command emits builds it.
+type lazyPublisher struct{}
+
+func (lazyPublisher) Publish(ctx context.Context, topic, source string, payload any) error {
+	b, err := useBus()
+	if err != nil {
+		return err
+	}
+	if b == nil {
+		return nil
+	}
+	return publisher.Publish(ctx, topic, source, payload)
+}
+
 func init() {
+	lp := lazyPublisher{}
+	adapter.SetPublisher(lp)
+	core.SetEventPublisher(lp)
+	session.SetEventPublisher(lp)
+	// The pre_persisted veto path builds the bus on its first publish.
+	policygate.SetBusProvider(useBus)
+}
+
+// busAtStartupCommands are the long-running servers that emit lifecycle
+// events for the requests they handle. They build the bus before
+// serving so the policy engine is wired and a missing token is reported
+// once at startup rather than on the first event.
+var busAtStartupCommands = []string{"aps serve", "aps webhook server"}
+
+// usesBusAtStartup reports whether cmd is one of busAtStartupCommands.
+func usesBusAtStartup(cmd *cobra.Command) bool {
+	return slices.Contains(busAtStartupCommands, cmd.CommandPath())
+}
+
+// busToken returns the configured bus token, or "" when the bus is
+// disabled.
+func busToken() string {
+	if t := os.Getenv("APS_BUS_TOKEN"); t != "" {
+		return t
+	}
+	return os.Getenv("BUS_TOKEN")
+}
+
+// ensureBus builds the process bus once. It returns a nil bus and nil
+// error when no token is configured (bus disabled). A non-nil error
+// means the policy engine failed to load; the bus is then left unset so
+// no veto-gated path runs against an unenforced ruleset.
+func ensureBus() (bus.Bus, error) {
+	busOnce.Do(initBus)
+	return eventBus, busErr
+}
+
+// useBus is ensureBus for call sites that actually use the bus: it also
+// reports, once per process, that the bus is disabled or unusable.
+// Callers that only inspect bus state (status) must not use it.
+func useBus() (bus.Bus, error) {
+	b, err := ensureBus()
+	busWarnOnce.Do(func() {
+		switch {
+		case err != nil:
+			fmt.Fprintf(os.Stderr, "warn: bus: %v\n", err)
+		case b == nil && os.Getenv("APS_NO_BUS_WARN") == "":
+			// Tests that don't exercise the bus opt out via APS_NO_BUS_WARN to
+			// keep stderr clean (e.g. progress-JSONL contract tests). The
+			// webhook_gap test exercises this warning explicitly and leaves
+			// the flag unset.
+			fmt.Fprintln(os.Stderr, "warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled")
+		}
+	})
+	return b, err
+}
+
+func initBus() {
+	token := busToken()
+	if token == "" {
+		return
+	}
 	addr := os.Getenv("APS_BUS_ADDR")
 	if addr == "" {
 		addr = defaultBusAddr
-	}
-
-	token := os.Getenv("APS_BUS_TOKEN")
-	if token == "" {
-		token = os.Getenv("BUS_TOKEN")
-	}
-	if token == "" {
-		// Tests that don't exercise the bus opt out via APS_NO_BUS_WARN to
-		// keep stderr clean (e.g. progress-JSONL contract tests). The
-		// webhook_gap test exercises this warning explicitly and leaves
-		// the flag unset.
-		if os.Getenv("APS_NO_BUS_WARN") == "" {
-			fmt.Fprintln(os.Stderr, "warn: bus auth: BUS_TOKEN or APS_BUS_TOKEN not set; bus disabled")
-		}
-		return
 	}
 
 	// Build the local memory bus and a network adapter explicitly so we
 	// keep handles to both. bus.New(WithNetwork(...)) hides the inner
 	// memBus inside an unexported networkedBus, which makes the correct
 	// shutdown ordering impossible (see drainBus below).
-	eventBus = bus.New()
+	local := bus.New()
+
+	// Load the policy engine and subscribe it before anything can
+	// publish, so a pre_persisted veto is never missed. Misconfig (bad
+	// YAML, unknown topic, broken CEL) is returned from the gate rather
+	// than running a delete against an unenforced ruleset.
+	if _, err := initPolicyEngine(local); err != nil {
+		busErr = err
+		_ = local.Close(context.Background())
+		return
+	}
+	eventBus = local
 	netAdapter = bus.NewNetworkAdapter(
 		eventBus,
 		bus.WithAuth(&bus.StaticTokenAuth{Token_: token}),
@@ -78,16 +166,6 @@ func init() {
 	_ = netAdapter.Connect(context.Background(), addr)
 
 	publisher = events.NewPublisher(eventBus)
-	adapter.SetPublisher(publisher)
-	core.SetEventPublisher(publisher)
-	session.SetEventPublisher(publisher)
-
-	// Expose the bus to the policy gate so CLI delete handlers in the
-	// session/ + workspace/ subpackages can fire pre_persisted vetoes
-	// synchronously (T-1292). Subpackages can't import internal/cli
-	// (parent-imports-child cycle), so the bus is published through
-	// internal/cli/policygate as a side-channel seam.
-	policygate.SetBus(eventBus)
 
 	// Wire the workspace audit log as a bus subscriber. Storage init is
 	// best-effort: if it fails (no data dir yet, etc.) we skip silently
@@ -103,10 +181,7 @@ func init() {
 // blocks the caller. The actual drain happens in drainBus, called from
 // the cobra Execute defer (see root.go).
 func publishEvent(topic, source string, payload any) {
-	if publisher == nil {
-		return
-	}
-	if err := publisher.Publish(context.Background(), topic, source, payload); err != nil {
+	if err := (lazyPublisher{}).Publish(context.Background(), topic, source, payload); err != nil {
 		fmt.Fprintf(os.Stderr, "warn: event publish (%s): %v\n", topic, err)
 	}
 }
