@@ -47,9 +47,11 @@ func jobsEnabled() bool {
 	return os.Getenv("APS_JOBS_DISABLE") != "1"
 }
 
-// initJobs opens the durabletask SQLite backend, registers handlers,
+// startJobs opens the durabletask SQLite backend, registers handlers,
 // and starts the Poller goroutines. Safe to call multiple times; only
-// the first invocation does anything. Errors are logged but do not
+// the first invocation does anything. Only processes that serve jobs
+// (today: `aps serve`) call it; short-lived commands never open the
+// queue or start pollers. Errors are logged but do not
 // fail the CLI invocation — the service is best-effort, callers fall
 // back to synchronous paths when apsjobs.Get() returns nil.
 //
@@ -58,7 +60,7 @@ func jobsEnabled() bool {
 // point of the refactor. All other ad-hoc goroutines elsewhere in aps
 // either remain idiomatic (cmd.Wait, http.Server.Serve) or are
 // migrated to enqueue + handler in subsequent commits.
-func initJobs() {
+func startJobs() {
 	jobInitOnce.Do(func() {
 		if !jobsEnabled() {
 			return
@@ -151,7 +153,7 @@ func startPoller(ctx context.Context, svc job.Service, queue string, handlers jo
 
 // drainJobs stops the poller goroutines and closes the engine. Mirrors
 // drainBus: safe to call when nothing was wired (jobsEnabled was false
-// or initJobs failed early). Called from Execute's defer chain so the
+// or startJobs failed early). Called from Execute's defer chain so the
 // engine flushes even on error paths.
 func drainJobs() {
 	if jobCancel != nil {

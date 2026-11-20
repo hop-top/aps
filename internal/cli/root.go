@@ -386,9 +386,9 @@ func Execute() error {
 	// bus before drainBus closes it, so the unsubscribe is a no-op on
 	// a still-open bus (matches tlc T-1192 ordering).
 	defer drainBus()
+	// drainJobs is a no-op unless a serving command called startJobs.
 	defer drainJobs()
 	defer closePolicy()
-	initJobs()
 	err := root.Execute(context.Background())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, styles.Error.Render("Error: "+err.Error()))
