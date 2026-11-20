@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/pflag"
 	kitcli "hop.top/kit/go/console/cli"
 	kitconfigoverrides "hop.top/kit/go/core/config"
-	"hop.top/kit/go/core/upgrade"
 )
 
 // noRedactFlag holds the parsed --no-redact value. The flag is
@@ -34,11 +33,12 @@ var noRedactFlag bool
 // times.
 //
 // In addition to inverting --no-redact into the redact.enabled viper
-// key (T-0460), it bootstraps the kit/runtime/policy engine on the
-// process bus (T-1292). Misconfig (bad YAML, unknown topic, broken
-// CEL) fails loud here so the user's command never runs against an
-// unenforced ruleset. KIT_POLICY_DISABLE=1 short-circuits the bootstrap
-// for tests / dev mode.
+// key (T-0460), it prints the update notice for interactive commands.
+// The kit/runtime/policy engine is not loaded here: it is wired when
+// the process bus is first built (see ensureBus), so only commands that
+// use the bus pay for it, and a policy misconfig fails the veto-gated
+// delete rather than running it unenforced. KIT_POLICY_DISABLE=1
+// short-circuits the bootstrap for tests / dev mode.
 //
 // Defined as a top-level function (not a closure inside Config) to
 // avoid the initialization cycle: `root` is the value being declared
@@ -68,8 +68,9 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 			core.SetConfigArgs(paths, overrides)
 		}
 	}
-	if _, err := initPolicyEngine(eventBus); err != nil {
-		return err
+	maybeNotifyUpgrade(cmd)
+	if usesBusAtStartup(cmd) {
+		_, _ = useBus()
 	}
 	// Surface a captured idempotency-store open failure on mutating
 	// leaves only. Read-only paths (--help, completion, status, list,
@@ -334,13 +335,6 @@ ID followed by a command to run that command under the selected profile.`
 			logging.GetLogger().Error("error rendering help", err)
 		}
 		os.Exit(1)
-	}
-
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
-		if cmd.Name() == "upgrade" {
-			return
-		}
-		upgrade.NotifyIfAvailable(cmd.Context(), newChecker(), os.Stderr)
 	}
 
 	// Register contextual post-command hints (T-0346).
