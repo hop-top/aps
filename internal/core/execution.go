@@ -77,7 +77,9 @@ func buildEnvVars(profile *Profile) ([]string, error) {
 	}
 
 	// 3. Inject Secrets
-	secrets, err := LoadSecrets(secretsPath)
+	// Values that are vault references (op://..., secret:NAME) are resolved
+	// here, for the child only; failure aborts the run (fail closed).
+	secrets, err := LoadResolvedSecrets(profile.ID, secretsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load secrets: %w", err)
 	}
