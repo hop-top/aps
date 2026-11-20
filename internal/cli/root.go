@@ -79,6 +79,12 @@ func applyNoRedactToggle(cmd *cobra.Command, _ []string) error {
 	// no replay protection — kit's wrapIdempotencyRunE returns the
 	// original RunE unchanged when Root.IdemStore is nil.
 	if kitcli.IsMutating(cmd) {
+		// The store opens lazily and only an invocation that supplies
+		// a key can need it, so only then force the open to learn
+		// whether it is healthy.
+		if f := cmd.Flags().Lookup("idempotency-key"); f != nil && f.Value.String() != "" {
+			probeIdempotencyStore()
+		}
 		if err := idempotencyHealthErr(); err != nil {
 			return err
 		}
