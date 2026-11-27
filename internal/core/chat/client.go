@@ -9,8 +9,10 @@ import (
 
 	"hop.top/kit/go/ai/llm"
 	_ "hop.top/kit/go/ai/llm/anthropic"
+	llmerrors "hop.top/kit/go/ai/llm/errors"
 	_ "hop.top/kit/go/ai/llm/google"
 	_ "hop.top/kit/go/ai/llm/ollama"
+	_ "hop.top/kit/go/ai/llm/openai" // registers openai; explicit, not via routellm
 	_ "hop.top/kit/go/ai/llm/routellm"
 	_ "hop.top/kit/go/ai/llm/triton"
 )
@@ -48,6 +50,9 @@ func NewLLMClient(ctx context.Context, profileID string, resolved ResolvedLLMCon
 // reusing the primary's key) and constructs the provider via llm.Resolve with
 // URL-encoded query parameters.
 func buildProvider(ctx context.Context, profileID, providerURI, model string, resolved ResolvedLLMConfig) (llm.Provider, error) {
+	if err := checkProviderRegistered(providerURI); err != nil {
+		return nil, err
+	}
 	key, err := ResolveProviderKeyFor(ctx, profileID, providerURI)
 	if err != nil {
 		return nil, err
@@ -61,6 +66,23 @@ func buildProvider(ctx context.Context, profileID, providerURI, model string, re
 		return nil, fmt.Errorf("resolve provider %s: %w", providerURI, err)
 	}
 	return provider, nil
+}
+
+// checkProviderRegistered fails with the scheme and the registered schemes
+// when providerURI names no adapter, before any credential lookup would mask
+// the real problem. Resolution only; nothing is dialed.
+func checkProviderRegistered(providerURI string) error {
+	parsed, err := llm.ParseURI(providerURI)
+	if err != nil {
+		return fmt.Errorf("invalid chat llm provider %q: %w", providerURI, err)
+	}
+	_, err = llm.Resolve(parsed.Scheme + "://?api_key=probe")
+	var nf *llmerrors.ErrProviderNotFound
+	if errors.As(err, &nf) {
+		return fmt.Errorf("unknown chat llm provider %q (available: %s)",
+			parsed.Scheme, strings.Join(llm.Schemes(), ", "))
+	}
+	return nil
 }
 
 func buildProviderURI(providerURI, model, apiKey, baseURL string) (string, error) {
