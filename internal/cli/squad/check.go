@@ -93,7 +93,7 @@ func runCheck(w, errw io.Writer, format string) error {
 	if structured(format) {
 		summary = errw
 	}
-	fmt.Fprintf(summary, "\n%d/%d checks passed\n", passed, len(results))
+	_, _ = fmt.Fprintf(summary, "\n%d/%d checks passed\n", passed, len(results))
 
 	if passed < len(results) {
 		return fmt.Errorf("%d/%d checks failed", len(results)-passed, len(results))

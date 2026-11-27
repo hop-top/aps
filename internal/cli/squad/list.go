@@ -57,7 +57,7 @@ no state mutation. Idempotent.`,
 			var skipped *coresquad.SkippedError
 			switch {
 			case errors.As(err, &skipped):
-				fmt.Fprintf(cmd.ErrOrStderr(), "warning: skipped unreadable squads:\n%v\n", err)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: skipped unreadable squads:\n%v\n", err)
 			case err != nil:
 				return fmt.Errorf("list squads: %w", err)
 			}
