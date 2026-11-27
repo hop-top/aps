@@ -24,7 +24,7 @@ A squad is an autonomous agent team unit. It owns a domain, has member profiles,
 aps squad list
 
 # Create a squad
-aps squad create <name> --type stream-aligned --domain <domain> [--description "..."] [--members profile1,profile2]
+aps squad create <name> --type stream-aligned --domain <domain> [--description "..."] [--members profile1,profile2] [--golden-path-defined]
 
 # Show squad details
 aps squad show <squad-id>
@@ -195,7 +195,7 @@ Validates every stored squad (`$APS_DATA_PATH/squads`) against 8 criteria:
 | `stream-independent` | Every stream-aligned squad has at least one member |
 | `subsystem-interface-clean` | Complicated subsystem squads have XaaS contracts |
 | `enabling-exit-defined` | All enabling squads have exit conditions |
-| `platform-golden-path` | Platform squads have `golden_path_defined: true` |
+| `platform-golden-path` | Platform squads have `golden_path_defined: true` (set with `aps squad create --golden-path-defined`) |
 | `collab-timeboxed` | All collaboration contracts are time-boxed |
 | `no-platform-internals` | No collaboration contract has a platform squad as provider |
 | `routing-type-aware` | A topology of several squads declares at least one contract |
@@ -209,13 +209,17 @@ as there is more than one squad. `collab-timeboxed`, `no-platform-internals` and
 `topology-first` have nothing to evaluate and pass. The command exits non-zero
 when any check fails.
 
+`golden_path_defined` is set at creation with `--golden-path-defined` (default
+false) and is stored in the squad manifest. There is no command to edit it on an
+existing squad.
+
 ```bash
 $ aps squad check
 CHECK                      STATUS  DETAIL
 stream-independent         PASS    -
 subsystem-interface-clean  FAIL    subsystem squad "sub" has no XaaS contract as provider
 enabling-exit-defined      PASS    -
-platform-golden-path       FAIL    platform squad "nomem" missing golden path definition
+platform-golden-path       FAIL    platform squad "nomem" missing golden path definition; create it with --golden-path-defined (aps squad create), or set golden_path_defined: true in its manifest
 collab-timeboxed           PASS    -
 no-platform-internals      PASS    -
 routing-type-aware         FAIL    multiple squads but no interaction contracts declared

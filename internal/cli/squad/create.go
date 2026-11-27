@@ -17,6 +17,7 @@ func newCreateCmd() *cobra.Command {
 	var domain string
 	var description string
 	var members []string
+	var goldenPath bool
 
 	cmd := &cobra.Command{
 		Use:   "create <name>",
@@ -34,6 +35,12 @@ complicated-subsystem, platform), and --domain names the squad's
 domain boundary. --description and --members are optional; the
 members slice takes a comma-separated list of profile IDs.
 
+--golden-path-defined records that the squad has a defined
+self-service golden path (stored as golden_path_defined in the
+manifest). aps squad check requires it on every platform squad, so
+pass it when creating one; it defaults to false. A squad's flags
+are fixed at creation: there is no verb to edit them afterwards.
+
 Mints a new local record. Not idempotent — re-running with the
 same name on an existing squad fails. --dry-run is opted out
 because the resulting record is fully determined by the flags.
@@ -42,7 +49,7 @@ alongside the mutation. With --format json|yaml the created squad
 is printed as a record, in the same shape as aps squad show.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCreate(cmd.OutOrStdout(), formatOf(cmd), args[0], squadType, domain, description, members)
+			return runCreate(cmd.OutOrStdout(), formatOf(cmd), args[0], squadType, domain, description, members, goldenPath)
 		},
 	}
 
@@ -50,6 +57,7 @@ is printed as a record, in the same shape as aps squad show.`,
 	cmd.Flags().StringVar(&domain, "domain", "", "Domain boundary")
 	cmd.Flags().StringVar(&description, "description", "", "Squad description")
 	cmd.Flags().StringSliceVar(&members, "members", nil, "Comma-separated profile IDs")
+	cmd.Flags().BoolVar(&goldenPath, "golden-path-defined", false, "Mark the squad's self-service golden path as defined (required by 'aps squad check' for platform squads)")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("domain")
 	clinote.AddFlag(cmd) // T-1291
@@ -67,7 +75,7 @@ is printed as a record, in the same shape as aps squad show.`,
 	return cmd
 }
 
-func runCreate(w io.Writer, format, name, squadType, domain, description string, members []string) error {
+func runCreate(w io.Writer, format, name, squadType, domain, description string, members []string, goldenPath bool) error {
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
 	st := coresquad.SquadType(squadType)
@@ -82,6 +90,8 @@ func runCreate(w io.Writer, format, name, squadType, domain, description string,
 		Domain:      domain,
 		Description: description,
 		Members:     members,
+
+		GoldenPathDefined: goldenPath,
 	}
 
 	if err := defaultManager.Create(s); err != nil {
@@ -99,6 +109,9 @@ func runCreate(w io.Writer, format, name, squadType, domain, description string,
 	_, _ = fmt.Fprintf(w, "Created squad %q (%s)\n", name, id)
 	_, _ = fmt.Fprintf(w, "  Type:    %s\n", squadType)
 	_, _ = fmt.Fprintf(w, "  Domain:  %s\n", domain)
+	if goldenPath {
+		_, _ = fmt.Fprintf(w, "  Golden path: defined\n")
+	}
 	if len(members) > 0 {
 		_, _ = fmt.Fprintf(w, "  Members: %s\n", strings.Join(members, ", "))
 	}

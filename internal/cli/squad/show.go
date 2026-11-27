@@ -57,6 +57,7 @@ func runShow(w io.Writer, id, format string) error {
 		_, _ = fmt.Fprintf(w, "  Description: %s\n", s.Description)
 	}
 	_, _ = fmt.Fprintf(w, "  Members:     %s\n", formatMembers(s.Members))
+	_, _ = fmt.Fprintf(w, "  Golden path: %s\n", yesNo(s.GoldenPathDefined))
 	_, _ = fmt.Fprintf(w, "  Created:     %s\n", s.CreatedAt.Format("2006-01-02 15:04:05"))
 	_, _ = fmt.Fprintf(w, "  Updated:     %s\n", s.UpdatedAt.Format("2006-01-02 15:04:05"))
 
@@ -68,4 +69,11 @@ func formatMembers(members []string) string {
 		return "(none)"
 	}
 	return strings.Join(members, ", ")
+}
+
+func yesNo(b bool) string {
+	if b {
+		return "defined"
+	}
+	return "not defined"
 }
