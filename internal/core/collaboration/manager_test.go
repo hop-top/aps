@@ -348,3 +348,61 @@ func TestManager_GetActiveWorkspace_None(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, active)
 }
+
+func TestManager_ResolveByIDAndName(t *testing.T) {
+	m := newTestManager(t)
+	ctx := context.Background()
+	ws, err := m.Create(ctx, testConfig())
+	require.NoError(t, err)
+
+	id, err := m.Resolve(ctx, ws.ID)
+	require.NoError(t, err)
+	assert.Equal(t, ws.ID, id)
+
+	id, err = m.Resolve(ctx, "test-workspace")
+	require.NoError(t, err)
+	assert.Equal(t, ws.ID, id)
+
+	got, err := m.Get(ctx, "test-workspace")
+	require.NoError(t, err)
+	assert.Equal(t, ws.ID, got.ID)
+
+	// exact, case-sensitive: no substring or case folding
+	for _, ref := range []string{"test", "TEST-WORKSPACE", "missing"} {
+		_, err = m.Resolve(ctx, ref)
+		var nf *collaboration.WorkspaceNotFoundError
+		require.ErrorAs(t, err, &nf, ref)
+	}
+}
+
+func TestManager_ResolveAmbiguousName(t *testing.T) {
+	m := newTestManager(t)
+	ctx := context.Background()
+	a, err := m.Create(ctx, testConfig())
+	require.NoError(t, err)
+	b, err := m.Create(ctx, testConfig())
+	require.NoError(t, err)
+
+	_, err = m.Resolve(ctx, "test-workspace")
+	var amb *collaboration.AmbiguousWorkspaceError
+	require.ErrorAs(t, err, &amb)
+	assert.Contains(t, err.Error(), a.ID)
+	assert.Contains(t, err.Error(), b.ID)
+
+	// IDs stay unambiguous
+	id, err := m.Resolve(ctx, a.ID)
+	require.NoError(t, err)
+	assert.Equal(t, a.ID, id)
+}
+
+func TestManager_ResolveArchivedByName(t *testing.T) {
+	m := newTestManager(t)
+	ctx := context.Background()
+	ws, err := m.Create(ctx, testConfig())
+	require.NoError(t, err)
+	require.NoError(t, m.Archive(ctx, "test-workspace"))
+
+	id, err := m.Resolve(ctx, "test-workspace")
+	require.NoError(t, err)
+	assert.Equal(t, ws.ID, id)
+}
