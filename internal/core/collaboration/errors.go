@@ -14,6 +14,17 @@ func (e *WorkspaceNotFoundError) Error() string {
 	return fmt.Sprintf("workspace not found: %s", e.ID)
 }
 
+// InvalidWorkspaceIDError indicates a workspace ID that cannot name a
+// workspace on disk: empty, ".", "..", or otherwise not a strict child of
+// the storage root.
+type InvalidWorkspaceIDError struct {
+	ID string
+}
+
+func (e *InvalidWorkspaceIDError) Error() string {
+	return fmt.Sprintf("invalid workspace id: %q", e.ID)
+}
+
 // AgentNotInWorkspaceError indicates an agent is not a member.
 type AgentNotInWorkspaceError struct {
 	ProfileID   string
