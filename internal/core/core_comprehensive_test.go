@@ -653,6 +653,11 @@ func TestInjectEnvironmentSSHConfigComprehensive(t *testing.T) {
 func TestInjectEnvironmentSSHConfigMissingKeyComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	// InjectEnvironment inherits the caller's env; drop any ambient value
+	// so the assertion sees only what injection adds. Setenv registers the
+	// restore, Unsetenv then removes it for the test body.
+	t.Setenv("GIT_SSH_COMMAND", "")
+	require.NoError(t, os.Unsetenv("GIT_SSH_COMMAND"))
 
 	profile := Profile{
 		ID:          "env-ssh-missing",

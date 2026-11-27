@@ -10,19 +10,25 @@ import (
 	isolation "hop.top/aps/internal/core/isolation"
 )
 
+// TestLinuxSandbox_IsAvailable checks IsAvailable agrees with an independent
+// probe of its prerequisites (unshare, setfacl, sudo on PATH), resolved via
+// the shell rather than exec.LookPath.
 func TestLinuxSandbox_IsAvailable(t *testing.T) {
-	linux := isolation.NewLinuxSandbox()
-	available := linux.IsAvailable()
-
-	if _, err := exec.LookPath("unshare"); err != nil {
-		if available {
-			t.Error("expected LinuxSandbox to be unavailable without unshare")
-		}
-		return
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("sh not found; cannot probe prerequisites independently")
 	}
 
-	if !available {
-		t.Error("expected LinuxSandbox to be available on Linux with unshare")
+	want := true
+	for _, bin := range []string{"unshare", "setfacl", "sudo"} {
+		if exec.Command(sh, "-c", "command -v "+bin).Run() != nil {
+			want = false
+		}
+	}
+
+	got := isolation.NewLinuxSandbox().IsAvailable()
+	if got != want {
+		t.Errorf("IsAvailable() = %v, want %v (unshare+setfacl+sudo on PATH)", got, want)
 	}
 }
 
