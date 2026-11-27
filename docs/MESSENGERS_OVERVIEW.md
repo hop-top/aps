@@ -364,7 +364,7 @@ Controls and limits:
 - `--allowed-guild` matches Discord `guild_id`.
 - APS does not run a Discord Gateway client from `aps service add`.
 - Replies use Discord channel messages API with bot token.
-- Attachments are carried as URLs/embeds; direct file upload is not attempted.
+- Attachments are carried as URLs/embeds; file upload is not supported.
 
 ### SMS
 

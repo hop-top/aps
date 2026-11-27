@@ -434,7 +434,7 @@ cog.out(subprocess.check_output(
 ]]] -->
 | Platform | Ingress modes | Delivery modes | Threads | Attachments | Reactions |
 | --- | --- | --- | --- | --- | --- |
-| Discord | `webhook`, `stream` | `text`, `file` | Yes | Yes | No |
+| Discord | `webhook` | `text` | Yes | Yes | No |
 | Email | JSON relay route through `aps serve` | — | — | — | — |
 | Slack | `webhook` | `text` | Yes | Yes | No |
 | SMS | `webhook` | `text` | No | No | No |
