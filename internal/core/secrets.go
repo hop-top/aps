@@ -248,14 +248,11 @@ func (d *dotenvStore) write(m map[string]string) error {
 	if err := os.MkdirAll(filepath.Dir(d.path), 0o700); err != nil {
 		return err
 	}
-	var b strings.Builder
-	for k, v := range m {
-		b.WriteString(k)
-		b.WriteByte('=')
-		b.WriteString(v)
-		b.WriteByte('\n')
+	content, err := encodeSecretsEnv(m)
+	if err != nil {
+		return err
 	}
-	if err := fsperm.WriteSecret(d.path, []byte(b.String()), 0o600); err != nil {
+	if err := fsperm.WriteSecret(d.path, []byte(content), 0o600); err != nil {
 		return fmt.Errorf("write secrets %s: %w", d.path, err)
 	}
 	return nil
