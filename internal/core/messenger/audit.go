@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -18,7 +19,17 @@ import (
 // Audit log path: {workspaceDir}/logs/audit/capability-changes.jsonl
 type AuditLogger struct {
 	workspaceDir string
+	platform     MessengerPlatform
 	mu           sync.Mutex
+}
+
+// WithPlatform sets the platform of the messenger being audited. It
+// selects the ID-field redaction policy: IDs of Slack, Telegram,
+// Discord and GitHub are persisted verbatim; any other or unset
+// platform keeps them under PII redaction.
+func (a *AuditLogger) WithPlatform(p MessengerPlatform) *AuditLogger {
+	a.platform = p
+	return a
 }
 
 // NewAuditLogger creates an audit logger for the given workspace directory.
@@ -37,7 +48,20 @@ func (a *AuditLogger) LogLinkCreated(messengerName, profileID string, mappings m
 	}
 
 	if len(mappings) > 0 {
-		entry["mappings"] = mappings
+		// Channel IDs are values, not JSON keys, so the structural-field
+		// policy applies to them.
+		keys := make([]string, 0, len(mappings))
+		for k := range mappings {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		list := make([]map[string]any, 0, len(keys))
+		for _, k := range keys {
+			m := map[string]any{keyChannelID: k, "target_action": mappings[k]}
+			withIDHashes(string(a.platform), m)
+			list = append(list, m)
+		}
+		entry["mappings"] = list
 	}
 
 	return a.writeAuditEntry(entry)
@@ -73,6 +97,7 @@ func (a *AuditLogger) LogMappingChanged(messengerName, profileID, channelID, old
 		"profile_id":     profileID,
 		"channel_id":     channelID,
 	}
+	withIDHashes(string(a.platform), entry)
 
 	if oldAction != "" {
 		entry["old_action"] = oldAction
@@ -147,11 +172,11 @@ func (a *AuditLogger) writeAuditEntry(entry map[string]any) error {
 	}
 	defer f.Close()
 
-	// Wrap the file in the redacting writer so audit entries that
-	// reference attacker-influenced fields (channel IDs, mapping
-	// targets) cannot persist raw secrets if a future entry adds a
-	// templated value.
-	if _, err := logging.NewWriter(f).Write(line); err != nil {
+	// Wrap the file in the redacting JSONL writer so audit entries that
+	// reference attacker-influenced fields (mapping targets) cannot
+	// persist raw secrets. ID fields are exempt from PII rules per the
+	// platform policy so records stay joinable.
+	if _, err := logging.NewJSONLWriterPolicy(f, persistPolicy(string(a.platform))).Write(line); err != nil {
 		return &MessengerError{
 			Name:    "audit",
 			Message: "failed to write audit entry",

@@ -529,6 +529,7 @@ func TestGetActionLoadingProfileNotFoundComprehensive(t *testing.T) {
 func TestInjectEnvironmentBasicComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	profile := Profile{ID: "env-basic", DisplayName: "Test"}
 	err := CreateProfile("env-basic", profile)
@@ -676,6 +677,7 @@ func TestInjectEnvironmentSSHConfigMissingKeyComprehensive(t *testing.T) {
 func TestInjectEnvironmentMissingSecretsFileComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	profile := Profile{ID: "env-no-secrets", DisplayName: "Test"}
 	err := CreateProfile("env-no-secrets", profile)

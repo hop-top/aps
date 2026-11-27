@@ -122,8 +122,9 @@ type SessionRegistry struct {
 }
 
 var (
-	registry *SessionRegistry
-	once     sync.Once
+	registry     *SessionRegistry
+	once         sync.Once
+	reaperCancel context.CancelFunc
 )
 
 // NewForTesting returns a fresh SessionRegistry that does not share
@@ -140,9 +141,25 @@ func GetRegistry() *SessionRegistry {
 		if err := registry.ensureStore(); err != nil {
 			fmt.Printf("Warning: failed to open session registry: %v\n", err)
 		}
-		startReaper(context.Background(), registry, ReaperTickInterval)
+		var ctx context.Context
+		ctx, reaperCancel = context.WithCancel(context.Background())
+		startReaper(ctx, registry, ReaperTickInterval)
 	})
 	return registry
+}
+
+// CloseRegistry stops the singleton's reaper and closes its kv store,
+// releasing registry.db. It is a no-op when GetRegistry was never
+// called. Test binaries call it before removing their data dir (open
+// files cannot be deleted on Windows).
+func CloseRegistry() error {
+	if registry == nil {
+		return nil
+	}
+	if reaperCancel != nil {
+		reaperCancel()
+	}
+	return registry.Close()
 }
 
 // reaperDisabled lets the CLI layer opt the in-process reaper out when

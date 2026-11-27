@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"hop.top/aps/internal/core"
+	"hop.top/aps/internal/fsperm"
 )
 
 const (
@@ -127,7 +128,7 @@ func (m *SSHKeyManager) InstallAdminKey(sessionID string, key *AdminSSHKey) erro
 	}
 
 	privateKeyPath := filepath.Join(sessionKeyDir, AdminKeyFile)
-	if err := os.WriteFile(privateKeyPath, key.PrivateKey, 0600); err != nil {
+	if err := fsperm.WriteSecret(privateKeyPath, key.PrivateKey, 0o600); err != nil {
 		return fmt.Errorf("failed to write private key: %w", err)
 	}
 

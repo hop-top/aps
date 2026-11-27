@@ -24,16 +24,8 @@ func setupTestProfile(t *testing.T, id string, content string) string {
 
 func overrideXDGDataHome(t *testing.T, dir string) {
 	t.Helper()
-	orig := os.Getenv("XDG_DATA_HOME")
-	origAPS := os.Getenv("APS_DATA_PATH")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(dir, ".local", "share"))
-	os.Unsetenv("APS_DATA_PATH")
-	t.Cleanup(func() {
-		os.Setenv("XDG_DATA_HOME", orig)
-		if origAPS != "" {
-			os.Setenv("APS_DATA_PATH", origAPS)
-		}
-	})
+	t.Setenv("XDG_DATA_HOME", filepath.Join(dir, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
 }
 
 func TestIsolationConfig_DefaultLevel(t *testing.T) {
@@ -41,10 +33,7 @@ func TestIsolationConfig_DefaultLevel(t *testing.T) {
 display_name: Test Profile
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
@@ -61,10 +50,7 @@ isolation:
   fallback: true
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
@@ -85,10 +71,7 @@ isolation:
     name: test-sandbox
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
@@ -114,10 +97,7 @@ isolation:
       cpu_quota: 100
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	profile, err := core.LoadProfile("test-profile")
@@ -137,10 +117,7 @@ isolation:
   level: invalid
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	_, err := core.LoadProfile("test-profile")
@@ -157,10 +134,7 @@ isolation:
     network: bridge
 `
 	tempDir := setupTestProfile(t, "test-profile", content)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	_, err := core.LoadProfile("test-profile")
@@ -196,10 +170,7 @@ func TestIsolationConfig_ValidateInvalid(t *testing.T) {
 
 func TestSaveProfileWithIsolation(t *testing.T) {
 	tempDir := t.TempDir()
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 	overrideXDGDataHome(t, tempDir)
 
 	profile := &core.Profile{

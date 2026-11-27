@@ -144,7 +144,7 @@ func (a *AuditLogger) Log(entry *AuditEntry) error {
 
 	// Wrap in the redacting writer so audit Reason text (which can echo
 	// AccessDeniedError detail) is tagged before persistence.
-	_, err = logging.NewWriter(f).Write(append(data, '\n'))
+	_, err = logging.NewJSONLWriter(f).Write(append(data, '\n'))
 	return err
 }
 

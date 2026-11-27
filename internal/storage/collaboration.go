@@ -20,12 +20,12 @@ import (
 // The Workspace struct contains unexported fields (mutex, WorkspaceContext) that
 // cannot be serialized directly, so we project the exportable fields here.
 type workspaceState struct {
-	ID        string                   `json:"id"`
-	State     collab.WorkspaceState    `json:"state"`
-	Agents    []collab.AgentInfo       `json:"agents"`
-	Policy    collab.PolicyConfig      `json:"policy"`
-	CreatedAt time.Time                `json:"created_at"`
-	UpdatedAt time.Time                `json:"updated_at"`
+	ID        string                `json:"id"`
+	State     collab.WorkspaceState `json:"state"`
+	Agents    []collab.AgentInfo    `json:"agents"`
+	Policy    collab.PolicyConfig   `json:"policy"`
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
 }
 
 // CollaborationStorage implements the collaboration.Storage interface using

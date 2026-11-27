@@ -8,6 +8,7 @@ import (
 	"time"
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
+	"hop.top/aps/internal/fsperm"
 )
 
 // Cache provides Agent Card caching functionality
@@ -136,7 +137,7 @@ func (c *Cache) persist(profileID string, card *a2a.AgentCard) error {
 		return ErrStorageFailed("marshal card", err)
 	}
 
-	if err := os.WriteFile(cardPath, data, 0600); err != nil {
+	if err := fsperm.WriteSecret(cardPath, data, 0o600); err != nil {
 		return ErrStorageFailed("write card", err)
 	}
 

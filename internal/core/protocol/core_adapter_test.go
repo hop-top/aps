@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1456,4 +1457,34 @@ func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
 	if _, err := adapter.GetSession(id); err == nil {
 		t.Fatalf("expected session %s to be gone after reap", id)
 	}
+}
+
+// Keys with Windows-reserved characters must map to safe on-disk file
+// names and still round-trip through search and namespace listing.
+// Namespace directories are stored verbatim.
+func TestStore_ReservedCharsUseSafeFilenames(t *testing.T) {
+	adapter, dir := setupTestAdapter(t)
+
+	require.NoError(t, adapter.StorePut("team:a", "key:1", []byte("v")))
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+
+	files, err := os.ReadDir(filepath.Join(dir, entries[0].Name()))
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	assert.False(t, strings.ContainsAny(files[0].Name(), `<>:"/\|?*`), files[0].Name())
+
+	got, err := adapter.StoreGet("team:a", "key:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("v"), got)
+
+	found, err := adapter.StoreSearch("team:a", "key:")
+	require.NoError(t, err)
+	assert.Contains(t, found, "key:1")
+
+	ns, err := adapter.StoreListNamespaces()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"team:a"}, ns)
 }

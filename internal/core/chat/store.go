@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"hop.top/aps/internal/fsperm"
 )
 
 type Store struct {
@@ -54,7 +56,7 @@ func (s *Store) Save(transcript *Transcript) error {
 	if err != nil {
 		return fmt.Errorf("marshal chat transcript: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	if err := fsperm.WriteSecret(path, data, 0o600); err != nil {
 		return fmt.Errorf("write chat transcript: %w", err)
 	}
 	return nil

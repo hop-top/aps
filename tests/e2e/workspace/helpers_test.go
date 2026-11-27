@@ -23,6 +23,8 @@ import (
 	"hop.top/aps/internal/core/multidevice"
 )
 
+import "hop.top/aps/internal/testguard"
+
 // apsBinary is the absolute path to the compiled aps binary used by
 // all child-process invocations. Built once in TestMain.
 var (
@@ -37,7 +39,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "compile aps binary: %v\n", err)
 		os.Exit(1)
 	}
-	code := m.Run()
+	code := testguard.Run(m)
 	_ = os.RemoveAll(binDir)
 	os.Exit(code)
 }

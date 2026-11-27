@@ -118,6 +118,10 @@ func ImportProfileBundleWithContext(ctx context.Context, bundlePath, newID strin
 	if targetID == "" {
 		return nil, nil, fmt.Errorf("profile id is required")
 	}
+	// Before the --force removal below: profiles/.. is the data dir.
+	if err := ValidateProfileID(targetID); err != nil {
+		return nil, nil, err
+	}
 
 	profileDir, err := GetProfileDir(targetID)
 	if err != nil {

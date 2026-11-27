@@ -33,7 +33,7 @@ func TestInjectEnvironment(t *testing.T) {
 
 func TestInjectEnvironmentCustomPrefix(t *testing.T) {
 	tempHome := t.TempDir()
-	os.Setenv("XDG_CONFIG_HOME", tempHome)
+	t.Setenv("XDG_CONFIG_HOME", tempHome)
 
 	configDir := filepath.Join(tempHome, "aps")
 	os.MkdirAll(configDir, 0755)

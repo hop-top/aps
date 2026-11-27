@@ -136,7 +136,7 @@ func (s *EventStore) Store(event *WorkspaceEvent) error {
 
 	// Wrap in the redacting writer so payload fields that may carry
 	// secrets are tagged before persistence to the workspace event log.
-	if _, err := logging.NewWriter(f).Write(append(data, '\n')); err != nil {
+	if _, err := logging.NewJSONLWriter(f).Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("failed to write event: %w", err)
 	}
 

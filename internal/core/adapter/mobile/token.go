@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"hop.top/aps/internal/fsperm"
 )
 
 const (
@@ -23,9 +24,9 @@ const (
 
 // AdapterClaims holds the JWT claims for a mobile adapter token
 type AdapterClaims struct {
-	AdapterID     string   `json:"device_id"`
-	AdapterName   string   `json:"device_name"`
-	AdapterOS     string   `json:"device_os"`
+	AdapterID    string   `json:"device_id"`
+	AdapterName  string   `json:"device_name"`
+	AdapterOS    string   `json:"device_os"`
 	ProfileID    string   `json:"profile_id"`
 	Capabilities []string `json:"capabilities"`
 	jwt.RegisteredClaims
@@ -65,9 +66,9 @@ func (tm *TokenManager) CreateToken(device *MobileAdapter, expiry time.Duration)
 
 	now := time.Now()
 	claims := &AdapterClaims{
-		AdapterID:     device.AdapterID,
-		AdapterName:   device.AdapterName,
-		AdapterOS:     device.AdapterOS,
+		AdapterID:    device.AdapterID,
+		AdapterName:  device.AdapterName,
+		AdapterOS:    device.AdapterOS,
 		ProfileID:    tm.profileID,
 		Capabilities: device.Capabilities,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -159,7 +160,7 @@ func (tm *TokenManager) generateKeys(privPath, pubPath string) error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	})
-	if err := os.WriteFile(privPath, privPEM, 0600); err != nil {
+	if err := fsperm.WriteSecret(privPath, privPEM, 0o600); err != nil {
 		return fmt.Errorf("failed to write private key: %w", err)
 	}
 

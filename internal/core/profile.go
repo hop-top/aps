@@ -13,6 +13,7 @@ import (
 	"hop.top/kit/go/runtime/domain"
 
 	"hop.top/aps/internal/events"
+	"hop.top/aps/internal/fsperm"
 )
 
 // ErrProfileHasActiveSessions is returned when DeleteProfile finds active
@@ -519,6 +520,10 @@ func CreateProfile(id string, config Profile) error {
 // It reads NoteFromContext(ctx) to populate the Note field on the
 // emitted ProfileCreatedPayload.
 func CreateProfileWithContext(ctx context.Context, id string, config Profile) error {
+	if err := ValidateProfileID(id); err != nil {
+		return err
+	}
+
 	dir, err := GetProfileDir(id)
 	if err != nil {
 		return err
@@ -554,7 +559,7 @@ func CreateProfileWithContext(ctx context.Context, id string, config Profile) er
 	// Create default secrets.env
 	secretsPath := filepath.Join(dir, "secrets.env")
 	defaultSecrets := "# Add your secrets here. Format: KEY=VALUE\n# GITHUB_TOKEN=...\n"
-	if err := os.WriteFile(secretsPath, []byte(defaultSecrets), 0600); err != nil {
+	if err := fsperm.WriteSecret(secretsPath, []byte(defaultSecrets), 0o600); err != nil {
 		return fmt.Errorf("failed to create secrets.env: %w", err)
 	}
 
@@ -568,7 +573,7 @@ func CreateProfileWithContext(ctx context.Context, id string, config Profile) er
 	// Create optional gitconfig if requested (logic handled by caller usually, but we can scaffold empty one if git enabled)
 	if config.Git.Enabled {
 		gitConfigPath := filepath.Join(dir, "gitconfig")
-		defaultGitConfig := "[user]\n\tname = " + config.DisplayName + "\n\temail = agent@example.com\n"
+		defaultGitConfig := renderProfileGitConfig(id, config)
 		if err := os.WriteFile(gitConfigPath, []byte(defaultGitConfig), 0644); err != nil {
 			return fmt.Errorf("failed to create gitconfig: %w", err)
 		}

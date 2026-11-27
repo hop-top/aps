@@ -19,7 +19,17 @@ import (
 type WorkspaceMessageLogger struct {
 	workspaceDir  string
 	messengerName string
+	platform      MessengerPlatform
 	mu            sync.Mutex
+}
+
+// WithPlatform sets the platform of the logged messenger. It selects the
+// ID-field redaction policy: IDs of Slack, Telegram, Discord and GitHub
+// are persisted verbatim; any other or unset platform keeps them under
+// PII redaction. LogMessageReceived prefers the message's own platform.
+func (l *WorkspaceMessageLogger) WithPlatform(p MessengerPlatform) *WorkspaceMessageLogger {
+	l.platform = p
+	return l
 }
 
 // NewWorkspaceMessageLogger creates a logger for a specific messenger within a workspace.
@@ -57,7 +67,11 @@ func (l *WorkspaceMessageLogger) LogMessageReceived(msg *NormalizedMessage) erro
 		entry["attachment_count"] = len(msg.Attachments)
 	}
 
-	return l.writeEntry(msg.ProfileID, entry)
+	platform := l.platform
+	if msg.Platform != "" {
+		platform = MessengerPlatform(msg.Platform)
+	}
+	return l.writeEntryFor(platform, msg.ProfileID, entry)
 }
 
 // LogMessageRouted records that a message was routed to a specific action.
@@ -131,9 +145,14 @@ func (l *WorkspaceMessageLogger) LogError(msgID, step string, err error) error {
 // appropriate log files. It always writes to _all.jsonl, and additionally to
 // {profile}.jsonl when a profile ID is provided.
 func (l *WorkspaceMessageLogger) writeEntry(profileID string, entry map[string]any) error {
+	return l.writeEntryFor(l.platform, profileID, entry)
+}
+
+func (l *WorkspaceMessageLogger) writeEntryFor(platform MessengerPlatform, profileID string, entry map[string]any) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	withIDHashes(string(platform), entry)
 	line, err := json.Marshal(entry)
 	if err != nil {
 		return &MessengerError{
@@ -152,7 +171,7 @@ func (l *WorkspaceMessageLogger) writeEntry(profileID string, entry map[string]a
 
 	// Always write to _all.jsonl
 	allPath := filepath.Join(dir, "_all.jsonl")
-	if err := appendToFile(allPath, line); err != nil {
+	if err := appendToFile(allPath, line, platform); err != nil {
 		return &MessengerError{
 			Name:    l.messengerName,
 			Message: fmt.Sprintf("failed to write to %s", allPath),
@@ -164,7 +183,7 @@ func (l *WorkspaceMessageLogger) writeEntry(profileID string, entry map[string]a
 	// Write to per-profile log when profile is known
 	if profileID != "" {
 		profilePath := filepath.Join(dir, profileID+".jsonl")
-		if err := appendToFile(profilePath, line); err != nil {
+		if err := appendToFile(profilePath, line, platform); err != nil {
 			return &MessengerError{
 				Name:    l.messengerName,
 				Message: fmt.Sprintf("failed to write to %s", profilePath),
@@ -196,15 +215,16 @@ func (l *WorkspaceMessageLogger) logDir() (string, error) {
 }
 
 // appendToFile opens a file in append mode (creating it if needed) and writes data.
-// The on-disk writer is wrapped via logging.NewWriter so message previews and
-// sender/channel metadata that may carry secrets are redacted at persistence.
-func appendToFile(path string, data []byte) error {
+// The on-disk writer is wrapped via the JSONL writer so message previews and
+// sender/channel metadata that may carry secrets are redacted at persistence,
+// while ID fields follow the platform policy (see persistPolicy).
+func appendToFile(path string, data []byte, platform MessengerPlatform) error {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	_, err = logging.NewWriter(f).Write(data)
+	_, err = logging.NewJSONLWriterPolicy(f, persistPolicy(string(platform))).Write(data)
 	return err
 }

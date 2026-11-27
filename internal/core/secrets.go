@@ -13,12 +13,14 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/joho/godotenv"
+	"hop.top/aps/internal/fsperm"
 	"hop.top/kit/go/storage/secret"
 	_ "hop.top/kit/go/storage/secret/env"         // register "env"
 	_ "hop.top/kit/go/storage/secret/ghsecrets"   // register "ghsecrets"
@@ -56,17 +58,15 @@ var SecretsBackends = []string{
 // handlers that pass an explicit secrets.env path. Returns nil for missing
 // files. Warns on insecure permissions.
 func LoadSecrets(path string) (map[string]string, error) {
-	info, err := os.Stat(path) // #nosec G304 -- path comes from per-profile dir
+	warning, err := fsperm.CheckSecret(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	if mode := info.Mode().Perm(); mode&0o077 != 0 {
-		fmt.Fprintf(os.Stderr,
-			"WARNING: Secrets file %s has insecure permissions (%o). It should be 0600.\n",
-			path, mode)
+	if warning != "" {
+		fmt.Fprintf(os.Stderr, "WARNING: Secrets file %s has %s\n", path, warning)
 	}
 	return godotenv.Read(path)
 }
@@ -252,7 +252,10 @@ func (d *dotenvStore) write(m map[string]string) error {
 		b.WriteString(v)
 		b.WriteByte('\n')
 	}
-	return os.WriteFile(d.path, []byte(b.String()), 0o600)
+	if err := fsperm.WriteSecret(d.path, []byte(b.String()), 0o600); err != nil {
+		return fmt.Errorf("write secrets %s: %w", d.path, err)
+	}
+	return nil
 }
 
 func (d *dotenvStore) Get(_ context.Context, key string) (*secret.Secret, error) {
