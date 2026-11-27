@@ -74,12 +74,12 @@ func parseEnvFile(path string) ([]string, error) {
 		}
 		idx := strings.IndexByte(line, '=')
 		if idx <= 0 {
-			return nil, fmt.Errorf("--env-file %q: malformed line %d: expected KEY=VALUE, got %q", path, lineNo, raw)
+			return nil, fmt.Errorf("--env-file %q: malformed line %d: expected KEY=VALUE", path, lineNo)
 		}
 		key := strings.TrimSpace(line[:idx])
 		val := line[idx+1:]
 		if !isValidEnvKey(key) {
-			return nil, fmt.Errorf("--env-file %q: malformed line %d: key %q must match [A-Za-z_][A-Za-z0-9_]*", path, lineNo, key)
+			return nil, fmt.Errorf("--env-file %q: malformed line %d: key must match [A-Za-z_][A-Za-z0-9_]*", path, lineNo)
 		}
 		val = unquoteEnvValue(val)
 		out = append(out, key+"="+val)
