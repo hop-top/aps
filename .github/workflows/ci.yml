@@ -69,7 +69,9 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             echo "Skipping E2E tests on Windows due to TUI limitations"
           else
-            go test -v -timeout 5m -coverprofile=coverage-e2e.out -covermode=atomic ./tests/e2e
+            # Recursive: tests/e2e subpackages (adapter, squad, ...) build
+            # and drive the aps binary; ./tests/e2e alone skips them.
+            go test -v -timeout 5m -coverprofile=coverage-e2e.out -covermode=atomic ./tests/e2e/...
           fi
 
       - name: Upload coverage to artifacts
