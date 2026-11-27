@@ -228,3 +228,57 @@ func TestHimalayaReply_QuotedOriginalWithBlankLines(t *testing.T) {
 		"> second paragraph",
 	})
 }
+
+// TestHimalayaReply_LargeQuotedOriginal guards the header/quoted split
+// against SIGPIPE.
+//
+// The split must not feed the template into a command that quits at
+// the first blank line while the writer is still writing: with
+// pipefail the writer dies of SIGPIPE (exit 141) and the reply is
+// never sent. A reply to a long message produces a template far larger
+// than a pipe buffer, so the writer always has more to write after the
+// header block has been consumed.
+func TestHimalayaReply_LargeQuotedOriginal(t *testing.T) {
+	requireBash(t)
+	t.Parallel()
+
+	const quotedLines = 20000
+	var tmpl strings.Builder
+	tmpl.WriteString("From: ops@example.com\n" +
+		"To: sender@example.com\n" +
+		"Subject: Re: Long thread\n" +
+		"\n")
+	want := []string{
+		"From: ops@example.com",
+		"To: sender@example.com",
+		"Subject: Re: Long thread",
+		"",
+		"Confirmed, shipping now.",
+		"",
+	}
+	for i := range quotedLines {
+		line := "> quoted line " + itoa5(i) + " of a long original message"
+		tmpl.WriteString(line + "\n")
+		want = append(want, line)
+	}
+
+	invs, out, err := runBackendScriptMulti(t, replyScript(t),
+		baseReplyEnv(), replyStubOptions(tmpl.String()))
+	if err != nil {
+		t.Fatalf("reply.sh failed: %v\noutput: %s", err, out)
+	}
+	if len(invs) != 2 {
+		t.Fatalf("expected 2 invocations, got %d:\n%s", len(invs), invocationsString(invs))
+	}
+	assertStdinLines(t, invs[1], want)
+}
+
+// itoa5 renders i zero-padded to five digits.
+func itoa5(i int) string {
+	d := [5]byte{'0', '0', '0', '0', '0'}
+	for p := 4; p >= 0 && i > 0; p-- {
+		d[p] = byte('0' + i%10)
+		i /= 10
+	}
+	return string(d[:])
+}
