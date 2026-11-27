@@ -7954,9 +7954,13 @@ contributes a row to the output with CHECK name, PASS/FAIL
 status, and a DETAIL string. The command exits non-zero when any
 check fails so it can gate CI.
 
-Read-only: no state mutation. Idempotent. The output respects the
-table renderer and works on a TTY (styled table) and non-TTY
-(plain tabwriter) alike.
+Squads are read from the local squad store ($APS_DATA_PATH/squads);
+a manifest that cannot be read fails the command, naming the file,
+rather than being validated around. Read-only: no state mutation.
+Idempotent. The output respects the global --format flag: the table
+renderer works on a TTY (styled table) and non-TTY (plain tabwriter)
+alike, and json/yaml emit the rows alone (the pass/fail summary then
+goes to stderr).
 
 ```
 aps squad check [flags]
@@ -7995,8 +7999,13 @@ Create a new squad
 
 Create a new squad entry in the local squad store. The ID is
 derived from the <name> argument by lower-casing and replacing
-spaces with dashes. --type and --domain are required: --type must
-be one of the four team-topology values (stream-aligned, enabling,
+spaces with dashes. The squad is stored under
+$APS_DATA_PATH/squads/<id>/manifest.yaml, so an ID that is not a
+safe directory name (path separators, "..", reserved device names,
+or any of : * ? " < > |) is refused.
+
+--type and --domain are required: --type must be one of the four
+team-topology values (stream-aligned, enabling,
 complicated-subsystem, platform), and --domain names the squad's
 domain boundary. --description and --members are optional; the
 members slice takes a comma-separated list of profile IDs.
@@ -8005,7 +8014,8 @@ Mints a new local record. Not idempotent — re-running with the
 same name on an existing squad fails. --dry-run is opted out
 because the resulting record is fully determined by the flags.
 Use --note to attach an audit reason that flows to the event bus
-alongside the mutation.
+alongside the mutation. With --format json|yaml the created squad
+is printed as a record, in the same shape as aps squad show.
 
 ```
 aps squad create <name> [flags]
@@ -8056,7 +8066,8 @@ Destructive: the squad record is removed irreversibly. The
 destructive-token confirmation flow gates the apply path, and
 --dry-run is opted out because preview would only restate the
 squad ID. Idempotent on the pair. Use --note to attach an audit
-reason that flows to the event bus alongside the mutation.
+reason that flows to the event bus alongside the mutation. With
+--format json|yaml the result prints as {"id": ..., "deleted": true}.
 
 ```
 aps squad delete <id> [flags]
@@ -8100,8 +8111,12 @@ complicated-subsystem, platform), domain boundary, member count,
 and a truncated member-ID list (first three IDs plus "+N" when the
 squad has more).
 
-The output respects the global --format flag (table|json|yaml) and
-the local filter flags: --member selects squads containing a given
+The output respects the global --format flag (table|json|yaml): json
+and yaml emit an array of rows (id, name, type, domain, member_count,
+members), [] when nothing matches. Squads whose manifest cannot be
+read are skipped and named on stderr.
+
+Local filter flags: --member selects squads containing a given
 profile ID, and --role selects by team-topology type. Read-only:
 no state mutation. Idempotent.
 
@@ -8184,7 +8199,9 @@ remove to undo. Not idempotent at the manager level (re-running
 returns an error on duplicate membership). --dry-run is opted out
 because the result is fully determined by the two positional
 arguments. Use --note to attach an audit reason that flows to the
-event bus alongside the mutation.
+event bus alongside the mutation. With --format json|yaml the
+updated squad prints as a record, in the same shape as aps squad
+show.
 
 ```
 aps squad members add <squad-id> <profile-id> [flags]
@@ -8232,7 +8249,9 @@ Destructive at the squad level: the membership entry is removed
 irreversibly from the squad store. The destructive-token
 confirmation flow gates the apply path, and --dry-run is opted out
 because preview would only restate the two positional arguments.
-Idempotent on already-absent membership.
+Idempotent on already-absent membership. With --format json|yaml
+the updated squad prints as a record, in the same shape as aps
+squad show.
 
 ```
 aps squad members remove <squad-id> <profile-id> [flags]
@@ -8273,8 +8292,16 @@ Show squad details
 Print the full record for a single squad — ID, name,
 team-topology type, domain boundary, description, the complete
 member ID list (no truncation, unlike aps squad list), and the
-created/updated timestamps. The squad is looked up by ID; unknown
-IDs return an error from the underlying squad manager.
+created/updated timestamps. The squad is looked up by ID in
+$APS_DATA_PATH/squads/<id>/manifest.yaml; an unknown ID is a
+"squad not found" error, and a manifest that cannot be read is an
+error naming the file.
+
+The output respects the global --format flag: json and yaml emit
+the squad record alone, as one object (id, name, type, domain,
+description, members, golden_path_defined, created_at, updated_at;
+members is a list of profile IDs, [] when empty); any other format
+prints the text view.
 
 Read-only: no state mutation. Idempotent.
 
