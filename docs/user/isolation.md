@@ -25,10 +25,10 @@ command from reading another profile's files.
   command. `platform` and `container` print the error above and exit 1 without starting the
   command.
 - `aps action run`, the webhook server, and background action jobs: same as `aps run`.
-- `aps serve` (the agent-protocol run endpoints) and messenger and ticket routing start the
-  profile's action as a plain host process whatever level the profile sets. They neither
-  sandbox it nor report an error, so a `platform` or `container` profile gives no
-  protection on those paths.
+- `aps serve` (the agent-protocol run endpoints) and messenger and ticket routing: same as
+  `aps run`. A `platform` or `container` profile is refused and its action is not started.
+  The run endpoints report a failed run whose `error` is the not-implemented message, and
+  messenger and ticket routing report a failed result carrying it.
 - An unknown level, or `container` without `container.image`, is rejected when the profile
   loads.
 

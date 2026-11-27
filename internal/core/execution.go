@@ -259,21 +259,32 @@ func RunCommand(profileID string, command string, args []string, overrides []str
 		return err
 	}
 
-	// Check if requested isolation level is supported
-	requestedLevel := profile.Isolation.Level
-	if requestedLevel == "" {
-		requestedLevel = IsolationProcess
+	if err := profile.EnsureIsolationEnforceable(); err != nil {
+		return err
+	}
+	return runCommandWithProcessIsolation(profile, command, args, overrides)
+}
+
+// EnsureIsolationEnforceable reports whether the profile's isolation level is
+// one this binary can enforce. It is the single gate every path that starts a
+// profile's action or command must pass before starting anything. Only the
+// process level is enforced today; an unset level means process. Any other
+// level is refused, never downgraded to a plain host process.
+func (p *Profile) EnsureIsolationEnforceable() error {
+	level := p.Isolation.Level
+	if level == "" {
+		level = IsolationProcess
 	}
 
-	switch requestedLevel {
+	switch level {
 	case IsolationProcess:
-		return runCommandWithProcessIsolation(profile, command, args, overrides)
+		return nil
 	case IsolationPlatform:
 		return fmt.Errorf("platform isolation not yet implemented")
 	case IsolationContainer:
 		return fmt.Errorf("container isolation not yet implemented")
 	default:
-		return fmt.Errorf("unsupported isolation level: %s", requestedLevel)
+		return fmt.Errorf("unsupported isolation level: %s", level)
 	}
 }
 
@@ -348,22 +359,10 @@ func RunAction(profileID string, actionID string, payload []byte) error {
 		return fmt.Errorf("failed to get action %s: %w", actionID, err)
 	}
 
-	// Check if requested isolation level is supported
-	requestedLevel := profile.Isolation.Level
-	if requestedLevel == "" {
-		requestedLevel = IsolationProcess
+	if err := profile.EnsureIsolationEnforceable(); err != nil {
+		return err
 	}
-
-	switch requestedLevel {
-	case IsolationProcess:
-		return runActionWithProcessIsolation(profile, action, payload)
-	case IsolationPlatform:
-		return fmt.Errorf("platform isolation not yet implemented")
-	case IsolationContainer:
-		return fmt.Errorf("container isolation not yet implemented")
-	default:
-		return fmt.Errorf("unsupported isolation level: %s", requestedLevel)
-	}
+	return runActionWithProcessIsolation(profile, action, payload)
 }
 
 // runActionWithProcessIsolation executes an action using process-level isolation.

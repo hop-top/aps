@@ -166,8 +166,8 @@ Nothing outside tests imports this package. The `strict` / `fallback`
 profile fields, `isolation.default_level`, `isolation.fallback_enabled`, and
 the fallback resolver in `manager.go` are not consulted on the run path. The
 protocol adapter (`internal/core/protocol`, used by `aps serve` and the
-messenger and ticket routers) starts actions as host processes without
-reading the isolation level. tmux capture for session logs.
+messenger and ticket routers) applies the same check as `RunAction`: it
+refuses `platform` and `container` profiles before starting anything. tmux capture for session logs.
 
 ### Capability system (`internal/core/capability/`)
 

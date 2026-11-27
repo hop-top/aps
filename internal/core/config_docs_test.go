@@ -22,12 +22,12 @@ func TestConfigFieldDocsPinned(t *testing.T) {
 		{
 			Path:        "isolation.default_level",
 			Default:     "`process`",
-			Description: "Default isolation level for profiles that don't specify one",
+			Description: "Stored only; no run path reads it. A profile without a level runs at `process`",
 		},
 		{
 			Path:        "isolation.fallback_enabled",
 			Default:     "`true`",
-			Description: "Allow degraded-mode operation if preferred isolation is unavailable",
+			Description: "Stored only; no run path reads it, and there is no fallback to a lower level",
 		},
 		{
 			Path:        "capability_sources",
