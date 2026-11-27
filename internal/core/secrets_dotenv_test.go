@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -82,28 +83,23 @@ func TestDotenvStoreValuesRoundTrip(t *testing.T) {
 	}
 }
 
-// Whatever Set accepts must read back exactly; whatever it cannot hold must be
-// rejected, never stored corrupted.
-func TestDotenvStoreRandomValuesNeverCorrupt(t *testing.T) {
-	alphabet := []string{"a", "b", " ", "\t", "#", "\n", "\r", "'", `"`, `\`, "$", "{", "}", "=", "é", "X", "(", ")"}
+// Every value, including NUL bytes and invalid UTF-8, reads back exactly.
+func TestDotenvStoreRandomValuesAlwaysRoundTrip(t *testing.T) {
+	alphabet := []string{"a", "b", " ", "\t", "#", "\n", "\r", "\r\n", "'", `"`, `\`, "$", "{", "}", "=", "\u00e9", "X", "(", ")",
+		"\x00", "\xff", "aps-b64:", "base64:", "\u00a0", "\\n", "${A}", `\"`, `\'`}
 	rng := rand.New(rand.NewSource(1))
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "secrets.env")
 	store := newDotenvStore(path)
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 5000; i++ {
 		var b strings.Builder
-		for n := rng.Intn(8); n >= 0; n-- {
+		for n := rng.Intn(9); n >= 0; n-- {
 			b.WriteString(alphabet[rng.Intn(len(alphabet))])
 		}
 		v := b.String()
-		err := store.Set(ctx, "K", []byte(v))
-		if err != nil {
-			require.ErrorIs(t, err, ErrSecretsUnencodable, "value %q", v)
-			assert.NotContains(t, err.Error(), v)
-			continue
-		}
-		got, gerr := store.Get(ctx, "K")
-		require.NoError(t, gerr, "value %q", v)
+		require.NoError(t, store.Set(ctx, "K", []byte(v)), "value %q", v)
+		got, err := store.Get(ctx, "K")
+		require.NoError(t, err, "value %q", v)
 		require.Equal(t, v, string(got.Value))
 	}
 }
@@ -173,12 +169,109 @@ func TestDotenvStoreRewritePreservesLegacyValues(t *testing.T) {
 	assert.Equal(t, map[string]string{"A": "one", "B": "x # y", "C": "p\nq", "D": "new # v"}, got)
 }
 
-func TestEncodeSecretValueUnencodable(t *testing.T) {
-	// Pinned gaps of the reader: every candidate style fails these.
-	for _, v := range []string{"it's\n\\", " it's\"", "\n\\"} {
-		_, err := encodeSecretValue(v)
-		assert.ErrorIs(t, err, ErrSecretsUnencodable, "value %q", v)
+// Values the reader cannot hold in any plain style, found by enumeration:
+// each ends in '"' or '\\' (double quotes cannot close after them), cannot be
+// carried raw, and cannot be single-quoted.
+func TestPlainEncodingGapClass(t *testing.T) {
+	alpha := []string{"a", " ", "#", "\n", "\r", "'", `"`, `\`, "$"}
+	var walk func(p string, n int)
+	gaps := 0
+	walk = func(p string, n int) {
+		_, ok := encodePlain(p)
+		if !ok {
+			gaps++
+			assert.True(t, strings.HasSuffix(p, `"`) || strings.HasSuffix(p, `\`), "gap value %q must end in a quote or backslash", p)
+		}
+		if n == 0 {
+			return
+		}
+		for _, a := range alpha {
+			walk(p+a, n-1)
+		}
 	}
+	walk("", 5)
+	assert.Positive(t, gaps)
+}
+
+// Named residual cases from real use.
+func TestResidualValuesRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	big := strings.Repeat("x # \"'\n\\", 150000)[:1<<20]
+	cases := map[string]string{
+		"json string with apostrophe": `"it's"`,
+		"apostrophe then backslash":   "it's\n\\",
+		"space apostrophe dquote":     ` it's"`,
+		"newline backslash":           "\n\\",
+		"dquote end with squote":      `x # it's "y"`,
+		"dquote end no squote":        "x\n\"",
+		"backslash end spaces":        " x\\",
+		"backslash end hash":          "a #b\\",
+		"crlf trailing backslash":     "a\r\nb\\",
+		"crlf squote dquote end":      "it's\r\n\"",
+		"marker literal":              "aps-b64:aGVsbG8=",
+		"marker alone":                "aps-b64:",
+		"marker garbage":              "aps-b64:!!!not base64",
+		"nul":                         "a\x00b",
+		"invalid utf8":                "a\xff\xfeb",
+		"1MiB":                        big,
+		"base64 padding 1":            "\xff\xfe",
+		"base64 padding 2":            "\xff",
+	}
+	for name, v := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "secrets.env")
+			store := newDotenvStore(path)
+			require.NoError(t, store.Set(ctx, "A_BEFORE", []byte("x")))
+			require.NoError(t, store.Set(ctx, "K", []byte(v)))
+			require.NoError(t, store.Set(ctx, "Z_AFTER", []byte("y")))
+			got, err := LoadSecrets(path)
+			require.NoError(t, err)
+			require.Equal(t, v, got["K"])
+			assert.Equal(t, "x", got["A_BEFORE"])
+			assert.Equal(t, "y", got["Z_AFTER"])
+		})
+	}
+}
+
+// Ordinary values keep today's on-disk form; the marker is the last resort.
+func TestEncodingOrderUnchanged(t *testing.T) {
+	cases := map[string]string{
+		"abc":        "abc",
+		"":           "",
+		"a #b":       "'a #b'",
+		"it's":       "it's",
+		"l1\nl2":     "'l1\nl2'",
+		"a\r\nb":     `"a\r\nb"`,
+		"$X":         "'$X'",
+		`"it's"`:     "aps-b64:" + base64.StdEncoding.EncodeToString([]byte(`"it's"`)),
+		"base64:abc": "base64:abc",
+		"aps-b64:x":  "aps-b64:" + base64.StdEncoding.EncodeToString([]byte("aps-b64:x")),
+	}
+	for v, want := range cases {
+		got := encodeSecretValue(v)
+		assert.Equal(t, want, got, "value %q", v)
+	}
+}
+
+// Files written by other tools: marker look-alikes read literally.
+func TestMarkerLookalikesReadLiterally(t *testing.T) {
+	content := "A=base64:abc\nB=base64:SGVsbG8=\nC=aps-b64\nD=aps-b64x:SGVsbG8=\nE=APS-B64:SGVsbG8=\nF=xaps-b64:SGVsbG8=\n"
+	path := filepath.Join(t.TempDir(), "secrets.env")
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+	got, err := LoadSecrets(path)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"A": "base64:abc", "B": "base64:SGVsbG8=", "C": "aps-b64",
+		"D": "aps-b64x:SGVsbG8=", "E": "APS-B64:SGVsbG8=", "F": "xaps-b64:SGVsbG8=",
+	}, got)
+}
+
+func TestMarkerValueDecodes(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "secrets.env")
+	require.NoError(t, os.WriteFile(path, []byte("K=aps-b64:SGVsbG8=\n"), 0o600))
+	got, err := LoadSecrets(path)
+	require.NoError(t, err)
+	assert.Equal(t, "Hello", got["K"])
 }
 
 var _ secret.MutableStore = (*dotenvStore)(nil)

@@ -28,6 +28,7 @@ func malformedShapes() map[string]string {
 		"bad key at start":    "-" + leakSentinel + "=v\n",
 		"missing equals":      "GOOD=ok\n" + leakSentinel + "-no-equals\nAFTER=1\n",
 		"space in word":       "GOOD=ok\nsk " + leakSentinel + "\n",
+		"corrupt b64 payload": "GOOD=ok\nTOKEN=aps-b64:" + leakSentinel + "\n",
 		"junk after quote":    "GOOD=ok\nK=\"v\" " + leakSentinel + "!\n",
 	}
 }
