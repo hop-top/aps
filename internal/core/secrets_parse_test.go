@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -117,4 +118,25 @@ func TestLoadSecretsMissingFileStillNil(t *testing.T) {
 	m, err := LoadSecrets(filepath.Join(t.TempDir(), "nope.env"))
 	require.NoError(t, err)
 	assert.Nil(t, m)
+}
+
+// A syntax error followed by a very large body must still be located
+// promptly: the line scan is bounded, so the command reporting the error
+// does not stall re-parsing the rest of the file.
+func TestParseErrorLocatedPromptlyInLargeFile(t *testing.T) {
+	var b strings.Builder
+	b.WriteString("GOOD=ok\nALSO=fine\nTOKEN=\"" + leakSentinel + "\n")
+	for i := 0; i < 200000; i++ {
+		b.WriteString("filler line " + strconv.Itoa(i) + "\n")
+	}
+
+	start := time.Now()
+	_, err := parseSecretsEnv("secrets.env", []byte(b.String()))
+	elapsed := time.Since(start)
+
+	var pe *SecretsParseError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, 3, pe.Line)
+	assert.NotContains(t, err.Error(), leakSentinel)
+	assert.Less(t, elapsed, 20*time.Second, "locating the error must not re-parse the whole file quadratically")
 }
