@@ -21,9 +21,15 @@ import (
 
 // setupTestAdapter creates an APSAdapter with a temporary store directory
 func setupTestAdapter(t *testing.T) (*APSAdapter, string) {
+	return setupTestAdapterWithRegistry(t, session.NewForTesting())
+}
+
+// setupTestAdapterWithRegistry builds a test adapter around registry. The
+// registry must not have been used yet (its store opens lazily under
+// APS_DATA_PATH, which is set here).
+func setupTestAdapterWithRegistry(t *testing.T, registry *session.SessionRegistry) (*APSAdapter, string) {
 	tmpDir := t.TempDir()
 	t.Setenv("APS_DATA_PATH", tmpDir)
-	registry := session.NewForTesting()
 	// The session registry lazily opens a sqlite-backed kv store under
 	// tmpDir. Without an explicit Close, the file handle can still be
 	// open when t.TempDir()'s cleanup tries to remove the directory.
@@ -1401,13 +1407,23 @@ func TestListSessions_FilteringByProfile(t *testing.T) {
 
 // TestIntegration_HeartbeatPreventsReaping is the T4 -> T5 integration:
 // HeartbeatSession refreshes LastSeenAt and CleanupInactive must respect
-// that refresh. The test uses generous wall-clock margins (50ms) rather
-// than tight timing to keep flakes off CI machines.
-//
-// TODO: replace wall-clock sleeps with an injectable clock to make
-// this test fully deterministic.
+// that refresh. The registry runs on a fake clock so staleness is exact
+// and independent of scheduler load.
 func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
-	adapter, _ := setupTestAdapter(t)
+	const window = 50 * time.Millisecond
+	var mu sync.Mutex
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	clock := func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return now
+	}
+	advance := func(d time.Duration) {
+		mu.Lock()
+		defer mu.Unlock()
+		now = now.Add(d)
+	}
+	adapter, _ := setupTestAdapterWithRegistry(t, session.NewForTestingWithClock(clock))
 
 	sess, err := adapter.CreateSession("p1", nil)
 	if err != nil {
@@ -1415,17 +1431,15 @@ func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
 	}
 	id := sess.SessionID
 
-	// Wait so the original LastSeenAt is comfortably stale relative
-	// to the upcoming heartbeat.
-	time.Sleep(50 * time.Millisecond)
+	// The original LastSeenAt is now stale relative to the window.
+	advance(window + time.Millisecond)
 
 	if err := adapter.HeartbeatSession(id); err != nil {
 		t.Fatalf("HeartbeatSession failed: %v", err)
 	}
 
-	// Reap with a short staleness window. The just-issued heartbeat
-	// should keep the session alive.
-	expired, err := adapter.sessionRegistry.CleanupInactive(50 * time.Millisecond)
+	// Reap right after the heartbeat: the session is fresh and must live.
+	expired, err := adapter.sessionRegistry.CleanupInactive(window)
 	if err != nil {
 		t.Fatalf("CleanupInactive (post-heartbeat) failed: %v", err)
 	}
@@ -1438,9 +1452,19 @@ func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
 		t.Fatalf("expected session %s to still exist after heartbeat: %v", id, err)
 	}
 
-	// Now let the heartbeat go stale and reap again.
-	time.Sleep(100 * time.Millisecond)
-	expired, err = adapter.sessionRegistry.CleanupInactive(50 * time.Millisecond)
+	// Exactly at the window the session is not yet stale (strict >).
+	advance(window)
+	expired, err = adapter.sessionRegistry.CleanupInactive(window)
+	if err != nil {
+		t.Fatalf("CleanupInactive (at boundary) failed: %v", err)
+	}
+	if len(expired) != 0 {
+		t.Fatalf("session reaped at the staleness boundary, expired=%v", expired)
+	}
+
+	// One tick past the window the heartbeat has gone stale: reap.
+	advance(time.Millisecond)
+	expired, err = adapter.sessionRegistry.CleanupInactive(window)
 	if err != nil {
 		t.Fatalf("CleanupInactive (post-stale) failed: %v", err)
 	}

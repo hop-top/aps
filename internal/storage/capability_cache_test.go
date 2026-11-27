@@ -10,12 +10,15 @@ import (
 	"hop.top/aps/internal/storage"
 )
 
-func newCache(t *testing.T, ttl time.Duration) *storage.CapabilityCache {
+// testTTL is far above sqlstore's one-second timestamp granularity.
+const testTTL = time.Minute
+
+func newCache(t *testing.T) *storage.CapabilityCache {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "cache.db")
 	c, err := storage.NewCapabilityCache(storage.CapabilityCacheOptions{
 		Path: dbPath,
-		TTL:  ttl,
+		TTL:  testTTL,
 	})
 	if err != nil {
 		t.Fatalf("NewCapabilityCache: %v", err)
@@ -25,7 +28,7 @@ func newCache(t *testing.T, ttl time.Duration) *storage.CapabilityCache {
 }
 
 func TestCapabilityCache_PutGet_Roundtrips(t *testing.T) {
-	c := newCache(t, time.Minute)
+	c := newCache(t)
 	ctx := context.Background()
 
 	cap := capability.Capability{
@@ -56,7 +59,7 @@ func TestCapabilityCache_PutGet_Roundtrips(t *testing.T) {
 }
 
 func TestCapabilityCache_Get_MissReturnsHitFalse(t *testing.T) {
-	c := newCache(t, time.Minute)
+	c := newCache(t)
 	ctx := context.Background()
 
 	_, hit, err := c.Get(ctx, "nope")
@@ -69,7 +72,7 @@ func TestCapabilityCache_Get_MissReturnsHitFalse(t *testing.T) {
 }
 
 func TestCapabilityCache_Put_EmptyNameRejected(t *testing.T) {
-	c := newCache(t, time.Minute)
+	c := newCache(t)
 	ctx := context.Background()
 
 	err := c.Put(ctx, capability.Capability{Name: ""})
@@ -84,8 +87,8 @@ func TestCapabilityCache_TTLExpiresEntries(t *testing.T) {
 	// is inflated by up to 1s and even an immediate Get can miss. Use a
 	// TTL far above that granularity and backdate the stored timestamp
 	// instead of sleeping.
-	const ttl = time.Minute
-	c := newCache(t, ttl)
+	const ttl = testTTL
+	c := newCache(t)
 	ctx := context.Background()
 
 	cap := capability.Capability{Name: "ttl-test", Path: "/x", Type: capability.TypeManaged}
@@ -120,7 +123,7 @@ func TestCapabilityCache_TTLExpiresEntries(t *testing.T) {
 }
 
 func TestCapabilityCache_PutOverwrites(t *testing.T) {
-	c := newCache(t, time.Minute)
+	c := newCache(t)
 	ctx := context.Background()
 
 	if err := c.Put(ctx, capability.Capability{Name: "x", Path: "/a"}); err != nil {

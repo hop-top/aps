@@ -127,6 +127,17 @@ type SessionRegistry struct {
 	closed      bool
 	reaperStops []context.CancelFunc
 	reaperWG    sync.WaitGroup
+
+	// now is an optional clock override; nil means time.Now.
+	now func() time.Time
+}
+
+// clock returns the current time from the registry's clock.
+func (r *SessionRegistry) clock() time.Time {
+	if r.now != nil {
+		return r.now()
+	}
+	return time.Now()
 }
 
 var (
@@ -140,6 +151,13 @@ var (
 // `t.Setenv("APS_DATA_PATH", t.TempDir())` get isolated state.
 func NewForTesting() *SessionRegistry {
 	return &SessionRegistry{}
+}
+
+// NewForTestingWithClock is NewForTesting with an injected clock used for
+// CreatedAt, LastSeenAt and the CleanupInactive staleness check, so tests
+// can exercise expiry boundaries without sleeping. Set before first use.
+func NewForTestingWithClock(now func() time.Time) *SessionRegistry {
+	return &SessionRegistry{now: now}
 }
 
 func GetRegistry() *SessionRegistry {
@@ -259,8 +277,8 @@ func (r *SessionRegistry) RegisterWithContext(ctx context.Context, session *Sess
 		return fmt.Errorf("session %s already exists", session.ID)
 	}
 
-	session.CreatedAt = time.Now()
-	session.LastSeenAt = time.Now()
+	session.CreatedAt = r.clock()
+	session.LastSeenAt = r.clock()
 	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
 	}
@@ -394,7 +412,7 @@ func (r *SessionRegistry) UpdateStatusWithContext(ctx context.Context, sessionID
 
 	prevStatus := session.Status
 	session.Status = status
-	session.LastSeenAt = time.Now()
+	session.LastSeenAt = r.clock()
 
 	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
@@ -431,7 +449,7 @@ func (r *SessionRegistry) UpdateHeartbeat(sessionID string) error {
 		return fmt.Errorf("session %s not found", sessionID)
 	}
 
-	session.LastSeenAt = time.Now()
+	session.LastSeenAt = r.clock()
 
 	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
@@ -464,7 +482,7 @@ func (r *SessionRegistry) UpdateSessionMetadata(sessionID string, metadata map[s
 	for k, v := range metadata {
 		session.Environment[k] = v
 	}
-	session.LastSeenAt = time.Now()
+	session.LastSeenAt = r.clock()
 
 	if err := r.kvPutSessionLocked(ctx, session); err != nil {
 		return fmt.Errorf("failed to persist session registry: %w", err)
@@ -493,7 +511,7 @@ func (r *SessionRegistry) CleanupInactive(timeout time.Duration) ([]string, erro
 		return nil, err
 	}
 
-	now := time.Now()
+	now := r.clock()
 	var expired []string
 	expiredInfos := make([]*SessionInfo, 0)
 	for _, s := range sessions {
