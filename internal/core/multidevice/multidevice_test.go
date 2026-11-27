@@ -670,35 +670,38 @@ func TestPresenceTracker_CheckTimeouts(t *testing.T) {
 		OfflineTimeout:    100 * time.Millisecond,
 	}
 	tracker := NewPresenceTracker(cfg)
+	// Fake clock: elapsed time is exact regardless of scheduler load.
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	tracker.now = func() time.Time { return now }
 
 	require.NoError(t, tracker.RecordHeartbeat("dev-1", "ws-1"))
 
-	// Wait long enough for the away timeout.
-	time.Sleep(80 * time.Millisecond)
-	transitions := tracker.CheckTimeouts()
-	// Should transition to away.
-	found := false
-	for _, tr := range transitions {
-		if tr.DeviceID == "dev-1" {
-			found = true
-			assert.Equal(t, PresenceOnline, tr.From)
-			assert.Equal(t, PresenceAway, tr.To)
+	transitionFor := func(trs []PresenceTransition) *PresenceTransition {
+		for i := range trs {
+			if trs[i].DeviceID == "dev-1" {
+				return &trs[i]
+			}
 		}
+		return nil
 	}
-	assert.True(t, found, "expected a transition for dev-1")
 
-	// Wait for offline timeout.
-	time.Sleep(100 * time.Millisecond)
-	transitions = tracker.CheckTimeouts()
-	found = false
-	for _, tr := range transitions {
-		if tr.DeviceID == "dev-1" {
-			found = true
-			assert.Equal(t, PresenceAway, tr.From)
-			assert.Equal(t, PresenceOffline, tr.To)
-		}
-	}
-	assert.True(t, found, "expected offline transition for dev-1")
+	// Exactly at the away timeout: not yet exceeded (strict comparison).
+	now = now.Add(cfg.AwayTimeout)
+	assert.Nil(t, transitionFor(tracker.CheckTimeouts()), "no transition at the boundary")
+
+	// Past the away timeout: online -> away.
+	now = now.Add(time.Millisecond)
+	tr := transitionFor(tracker.CheckTimeouts())
+	require.NotNil(t, tr, "expected a transition for dev-1")
+	assert.Equal(t, PresenceOnline, tr.From)
+	assert.Equal(t, PresenceAway, tr.To)
+
+	// Past the offline timeout: away -> offline.
+	now = now.Add(cfg.OfflineTimeout)
+	tr = transitionFor(tracker.CheckTimeouts())
+	require.NotNil(t, tr, "expected offline transition for dev-1")
+	assert.Equal(t, PresenceAway, tr.From)
+	assert.Equal(t, PresenceOffline, tr.To)
 }
 
 func TestPresenceTracker_TransitionState(t *testing.T) {

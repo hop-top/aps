@@ -20,11 +20,20 @@ type PresenceTracker struct {
 	mu        sync.RWMutex
 	presences map[string]*DevicePresence // key: workspaceID:deviceID
 	config    PresenceConfig
+	now       func() time.Time // optional clock override; nil = time.Now
 }
 
 // presenceKey builds a composite key for the presences map.
 func presenceKey(workspaceID, deviceID string) string {
 	return workspaceID + ":" + deviceID
+}
+
+// clock returns the tracker's current time; tests may override now.
+func (t *PresenceTracker) clock() time.Time {
+	if t.now != nil {
+		return t.now()
+	}
+	return time.Now()
 }
 
 // NewPresenceTracker creates a new PresenceTracker with the given config.
@@ -49,7 +58,7 @@ func (t *PresenceTracker) RecordHeartbeat(deviceID, workspaceID string) error {
 	defer t.mu.Unlock()
 
 	key := presenceKey(workspaceID, deviceID)
-	now := time.Now()
+	now := t.clock()
 
 	p, exists := t.presences[key]
 	if !exists {
@@ -125,7 +134,7 @@ func (t *PresenceTracker) CheckTimeouts() []PresenceTransition {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	now := time.Now()
+	now := t.clock()
 	var transitions []PresenceTransition
 
 	for _, p := range t.presences {
@@ -178,7 +187,7 @@ func (t *PresenceTracker) TransitionState(deviceID, workspaceID string, to Prese
 	p, exists := t.presences[key]
 	if !exists {
 		// Create a new record if none exists.
-		now := time.Now()
+		now := t.clock()
 		t.presences[key] = &DevicePresence{
 			DeviceID:      deviceID,
 			WorkspaceID:   workspaceID,
@@ -199,7 +208,7 @@ func (t *PresenceTracker) TransitionState(deviceID, workspaceID string, to Prese
 		return nil, fmt.Errorf("device %s is already in state %s", deviceID, to)
 	}
 
-	now := time.Now()
+	now := t.clock()
 	transition := &PresenceTransition{
 		DeviceID:    deviceID,
 		WorkspaceID: workspaceID,
