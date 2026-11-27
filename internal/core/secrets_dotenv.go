@@ -1,7 +1,7 @@
 package core
 
 import (
-	"errors"
+	"encoding/base64"
 	"fmt"
 	"sort"
 	"strings"
@@ -10,9 +10,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// ErrSecretsUnencodable marks a value the secrets.env format cannot hold with
-// the pinned reader. The message never includes the value.
-var ErrSecretsUnencodable = errors.New("value cannot be stored in secrets.env")
+// secretsB64Marker prefixes a value stored as base64. It is aps-specific on
+// purpose: "base64:" is a literal value in common dotenv files (APP_KEY=base64:...)
+// and must keep reading literally.
+const secretsB64Marker = "aps-b64:" // #nosec G101 -- format marker, not a credential
 
 // validSecretKey reports whether k can be written as a dotenv key and read
 // back unchanged: letters, digits, '_' and '.', non-empty.
@@ -41,10 +42,7 @@ func encodeSecretsEnv(m map[string]string) (string, error) {
 		if !validSecretKey(k) {
 			return "", fmt.Errorf("secrets.env: invalid key %q", k)
 		}
-		enc, err := encodeSecretValue(m[k])
-		if err != nil {
-			return "", fmt.Errorf("secrets.env: key %s: %w", k, err)
-		}
+		enc := encodeSecretValue(m[k])
 		b.WriteString(k)
 		b.WriteByte('=')
 		b.WriteString(enc)
@@ -57,10 +55,23 @@ func encodeSecretsEnv(m map[string]string) (string, error) {
 // has gaps (single quotes cannot hold ' or end in \; double quotes cannot end
 // in " or \, and strip trailing quote chars; CRLF is rewritten inside any
 // value; unquoted values lose edge whitespace, " #" tails and $VAR), so no
-// one style covers every value. Candidates are tried in order of plainness
-// and each is verified against the reader itself; the first that reads back
-// byte for byte wins. ErrSecretsUnencodable if none does.
-func encodeSecretValue(v string) (string, error) {
+// one style covers every value. Plain candidates are tried in order and each
+// is verified against the reader itself; the first that reads back byte for
+// byte wins. A value no plain style carries, and any value that itself starts
+// with the marker, is stored as marker + standard base64, which is decoded by
+// parseSecretsEnv.
+func encodeSecretValue(v string) string {
+	if !strings.HasPrefix(v, secretsB64Marker) {
+		if c, ok := encodePlain(v); ok {
+			return c
+		}
+	}
+	return secretsB64Marker + base64.StdEncoding.EncodeToString([]byte(v))
+}
+
+// encodePlain returns the first plain (non-base64) encoding the reader reads
+// back exactly.
+func encodePlain(v string) (string, bool) {
 	dq := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`, "\r", `\r`, "$", `\$`)
 	candidates := []string{
 		v,
@@ -70,10 +81,10 @@ func encodeSecretValue(v string) (string, error) {
 	}
 	for _, c := range candidates {
 		if readsBack(c, v) {
-			return c, nil
+			return c, true
 		}
 	}
-	return "", ErrSecretsUnencodable
+	return "", false
 }
 
 func readsBack(encoded, want string) bool {

@@ -2,8 +2,11 @@ package core
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -16,12 +19,19 @@ import (
 var ErrSecretsParse = errors.New("malformed secrets file")
 
 // SecretsParseError reports a malformed secrets file by location only.
+// Line locates a syntax error; Key names the entry whose base64 payload is
+// corrupt (keys are never secret; values are never reported).
 type SecretsParseError struct {
 	Path string
 	Line int
+	Key  string
 }
 
 func (e *SecretsParseError) Error() string {
+	if e.Key != "" {
+		return fmt.Sprintf("%s: %s: key %s has an invalid %s payload (content withheld)",
+			e.Path, ErrSecretsParse.Error(), e.Key, secretsB64Marker)
+	}
 	return fmt.Sprintf("%s: %s at line %d (content withheld)", e.Path, ErrSecretsParse.Error(), e.Line)
 }
 
@@ -33,10 +43,27 @@ func (e *SecretsParseError) Is(target error) bool { return target == ErrSecretsP
 // returned. It is the only place secrets.env bytes reach the dotenv reader.
 func parseSecretsEnv(path string, data []byte) (map[string]string, error) {
 	m, err := godotenv.UnmarshalBytes(data)
-	if err == nil {
-		return m, nil
+	if err != nil {
+		return nil, &SecretsParseError{Path: path, Line: firstBadLine(data)}
 	}
-	return nil, &SecretsParseError{Path: path, Line: firstBadLine(data)}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := m[k]
+		payload, ok := strings.CutPrefix(v, secretsB64Marker)
+		if !ok {
+			continue
+		}
+		raw, derr := base64.StdEncoding.DecodeString(payload)
+		if derr != nil {
+			return nil, &SecretsParseError{Path: path, Key: k}
+		}
+		m[k] = string(raw)
+	}
+	return m, nil
 }
 
 // firstBadLine finds the 1-based line where the first statement the reader

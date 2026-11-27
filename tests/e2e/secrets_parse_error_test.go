@@ -19,6 +19,7 @@ func TestSecretsParseError_NeverEchoesContent(t *testing.T) {
 		"unterminated double": "GOOD=ok\nTOKEN=\"" + parseLeakSentinel + "\nNEXT=" + parseLeakSentinel + "2\n",
 		"unterminated single": "GOOD=ok\nTOKEN='" + parseLeakSentinel + "\n",
 		"bad key":             "GOOD=ok\nBAD!KEY" + parseLeakSentinel + "=v\n",
+		"corrupt b64 payload": "GOOD=ok\nTOKEN=aps-b64:" + parseLeakSentinel + "\n",
 		"missing equals":      "GOOD=ok\n" + parseLeakSentinel + "-no-equals\nAFTER=1\n",
 	}
 	commands := map[string][]string{
@@ -47,7 +48,7 @@ func TestSecretsParseError_NeverEchoesContent(t *testing.T) {
 				assert.NotContains(t, stdout, parseLeakSentinel)
 				assert.NotContains(t, stderr, parseLeakSentinel)
 				if cname == "run" {
-					assert.Contains(t, stderr, "line ")
+					assert.Contains(t, stderr, "malformed secrets file")
 				}
 			})
 		}
