@@ -6226,7 +6226,9 @@ List all available profiles
 List every agent profile discovered under
 $APS_DATA_PATH/profiles/, projected into a row shape that includes
 id, display name, roles, capabilities, workspace link, email,
-has-secrets, has-identity, color, and avatar.
+has-secrets, has-identity, color, and avatar. The json and yaml
+formats also carry type and reports_to when set (absent when unset,
+as in profile show); the table omits them.
 
 Filters compose with AND semantics: --capability, --role, --squad,
 --tone match against the corresponding slice/string field;
