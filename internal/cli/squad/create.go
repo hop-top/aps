@@ -86,16 +86,16 @@ func runCreate(w io.Writer, format, name, squadType, domain, description string,
 	if structured(format) {
 		created, err := defaultManager.Get(id)
 		if err != nil {
-			return err
+			return fmt.Errorf("read back squad: %w", err)
 		}
 		return renderStructured(w, format, newSquadRecord(created))
 	}
 
-	fmt.Fprintf(w, "Created squad %q (%s)\n", name, id)
-	fmt.Fprintf(w, "  Type:    %s\n", squadType)
-	fmt.Fprintf(w, "  Domain:  %s\n", domain)
+	_, _ = fmt.Fprintf(w, "Created squad %q (%s)\n", name, id)
+	_, _ = fmt.Fprintf(w, "  Type:    %s\n", squadType)
+	_, _ = fmt.Fprintf(w, "  Domain:  %s\n", domain)
 	if len(members) > 0 {
-		fmt.Fprintf(w, "  Members: %s\n", strings.Join(members, ", "))
+		_, _ = fmt.Fprintf(w, "  Members: %s\n", strings.Join(members, ", "))
 	}
 
 	return nil
