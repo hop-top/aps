@@ -35,6 +35,11 @@ func (e *SecretsParseError) Error() string {
 	return fmt.Sprintf("%s: %s at line %d (content withheld)", e.Path, ErrSecretsParse.Error(), e.Line)
 }
 
+// firstBadLineBudget caps the bytes firstBadLine may re-parse while locating
+// a syntax error. Far above what an ordinary secrets file needs; it only
+// bounds the pathological case.
+const firstBadLineBudget = 16 << 20
+
 // Is makes errors.Is(err, ErrSecretsParse) true.
 func (e *SecretsParseError) Is(target error) bool { return target == ErrSecretsParse }
 
@@ -71,13 +76,23 @@ func parseSecretsEnv(path string, data []byte) (map[string]string, error) {
 // greedily, each statement being the shortest run of lines that parses (a
 // quoted value may span lines); the first line from which no run parses is
 // the bad statement.
+//
+// Re-parsing growing runs is quadratic in the worst case (a bad statement
+// followed by many lines), so the scan stops after firstBadLineBudget bytes
+// of parse work and reports the statement it was examining. On a file that
+// large the line is then a lower bound, which still beats stalling the
+// command that only wants to report the error.
 func firstBadLine(data []byte) int {
 	src := bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	lines := bytes.Split(src, []byte("\n"))
+	work := 0
 	for start := 0; start < len(lines); {
 		next := -1
 		for end := start + 1; end <= len(lines); end++ {
 			chunk := bytes.Join(lines[start:end], []byte("\n"))
+			if work += len(chunk) + 1; work > firstBadLineBudget {
+				return start + 1
+			}
 			if _, err := godotenv.UnmarshalBytes(chunk); err == nil {
 				next = end
 				break
