@@ -209,6 +209,11 @@ func TestFileManager_SaveReplacesFileAtomically(t *testing.T) {
 
 // Readers racing a writer must always see a complete record.
 func TestFileManager_ReaderNeverSeesPartialManifest(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Go opens files without FILE_SHARE_DELETE there, so a rename over
+		// a manifest a reader has open fails by design of the platform.
+		t.Skip("rename over an open file is refused on windows")
+	}
 	dir := t.TempDir()
 	m := NewFileManager(dir)
 	big := make([]string, 4000)
