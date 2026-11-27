@@ -15,6 +15,7 @@ package session
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -119,12 +120,18 @@ type SessionRegistry struct {
 	storeOnce sync.Once
 	storeErr  error
 	mu        sync.Mutex
+
+	// smu guards store, storeErr, closed and reaperStops. reaperWG
+	// tracks live reaper goroutines so Close can wait for them.
+	smu         sync.RWMutex
+	closed      bool
+	reaperStops []context.CancelFunc
+	reaperWG    sync.WaitGroup
 }
 
 var (
-	registry     *SessionRegistry
-	once         sync.Once
-	reaperCancel context.CancelFunc
+	registry *SessionRegistry
+	once     sync.Once
 )
 
 // NewForTesting returns a fresh SessionRegistry that does not share
@@ -141,9 +148,7 @@ func GetRegistry() *SessionRegistry {
 		if err := registry.ensureStore(); err != nil {
 			fmt.Printf("Warning: failed to open session registry: %v\n", err)
 		}
-		var ctx context.Context
-		ctx, reaperCancel = context.WithCancel(context.Background())
-		startReaper(ctx, registry, ReaperTickInterval)
+		startReaper(context.Background(), registry, ReaperTickInterval)
 	})
 	return registry
 }
@@ -155,9 +160,6 @@ func GetRegistry() *SessionRegistry {
 func CloseRegistry() error {
 	if registry == nil {
 		return nil
-	}
-	if reaperCancel != nil {
-		reaperCancel()
 	}
 	return registry.Close()
 }
@@ -188,11 +190,26 @@ func DisableInlineReaper() { reaperDisabled = true }
 // When the CLI has wired the durabletask job runner via
 // DisableInlineReaper, this function returns without spawning the
 // goroutine; the kit poller drives the sweep instead.
+//
+// SessionRegistry.Close cancels the reaper and waits for it to exit
+// before closing the store; starting a reaper on a closed registry is
+// a no-op.
 func startReaper(ctx context.Context, r *SessionRegistry, tick time.Duration) {
 	if reaperDisabled {
 		return
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	r.smu.Lock()
+	if r.closed {
+		r.smu.Unlock()
+		cancel()
+		return
+	}
+	r.reaperStops = append(r.reaperStops, cancel)
+	r.reaperWG.Add(1)
+	r.smu.Unlock()
 	go func() {
+		defer r.reaperWG.Done()
 		logger := logging.GetLogger()
 		ticker := time.NewTicker(tick)
 		defer ticker.Stop()
@@ -202,6 +219,9 @@ func startReaper(ctx context.Context, r *SessionRegistry, tick time.Duration) {
 				return
 			case <-ticker.C:
 				expired, err := r.CleanupInactive(DefaultTimeout)
+				if errors.Is(err, ErrRegistryClosed) {
+					return
+				}
 				if err != nil {
 					logger.Error("session reaper: cleanup failed", err)
 					continue
