@@ -21,12 +21,9 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Each agent runs under its own profile with separate env, git config, and credentials.
   </Card>
   <Card title="Isolation setting" icon="shield">
-    Process isolation (default) runs commands as a child process of your user. Platform and container levels can be set but are not yet wired into `aps run`.
+    Process isolation (default) runs commands as a child process of your user. Platform and container levels can be set in a profile, but `aps run` refuses to run them.
   </Card>
   <Card title="Protocol adapters" icon="puzzle">
-    Built-in A2A, ACP, and MCP protocol adapters. Extensible registry for custom protocols.
-  </Card>
-  <Card title="Agent payments" icon="rocket">
-    Native x402 payment support via `cap:payment` capability bundle. Non-custodial wallets per profile.
+    A2A and ACP servers per profile (`aps a2a server`, `aps acp server`), plus an HTTP agent-protocol server (`aps serve`).
   </Card>
 </CardGrid>
