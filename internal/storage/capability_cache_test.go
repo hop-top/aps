@@ -79,10 +79,13 @@ func TestCapabilityCache_Put_EmptyNameRejected(t *testing.T) {
 }
 
 func TestCapabilityCache_TTLExpiresEntries(t *testing.T) {
-	// sqlstore stores stored_at at second precision (RFC3339), so the
-	// TTL must be > 1s to be observable in tests. Use 1s and sleep
-	// just over to keep the test fast.
-	c := newCache(t, time.Second)
+	// sqlstore stamps stored_at at second precision (truncated), so a
+	// short TTL cannot be tested with real time: an entry's apparent age
+	// is inflated by up to 1s and even an immediate Get can miss. Use a
+	// TTL far above that granularity and backdate the stored timestamp
+	// instead of sleeping.
+	const ttl = time.Minute
+	c := newCache(t, ttl)
 	ctx := context.Background()
 
 	cap := capability.Capability{Name: "ttl-test", Path: "/x", Type: capability.TypeManaged}
@@ -90,14 +93,23 @@ func TestCapabilityCache_TTLExpiresEntries(t *testing.T) {
 		t.Fatalf("Put: %v", err)
 	}
 
-	// Fresh — should hit.
+	// Fresh: should hit.
 	if _, hit, err := c.Get(ctx, "ttl-test"); err != nil || !hit {
 		t.Fatalf("immediate Get: hit=%v err=%v, want hit=true", hit, err)
 	}
 
-	time.Sleep(1200 * time.Millisecond)
+	// Older than most of the TTL but still inside it: should hit.
+	if err := c.BackdateForTest(ctx, "ttl-test", ttl/2); err != nil {
+		t.Fatal(err)
+	}
+	if _, hit, err := c.Get(ctx, "ttl-test"); err != nil || !hit {
+		t.Fatalf("Get inside TTL: hit=%v err=%v, want hit=true", hit, err)
+	}
 
-	// Expired — should miss.
+	// Past the TTL: should miss.
+	if err := c.BackdateForTest(ctx, "ttl-test", 2*ttl); err != nil {
+		t.Fatal(err)
+	}
 	_, hit, err := c.Get(ctx, "ttl-test")
 	if err != nil {
 		t.Fatalf("Get after TTL: %v", err)
