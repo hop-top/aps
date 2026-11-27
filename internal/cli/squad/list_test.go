@@ -8,9 +8,8 @@ import (
 	coresquad "hop.top/aps/internal/core/squad"
 )
 
-// resetManager swaps defaultManager for an empty one for the duration
-// of the test. Squads are in-memory only so we share state with sibling
-// commands; this keeps tests hermetic.
+// resetManager swaps defaultManager for an empty in-memory one for the
+// duration of the test, keeping filter tests hermetic and off disk.
 func resetManager(t *testing.T) {
 	t.Helper()
 	prev := defaultManager
@@ -32,19 +31,10 @@ func runListWith(t *testing.T, args ...string) string {
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs(args)
-	// Capture stdout via hijacking os.Stdout would be invasive; the
-	// list command writes directly to os.Stdout via listing.RenderList,
-	// so we instead call the predicate path through Execute and
-	// inspect via a sibling helper. For the listing path, redirect
-	// stdout via a pipe.
-	old, w, restore := captureStdout(t)
-	defer restore()
-	_ = old
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	w.Close()
-	return readPipe(t)
+	return buf.String()
 }
 
 func TestSquadList_FilterMember(t *testing.T) {
