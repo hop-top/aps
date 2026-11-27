@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"hop.top/kit/go/ai/llm"
 )
 
 func TestBuildProviderURIEncodesQueryParams(t *testing.T) {
@@ -67,5 +69,43 @@ func TestBuildProviderURINoCredentialsLeavesBare(t *testing.T) {
 	}
 	if uri != "ollama://llama3" {
 		t.Fatalf("expected bare URI, got %q", uri)
+	}
+}
+
+// Every scheme the chat code can pick on its own must have an adapter in the
+// built binary; resolution only, no network.
+func TestDefaultAndInferredSchemesAreRegistered(t *testing.T) {
+	registered := map[string]bool{}
+	for _, s := range llm.Schemes() {
+		registered[s] = true
+	}
+	uris := append([]string{}, DefaultProviderURIs()...)
+	for _, m := range []string{"claude-3-5-sonnet", "gemini-2.0-flash", "gpt-4o", "o3-mini", "o4-mini", "o1", "unknown-model"} {
+		uris = append(uris, providerURIForModel(m, ""))
+	}
+	for _, uri := range uris {
+		parsed, err := llm.ParseURI(uri)
+		if err != nil {
+			t.Fatalf("ParseURI(%q): %v", uri, err)
+		}
+		if !registered[parsed.Scheme] {
+			t.Errorf("scheme %q (from %q) has no registered adapter; registered: %v", parsed.Scheme, uri, llm.Schemes())
+		}
+		if err := checkProviderRegistered(uri); err != nil {
+			t.Errorf("checkProviderRegistered(%q): %v", uri, err)
+		}
+	}
+}
+
+func TestCheckProviderRegisteredNamesSchemeAndAvailable(t *testing.T) {
+	err := checkProviderRegistered("bogus://model")
+	if err == nil {
+		t.Fatal("expected error for unregistered scheme")
+	}
+	msg := err.Error()
+	for _, want := range []string{`"bogus"`, "available:", "anthropic", "openai", "google"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error %q missing %q", msg, want)
+		}
 	}
 }
