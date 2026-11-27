@@ -436,7 +436,7 @@ cog.out(subprocess.check_output(
 | --- | --- | --- | --- | --- | --- |
 | Discord | `webhook`, `stream` | `text`, `file` | Yes | Yes | No |
 | Email | JSON relay route through `aps serve` | — | — | — | — |
-| Slack | `webhook` | `text`, `file` | Yes | Yes | No |
+| Slack | `webhook` | `text` | Yes | Yes | No |
 | SMS | `webhook` | `text` | No | No | No |
 | Teams | `webhook` | `text` | Yes | Yes | No |
 | Telegram | `webhook` | `text` | Yes | Yes | No |

@@ -61,7 +61,7 @@ func (p *SlackProvider) Metadata() coremessenger.ProviderRuntimeMetadata {
 		Provider:            string(coremessenger.PlatformSlack),
 		DisplayName:         "Slack",
 		IngressModes:        []coremessenger.IngressMode{coremessenger.IngressModeWebhook},
-		DeliveryModes:       []coremessenger.DeliveryMode{coremessenger.DeliveryModeText, coremessenger.DeliveryModeFile},
+		DeliveryModes:       []coremessenger.DeliveryMode{coremessenger.DeliveryModeText},
 		SupportsThreads:     true,
 		SupportsAttachments: true,
 		SupportsReactions:   false,
