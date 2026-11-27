@@ -1205,3 +1205,86 @@ func TestHandler_Terminal_OutputCompleteAtExit(t *testing.T) {
 		assert.Contains(t, output, "[STDERR] err-line-"+strconv.Itoa(lines-1))
 	}
 }
+
+// A backgrounded child may hold the output pipes open long after the shell
+// exits. The terminal must still report exited promptly, with the real exit
+// code and the output written before exit.
+func TestHandler_Terminal_ExitBoundedByOrphanedPipeHolder(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires POSIX sh")
+	}
+	tm := NewTerminalManager()
+	tm.drainDelay = 100 * time.Millisecond
+
+	// The backgrounded sleep inherits stdout/stderr and keeps both pipes
+	// open; its pid is echoed on stderr for cleanup.
+	term, err := tm.CreateTerminal("sh",
+		[]string{"-c", "echo before; sleep 30 & echo $! >&2; exit 3"}, "", nil)
+	require.NoError(t, err)
+
+	start := time.Now()
+	code, err := tm.WaitForExit(term.ID)
+	elapsed := time.Since(start)
+	require.NoError(t, err)
+
+	output, err := tm.GetOutput(term.ID)
+	require.NoError(t, err)
+	// Clean up the orphan: its pid was echoed on stderr.
+	for _, l := range strings.Split(output, "\n") {
+		if pid, perr := strconv.Atoi(strings.TrimPrefix(l, "[STDERR] ")); perr == nil && strings.HasPrefix(l, "[STDERR] ") {
+			if p, ferr := os.FindProcess(pid); ferr == nil {
+				_ = p.Kill()
+			}
+		}
+	}
+
+	assert.Equal(t, 3, code)
+	assert.Less(t, elapsed, 5*time.Second, "exit must not wait for the orphaned child")
+	assert.Contains(t, output, "before")
+	select {
+	case <-term.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("exit watcher did not finish")
+	}
+}
+
+// Kill on a terminal whose child holds the pipes must not leak the exit
+// watcher goroutine.
+func TestHandler_Terminal_KillWithPipeHolderFinishesWatcher(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires POSIX sh")
+	}
+	tm := NewTerminalManager()
+	tm.drainDelay = 100 * time.Millisecond
+
+	term, err := tm.CreateTerminal("sh",
+		[]string{"-c", "sleep 30 & echo $! >&2; wait"}, "", nil)
+	require.NoError(t, err)
+
+	// Wait for the child pid to appear so the orphan can be reaped.
+	var pid int
+	require.Eventually(t, func() bool {
+		out, _ := tm.GetOutput(term.ID)
+		for _, l := range strings.Split(out, "\n") {
+			if p, perr := strconv.Atoi(strings.TrimPrefix(l, "[STDERR] ")); perr == nil && strings.HasPrefix(l, "[STDERR] ") {
+				pid = p
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 5*time.Millisecond)
+	t.Cleanup(func() {
+		if p, err := os.FindProcess(pid); err == nil {
+			_ = p.Kill()
+		}
+	})
+
+	require.NoError(t, tm.Kill(term.ID))
+
+	select {
+	case <-term.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("exit watcher leaked: terminal pipes held by child")
+	}
+	assert.Equal(t, "exited", term.State())
+}
