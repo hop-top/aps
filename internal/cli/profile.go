@@ -68,12 +68,21 @@ Filters compose with AND semantics: --capability, --role, --squad,
 workspace name; --has-identity / --has-secrets are boolean flags
 that scope to profiles that do (or do not) have the given module
 attached. Output respects the global --format flag (table|json|
-yaml).
+yaml). Profiles whose profile.yaml cannot be read are skipped and
+named on stderr.
 
 Read-only: no profile state is mutated. Idempotent.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		profiles, err := core.ListProfilesFull()
-		if err != nil {
+		// A profile whose profile.yaml cannot be loaded is left out of
+		// the listing but named on stderr (as squad list does), so it
+		// is not silently lost. Only an unreadable profiles directory
+		// fails the command.
+		profiles, err := core.ListProfilesChecked()
+		var skipped *core.SkippedProfilesError
+		switch {
+		case errors.As(err, &skipped):
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: skipped unreadable profiles:\n%v\n", err)
+		case err != nil:
 			return fmt.Errorf("listing profiles: %w", err)
 		}
 
@@ -114,7 +123,7 @@ Read-only: no profile state is mutated. Idempotent.`,
 		if format == "" {
 			format = output.Table
 		}
-		return listing.RenderList(os.Stdout, format, rows)
+		return listing.RenderList(cmd.OutOrStdout(), format, rows)
 	},
 }
 

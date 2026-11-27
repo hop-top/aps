@@ -6243,7 +6243,8 @@ Filters compose with AND semantics: --capability, --role, --squad,
 workspace name; --has-identity / --has-secrets are boolean flags
 that scope to profiles that do (or do not) have the given module
 attached. Output respects the global --format flag (table|json|
-yaml).
+yaml). Profiles whose profile.yaml cannot be read are skipped and
+named on stderr.
 
 Read-only: no profile state is mutated. Idempotent.
 
