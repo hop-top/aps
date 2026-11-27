@@ -39,9 +39,7 @@ display_name: Test Profile
 func TestProcessIsolation_PrepareContext(t *testing.T) {
 	tempDir := setupTestProfile(t)
 
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 
 	process := isolation.NewProcessIsolation()
 	context, err := process.PrepareContext("test-profile")
@@ -55,9 +53,7 @@ func TestProcessIsolation_PrepareContext(t *testing.T) {
 func TestProcessIsolation_SetupEnvironment(t *testing.T) {
 	tempDir := setupTestProfile(t)
 
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 
 	process := isolation.NewProcessIsolation()
 	_, err := process.PrepareContext("test-profile")
@@ -74,9 +70,7 @@ func TestProcessIsolation_SetupEnvironment(t *testing.T) {
 func TestProcessIsolation_Validate(t *testing.T) {
 	tempDir := setupTestProfile(t)
 
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 
 	process := isolation.NewProcessIsolation()
 
@@ -90,16 +84,8 @@ func TestProcessIsolation_Validate(t *testing.T) {
 func TestProcessIsolation_Cleanup(t *testing.T) {
 	// Use a fresh temp home with no profiles so PrepareContext fails as expected
 	emptyHome := t.TempDir()
-	origXDG := os.Getenv("XDG_DATA_HOME")
-	origAPS := os.Getenv("APS_DATA_PATH")
-	os.Setenv("XDG_DATA_HOME", filepath.Join(emptyHome, ".local", "share"))
-	os.Unsetenv("APS_DATA_PATH")
-	t.Cleanup(func() {
-		os.Setenv("XDG_DATA_HOME", origXDG)
-		if origAPS != "" {
-			os.Setenv("APS_DATA_PATH", origAPS)
-		}
-	})
+	t.Setenv("XDG_DATA_HOME", filepath.Join(emptyHome, ".local", "share"))
+	t.Setenv("APS_DATA_PATH", "")
 
 	process := isolation.NewProcessIsolation()
 
@@ -111,9 +97,7 @@ func TestProcessIsolation_Cleanup(t *testing.T) {
 	assert.Nil(t, context)
 
 	tempDir := setupTestProfile(t)
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	t.Setenv("HOME", tempDir)
 
 	_, err = process.PrepareContext("test-profile")
 	assert.NoError(t, err)
