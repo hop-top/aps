@@ -65,8 +65,8 @@ func (p *DiscordProvider) Metadata() msgtypes.ProviderRuntimeMetadata {
 	return msgtypes.ProviderRuntimeMetadata{
 		Provider:            string(msgtypes.PlatformDiscord),
 		DisplayName:         "Discord",
-		IngressModes:        []msgtypes.IngressMode{msgtypes.IngressModeWebhook, msgtypes.IngressModeStream},
-		DeliveryModes:       []msgtypes.DeliveryMode{msgtypes.DeliveryModeText, msgtypes.DeliveryModeFile},
+		IngressModes:        []msgtypes.IngressMode{msgtypes.IngressModeWebhook},
+		DeliveryModes:       []msgtypes.DeliveryMode{msgtypes.DeliveryModeText},
 		SupportsThreads:     true,
 		SupportsAttachments: true,
 		SupportsReactions:   false,

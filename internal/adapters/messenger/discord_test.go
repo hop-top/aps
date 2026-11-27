@@ -17,7 +17,7 @@ func TestDiscordProviderNormalizeIngress_MessageCreate(t *testing.T) {
 	msg, err := provider.NormalizeIngress(context.Background(), msgtypes.NativeIngress{
 		ServiceID: "discord-support",
 		Provider:  "discord",
-		Mode:      msgtypes.IngressModeStream,
+		Mode:      msgtypes.IngressModeWebhook,
 		Body: []byte(`{
 			"op": 0,
 			"t": "MESSAGE_CREATE",

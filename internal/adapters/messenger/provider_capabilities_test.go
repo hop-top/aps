@@ -54,8 +54,6 @@ type capabilityKey struct {
 // capabilityExceptions lists declarations a probe cannot verify. Each entry
 // needs a reason; the test fails when an exception is no longer declared.
 var capabilityExceptions = map[capabilityKey]string{
-	{"DiscordProvider", "ingress:stream"}: "pending removal of the declaration: no Gateway client exists.",
-	{"DiscordProvider", "delivery:file"}:  "pending removal of the declaration: attachments are sent as URL embeds, not uploads.",
 	{"WhatsAppProvider", "delivery:file"}: "declared per provider, honoured by the Twilio transport only " +
 		"(first attachment as MediaUrl); the Cloud API transport sends text only. " +
 		"The provider-level fake cannot tell the two apart.",
