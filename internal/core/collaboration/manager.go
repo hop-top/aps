@@ -68,11 +68,11 @@ func (m *Manager) load(ref string) (*Workspace, error) {
 	}
 	var nf *WorkspaceNotFoundError
 	if !errors.As(err, &nf) {
-		return nil, err
+		return nil, err //nolint:wrapcheck // every caller wraps with the workspace ref
 	}
 	ids, lerr := m.storage.ListWorkspaces()
 	if lerr != nil {
-		return nil, err
+		return nil, err //nolint:wrapcheck // every caller wraps with the workspace ref
 	}
 	var matches []*Workspace
 	for _, id := range ids {
@@ -84,7 +84,7 @@ func (m *Manager) load(ref string) (*Workspace, error) {
 	}
 	switch len(matches) {
 	case 0:
-		return nil, err
+		return nil, err //nolint:wrapcheck // every caller wraps with the workspace ref
 	case 1:
 		return matches[0], nil
 	}
@@ -96,7 +96,7 @@ func (m *Manager) load(ref string) (*Workspace, error) {
 }
 
 // Resolve maps a workspace reference (ID or exact name) to its ID.
-func (m *Manager) Resolve(ctx context.Context, ref string) (string, error) {
+func (m *Manager) Resolve(_ context.Context, ref string) (string, error) {
 	ws, err := m.load(ref)
 	if err != nil {
 		return "", fmt.Errorf("loading workspace %q: %w", ref, err)
