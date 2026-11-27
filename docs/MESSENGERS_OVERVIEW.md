@@ -260,7 +260,8 @@ Controls and limits:
   `app_mention` or text contains `<@BOT_USER_ID>`.
 - Slack bot messages are ignored and duplicate `event_id` deliveries are
   deduplicated.
-- Replies use `chat.postMessage`; file upload is not the primary delivery path.
+- Replies use `chat.postMessage` and are text only; file upload is not
+  supported.
 
 ### Teams
 

@@ -133,6 +133,7 @@ type captureDiscordTransport struct {
 	method        string
 	url           string
 	authorization string
+	contentType   string
 	requestBody   string
 	statusCode    int
 	body          string
@@ -142,6 +143,7 @@ func (t *captureDiscordTransport) Do(req *http.Request) (*http.Response, error) 
 	t.method = req.Method
 	t.url = req.URL.String()
 	t.authorization = req.Header.Get("Authorization")
+	t.contentType = req.Header.Get("Content-Type")
 	body, _ := io.ReadAll(req.Body)
 	t.requestBody = string(body)
 	return &http.Response{
