@@ -52,7 +52,10 @@ fi
 attendees=$(printf '%s\n' "$event_info" \
   | grep -iE '^[[:space:]]*Attendees?:|^[[:space:]]*email:' || true)
 
-if ! printf '%s\n' "$attendees" | grep -qiF "$USER"; then
+# Here-string, not `printf | grep -q`: grep -q stops at the first match
+# and under pipefail the still-writing printf dies of SIGPIPE on a big
+# attendee list, which `!` then read as "no match".
+if ! grep -qiF "$USER" <<<"$attendees"; then
   echo "respond-event: $USER is not an attendee on event $EVENT_ID (calendar $CALENDAR)" >&2
   # Exit 65 = EX_DATAERR — input was syntactically valid but did not
   # match a real attendee relationship.

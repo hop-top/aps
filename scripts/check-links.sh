@@ -67,7 +67,11 @@ check_docs_links() {
   fi
 
   urls="$(failed_urls "$json")"
-  if printf '%s\n' "$urls" | grep -qvE '^https?://'; then
+  # Here-string, not `printf | grep -q`: grep -q stops at the first
+  # non-http line and under pipefail the still-writing printf dies of
+  # SIGPIPE on a long list, which read as "all http" and retried a
+  # permanent failure.
+  if grep -qvE '^https?://' <<<"$urls"; then
     print_failures "$json" >&2
     return 1 # a non-http failure (e.g. missing file) will not heal
   fi
