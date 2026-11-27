@@ -150,6 +150,10 @@ Profile scripts are discovered automatically:
 
 ## Container Build Steps
 
+The container build-step schema below is parsed and validated, and a Dockerfile can be generated
+from it, but `level: container` is not wired into `aps run`: a profile at that level fails with
+`container isolation not yet implemented`. See [Isolation levels](../../user/isolation.md).
+
 For profiles using container isolation (`level: container`), tools can be installed during image build:
 
 ```yaml

@@ -1,5 +1,7 @@
 # Container Isolation
 
+> **Status:** the container adapter described here is not wired into the CLI. It lives in `internal/core/isolation/` with its own tests, but no command calls it. `aps run` and `aps action run` fail for a profile at these levels with a "not yet implemented" error, and `aps serve` and messenger and ticket routing start actions as plain host processes whatever the level. Read this as adapter design and reference, not as behaviour the CLI provides. Current behaviour: [Isolation levels](../../../user/isolation.md).
+
 **Isolation Level**: Container (Tier 3)
 **Status**: Supported (requires Docker)
 

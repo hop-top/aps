@@ -1,53 +1,44 @@
 ---
 title: Isolation Levels
-description: Choose the right isolation level for your agent workload.
+description: What each isolation setting does today, and what it does not.
 ---
 
-APS offers three isolation levels, balancing speed against security.
+A profile has an `isolation.level` setting with three accepted values. Only `process` is
+implemented. `platform` and `container` are not wired into `aps run`.
+
+| Level | Status |
+|-------|--------|
+| `process` (default) | Implemented |
+| `platform` | Not wired into `aps run` |
+| `container` | Not wired into `aps run` |
 
 ## Process (default)
 
-Runs the command as a child process with isolated environment variables.
-No filesystem or network sandboxing.
+Runs the command as a child process of aps, as your user. The child gets your environment
+plus the profile's variables (secrets, git config, SSH key, capability paths). There is no
+filesystem, network, or privilege boundary, and the child can read anything your user can.
 
-**Best for:** Development, trusted workloads, maximum speed.
+**Best for:** development and trusted workloads.
 
-```bash
-aps profile new myagent --isolation-level process
-```
+## Platform and container
 
-## Platform
+You can set `level: platform` or `level: container` in `profile.yaml`; a container profile
+also needs `container.image`. aps accepts the setting, but `aps run` and `aps action run`
+then fail with `platform isolation not yet implemented` or `container isolation not yet
+implemented` and run nothing. The `strict` and `fallback` fields, and the global
+`isolation.default_level` and `isolation.fallback_enabled`, are stored but not applied, so
+there is no automatic fallback to `process`.
 
-Uses the OS-native sandbox mechanism:
-- **macOS:** `sandbox-exec` with a restrictive Seatbelt profile
-- **Linux:** `bwrap` (bubblewrap) with namespaces
+`aps serve` and messenger and ticket routing run a profile's actions as plain host processes
+whatever level the profile sets, so those paths give no sandbox either.
 
-Restricts filesystem writes outside the profile home and limits network
-to explicitly allowed endpoints.
-
-**Best for:** Semi-trusted agents, local development with guardrails.
-
-```bash
-aps profile new myagent --isolation-level platform
-```
-
-## Container
-
-Runs the agent inside a Docker container. Full filesystem and network
-isolation. Requires Docker to be installed and running.
-
-**Best for:** Production, untrusted code, strong reproducibility requirements.
-
-```bash
-aps profile new myagent --isolation-level container
-```
+Do not rely on either setting to contain an untrusted agent. Adapter code for a macOS and
+Linux sandbox user and for Docker exists in the source tree, but no command calls it.
 
 ## Comparison
 
 | Feature              | Process | Platform | Container |
 |----------------------|---------|----------|-----------|
-| Startup overhead     | ~0ms    | ~50ms    | ~500ms    |
-| Filesystem isolation | No      | Partial  | Full      |
-| Network isolation    | No      | Partial  | Full      |
-| Requires Docker      | No      | No       | Yes       |
-| Cross-platform       | Yes     | macOS/Linux | Yes   |
+| Runs under `aps run` | Yes     | No       | No        |
+| Filesystem isolation | No      | n/a      | n/a       |
+| Network isolation    | No      | n/a      | n/a       |

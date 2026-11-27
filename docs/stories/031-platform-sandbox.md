@@ -1,5 +1,5 @@
 ---
-status: paper
+status: partial
 ---
 
 # Platform Sandbox
@@ -19,6 +19,15 @@ As a maintainer, I want platform-specific sandbox adapters (process, container, 
 2. **Given** strict mode enabled, **When** the requested adapter is unavailable, **Then** execution fails without fallback.
 3. **Given** graceful degradation enabled, **When** the requested adapter is unavailable, **Then** the manager falls back through available levels.
 4. **Given** macOS, **When** platform isolation is requested, **Then** the Darwin sandbox adapter is used.
+
+## Status
+
+Partial. The isolation manager, the fallback resolver, and adapters for process, macOS
+sandbox user, Linux sandbox user, and Docker exist in `internal/core/isolation/`, with unit
+tests, but no command uses them. The CLI run path calls its own `process` implementation and
+returns `<level> isolation not yet implemented` for `platform` and `container`, so none of the
+scenarios above is observable through `aps`. Current behaviour:
+[Isolation levels](../user/isolation.md).
 
 ## Tests
 

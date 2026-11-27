@@ -16,7 +16,7 @@ description: Complete command reference for the aps CLI.
 Manage agent profiles.
 
 ```bash
-aps profile new <name> [--display-name <s>] [--email <s>] [--isolation-level <l>]
+aps profile new <name> [--display-name <s>] [--email <s>]
 aps profile list
 aps profile show <name>
 aps profile delete <name>

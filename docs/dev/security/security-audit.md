@@ -1,5 +1,7 @@
 # APS Security Audit
 
+> **Status:** the platform and container adapters described here are not wired into the CLI. It lives in `internal/core/isolation/` with its own tests, but no command calls it. `aps run` and `aps action run` fail for a profile at these levels with a "not yet implemented" error, and `aps serve` and messenger and ticket routing start actions as plain host processes whatever the level. The tiers audited below as platform and container describe the adapters, not what `aps run` provides: profiles set to those levels are refused, and nothing sandboxes a run today. Read this as adapter design and reference, not as behaviour the CLI provides. Current behaviour: [Isolation levels](../../user/isolation.md).
+
 **Date**: 2026-01-21
 **Version**: v0.2.x / v0.3.x
 

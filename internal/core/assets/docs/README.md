@@ -88,7 +88,7 @@ or similar tools until native `aps chat <profile>` is available.
 
 - Read [CLI.md](CLI.md) for complete command reference
 - Read [PROFILES.md](PROFILES.md) for detailed profile management
-- Read [ISOLATION.md](ISOLATION.md) for isolation levels and security
+- Read [ISOLATION.md](ISOLATION.md) for what each isolation level does today
 - Read [SESSIONS.md](SESSIONS.md) for session management
 - Read [EXAMPLES.md](EXAMPLES.md) for practical use cases
 - Read [WEBHOOKS.md](WEBHOOKS.md) to set up webhooks
@@ -128,10 +128,10 @@ APS supports global configuration at `~/.config/aps/config.yaml`:
 prefix: MYTOOL
 isolation:
   default_level: process  # process | platform | container
-  fallback_enabled: true   # Allow fallback to lower isolation levels
+  fallback_enabled: true   # Saved; not applied by `aps run`
 ```
 
-This changes environment variables from `APS_*` to `MYTOOL_*` and configures default isolation behavior.
+This changes environment variables from `APS_*` to `MYTOOL_*`. The `isolation` keys are parsed and saved but `aps run` does not read them.
 
 ### Profile Isolation
 
@@ -140,11 +140,11 @@ Profiles can also specify isolation settings in `profile.yaml`:
 ```yaml
 isolation:
   level: process  # process | platform | container
-  strict: false   # Fail if requested level is unavailable
-  fallback: true  # Allow fallback to lower isolation levels
+  strict: false   # Saved; not applied
+  fallback: true  # Saved; not applied
 ```
 
-See [ISOLATION.md](ISOLATION.md) for details.
+Only `level: process` runs; `platform` and `container` are not wired into `aps run`. See [ISOLATION.md](ISOLATION.md) for details.
 
 ## Directory Structure
 

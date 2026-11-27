@@ -1,5 +1,7 @@
 # macOS Platform Isolation
 
+> **Status:** the platform adapter described here is not wired into the CLI. It lives in `internal/core/isolation/` with its own tests, but no command calls it. `aps run` and `aps action run` fail for a profile at these levels with a "not yet implemented" error, and `aps serve` and messenger and ticket routing start actions as plain host processes whatever the level. Read this as adapter design and reference, not as behaviour the CLI provides. Current behaviour: [Isolation levels](../../../user/isolation.md).
+
 ## Overview
 
 APS provides macOS platform isolation using user account sandboxing, giving each profile its own isolated user account with restricted filesystem access and process separation.

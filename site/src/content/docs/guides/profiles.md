@@ -5,7 +5,7 @@ description: Understanding APS profiles — identity, config, and capabilities.
 
 ## What is a profile?
 
-A profile is an isolated identity for an agent. It carries:
+A profile is a separate identity and environment for an agent. It carries:
 
 - Its own environment variables and shell config
 - Its own git identity (`user.name`, `user.email`)
@@ -22,7 +22,6 @@ aps profile new <name> [flags]
 Flags:
   --display-name string   Human-readable name
   --email string          Git author email
-  --isolation-level       process | platform | container (default: process)
 ```
 
 ## List

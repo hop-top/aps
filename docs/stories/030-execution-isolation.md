@@ -1,5 +1,5 @@
 ---
-status: shipped
+status: partial
 ---
 
 # Execution Isolation
@@ -19,6 +19,21 @@ As a user, I want to configure isolation levels (process, platform, container) f
 2. **Given** a profile with `isolation.level: container`, **When** I run a command, **Then** it executes inside a Docker container built from the profile's container config.
 3. **Given** no isolation config, **When** I run a command, **Then** the default isolation level is used.
 4. **Given** a profile with strict mode disabled, **When** the requested isolation level is unavailable, **Then** execution falls back to the next available level.
+
+## Status
+
+Partial. Only `process` runs. `aps run`, `aps action run`, and webhook-triggered actions
+fail for `platform` and `container` with `<level> isolation not yet implemented`.
+
+| Scenario | Met |
+|---|---|
+| 1 | Partly. The command runs as a child process with the profile's variables added; the parent environment is inherited, not restricted. |
+| 2 | No. A container profile is refused before anything starts; no Docker container is built or run. |
+| 3 | Yes, with `process`. A profile with no level runs at `process`; the global `isolation.default_level` is not read by the run path. |
+| 4 | No. `strict` and `fallback` are stored but not read on the run path, and there is no fallback to a lower level. |
+
+`aps serve` and messenger and ticket routing run actions as plain host processes without
+reading the level. Current behaviour: [Isolation levels](../user/isolation.md).
 
 ## Tests
 
