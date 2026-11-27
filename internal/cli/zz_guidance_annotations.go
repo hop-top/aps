@@ -1070,12 +1070,12 @@ var leafGuidance = map[string]kitcli.Guidance{
 	// === squad ===
 	"aps squad check": {
 		Examples: []kitcli.Example{
-			ex("Run squad readiness checks", "aps squad check ops-team"),
+			ex("Run squad readiness checks", "aps squad check"),
 		},
 	},
 	"aps squad create": {
 		Examples: []kitcli.Example{
-			ex("Create a squad", "aps squad create ops-team --members alice,bob"),
+			ex("Create a squad", "aps squad create ops-team --type platform --domain ops --members alice,bob"),
 		},
 		NextSteps: []kitcli.NextStep{
 			ns("aps squad show ops-team", "review the new squad"),
@@ -1096,7 +1096,7 @@ var leafGuidance = map[string]kitcli.Guidance{
 	},
 	"aps squad members add": {
 		Examples: []kitcli.Example{
-			ex("Add a member to a squad", "aps squad members add ops-team --profile carol"),
+			ex("Add a member to a squad", "aps squad members add ops-team carol"),
 		},
 		NextSteps: []kitcli.NextStep{
 			ns("aps squad show ops-team", "review the updated roster"),
@@ -1104,7 +1104,7 @@ var leafGuidance = map[string]kitcli.Guidance{
 	},
 	"aps squad members remove": {
 		Examples: []kitcli.Example{
-			ex("Remove a member from a squad", "aps squad members remove ops-team --profile carol"),
+			ex("Remove a member from a squad", "aps squad members remove ops-team carol"),
 		},
 		NextSteps: []kitcli.NextStep{
 			ns("aps squad show ops-team", "confirm removal"),

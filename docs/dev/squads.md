@@ -32,7 +32,7 @@ aps squad show <squad-id>
 # Delete a squad
 aps squad delete <squad-id>
 
-# Validate topology (8-item checklist)
+# Validate all squads against the 8-item checklist (takes no arguments)
 aps squad check
 ```
 
@@ -46,7 +46,13 @@ aps squad members add <squad-id> <profile-id>
 aps squad members remove <squad-id> <profile-id>
 ```
 
-Profiles record their squad membership in `profile.yaml`:
+`members add|remove` edit the squad's manifest only (see Storage below);
+profile records are not touched. The squad's `members` list is what
+`aps squad show`, `list --member` and `check` read.
+
+`profile.yaml` has its own optional `squads:` list. It is a separate field,
+edited with the profile, and is what `aps profile list --squad <id>` and
+`aps org snapshot --squad <id>` read:
 ```yaml
 squads:
   - squad-id-1
@@ -95,17 +101,12 @@ updated_at: 2026-11-27T06:04:43.119964-05:00
 `list` prints an array of summary rows. `create` and `members add|remove`
 print the resulting squad object; `delete` prints `{"id": ..., "deleted": true}`.
 
-### Export / Import
-
-```bash
-# Export squad and all member profiles as a gzip tarball
-aps squad export <squad-id> --output squad.tar.gz
-
-# Import a squad bundle
-aps squad import squad.tar.gz
-```
-
 ## Contracts
+
+Contracts, the router, exit conditions, timeboxes, evolution signals and
+context load are Go library types in `internal/core/squad`. There are no
+`aps squad` verbs for them and nothing persists them: contracts live in an
+in-memory `ContractStore`.
 
 Contracts declare the interaction between two squads. They are required before squads communicate.
 
@@ -142,7 +143,7 @@ The router matches work to the right squad based on domain and type.
 // +2   platform squad
 ```
 
-Results are sorted by score. Use `--type` to filter by squad type, `--mode` to filter by required interaction mode.
+Results are sorted by score. `RouteRequest.Domain` is required; `RequiredType` filters by squad type. `RequiredMode` is accepted but does not yet filter.
 
 ## Exit Conditions
 
@@ -178,41 +179,49 @@ The evolution monitor watches for patterns that indicate the topology should cha
 
 | Signal | Meaning | Threshold |
 |--------|---------|-----------|
-| `stale-collaboration` | Collaboration running too many cycles | >4 cycles |
-| `stale-enabling` | Enabling attachment too long | >6 cycles |
-| `narrow-interface` | Subsystem called too heavily per task | <5 calls/task |
-| `interface-churn` | Subsystem interface changing frequently | >3 changes |
+| `stale_collaboration` | Collaboration running too many cycles | >4 cycles |
+| `stale_enabling` | Enabling attachment too long | >6 cycles |
+| `narrow_interface` | Subsystem called too heavily per task | <5 calls/task |
+| `interface_churn` | Subsystem interface changing frequently | >3 changes |
 
 These thresholds are configurable via `EvolutionThresholds`.
 
 ## Topology Checklist (`aps squad check`)
 
-Validates the entire topology against 8 criteria:
+Validates every stored squad (`$APS_DATA_PATH/squads`) against 8 criteria:
 
 | Check | What it verifies |
 |-------|----------------|
-| `stream-independent` | Stream squads can complete work without cross-squad coordination |
+| `stream-independent` | Every stream-aligned squad has at least one member |
 | `subsystem-interface-clean` | Complicated subsystem squads have XaaS contracts |
 | `enabling-exit-defined` | All enabling squads have exit conditions |
 | `platform-golden-path` | Platform squads have `golden_path_defined: true` |
 | `collab-timeboxed` | All collaboration contracts are time-boxed |
-| `no-platform-internals` | No stream-to-platform collaboration contracts |
-| `routing-type-aware` | Router is using declared contracts (not capability-only) |
+| `no-platform-internals` | No collaboration contract has a platform squad as provider |
+| `routing-type-aware` | A topology of several squads declares at least one contract |
 | `topology-first` | Squad context loads are well-scoped (coordination ratio < 0.5) |
+
+`aps squad check` supplies only the stored squads. Contracts, exit conditions
+and context loads are not persisted, so it passes empty lists for them. In
+effect, `subsystem-interface-clean` fails for any complicated-subsystem squad,
+`enabling-exit-defined` for any enabling squad, and `routing-type-aware` as soon
+as there is more than one squad. `collab-timeboxed`, `no-platform-internals` and
+`topology-first` have nothing to evaluate and pass. The command exits non-zero
+when any check fails.
 
 ```bash
 $ aps squad check
 CHECK                      STATUS  DETAIL
-stream-independent         PASS
-subsystem-interface-clean  FAIL    squad "payments" has no XaaS contract
-enabling-exit-defined      PASS
-platform-golden-path       PASS
-collab-timeboxed           PASS
-no-platform-internals      PASS
-routing-type-aware         PASS
-topology-first             PASS
+stream-independent         PASS    -
+subsystem-interface-clean  FAIL    subsystem squad "sub" has no XaaS contract as provider
+enabling-exit-defined      PASS    -
+platform-golden-path       FAIL    platform squad "nomem" missing golden path definition
+collab-timeboxed           PASS    -
+no-platform-internals      PASS    -
+routing-type-aware         FAIL    multiple squads but no interaction contracts declared
+topology-first             PASS    -
 
-7/8 checks passed
+5/8 checks passed
 ```
 
 ## Context Load
@@ -240,7 +249,7 @@ A squad is **well-scoped** when `coordination_ratio < 0.5`. If most context is c
 | `internal/core/squad/evolution.go` | `EvolutionMonitor`, signals, thresholds |
 | `internal/core/squad/checklist.go` | `ValidateTopology()` → `[]CheckResult` |
 | `internal/core/squad/context_load.go` | `ContextLoad`, `CoordinationRatio()`, `IsWellScoped()` |
-| `internal/core/squad/export.go` | Tarball export/import |
+| `internal/core/squad/export.go` | Tarball bundle helpers (library only; no CLI verb) |
 | `internal/cli/squad/cmd.go` | CLI entry points |
 | `internal/cli/squad/check.go` | `aps squad check` |
 | `internal/cli/squad/create.go` | `aps squad create` |

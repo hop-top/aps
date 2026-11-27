@@ -71,7 +71,7 @@ type ResolvedScope struct {
     Effective      Rule  // intersection of all three
 }
 
-resolved := scope.Resolve(profileScope, workspaceScope, squadScopes)
+resolved := scope.Resolve(profileScope, squadScopes, workspaceScope)
 // resolved.Effective is the final, most-restrictive access set
 ```
 
