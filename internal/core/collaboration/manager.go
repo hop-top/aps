@@ -2,6 +2,7 @@ package collaboration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -55,9 +56,57 @@ func (m *Manager) Create(ctx context.Context, config WorkspaceConfig) (*Workspac
 	return ws, nil
 }
 
-// Get loads a workspace by ID from storage.
+// load resolves ref (workspace ID, else exact case-sensitive name) and
+// returns the workspace. An ID hit short-circuits before any list scan.
+// Archived workspaces are included in name matching. Several name
+// matches yield an AmbiguousWorkspaceError; none yields the storage's
+// not-found error.
+func (m *Manager) load(ref string) (*Workspace, error) {
+	ws, err := m.storage.LoadWorkspace(ref)
+	if err == nil {
+		return ws, nil
+	}
+	var nf *WorkspaceNotFoundError
+	if !errors.As(err, &nf) {
+		return nil, err
+	}
+	ids, lerr := m.storage.ListWorkspaces()
+	if lerr != nil {
+		return nil, err
+	}
+	var matches []*Workspace
+	for _, id := range ids {
+		cand, cerr := m.storage.LoadWorkspace(id)
+		if cerr != nil || cand.Config.Name != ref {
+			continue
+		}
+		matches = append(matches, cand)
+	}
+	switch len(matches) {
+	case 0:
+		return nil, err
+	case 1:
+		return matches[0], nil
+	}
+	amb := &AmbiguousWorkspaceError{Name: ref}
+	for _, c := range matches {
+		amb.Matches = append(amb.Matches, WorkspaceMatch{ID: c.ID, State: c.State})
+	}
+	return nil, amb
+}
+
+// Resolve maps a workspace reference (ID or exact name) to its ID.
+func (m *Manager) Resolve(ctx context.Context, ref string) (string, error) {
+	ws, err := m.load(ref)
+	if err != nil {
+		return "", fmt.Errorf("loading workspace %q: %w", ref, err)
+	}
+	return ws.ID, nil
+}
+
+// Get loads a workspace by ID or exact name.
 func (m *Manager) Get(ctx context.Context, id string) (*Workspace, error) {
-	ws, err := m.storage.LoadWorkspace(id)
+	ws, err := m.load(id)
 	if err != nil {
 		return nil, fmt.Errorf("loading workspace %q: %w", id, err)
 	}
@@ -99,7 +148,7 @@ func (m *Manager) List(ctx context.Context, opts ListOptions) ([]*Workspace, err
 
 // Archive transitions a workspace to the archived state and persists the change.
 func (m *Manager) Archive(ctx context.Context, id string) error {
-	ws, err := m.storage.LoadWorkspace(id)
+	ws, err := m.load(id)
 	if err != nil {
 		return fmt.Errorf("loading workspace %q: %w", id, err)
 	}
@@ -118,7 +167,7 @@ func (m *Manager) Archive(ctx context.Context, id string) error {
 
 // Join adds an agent as a contributor to the workspace.
 func (m *Manager) Join(ctx context.Context, workspaceID, profileID string) (*AgentInfo, error) {
-	ws, err := m.storage.LoadWorkspace(workspaceID)
+	ws, err := m.load(workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("loading workspace %q: %w", workspaceID, err)
 	}
@@ -132,13 +181,13 @@ func (m *Manager) Join(ctx context.Context, workspaceID, profileID string) (*Age
 		return nil, fmt.Errorf("saving workspace %q: %w", workspaceID, err)
 	}
 
-	_ = m.recordEvent(workspaceID, profileID, "agent.join", profileID, "", noteFromContext(ctx))
+	_ = m.recordEvent(ws.ID, profileID, "agent.join", profileID, "", noteFromContext(ctx))
 	return agent, nil
 }
 
 // Leave removes an agent from the workspace.
 func (m *Manager) Leave(ctx context.Context, workspaceID, profileID string) error {
-	ws, err := m.storage.LoadWorkspace(workspaceID)
+	ws, err := m.load(workspaceID)
 	if err != nil {
 		return fmt.Errorf("loading workspace %q: %w", workspaceID, err)
 	}
@@ -151,14 +200,14 @@ func (m *Manager) Leave(ctx context.Context, workspaceID, profileID string) erro
 		return fmt.Errorf("saving workspace %q: %w", workspaceID, err)
 	}
 
-	_ = m.recordEvent(workspaceID, profileID, "agent.leave", profileID, "", noteFromContext(ctx))
+	_ = m.recordEvent(ws.ID, profileID, "agent.leave", profileID, "", noteFromContext(ctx))
 	return nil
 }
 
 // Remove forcefully removes an agent from the workspace. Only the workspace owner
 // may perform this action.
 func (m *Manager) Remove(ctx context.Context, workspaceID, targetProfileID, actorProfileID string) error {
-	ws, err := m.storage.LoadWorkspace(workspaceID)
+	ws, err := m.load(workspaceID)
 	if err != nil {
 		return fmt.Errorf("loading workspace %q: %w", workspaceID, err)
 	}
@@ -180,14 +229,14 @@ func (m *Manager) Remove(ctx context.Context, workspaceID, targetProfileID, acto
 	}
 
 	details := fmt.Sprintf("removed by %s", actorProfileID)
-	_ = m.recordEvent(workspaceID, actorProfileID, "agent.remove", targetProfileID, details, noteFromContext(ctx))
+	_ = m.recordEvent(ws.ID, actorProfileID, "agent.remove", targetProfileID, details, noteFromContext(ctx))
 	return nil
 }
 
 // SetRole changes an agent's role in the workspace. Only the workspace owner may
 // change roles.
 func (m *Manager) SetRole(ctx context.Context, workspaceID, profileID string, role AgentRole) error {
-	ws, err := m.storage.LoadWorkspace(workspaceID)
+	ws, err := m.load(workspaceID)
 	if err != nil {
 		return fmt.Errorf("loading workspace %q: %w", workspaceID, err)
 	}
@@ -204,13 +253,13 @@ func (m *Manager) SetRole(ctx context.Context, workspaceID, profileID string, ro
 	}
 
 	details := fmt.Sprintf("role changed to %s", role)
-	_ = m.recordEvent(workspaceID, "system", "agent.role_change", profileID, details, noteFromContext(ctx))
+	_ = m.recordEvent(ws.ID, "system", "agent.role_change", profileID, details, noteFromContext(ctx))
 	return nil
 }
 
 // Members returns all agents in a workspace.
 func (m *Manager) Members(ctx context.Context, workspaceID string) ([]AgentInfo, error) {
-	ws, err := m.storage.LoadWorkspace(workspaceID)
+	ws, err := m.load(workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("loading workspace %q: %w", workspaceID, err)
 	}
@@ -223,11 +272,12 @@ func (m *Manager) Members(ctx context.Context, workspaceID string) ([]AgentInfo,
 // SetActiveWorkspace persists the active workspace ID.
 func (m *Manager) SetActiveWorkspace(ctx context.Context, workspaceID string) error {
 	// Verify workspace exists
-	if _, err := m.storage.LoadWorkspace(workspaceID); err != nil {
+	ws, err := m.load(workspaceID)
+	if err != nil {
 		return fmt.Errorf("workspace %q not found: %w", workspaceID, err)
 	}
 
-	if err := m.storage.SaveActiveWorkspace(workspaceID); err != nil {
+	if err := m.storage.SaveActiveWorkspace(ws.ID); err != nil {
 		return fmt.Errorf("saving active workspace: %w", err)
 	}
 	return nil

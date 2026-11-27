@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -24,28 +25,34 @@ var (
 	successStyle = styles.Success
 )
 
-// resolveWorkspace determines the workspace ID from flag or active context.
+// resolveWorkspace determines the workspace from flag, argument or
+// active context and resolves it (ID or exact name) to its canonical ID.
 func resolveWorkspace(cmd *cobra.Command, args []string) (string, error) {
-	ws, _ := cmd.Flags().GetString("workspace")
-	if ws != "" {
-		return ws, nil
-	}
-
-	if len(args) > 0 {
-		return args[0], nil
-	}
-
-	// Try active workspace
-	store, err := getStorage()
+	mgr, err := getManager()
 	if err != nil {
 		return "", err
 	}
-	mgr := collab.NewManager(store)
-	active, err := mgr.GetActiveWorkspace(cmd.Context())
-	if err != nil || active == "" {
-		return "", fmt.Errorf("no workspace specified and no active workspace set\n\n  Set one: aps workspace use <workspace>")
+
+	ref, _ := cmd.Flags().GetString("workspace")
+	if ref == "" && len(args) > 0 {
+		ref = args[0]
 	}
-	return active, nil
+	if ref == "" {
+		active, err := mgr.GetActiveWorkspace(cmd.Context())
+		if err != nil || active == "" {
+			return "", fmt.Errorf("no workspace specified and no active workspace set\n\n  Set one: aps workspace use <workspace>")
+		}
+		ref = active
+	}
+	id, err := mgr.Resolve(cmd.Context(), ref)
+	var notFound *collab.WorkspaceNotFoundError
+	if errors.As(err, &notFound) {
+		// Unknown refs pass through unchanged: some workspace-scoped
+		// stores (e.g. the global audit sentinel) have no manifest, and
+		// commands that need the workspace report not-found themselves.
+		return ref, nil
+	}
+	return id, err
 }
 
 // resolveProfile determines the profile ID from flag or environment.
