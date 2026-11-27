@@ -56,5 +56,9 @@ jobs:
       - name: Check generated doc regions
         run: make docs-check
 
+      # Offline: a stubbed lychee exercises the re-check logic.
+      - name: Test link-check script
+        run: make test-scripts
+
       - name: Check documentation links
         run: make lint-docs
