@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -488,6 +489,82 @@ func containedJoin(root string, elems ...string) (string, error) {
 	return p, nil
 }
 
+// storeNamespaceDir returns the directory for a namespace. A namespace may
+// contain "/" to mean nested namespaces: it is split on "/", each segment
+// is escaped like a key (storeFileName), and the segments are joined, so
+// "/" stays a separator and every other reserved character is escaped.
+//
+// Resolution mirrors the workspace layout convention: the escaped
+// directory if it exists, otherwise the legacy directory (the namespace
+// used verbatim, as written by older builds) if that exists, otherwise
+// the escaped directory, which StorePut then creates. The same resolution
+// serves reads, deletes, searches and writes, so a namespace that only
+// exists under its legacy name is never split across two directories.
+// If both exist (no build produces that), the escaped one wins. The
+// comparison is on the full path: a namespace without reserved characters
+// has identical candidates and nothing to resolve. Both candidates are
+// containment-checked before any filesystem access; a legacy candidate
+// that escapes the store root, or that could be another namespace's
+// escaped directory (storeLegacyEligible), is not a candidate; an escaped
+// one outside the root is an error.
+func (a *APSAdapter) storeNamespaceDir(namespace string) (string, error) {
+	segs := strings.Split(namespace, "/")
+	for i, seg := range segs {
+		segs[i] = storeFileName(seg)
+	}
+	escaped, err := containedJoin(a.storeDir, segs...)
+	if err != nil {
+		return "", err
+	}
+	legacy, legacyErr := containedJoin(a.storeDir, namespace)
+	if legacyErr != nil || legacy == escaped || !storeLegacyEligible(namespace) {
+		return escaped, nil
+	}
+	if _, err := os.Stat(escaped); err == nil {
+		return escaped, nil
+	}
+	if _, err := os.Stat(legacy); err == nil {
+		return legacy, nil
+	}
+	return escaped, nil
+}
+
+// storeLegacyEligible reports whether the verbatim namespace can be a
+// legacy directory. An escaped directory name contains "%" only as part of
+// a valid %XX sequence, so a verbatim segment that unescapes to itself can
+// never be another namespace's escaped directory. One that unescapes to
+// something else (e.g. "a%3Ab", the escaped form of "a:b") can, and must
+// not be treated as legacy or two namespaces would share a directory.
+func storeLegacyEligible(namespace string) bool {
+	for _, seg := range strings.Split(namespace, "/") {
+		if storeNameUnescape(seg) != seg {
+			return false
+		}
+	}
+	return true
+}
+
+// storeNameUnescape reverses storeFileName. A "%" not followed by two hex
+// digits is kept literally, so legacy directory names containing "%" pass
+// through unchanged.
+func storeNameUnescape(name string) string {
+	if !strings.ContainsRune(name, '%') {
+		return name
+	}
+	var b strings.Builder
+	for i := 0; i < len(name); i++ {
+		if name[i] == '%' && i+2 < len(name) {
+			if v, err := strconv.ParseUint(name[i+1:i+3], 16, 8); err == nil {
+				b.WriteByte(byte(v))
+				i += 2
+				continue
+			}
+		}
+		b.WriteByte(name[i])
+	}
+	return b.String()
+}
+
 func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error {
 	if namespace == "" {
 		return fmt.Errorf("namespace is required")
@@ -496,7 +573,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 		return fmt.Errorf("key is required")
 	}
 
-	profileDir, err := containedJoin(a.storeDir, namespace)
+	profileDir, err := a.storeNamespaceDir(namespace)
 	if err != nil {
 		return err
 	}
@@ -522,7 +599,7 @@ func (a *APSAdapter) StorePut(namespace string, key string, value []byte) error 
 }
 
 func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
-	profileDir, err := containedJoin(a.storeDir, namespace)
+	profileDir, err := a.storeNamespaceDir(namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +657,7 @@ func (a *APSAdapter) StoreGet(namespace string, key string) ([]byte, error) {
 }
 
 func (a *APSAdapter) StoreDelete(namespace string, key string) error {
-	profileDir, err := containedJoin(a.storeDir, namespace)
+	profileDir, err := a.storeNamespaceDir(namespace)
 	if err != nil {
 		return err
 	}
@@ -609,7 +686,7 @@ func (a *APSAdapter) StoreDelete(namespace string, key string) error {
 }
 
 func (a *APSAdapter) StoreSearch(namespace string, prefix string) (map[string][]byte, error) {
-	profileDir, err := containedJoin(a.storeDir, namespace)
+	profileDir, err := a.storeNamespaceDir(namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +755,7 @@ func (a *APSAdapter) StoreListNamespaces() ([]string, error) {
 	var namespaces []string
 	for _, entry := range entries {
 		if entry.IsDir() {
-			namespaces = append(namespaces, entry.Name())
+			namespaces = append(namespaces, storeNameUnescape(entry.Name()))
 		}
 	}
 

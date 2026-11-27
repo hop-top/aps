@@ -1459,9 +1459,8 @@ func TestIntegration_HeartbeatPreventsReaping(t *testing.T) {
 	}
 }
 
-// Keys with Windows-reserved characters must map to safe on-disk file
-// names and still round-trip through search and namespace listing.
-// Namespace directories are stored verbatim.
+// Keys and namespaces with Windows-reserved characters must map to safe
+// on-disk names and still round-trip through search and namespace listing.
 func TestStore_ReservedCharsUseSafeFilenames(t *testing.T) {
 	adapter, dir := setupTestAdapter(t)
 
@@ -1470,6 +1469,7 @@ func TestStore_ReservedCharsUseSafeFilenames(t *testing.T) {
 	entries, err := os.ReadDir(dir)
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
+	assert.False(t, strings.ContainsAny(entries[0].Name(), `<>:"/\|?*`), entries[0].Name())
 
 	files, err := os.ReadDir(filepath.Join(dir, entries[0].Name()))
 	require.NoError(t, err)
@@ -1487,4 +1487,206 @@ func TestStore_ReservedCharsUseSafeFilenames(t *testing.T) {
 	ns, err := adapter.StoreListNamespaces()
 	require.NoError(t, err)
 	assert.Equal(t, []string{"team:a"}, ns)
+}
+
+// Nested namespaces keep "/" as a separator and escape every other
+// reserved character per segment.
+func TestStore_NestedNamespaceReservedChars(t *testing.T) {
+	adapter, dir := setupTestAdapter(t)
+	const ns = "team:a/sub?b"
+
+	require.NoError(t, adapter.StorePut(ns, "key:1", []byte("v")))
+
+	assert.DirExists(t, filepath.Join(dir, "team%3Aa", "sub%3Fb"))
+
+	got, err := adapter.StoreGet(ns, "key:1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("v"), got)
+
+	found, err := adapter.StoreSearch(ns, "key:")
+	require.NoError(t, err)
+	assert.Contains(t, found, "key:1")
+
+	require.NoError(t, adapter.StoreDelete(ns, "key:1"))
+	_, err = adapter.StoreGet(ns, "key:1")
+	assert.Error(t, err)
+
+	// Nested namespaces are listed by their top-level segment.
+	listed, err := adapter.StoreListNamespaces()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"team:a"}, listed)
+}
+
+// A literal "%" in a namespace is escaped, so it cannot collide with the
+// escape of a reserved character.
+func TestStore_NamespacePercentNoCollision(t *testing.T) {
+	adapter, _ := setupTestAdapter(t)
+
+	require.NoError(t, adapter.StorePut("a:b", "k", []byte("colon")))
+	require.NoError(t, adapter.StorePut("a%3Ab", "k", []byte("percent")))
+
+	got, err := adapter.StoreGet("a:b", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("colon"), got)
+	got, err = adapter.StoreGet("a%3Ab", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("percent"), got)
+}
+
+// Namespaces resolving outside the store root are refused before anything
+// is created.
+func TestStore_NamespaceContainment(t *testing.T) {
+	adapter, dir := setupTestAdapter(t)
+	before, err := os.ReadDir(dir)
+	require.NoError(t, err)
+
+	for _, ns := range []string{"..", "../x", "a/../../x", "/../../etc", "a/..", "x:/../../y"} {
+		err := adapter.StorePut(ns, "k", []byte("v"))
+		require.Error(t, err, ns)
+		assert.Contains(t, err.Error(), "invalid store path component", ns)
+		_, err = adapter.StoreGet(ns, "k")
+		assert.Error(t, err, ns)
+		assert.Error(t, adapter.StoreDelete(ns, "k"), ns)
+		_, err = adapter.StoreSearch(ns, "")
+		assert.Error(t, err, ns)
+	}
+
+	after, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Equal(t, len(before), len(after))
+	assert.NoDirExists(t, filepath.Join(filepath.Dir(dir), "x"))
+}
+
+func writeLegacyStoreFile(t *testing.T, nsDir, ns, key string, value []byte) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(nsDir, 0o755))
+	data, err := json.Marshal(StoreItem{Namespace: ns, Key: key, Value: value})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(nsDir, key+".json"), data, 0o644))
+}
+
+// A namespace directory written by a pre-escaping build is still found
+// by get, search, delete and list.
+func TestStore_LegacyUnescapedNamespaceDir(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, dir := setupTestAdapter(t)
+	writeLegacyStoreFile(t, filepath.Join(dir, "team:a"), "team:a", "k1", []byte("legacy"))
+
+	got, err := adapter.StoreGet("team:a", "k1")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy"), got)
+
+	found, err := adapter.StoreSearch("team:a", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("legacy"), found["k1"])
+
+	listed, err := adapter.StoreListNamespaces()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"team:a"}, listed)
+
+	require.NoError(t, adapter.StoreDelete("team:a", "k1"))
+	assert.NoFileExists(t, filepath.Join(dir, "team:a", "k1.json"))
+}
+
+// A write into a namespace that only exists under its legacy name goes
+// into the legacy directory, so the directory is never split.
+func TestStorePut_LegacyNamespaceDirNotSplit(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, dir := setupTestAdapter(t)
+	writeLegacyStoreFile(t, filepath.Join(dir, "team:a"), "team:a", "old", []byte("o"))
+
+	require.NoError(t, adapter.StorePut("team:a", "new", []byte("n")))
+
+	assert.NoDirExists(t, filepath.Join(dir, "team%3Aa"))
+	assert.FileExists(t, filepath.Join(dir, "team:a", "new.json"))
+	for k, want := range map[string]string{"old": "o", "new": "n"} {
+		got, err := adapter.StoreGet("team:a", k)
+		require.NoError(t, err, k)
+		assert.Equal(t, []byte(want), got, k)
+	}
+	found, err := adapter.StoreSearch("team:a", "")
+	require.NoError(t, err)
+	assert.Len(t, found, 2)
+}
+
+// With both an escaped and a legacy directory, the escaped one wins.
+func TestStore_EscapedNamespaceDirWinsOverLegacy(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, dir := setupTestAdapter(t)
+	writeLegacyStoreFile(t, filepath.Join(dir, "team:a"), "team:a", "k", []byte("legacy"))
+	writeLegacyStoreFile(t, filepath.Join(dir, "team%3Aa"), "team:a", "k", []byte("escaped"))
+
+	got, err := adapter.StoreGet("team:a", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("escaped"), got)
+}
+
+// Directory names that are not valid escapes (a literal "%") are listed
+// as-is, without error.
+func TestStoreListNamespaces_LiteralPercentNames(t *testing.T) {
+	adapter, dir := setupTestAdapter(t)
+	for _, n := range []string{"100%", "a%zz", "b%4", "%"} {
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, n), 0o755))
+	}
+
+	listed, err := adapter.StoreListNamespaces()
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"100%", "a%zz", "b%4", "%"}, listed)
+}
+
+// "a:b" and "a%3Ab" stay isolated whichever is created first.
+func TestStore_NamespacePercentIsolationBothOrders(t *testing.T) {
+	for _, order := range [][2]string{{"a:b", "a%3Ab"}, {"a%3Ab", "a:b"}} {
+		adapter, _ := setupTestAdapter(t)
+		for _, ns := range order {
+			require.NoError(t, adapter.StorePut(ns, "k", []byte("v-"+ns)))
+		}
+		for _, ns := range order {
+			got, err := adapter.StoreGet(ns, "k")
+			require.NoError(t, err, ns)
+			assert.Equal(t, []byte("v-"+ns), got, ns)
+		}
+		found, err := adapter.StoreSearch(order[0], "")
+		require.NoError(t, err)
+		assert.Len(t, found, 1)
+	}
+}
+
+// A directory literally named like a valid escape is the escaped
+// directory of the decoded namespace, not legacy storage of the verbatim one.
+func TestStore_EscapeLikeDirIsNotLegacy(t *testing.T) {
+	adapter, dir := setupTestAdapter(t)
+	writeLegacyStoreFile(t, filepath.Join(dir, "a%3Ab"), "a:b", "k", []byte("colon"))
+
+	got, err := adapter.StoreGet("a:b", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("colon"), got)
+
+	_, err = adapter.StoreGet("a%3Ab", "k")
+	assert.Error(t, err)
+
+	require.NoError(t, adapter.StorePut("a%3Ab", "k", []byte("percent")))
+	assert.FileExists(t, filepath.Join(dir, "a%253Ab", "k.json"))
+	got, err = adapter.StoreGet("a:b", "k")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("colon"), got)
+}
+
+// Legacy directories with a stray percent (not a valid escape) still
+// resolve as legacy.
+func TestStore_LegacyStrayPercentNamespaceDir(t *testing.T) {
+	skipLegacyLayoutOnWindows(t)
+	adapter, dir := setupTestAdapter(t)
+	writeLegacyStoreFile(t, filepath.Join(dir, "100%:x"), "100%:x", "old", []byte("o"))
+	writeLegacyStoreFile(t, filepath.Join(dir, "100%"), "100%", "old", []byte("p"))
+
+	got, err := adapter.StoreGet("100%:x", "old")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("o"), got)
+	got, err = adapter.StoreGet("100%", "old")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("p"), got)
+
+	require.NoError(t, adapter.StorePut("100%", "new", []byte("n")))
+	assert.FileExists(t, filepath.Join(dir, "100%", "new.json"))
 }
