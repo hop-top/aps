@@ -159,6 +159,12 @@ MY_API_KEY=secret_value_here
 
 **Security:** `secrets.env` is created with `0600` permissions (owner read/write only).
 
+**Values:** the file is dotenv format. aps quotes and escapes values it writes, so
+any value (`#`, quotes, newlines, `$`, JSON) reads back unchanged. When editing by
+hand, quote values containing ` #`, `$`, or spaces at the ends: `KEY='{"a":"b # c"}'`
+is literal; `KEY="a\nb"` expands `\n` and `$VAR`. A malformed line fails with the
+file path and line number only; line content is never printed.
+
 ### Viewing Secrets
 
 ```bash
