@@ -52,7 +52,10 @@ func resolveWorkspace(cmd *cobra.Command, args []string) (string, error) {
 		// commands that need the workspace report not-found themselves.
 		return ref, nil
 	}
-	return id, err
+	if err != nil {
+		return "", fmt.Errorf("resolving workspace: %w", err)
+	}
+	return id, nil
 }
 
 // resolveProfile determines the profile ID from flag or environment.
