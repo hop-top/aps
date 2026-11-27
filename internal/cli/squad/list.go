@@ -1,6 +1,7 @@
 package squad
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -47,7 +48,10 @@ no state mutation. Idempotent.`,
 			// field is Squad.Type.
 			roleFilter, _ := cmd.Flags().GetString("role")
 
-			squads := defaultManager.List()
+			squads, err := defaultManager.ListChecked()
+			if err != nil {
+				return fmt.Errorf("list squads: %w", err)
+			}
 
 			pred := listing.All(
 				listing.MatchSlice(func(s coresquad.Squad) []string { return s.Members }, memberFilter),

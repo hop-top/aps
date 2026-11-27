@@ -49,9 +49,12 @@ table renderer and works on a TTY (styled table) and non-TTY
 }
 
 func runCheck() error {
-	mgr := coresquad.NewManager()
+	squads, err := defaultManager.ListChecked()
+	if err != nil {
+		return fmt.Errorf("list squads: %w", err)
+	}
 
-	topology := coresquad.Topology{Squads: mgr.List()}
+	topology := coresquad.Topology{Squads: squads}
 
 	var contracts []coresquad.Contract
 	var exitConditions []coresquad.ExitCondition

@@ -7,7 +7,11 @@ import (
 	kitcli "hop.top/kit/go/console/cli"
 )
 
-var defaultManager = coresquad.NewManager()
+// newManager returns the file-backed squad manager the CLI runs on; each
+// process builds its own and shares state through the data dir.
+func newManager() *coresquad.Manager { return coresquad.NewDefaultManager() }
+
+var defaultManager = newManager()
 
 // NewSquadCmd returns the top-level squad command with all subcommands.
 func NewSquadCmd() *cobra.Command {
