@@ -151,9 +151,22 @@ func (m *Manager) reload() error {
 	return nil
 }
 
-// brokenErr joins the load failures found by the last reload, in directory
-// order, or returns nil when every manifest loaded.
+// SkippedError reports squads left out of a result because their manifests
+// could not be loaded. Each wrapped error names its file. Results returned
+// alongside it are valid and complete for the squads that did load.
+type SkippedError struct{ Errs []error }
+
+func (e *SkippedError) Error() string { return errors.Join(e.Errs...).Error() }
+
+// Unwrap exposes the individual load errors to errors.Is / errors.As.
+func (e *SkippedError) Unwrap() []error { return e.Errs }
+
+// brokenErr reports the load failures found by the last reload in
+// directory order, or nil when every manifest loaded.
 func (m *Manager) brokenErr() error {
+	if len(m.broken) == 0 {
+		return nil
+	}
 	names := make([]string, 0, len(m.broken))
 	for n := range m.broken {
 		names = append(names, n)
@@ -163,7 +176,7 @@ func (m *Manager) brokenErr() error {
 	for _, n := range names {
 		errs = append(errs, m.broken[n])
 	}
-	return errors.Join(errs...)
+	return &SkippedError{Errs: errs}
 }
 
 // find returns the loaded squad for id. A squad that exists on disk but

@@ -1,6 +1,8 @@
-// Package squad_e2e exercises `aps squad list` end-to-end (T-0431).
-// Squads are stored in-memory only by the running CLI process, so e2e
-// tests can only assert the empty-registry path. Filter/positive
+// Package squad_e2e exercises the `aps squad` commands end-to-end
+// against the compiled binary. Squads persist under the data dir, so
+// the tests drive separate processes over one isolated HOME. This file
+// covers the empty-store list path; cross-process persistence and
+// structured output live in squad_persist_test.go. Filter/positive
 // matching lives in internal/cli/squad/list_test.go.
 package squad_e2e
 
@@ -62,18 +64,31 @@ func compileBinary() error {
 
 func runAPS(t *testing.T, home string, args ...string) (string, string, error) {
 	t.Helper()
+	return runAPSEnv(t, home, nil, args...)
+}
+
+// runAPSEnv is runAPS with extra KEY=VALUE entries appended after the
+// isolation variables (e.g. APS_DATA_PATH).
+func runAPSEnv(t *testing.T, home string, extra []string, args ...string) (string, string, error) {
+	t.Helper()
 	cmd := exec.Command(apsBinary, args...)
 
 	override := map[string]bool{
-		"HOME":          true,
-		"USERPROFILE":   true,
-		"XDG_DATA_HOME": true,
-		"APS_DATA_PATH": true,
+		"HOME":            true,
+		"USERPROFILE":     true,
+		"XDG_DATA_HOME":   true,
+		"XDG_CONFIG_HOME": true,
+		"XDG_STATE_HOME":  true,
+		"XDG_CACHE_HOME":  true,
+		"APS_DATA_PATH":   true,
 	}
 	env := []string{
 		"HOME=" + home,
 		"USERPROFILE=" + home,
 		"XDG_DATA_HOME=" + filepath.Join(home, ".local", "share"),
+		"XDG_CONFIG_HOME=" + filepath.Join(home, ".config"),
+		"XDG_STATE_HOME=" + filepath.Join(home, ".local", "state"),
+		"XDG_CACHE_HOME=" + filepath.Join(home, ".cache"),
 	}
 	for _, e := range os.Environ() {
 		key := strings.SplitN(e, "=", 2)[0]
@@ -82,7 +97,7 @@ func runAPS(t *testing.T, home string, args ...string) (string, string, error) {
 		}
 		env = append(env, e)
 	}
-	cmd.Env = env
+	cmd.Env = append(env, extra...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -91,21 +106,20 @@ func runAPS(t *testing.T, home string, args ...string) (string, string, error) {
 	return stdout.String(), stderr.String(), err
 }
 
-// TestSquadList_Empty: a fresh process has an empty squad registry
-// (in-memory; not yet persisted). The list command must exit 0 and
-// not panic.
+// TestSquadList_Empty: a fresh data dir has no squads. The list
+// command must exit 0 and not panic.
 func TestSquadList_Empty(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 
 	_, stderr, err := runAPS(t, home, "squad", "list")
 	if err != nil {
-		t.Fatalf("squad list on empty registry: %v\nstderr: %s", err, stderr)
+		t.Fatalf("squad list on empty store: %v\nstderr: %s", err, stderr)
 	}
 }
 
 // TestSquadList_FilterFlagsAccepted: the new filter flags must be
-// recognised (no "unknown flag" error) even when the registry is
+// recognised (no "unknown flag" error) even when the store is
 // empty.
 func TestSquadList_FilterFlagsAccepted(t *testing.T) {
 	t.Parallel()

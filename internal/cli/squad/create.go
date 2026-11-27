@@ -2,7 +2,7 @@ package squad
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"hop.top/aps/internal/cli/clinote"
@@ -33,10 +33,11 @@ Mints a new local record. Not idempotent — re-running with the
 same name on an existing squad fails. --dry-run is opted out
 because the resulting record is fully determined by the flags.
 Use --note to attach an audit reason that flows to the event bus
-alongside the mutation.`,
+alongside the mutation. With --format json|yaml the created squad
+is printed as a record, in the same shape as aps squad show.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCreate(args[0], squadType, domain, description, members)
+			return runCreate(cmd.OutOrStdout(), formatOf(cmd), args[0], squadType, domain, description, members)
 		},
 	}
 
@@ -61,7 +62,7 @@ alongside the mutation.`,
 	return cmd
 }
 
-func runCreate(name, squadType, domain, description string, members []string) error {
+func runCreate(w io.Writer, format, name, squadType, domain, description string, members []string) error {
 	id := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
 	st := coresquad.SquadType(squadType)
@@ -82,11 +83,19 @@ func runCreate(name, squadType, domain, description string, members []string) er
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "Created squad %q (%s)\n", name, id)
-	fmt.Fprintf(os.Stdout, "  Type:    %s\n", squadType)
-	fmt.Fprintf(os.Stdout, "  Domain:  %s\n", domain)
+	if structured(format) {
+		created, err := defaultManager.Get(id)
+		if err != nil {
+			return err
+		}
+		return renderStructured(w, format, newSquadRecord(created))
+	}
+
+	fmt.Fprintf(w, "Created squad %q (%s)\n", name, id)
+	fmt.Fprintf(w, "  Type:    %s\n", squadType)
+	fmt.Fprintf(w, "  Domain:  %s\n", domain)
 	if len(members) > 0 {
-		fmt.Fprintf(os.Stdout, "  Members: %s\n", strings.Join(members, ", "))
+		fmt.Fprintf(w, "  Members: %s\n", strings.Join(members, ", "))
 	}
 
 	return nil
