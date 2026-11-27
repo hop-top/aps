@@ -3,6 +3,7 @@ package squad
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -61,14 +62,17 @@ func TestFileManager_MutationsPersist(t *testing.T) {
 		t.Error("duplicate create across instances should fail")
 	}
 
+	if _, err := os.Stat(filepath.Join(dir, "demo", "manifest.yaml")); err != nil {
+		t.Fatalf("manifest should exist before delete: %v", err)
+	}
 	if err := b.Delete("demo"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := a.Get("demo"); err == nil {
 		t.Error("delete not visible to other instance")
 	}
-	if _, err := os.Stat(filepath.Join(dir, "demo.yaml")); !os.IsNotExist(err) {
-		t.Errorf("file should be gone: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, "demo")); !os.IsNotExist(err) {
+		t.Errorf("squad directory should be gone: %v", err)
 	}
 }
 
@@ -85,7 +89,10 @@ func TestFileManager_CorruptFileSurfaced(t *testing.T) {
 	if err := m.Create(newTestSquad("ok", "a")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "bad.yaml"), []byte(": : :\n\t-"), 0o600); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "bad"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "bad", "manifest.yaml"), []byte(": : :\n\t-"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := m.ListChecked(); err == nil {
@@ -102,10 +109,60 @@ func TestDefaultManager_HonoursDataPath(t *testing.T) {
 	if err := NewDefaultManager().Create(newTestSquad("demo", "a")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "squads", "demo.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "squads", "demo", "manifest.yaml")); err != nil {
 		t.Errorf("not under APS_DATA_PATH: %v", err)
 	}
 	if _, err := NewDefaultManager().Get("demo"); err != nil {
 		t.Errorf("fresh default manager: %v", err)
+	}
+}
+
+func TestFileManager_IDDirMismatchIsError(t *testing.T) {
+	dir := t.TempDir()
+	m := NewFileManager(dir)
+	if err := m.Create(newTestSquad("alpha", "a")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(dir, "alpha"), filepath.Join(dir, "beta")); err != nil {
+		t.Fatal(err)
+	}
+	_, err := m.ListChecked()
+	if err == nil || !strings.Contains(err.Error(), "beta") {
+		t.Errorf("want load error naming dir beta, got %v", err)
+	}
+}
+
+func TestFileManager_SkipsDirWithoutManifestAndPlainFiles(t *testing.T) {
+	dir := t.TempDir()
+	m := NewFileManager(dir)
+	if err := m.Create(newTestSquad("ok", "a")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "empty"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "stray.yaml"), []byte("id: stray\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := m.ListChecked()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "ok" {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestFileManager_SaveWritesManifestInSquadDir(t *testing.T) {
+	dir := t.TempDir()
+	if err := NewFileManager(dir).Create(newTestSquad("demo", "a")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "demo", "manifest.yaml")); err != nil {
+		t.Errorf("manifest missing: %v", err)
+	}
+	ents, _ := os.ReadDir(filepath.Join(dir, "demo"))
+	if len(ents) != 1 {
+		t.Errorf("leftover temp files: %v", ents)
 	}
 }

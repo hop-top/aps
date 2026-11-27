@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const squadFileExt = ".yaml"
+const manifestName = "manifest.yaml"
 
 // SquadsDir returns the directory squads persist under:
 // <data dir>/squads (see core.GetDataDir).
@@ -24,8 +24,8 @@ func SquadsDir() (string, error) {
 	return filepath.Join(dataDir, "squads"), nil
 }
 
-// NewFileManager creates a Manager persisting one <id>.yaml per squad under
-// dir. The directory is created lazily on first write.
+// NewFileManager creates a Manager persisting one <id>/manifest.yaml per
+// squad under dir. The directory is created lazily on first write.
 func NewFileManager(dir string) *Manager {
 	m := NewManager()
 	m.dir = dir
@@ -41,11 +41,16 @@ func NewDefaultManager() *Manager {
 	return m
 }
 
-func (m *Manager) path(id string) (string, error) {
+// dirOf returns the squad's directory, <dir>/<id>, after validating id.
+func (m *Manager) dirOf(id string) (string, error) {
 	if id == "" || id == "." || id == ".." || strings.ContainsAny(id, `/\`+"\x00") {
 		return "", fmt.Errorf("invalid squad ID for storage: %q", id)
 	}
-	return filepath.Join(m.dir, id+squadFileExt), nil
+	d := filepath.Join(m.dir, id)
+	if filepath.Dir(d) != filepath.Clean(m.dir) {
+		return "", fmt.Errorf("invalid squad ID for storage: %q", id)
+	}
+	return d, nil
 }
 
 // reload replaces the in-memory registry with the on-disk state. The first
@@ -62,15 +67,18 @@ func (m *Manager) reload() error {
 	}
 	var firstErr error
 	for _, e := range entries {
-		if e.IsDir() || filepath.Ext(e.Name()) != squadFileExt {
+		if !e.IsDir() {
 			continue
 		}
-		p := filepath.Join(m.dir, e.Name())
+		p := filepath.Join(m.dir, e.Name(), manifestName)
 		data, err := os.ReadFile(p) // #nosec G304 -- under squads dir
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 		if err == nil {
 			var s Squad
-			if err = yaml.Unmarshal(data, &s); err == nil && s.ID == "" {
-				err = errors.New("missing squad id")
+			if err = yaml.Unmarshal(data, &s); err == nil && s.ID != e.Name() {
+				err = fmt.Errorf("id %q does not match directory", s.ID)
 			}
 			if err == nil {
 				m.squads[s.ID] = &s
@@ -78,7 +86,7 @@ func (m *Manager) reload() error {
 			}
 		}
 		if firstErr == nil {
-			firstErr = fmt.Errorf("load squad %s: %w", e.Name(), err)
+			firstErr = fmt.Errorf("load squad dir %s: %w", e.Name(), err)
 		}
 	}
 	return firstErr
@@ -89,7 +97,7 @@ func (m *Manager) save(s *Squad) error {
 	if m.dir == "" {
 		return nil
 	}
-	p, err := m.path(s.ID)
+	sd, err := m.dirOf(s.ID)
 	if err != nil {
 		return err
 	}
@@ -97,10 +105,10 @@ func (m *Manager) save(s *Squad) error {
 	if err != nil {
 		return fmt.Errorf("marshal squad: %w", err)
 	}
-	if err := os.MkdirAll(m.dir, 0o750); err != nil {
-		return fmt.Errorf("create squads dir: %w", err)
+	if err := os.MkdirAll(sd, 0o750); err != nil {
+		return fmt.Errorf("create squad dir: %w", err)
 	}
-	tmp, err := os.CreateTemp(m.dir, ".squad-*.tmp")
+	tmp, err := os.CreateTemp(sd, ".manifest-*.tmp")
 	if err != nil {
 		return fmt.Errorf("write squad: %w", err)
 	}
@@ -112,22 +120,23 @@ func (m *Manager) save(s *Squad) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("write squad: %w", err)
 	}
-	if err := os.Rename(tmp.Name(), p); err != nil {
+	if err := os.Rename(tmp.Name(), filepath.Join(sd, manifestName)); err != nil {
 		return fmt.Errorf("write squad: %w", err)
 	}
 	return nil
 }
 
-// remove deletes the squad's file. No-op for in-memory managers.
+// remove deletes the squad's directory. No-op for in-memory managers. The
+// target is exactly <dir>/<validated id>; anything else is refused.
 func (m *Manager) remove(id string) error {
 	if m.dir == "" {
 		return nil
 	}
-	p, err := m.path(id)
+	sd, err := m.dirOf(id)
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.RemoveAll(sd); err != nil {
 		return fmt.Errorf("remove squad: %w", err)
 	}
 	return nil
