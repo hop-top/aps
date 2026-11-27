@@ -49,16 +49,16 @@ func runShow(w io.Writer, id, format string) error {
 		return renderStructured(w, format, newSquadRecord(s))
 	}
 
-	fmt.Fprintf(w, "Squad: %s\n", s.Name)
-	fmt.Fprintf(w, "  ID:          %s\n", s.ID)
-	fmt.Fprintf(w, "  Type:        %s\n", s.Type)
-	fmt.Fprintf(w, "  Domain:      %s\n", s.Domain)
+	_, _ = fmt.Fprintf(w, "Squad: %s\n", s.Name)
+	_, _ = fmt.Fprintf(w, "  ID:          %s\n", s.ID)
+	_, _ = fmt.Fprintf(w, "  Type:        %s\n", s.Type)
+	_, _ = fmt.Fprintf(w, "  Domain:      %s\n", s.Domain)
 	if s.Description != "" {
-		fmt.Fprintf(w, "  Description: %s\n", s.Description)
+		_, _ = fmt.Fprintf(w, "  Description: %s\n", s.Description)
 	}
-	fmt.Fprintf(w, "  Members:     %s\n", formatMembers(s.Members))
-	fmt.Fprintf(w, "  Created:     %s\n", s.CreatedAt.Format("2006-01-02 15:04:05"))
-	fmt.Fprintf(w, "  Updated:     %s\n", s.UpdatedAt.Format("2006-01-02 15:04:05"))
+	_, _ = fmt.Fprintf(w, "  Members:     %s\n", formatMembers(s.Members))
+	_, _ = fmt.Fprintf(w, "  Created:     %s\n", s.CreatedAt.Format("2006-01-02 15:04:05"))
+	_, _ = fmt.Fprintf(w, "  Updated:     %s\n", s.UpdatedAt.Format("2006-01-02 15:04:05"))
 
 	return nil
 }

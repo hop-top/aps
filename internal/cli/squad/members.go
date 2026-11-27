@@ -118,12 +118,14 @@ func runRemoveMember(w io.Writer, format, squadID, profileID string) error {
 // line, or under --format json|yaml the squad record as it now stands.
 func reportMembership(w io.Writer, format, squadID, line string) error {
 	if !structured(format) {
-		_, err := io.WriteString(w, line)
-		return err
+		if _, err := io.WriteString(w, line); err != nil {
+			return fmt.Errorf("write result: %w", err)
+		}
+		return nil
 	}
 	s, err := defaultManager.Get(squadID)
 	if err != nil {
-		return err
+		return fmt.Errorf("read back squad: %w", err)
 	}
 	return renderStructured(w, format, newSquadRecord(s))
 }

@@ -54,6 +54,6 @@ func runDelete(w io.Writer, format, id string) error {
 	if structured(format) {
 		return renderStructured(w, format, deleteResult{ID: id, Deleted: true})
 	}
-	fmt.Fprintf(w, "Deleted squad %q\n", id)
+	_, _ = fmt.Fprintf(w, "Deleted squad %q\n", id)
 	return nil
 }
