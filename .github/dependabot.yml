@@ -1,70 +1,75 @@
+# Org-default Dependabot policy (hop-top/.github templates/dependabot.yml).
+#
+# Version updates: one PR at a time across every ecosystem (multi-ecosystem
+#   group, open-pull-requests-limit 1). While it is open, Dependabot updates
+#   that PR instead of opening another. Cooldown 14d after release (every entry).
+# Security updates: immediate; cooldown never applies to them. One grouped PR
+#   per ecosystem (they cannot join a multi-ecosystem group). Needs repo
+#   setting "Dependabot security updates".
+# Reference: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
 version: 2
+
+multi-ecosystem-groups:
+  dependencies:
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: "build(deps):"
 
 updates:
   - package-ecosystem: gomod
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "05:00"
-      timezone: America/New_York
-    labels:
-      - dependencies
-    commit-message:
-      prefix: chore
-      include: scope
+    directories:
+      - "/"
+    multi-ecosystem-group: dependencies
+    patterns:
+      - "*"
+    cooldown:
+      default-days: 14
     groups:
-      all:
-        patterns:
-          - "*"
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "05:00"
-      timezone: America/New_York
-    labels:
-      - dependencies
-    commit-message:
-      prefix: chore
-      include: scope
-    groups:
-      all:
-        patterns:
-          - "*"
-
-  - package-ecosystem: docker
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "05:00"
-      timezone: America/New_York
-    labels:
-      - dependencies
-    commit-message:
-      prefix: chore
-      include: scope
-    groups:
-      all:
+      go-security:
+        applies-to: security-updates
         patterns:
           - "*"
 
   - package-ecosystem: npm
-    directory: /site
-    schedule:
-      interval: weekly
-      day: monday
-      time: "05:00"
-      timezone: America/New_York
-    labels:
-      - dependencies
-    commit-message:
-      prefix: chore
-      include: scope
+    directories:
+      - "/site"
+    multi-ecosystem-group: dependencies
+    patterns:
+      - "*"
+    cooldown:
+      default-days: 14
     groups:
-      all:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directories:
+      - "/"
+    multi-ecosystem-group: dependencies
+    patterns:
+      - "*"
+    cooldown:
+      default-days: 14
+    groups:
+      docker-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+    multi-ecosystem-group: dependencies
+    patterns:
+      - "*"
+    cooldown:
+      default-days: 14
+    groups:
+      actions-security:
+        applies-to: security-updates
         patterns:
           - "*"
