@@ -380,3 +380,63 @@ func TestCollaborationStorage_WorkspaceRoundTrip_MultipleAgents(t *testing.T) {
 	assert.Equal(t, collab.RoleContributor, roles["contributor-1"])
 	assert.Equal(t, collab.RoleObserver, roles["observer-1"])
 }
+
+// A workspace ID that is the escaped form of another ID ("a%3Ab" for
+// "a:b") must not resolve to that other workspace's directory through the
+// legacy verbatim fallback.
+func TestCollaborationStorage_EscapedFormIDDoesNotAliasOtherWorkspace(t *testing.T) {
+	s := newTestStorage(t)
+
+	ws, err := collab.NewWorkspace(collab.WorkspaceConfig{
+		Name:           "colon-ws",
+		OwnerProfileID: "owner-1",
+	})
+	require.NoError(t, err)
+	ws.ID = "a:b"
+	require.NoError(t, s.SaveWorkspace(ws))
+	now := time.Now()
+	require.NoError(t, s.SaveTasks(ws.ID, []collab.TaskInfo{{ID: "t1", WorkspaceID: ws.ID, CreatedAt: now, UpdatedAt: now}}))
+
+	const other = "a%3Ab"
+
+	_, err = s.LoadWorkspace(other)
+	var nf *collab.WorkspaceNotFoundError
+	require.ErrorAs(t, err, &nf)
+
+	tasks, err := s.LoadTasks(other)
+	require.NoError(t, err)
+	assert.Empty(t, tasks)
+
+	err = s.DeleteWorkspace(other)
+	require.ErrorAs(t, err, &nf)
+
+	// The real workspace is untouched.
+	loaded, err := s.LoadWorkspace("a:b")
+	require.NoError(t, err)
+	assert.Equal(t, "a:b", loaded.ID)
+	tasks, err = s.LoadTasks("a:b")
+	require.NoError(t, err)
+	assert.Len(t, tasks, 1)
+}
+
+// A legacy verbatim directory whose name contains a stray "%" (not a valid
+// escape, so it cannot be another ID's escaped form) still resolves.
+func TestCollaborationStorage_LoadsLegacyStrayPercentWorkspaceDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("legacy unescaped workspace directories cannot exist on Windows")
+	}
+	root := t.TempDir()
+	const id = "100%:x"
+	legacyDir := filepath.Join(root, id)
+	require.NoError(t, os.MkdirAll(legacyDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(legacyDir, "manifest.yaml"),
+		[]byte("name: legacy\nowner_profile_id: owner-1\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(legacyDir, "state.json"),
+		[]byte(`{"id":"`+id+`","state":"active","created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}`), 0o644))
+
+	s, err := storage.NewCollaborationStorage(root)
+	require.NoError(t, err)
+	loaded, err := s.LoadWorkspace(id)
+	require.NoError(t, err)
+	assert.Equal(t, id, loaded.ID)
+}

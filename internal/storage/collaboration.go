@@ -101,6 +101,15 @@ func unescapeWorkspaceID(name string) string {
 	return b.String()
 }
 
+// legacyEligible reports whether the verbatim ID can be a pre-escaping
+// directory name. An escaped directory name contains "%" only as part of a
+// valid %XX sequence, so an ID that unescapes to itself can never be another
+// ID's escaped form. One that does not (e.g. "a%3Ab") can, and must not be
+// treated as legacy or two workspaces would share a directory.
+func legacyEligible(id string) bool {
+	return unescapeWorkspaceID(id) == id
+}
+
 // workspaceDir returns the canonical (escaped) directory for a workspace.
 // Pure path construction, no filesystem access — always the write target,
 // so saves converge every workspace to the escaped layout over time.
@@ -114,14 +123,17 @@ func (s *CollaborationStorage) workspaceDir(id string) string {
 // escaping was introduced after workspaces could already exist on disk —
 // notably collab.GlobalAuditWorkspace ("aps:global"), created
 // unconditionally by the audit subscriber, not opt-in. A workspace ID with
-// no reserved characters resolves to the same path either way.
+// no reserved characters resolves to the same path either way. An ID that
+// is itself the escaped form of another ID (e.g. "a%3Ab" for "a:b") has no
+// legacy candidate: its verbatim directory is that other workspace's
+// escaped directory (see legacyEligible).
 func (s *CollaborationStorage) resolveWorkspaceDir(id string) string {
 	dir := s.workspaceDir(id)
 	if _, err := os.Stat(dir); err == nil {
 		return dir
 	}
 	legacyDir := filepath.Join(s.root, id)
-	if legacyDir == dir {
+	if legacyDir == dir || !legacyEligible(id) {
 		return dir
 	}
 	if _, err := os.Stat(legacyDir); err == nil {
