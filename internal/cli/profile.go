@@ -38,6 +38,10 @@ type profileSummaryRow struct {
 	HasIdentity  bool   `table:"DID,priority=3"           json:"has_identity"  yaml:"has_identity"`
 	Color        string `table:"COLOR,priority=2"         json:"color"         yaml:"color"`
 	Avatar       string `table:"AVATAR,priority=1"        json:"avatar"        yaml:"avatar"`
+	// Type and ReportsTo are structured-output only (table:"-") and use
+	// omitempty so an unset value is absent, as in `aps profile show`.
+	Type      string `table:"-" json:"type,omitempty"       yaml:"type,omitempty"`
+	ReportsTo string `table:"-" json:"reports_to,omitempty" yaml:"reports_to,omitempty"`
 }
 
 var profileCmd = &cobra.Command{
@@ -52,7 +56,9 @@ var profileListCmd = &cobra.Command{
 	Long: `List every agent profile discovered under
 $APS_DATA_PATH/profiles/, projected into a row shape that includes
 id, display name, roles, capabilities, workspace link, email,
-has-secrets, has-identity, color, and avatar.
+has-secrets, has-identity, color, and avatar. The json and yaml
+formats also carry type and reports_to when set (absent when unset,
+as in profile show); the table omits them.
 
 Filters compose with AND semantics: --capability, --role, --squad,
 --tone match against the corresponding slice/string field;
@@ -208,6 +214,8 @@ func profileToSummaryRow(p core.Profile) profileSummaryRow {
 		HasIdentity:  p.Identity != nil,
 		Color:        p.Color,
 		Avatar:       p.Avatar,
+		Type:         p.Type,
+		ReportsTo:    p.ReportsTo,
 	}
 }
 
