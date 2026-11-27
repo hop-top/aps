@@ -64,5 +64,9 @@ jobs:
       - name: Check test env guard
         run: make lint-test-env
 
+      # Shell scripts under pipefail must not pipe into an early-exit reader.
+      - name: Check shell SIGPIPE guard
+        run: make lint-sigpipe
+
       - name: Check documentation links
         run: make lint-docs
