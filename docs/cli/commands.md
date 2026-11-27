@@ -35,24 +35,24 @@ aps [flags]
 ### Options
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-  -h, --help               help for aps
-      --help-all           Show all commands and global flags
-      --help-instance      Show only instance commands
-      --help-interact      Show only interact commands
-      --help-management    Show only management commands
-      --help-organize      Show only organize commands
-      --help-pipelines     Show only pipelines commands
-      --help-security      Show only security commands
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string                  Output format (csv, human, json, table, text, yaml) (default "table")
+  -h, --help[=true|false]              help for aps
+      --help-all[=true|false]          Show all commands and global flags
+      --help-instance[=true|false]     Show only instance commands
+      --help-interact[=true|false]     Show only interact commands
+      --help-management[=true|false]   Show only management commands
+      --help-organize[=true|false]     Show only organize commands
+      --help-pipelines[=true|false]    Show only pipelines commands
+      --help-security[=true|false]     Show only security commands
+      --instance string                backend instance to target (defaults to config)
+      --no-color[=true|false]          Disable ANSI color
+      --no-hints[=true|false]          Suppress next-step hints after command output
+      --no-redact[=true|false]         disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]           Disable network access
+  -p, --profile string                 profile id (defaults to active profile)
+      --quiet[=true|false]             Suppress non-essential output
+  -V, --verbose count                  Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string               workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -110,22 +110,22 @@ The a2a command group provides operations for:
 ### Options
 
 ```
-  -h, --help   help for a2a
+  -h, --help[=true|false]   help for a2a
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -147,22 +147,22 @@ Show local profile cards or fetch remote agent cards.
 ### Options
 
 ```
-  -h, --help   help for card
+  -h, --help[=true|false]   help for card
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -189,23 +189,23 @@ aps a2a card fetch [flags]
 ### Options
 
 ```
-  -h, --help         help for fetch
-  -u, --url string   Agent Card URL (required)
+  -h, --help[=true|false]   help for fetch
+  -u, --url string          Agent Card URL (required)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -227,22 +227,22 @@ aps a2a card show [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -272,22 +272,22 @@ aps a2a server [flags]
 ### Options
 
 ```
-  -h, --help   help for server
+  -h, --help[=true|false]   help for server
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -305,22 +305,22 @@ List, inspect, send, cancel, and subscribe to A2A tasks.
 ### Options
 
 ```
-  -h, --help   help for tasks
+  -h, --help[=true|false]   help for tasks
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -348,23 +348,23 @@ aps a2a tasks cancel <task-id> [flags]
 ### Options
 
 ```
-  -h, --help            help for cancel
-  -t, --target string   Target profile ID (required)
+  -h, --help[=true|false]   help for cancel
+  -t, --target string       Target profile ID (required)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -387,23 +387,23 @@ aps a2a tasks list [flags]
 ### Options
 
 ```
-  -h, --help            help for list
-      --status string   Filter by status (submitted, working, completed, failed, cancelled)
+  -h, --help[=true|false]   help for list
+      --status string       Filter by status (submitted, working, completed, failed, cancelled)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -429,25 +429,25 @@ aps a2a tasks send [flags]
 ### Options
 
 ```
-  -h, --help             help for send
-  -m, --message string   Message text (required)
-  -t, --target string    Target profile ID (required)
-      --task-id string   Existing task ID (optional, creates new if not specified)
+  -h, --help[=true|false]   help for send
+  -m, --message string      Message text (required)
+  -t, --target string       Target profile ID (required)
+      --task-id string      Existing task ID (optional, creates new if not specified)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -469,23 +469,23 @@ aps a2a tasks show <task-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for show
-      --history int   Limit message history length
+  -h, --help[=true|false]   help for show
+      --history int         Limit message history length
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -507,25 +507,25 @@ aps a2a tasks stream [flags]
 ### Options
 
 ```
-  -h, --help             help for stream
-  -m, --message string   Message text
-  -t, --target string    Target profile ID
-      --task-id string   Existing task ID (optional)
+  -h, --help[=true|false]   help for stream
+  -m, --message string      Message text
+  -t, --target string       Target profile ID
+      --task-id string      Existing task ID (optional)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -550,24 +550,24 @@ aps a2a tasks subscribe <task-id> [flags]
 ### Options
 
 ```
-  -h, --help             help for subscribe
-  -t, --target string    Target profile ID (required)
-      --webhook string   Webhook URL for push notifications (required)
+  -h, --help[=true|false]   help for subscribe
+  -t, --target string       Target profile ID (required)
+      --webhook string      Webhook URL for push notifications (required)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -598,27 +598,27 @@ aps a2a toggle [flags]
 ### Options
 
 ```
-      --enabled string    Enable (on), disable (off), or toggle (omit or blank)
-  -h, --help              help for toggle
-      --host string       Listen host (default "127.0.0.1")
-      --port string       Listen port (default "8081")
-      --protocol string   Protocol binding (jsonrpc, grpc, http) (default "jsonrpc")
-      --url string        Public endpoint URL (defaults to http://{host}:{port})
+      --enabled string      Enable (on), disable (off), or toggle (omit or blank)
+  -h, --help[=true|false]   help for toggle
+      --host string         Listen host (default "127.0.0.1")
+      --port string         Listen port (default "8081")
+      --protocol string     Protocol binding (jsonrpc, grpc, http) (default "jsonrpc")
+      --url string          Public endpoint URL (defaults to http://{host}:{port})
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -641,22 +641,22 @@ The acp command group provides operations for:
 ### Options
 
 ```
-  -h, --help   help for acp
+  -h, --help[=true|false]   help for acp
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -686,22 +686,22 @@ aps acp server [profile] [flags]
 ### Options
 
 ```
-  -h, --help   help for server
+  -h, --help[=true|false]   help for server
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -731,26 +731,26 @@ aps acp toggle [flags]
 ### Options
 
 ```
-      --enabled string     Enable (on), disable (off), or toggle (omit or blank)
-  -h, --help               help for toggle
-      --host string        Listen host for network transports (default "127.0.0.1")
-      --port string        Listen port for network transports (default "8088")
-      --transport string   Transport (stdio, ws, websocket) (default "stdio")
+      --enabled string      Enable (on), disable (off), or toggle (omit or blank)
+  -h, --help[=true|false]   help for toggle
+      --host string         Listen host for network transports (default "127.0.0.1")
+      --port string         Listen port for network transports (default "8088")
+      --transport string    Transport (stdio, ws, websocket) (default "stdio")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -764,22 +764,22 @@ Manage and execute profile actions
 ### Options
 
 ```
-  -h, --help   help for action
+  -h, --help[=true|false]   help for action
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -813,23 +813,23 @@ aps action list [profile] [flags]
 ### Options
 
 ```
-  -h, --help          help for list
-      --type string   Filter by runtime type (sh, py, js)
+  -h, --help[=true|false]   help for list
+      --type string         Filter by runtime type (sh, py, js)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -863,24 +863,24 @@ aps action run [profile] [action] [flags]
 ### Options
 
 ```
-  -h, --help                  help for run
-      --payload-file string   File to send to action stdin
-      --payload-stdin         Read stdin and forward to action
+  -h, --help[=true|false]            help for run
+      --payload-file string          File to send to action stdin
+      --payload-stdin[=true|false]   Read stdin and forward to action
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -908,22 +908,22 @@ aps action show [profile] [action] [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -952,22 +952,22 @@ of this tree.
 ### Options
 
 ```
-  -h, --help   help for adapter
+  -h, --help[=true|false]   help for adapter
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1023,25 +1023,25 @@ aps adapter approve <device-id> [flags]
 ### Options
 
 ```
-      --all           Approve all pending devices
-  -h, --help          help for approve
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --all[=true|false]    Approve all pending devices
+  -h, --help[=true|false]   help for approve
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1068,25 +1068,25 @@ aps adapter attach <device-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for attach
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --role string   Device role: owner, collaborator, viewer (default "viewer")
+  -h, --help[=true|false]   help for attach
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --role string         Device role: owner, collaborator, viewer (default "viewer")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1108,23 +1108,23 @@ aps adapter channels <messenger> [flags]
 ### Options
 
 ```
-  -h, --help   help for channels
-      --json   JSON output
+  -h, --help[=true|false]   help for channels
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1163,26 +1163,26 @@ aps adapter create <name> [flags]
 ### Options
 
 ```
-  -h, --help              help for create
-      --json              JSON output
-  -n, --note string       Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --strategy string   Loading strategy (subprocess, script, builtin)
-      --type string       Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)
+  -h, --help[=true|false]   help for create
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --strategy string     Loading strategy (subprocess, script, builtin)
+      --type string         Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1208,25 +1208,25 @@ aps adapter detach <device-id> [flags]
 ### Options
 
 ```
-      --force         Skip confirmation prompt
-  -h, --help          help for detach
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation prompt
+  -h, --help[=true|false]    help for detach
+      --json[=true|false]    JSON output
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1273,23 +1273,23 @@ aps adapter exec <adapter> <action> [flags]
 
 ```
       --from string         Explicit From address (overrides profile lookup)
-  -h, --help                help for exec
+  -h, --help[=true|false]   help for exec
   -i, --input stringArray   Action input as key=value (repeatable)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1310,22 +1310,22 @@ and profile are the parties.
 ### Options
 
 ```
-  -h, --help   help for link
+  -h, --help[=true|false]   help for link
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1369,8 +1369,8 @@ aps adapter link add <device> [flags]
 ```
       --add-mapping string      Add a single channel=action mapping to an existing link
       --default-action string   Set default action for unmapped channels
-  -h, --help                    help for add
-      --json                    JSON output
+  -h, --help[=true|false]       help for add
+      --json[=true|false]       JSON output
       --mapping strings         Channel=Action mapping (messenger devices only, repeatable)
   -n, --note string             Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
       --remove-mapping string   Remove a mapping by channel ID from an existing link
@@ -1379,16 +1379,16 @@ aps adapter link add <device> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1426,24 +1426,24 @@ aps adapter link delete <device> [flags]
 ### Options
 
 ```
-  -h, --help          help for delete
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for delete
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1465,23 +1465,23 @@ aps adapter link list [flags]
 ### Options
 
 ```
-  -h, --help               help for list
-      --messenger string   Filter by messenger device name
+  -h, --help[=true|false]   help for list
+      --messenger string    Filter by messenger device name
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1512,24 +1512,24 @@ aps adapter list [flags]
 ### Options
 
 ```
-  -h, --help            help for list
-      --status string   Filter by runtime status (running, stopped, failed, ...)
-      --type string     Filter by adapter type (messenger, protocol, mobile, ...)
+  -h, --help[=true|false]   help for list
+      --status string       Filter by runtime status (running, stopped, failed, ...)
+      --type string         Filter by adapter type (messenger, protocol, mobile, ...)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1559,25 +1559,25 @@ aps adapter logs <name> [flags]
 ### Options
 
 ```
-  -f, --follow         Follow log output (stream)
-  -h, --help           help for logs
-      --since string   Show logs since duration (e.g., 1h, 30m)
-      --tail int       Number of lines to show (default 20)
+  -f, --follow[=true|false]   Follow log output (stream)
+  -h, --help[=true|false]     help for logs
+      --since string          Show logs since duration (e.g., 1h, 30m)
+      --tail int              Number of lines to show (default 20)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1598,22 +1598,22 @@ pre-filtered for messenger-type devices.
 ### Options
 
 ```
-  -h, --help   help for messenger
+  -h, --help[=true|false]   help for messenger
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1644,23 +1644,23 @@ aps adapter messenger channels <messenger> [flags]
 ### Options
 
 ```
-  -h, --help   help for channels
-      --json   JSON output
+  -h, --help[=true|false]   help for channels
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1699,26 +1699,26 @@ aps adapter messenger create <name> [flags]
 ### Options
 
 ```
-  -h, --help              help for create
-      --json              JSON output
-  -n, --note string       Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --strategy string   Loading strategy (subprocess, script, builtin)
-      --type string       Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)
+  -h, --help[=true|false]   help for create
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --strategy string     Loading strategy (subprocess, script, builtin)
+      --type string         Device type (messenger, protocol, mobile, desktop, sense, actuator, scheduler)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1739,22 +1739,22 @@ and profile are the parties.
 ### Options
 
 ```
-  -h, --help   help for link
+  -h, --help[=true|false]   help for link
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1798,8 +1798,8 @@ aps adapter messenger link add <device> [flags]
 ```
       --add-mapping string      Add a single channel=action mapping to an existing link
       --default-action string   Set default action for unmapped channels
-  -h, --help                    help for add
-      --json                    JSON output
+  -h, --help[=true|false]       help for add
+      --json[=true|false]       JSON output
       --mapping strings         Channel=Action mapping (messenger devices only, repeatable)
   -n, --note string             Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
       --remove-mapping string   Remove a mapping by channel ID from an existing link
@@ -1808,16 +1808,16 @@ aps adapter messenger link add <device> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1855,24 +1855,24 @@ aps adapter messenger link delete <device> [flags]
 ### Options
 
 ```
-  -h, --help          help for delete
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for delete
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1894,23 +1894,23 @@ aps adapter messenger link list [flags]
 ### Options
 
 ```
-  -h, --help               help for list
-      --messenger string   Filter by messenger device name
+  -h, --help[=true|false]   help for list
+      --messenger string    Filter by messenger device name
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1941,24 +1941,24 @@ aps adapter messenger list [flags]
 ### Options
 
 ```
-  -h, --help              help for list
-      --platform string   Filter by messenger platform (telegram, slack, discord, ...)
-      --status string     Filter by runtime status (running, stopped, failed, ...)
+  -h, --help[=true|false]   help for list
+      --platform string     Filter by messenger platform (telegram, slack, discord, ...)
+      --status string       Filter by runtime status (running, stopped, failed, ...)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -1988,25 +1988,25 @@ aps adapter messenger logs <name> [flags]
 ### Options
 
 ```
-  -f, --follow         Follow log output (stream)
-  -h, --help           help for logs
-      --since string   Show logs since duration (e.g., 1h, 30m)
-      --tail int       Number of lines to show (default 20)
+  -f, --follow[=true|false]   Follow log output (stream)
+  -h, --help[=true|false]     help for logs
+      --since string          Show logs since duration (e.g., 1h, 30m)
+      --tail int              Number of lines to show (default 20)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2046,24 +2046,24 @@ aps adapter messenger start <name> [flags]
 ### Options
 
 ```
-  -h, --help          help for start
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for start
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2095,23 +2095,23 @@ aps adapter messenger status <name> [flags]
 ### Options
 
 ```
-  -h, --help   help for status
-      --json   JSON output
+  -h, --help[=true|false]   help for status
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2149,25 +2149,25 @@ aps adapter messenger stop <name> [flags]
 ### Options
 
 ```
-      --force         Force stop (SIGKILL)
-  -h, --help          help for stop
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Force stop (SIGKILL)
+  -h, --help[=true|false]    help for stop
+      --json[=true|false]    JSON output
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2189,27 +2189,27 @@ aps adapter messenger test <messenger> [flags]
 ### Options
 
 ```
-      --channel string     Channel ID (defaults to first mapped channel)
-  -h, --help               help for test
-      --json               JSON output
-      --message string     Test message content (default "test query")
-      --send               Actually deliver the test message
-      --timeout duration   Pipeline timeout (default 30s)
+      --channel string      Channel ID (defaults to first mapped channel)
+  -h, --help[=true|false]   help for test
+      --json[=true|false]   JSON output
+      --message string      Test message content (default "test query")
+      --send[=true|false]   Actually deliver the test message
+      --timeout duration    Pipeline timeout (default 30s)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2234,32 +2234,32 @@ aps adapter pair [flags]
 ### Options
 
 ```
-      --bind-addr string       Bind address (auto-detected if not set)
-      --capabilities strings   Device capabilities (default: run:stateless,run:streaming,monitor:sessions)
-      --code-only              Show pairing code only, no QR
-      --expires string         Device token expiry (e.g., 14d, 30d) (default "14d")
-  -h, --help                   help for pair
-      --json                   JSON output
-      --no-qr                  Skip QR code display (accessibility, screen readers)
-  -n, --note string            Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --port int               Server port (default 8443)
-      --qr-expires string      QR code expiry (e.g., 15m, 30m) (default "15m")
-      --qr-output string       Save QR code as PNG to file
+      --bind-addr string         Bind address (auto-detected if not set)
+      --capabilities strings     Device capabilities (default: run:stateless,run:streaming,monitor:sessions)
+      --code-only[=true|false]   Show pairing code only, no QR
+      --expires string           Device token expiry (e.g., 14d, 30d) (default "14d")
+  -h, --help[=true|false]        help for pair
+      --json[=true|false]        JSON output
+      --no-qr[=true|false]       Skip QR code display (accessibility, screen readers)
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --port int                 Server port (default 8443)
+      --qr-expires string        QR code expiry (e.g., 15m, 30m) (default "15m")
+      --qr-output string         Save QR code as PNG to file
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2294,23 +2294,23 @@ aps adapter pending [flags]
 ### Options
 
 ```
-  -h, --help   help for pending
-      --json   JSON output
+  -h, --help[=true|false]   help for pending
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2332,22 +2332,22 @@ aps adapter status / show.
 ### Options
 
 ```
-  -h, --help   help for permissions
+  -h, --help[=true|false]   help for permissions
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2380,29 +2380,29 @@ aps adapter permissions set <device-id> [flags]
 ### Options
 
 ```
-      --can-execute      Override: allow execute access
-      --can-manage       Override: allow manage access
-      --can-write        Override: allow write access
-  -h, --help             help for set
-      --json             JSON output
-      --rate-limit int   Rate limit (requests per minute, 0 = unlimited)
-      --role string      Set role: owner, collaborator, viewer
-      --show             Show current permissions without changes
+      --can-execute[=true|false]   Override: allow execute access
+      --can-manage[=true|false]    Override: allow manage access
+      --can-write[=true|false]     Override: allow write access
+  -h, --help[=true|false]          help for set
+      --json[=true|false]          JSON output
+      --rate-limit int             Rate limit (requests per minute, 0 = unlimited)
+      --role string                Set role: owner, collaborator, viewer
+      --show[=true|false]          Show current permissions without changes
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2426,23 +2426,23 @@ aps adapter presence [workspace-id] [flags]
 ### Options
 
 ```
-  -h, --help   help for presence
-      --json   JSON output
+  -h, --help[=true|false]   help for presence
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2475,24 +2475,24 @@ aps adapter reject <device-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for reject
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for reject
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2516,26 +2516,26 @@ aps adapter revoke [device-id] [flags]
 ### Options
 
 ```
-      --all           Revoke all devices
-      --force         Skip confirmation
-  -h, --help          help for revoke
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --all[=true|false]     Revoke all devices
+      --force[=true|false]   Skip confirmation
+  -h, --help[=true|false]    help for revoke
+      --json[=true|false]    JSON output
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2575,24 +2575,24 @@ aps adapter start <name> [flags]
 ### Options
 
 ```
-  -h, --help          help for start
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for start
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2624,23 +2624,23 @@ aps adapter status <name> [flags]
 ### Options
 
 ```
-  -h, --help   help for status
-      --json   JSON output
+  -h, --help[=true|false]   help for status
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2678,25 +2678,25 @@ aps adapter stop <name> [flags]
 ### Options
 
 ```
-      --force         Force stop (SIGKILL)
-  -h, --help          help for stop
-      --json          JSON output
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Force stop (SIGKILL)
+  -h, --help[=true|false]    help for stop
+      --json[=true|false]    JSON output
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2718,27 +2718,27 @@ aps adapter test <messenger> [flags]
 ### Options
 
 ```
-      --channel string     Channel ID (defaults to first mapped channel)
-  -h, --help               help for test
-      --json               JSON output
-      --message string     Test message content (default "test query")
-      --send               Actually deliver the test message
-      --timeout duration   Pipeline timeout (default 30s)
+      --channel string      Channel ID (defaults to first mapped channel)
+  -h, --help[=true|false]   help for test
+      --json[=true|false]   JSON output
+      --message string      Test message content (default "test query")
+      --send[=true|false]   Actually deliver the test message
+      --timeout duration    Pipeline timeout (default 30s)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2769,22 +2769,22 @@ aps alias [flags]
 ### Options
 
 ```
-  -h, --help   help for alias
+  -h, --help[=true|false]   help for alias
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2810,22 +2810,22 @@ aps alias add <name> <target...> [flags]
 ### Options
 
 ```
-  -h, --help   help for add
+  -h, --help[=true|false]   help for add
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2847,22 +2847,22 @@ aps alias delete <name> [flags]
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help[=true|false]   help for delete
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2884,22 +2884,22 @@ aps alias list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help[=true|false]   help for list
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2925,22 +2925,22 @@ aps alias shell [flags]
 ### Options
 
 ```
-  -h, --help   help for shell
+  -h, --help[=true|false]   help for shell
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -2954,22 +2954,22 @@ Manage capability bundles
 ### Options
 
 ```
-  -h, --help   help for bundle
+  -h, --help[=true|false]   help for bundle
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3007,24 +3007,24 @@ aps bundle create <name> [flags]
 ### Options
 
 ```
-      --force         Overwrite existing bundle file
-  -h, --help          help for create
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Overwrite existing bundle file
+  -h, --help[=true|false]    help for create
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3056,24 +3056,24 @@ aps bundle delete <name> [flags]
 ### Options
 
 ```
-      --force         Skip confirmation prompt
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation prompt
+  -h, --help[=true|false]    help for delete
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3107,23 +3107,23 @@ aps bundle edit <name> [flags]
 ### Options
 
 ```
-  -h, --help          help for edit
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for edit
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3155,25 +3155,25 @@ aps bundle list [flags]
 ### Options
 
 ```
-      --builtin      Show only built-in bundles
-  -h, --help         help for list
-      --tag string   Filter to bundles carrying this tag
-      --user         Show only user bundles (incl. overrides)
+      --builtin[=true|false]   Show only built-in bundles
+  -h, --help[=true|false]      help for list
+      --tag string             Filter to bundles carrying this tag
+      --user[=true|false]      Show only user bundles (incl. overrides)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3203,23 +3203,23 @@ aps bundle show <name> [flags]
 ### Options
 
 ```
-  -h, --help       help for show
-      --resolved   Apply inheritance and print merged result
+  -h, --help[=true|false]       help for show
+      --resolved[=true|false]   Apply inheritance and print merged result
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3251,22 +3251,22 @@ aps bundle validate <file> [flags]
 ### Options
 
 ```
-  -h, --help   help for validate
+  -h, --help[=true|false]   help for validate
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3280,22 +3280,22 @@ Manage capabilities (tools, configs, dotfiles)
 ### Options
 
 ```
-  -h, --help   help for capability
+  -h, --help[=true|false]   help for capability
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3338,24 +3338,24 @@ aps capability adopt <path> --name <name> [flags]
 ### Options
 
 ```
-  -h, --help          help for adopt
-      --name string   Name of capability
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for adopt
+      --name string         Name of capability
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3387,24 +3387,24 @@ aps capability delete <name> [flags]
 ### Options
 
 ```
-      --force         Skip link warning
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip link warning
+  -h, --help[=true|false]    help for delete
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3437,23 +3437,23 @@ aps capability disable <profile> <capability> [flags]
 ### Options
 
 ```
-  -h, --help          help for disable
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for disable
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3485,23 +3485,23 @@ aps capability enable <profile> <capability> [flags]
 ### Options
 
 ```
-  -h, --help          help for enable
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for enable
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3533,24 +3533,24 @@ aps capability install <source> --name <name> [flags]
 ### Options
 
 ```
-  -h, --help          help for install
-      --name string   Name of the capability
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for install
+      --name string         Name of the capability
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3582,24 +3582,24 @@ aps capability link <name> [--target <path>] [flags]
 ### Options
 
 ```
-  -h, --help            help for link
-  -n, --note string     Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --target string   Target path for symlink
+  -h, --help[=true|false]   help for link
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --target string       Target path for symlink
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3632,26 +3632,26 @@ aps capability list [flags]
 ### Options
 
 ```
-      --builtin             Show only builtin capabilities
-      --enabled-on string   Show only capabilities linked to the given profile id
-      --external            Show only external (installed) capabilities
-  -h, --help                help for list
-      --tag string          Filter to capabilities carrying this tag
+      --builtin[=true|false]    Show only builtin capabilities
+      --enabled-on string       Show only capabilities linked to the given profile id
+      --external[=true|false]   Show only external (installed) capabilities
+  -h, --help[=true|false]       help for list
+      --tag string              Filter to capabilities carrying this tag
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3665,22 +3665,22 @@ Smart patterns + builtin capabilities
 ### Options
 
 ```
-  -h, --help   help for patterns
+  -h, --help[=true|false]   help for patterns
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3710,22 +3710,22 @@ aps capability patterns list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help[=true|false]   help for list
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3754,22 +3754,22 @@ aps capability show <name> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3802,25 +3802,25 @@ aps capability watch <path> --name <name> | --tool <tool> [flags]
 ### Options
 
 ```
-  -h, --help          help for watch
-      --name string   Name of capability
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --tool string   Smart tool name (e.g. windsurf)
+  -h, --help[=true|false]   help for watch
+      --name string         Name of capability
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --tool string         Smart tool name (e.g. windsurf)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3866,32 +3866,32 @@ aps chat <profile-id> [flags]
 ### Options
 
 ```
-      --attach string        Attach to an existing chat session
-      --effort string        Override the reasoning effort (minimal|low|medium|high|xhigh)
-  -h, --help                 help for chat
-      --invite strings       Invite additional profile IDs (comma-separated or repeatable)
-      --max-auto-turns int   Maximum autonomous turns before returning control to the human (default 10)
-      --max-tokens int       Override the maximum response tokens
-      --model string         Override the configured chat model
-      --no-stream            Disable streaming responses
-      --once string          Send one prompt, print the assistant response, and exit
-      --temperature float    Override the sampling temperature (0-2)
-      --verbosity string     Override the response verbosity (low|medium|high)
+      --attach string            Attach to an existing chat session
+      --effort string            Override the reasoning effort (minimal|low|medium|high|xhigh)
+  -h, --help[=true|false]        help for chat
+      --invite strings           Invite additional profile IDs (comma-separated or repeatable)
+      --max-auto-turns int       Maximum autonomous turns before returning control to the human (default 10)
+      --max-tokens int           Override the maximum response tokens
+      --model string             Override the configured chat model
+      --no-stream[=true|false]   Disable streaming responses
+      --once string              Send one prompt, print the assistant response, and exit
+      --temperature float        Override the sampling temperature (0-2)
+      --verbosity string         Override the response verbosity (low|medium|high)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3934,22 +3934,22 @@ aps completion [bash|zsh|fish|powershell]
 ### Options
 
 ```
-  -h, --help   help for completion
+  -h, --help[=true|false]   help for completion
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -3963,22 +3963,22 @@ Inspect aps configuration
 ### Options
 
 ```
-  -h, --help   help for config
+  -h, --help[=true|false]   help for config
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4007,23 +4007,23 @@ aps config path [flags]
 ### Options
 
 ```
-      --from string   Resolve from this directory instead of os.Getwd()
-  -h, --help          help for path
+      --from string         Resolve from this directory instead of os.Getwd()
+  -h, --help[=true|false]   help for path
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4052,23 +4052,23 @@ aps config paths [flags]
 ### Options
 
 ```
-      --from string   Resolve from this directory instead of os.Getwd()
-  -h, --help          help for paths
+      --from string         Resolve from this directory instead of os.Getwd()
+  -h, --help[=true|false]   help for paths
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4089,22 +4089,22 @@ Dispatches to the configured contacts adapter backend
 ### Options
 
 ```
-  -h, --help   help for contact
+  -h, --help[=true|false]   help for contact
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4143,7 +4143,7 @@ aps contact add <email> [flags]
 
 ```
       --addressbook string   Addressbook ID
-  -h, --help                 help for add
+  -h, --help[=true|false]    help for add
       --name string          Contact name
       --note string          Note
       --org string           Organization
@@ -4153,16 +4153,16 @@ aps contact add <email> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4193,22 +4193,22 @@ aps contact delete <id> [flags]
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help[=true|false]   help for delete
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4236,22 +4236,22 @@ aps contact find <query> [flags]
 ### Options
 
 ```
-  -h, --help   help for find
+  -h, --help[=true|false]   help for find
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4286,25 +4286,25 @@ aps contact list [flags]
 ### Options
 
 ```
-      --addressbook string   Addressbook ID
-      --has-email            Filter on whether the contact has an email
-  -h, --help                 help for list
-      --org string           Filter to a single ORG value
+      --addressbook string       Addressbook ID
+      --has-email[=true|false]   Filter on whether the contact has an email
+  -h, --help[=true|false]        help for list
+      --org string               Filter to a single ORG value
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4333,22 +4333,22 @@ aps contact note <id> <text> [flags]
 ### Options
 
 ```
-  -h, --help   help for note
+  -h, --help[=true|false]   help for note
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4376,22 +4376,22 @@ aps contact show <id> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4422,27 +4422,27 @@ aps contact update <id> [flags]
 ### Options
 
 ```
-      --email string   Email address
-  -h, --help           help for update
-      --name string    Contact name
-      --note string    Note
-      --org string     Organization
-      --phone string   Phone number
+      --email string        Email address
+  -h, --help[=true|false]   help for update
+      --name string         Contact name
+      --note string         Note
+      --org string          Organization
+      --phone string        Phone number
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4463,22 +4463,22 @@ discover agents by capability, and manage directory records.
 ### Options
 
 ```
-  -h, --help   help for directory
+  -h, --help[=true|false]   help for directory
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4507,23 +4507,23 @@ aps directory delete [flags]
 ### Options
 
 ```
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for delete
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4552,22 +4552,22 @@ aps directory discover [flags]
 ```
       --capability string   Capability to search for (required)
       --endpoint string     Directory endpoint URL (default: https://dir.agntcy.org)
-  -h, --help                help for discover
+  -h, --help[=true|false]   help for discover
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4594,23 +4594,23 @@ aps directory register [flags]
 ### Options
 
 ```
-  -h, --help          help for register
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for register
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4635,22 +4635,22 @@ aps directory show [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4683,22 +4683,22 @@ aps docs [flags]
 ### Options
 
 ```
-  -h, --help   help for docs
+  -h, --help[=true|false]   help for docs
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4721,22 +4721,22 @@ aps env [flags]
 ### Options
 
 ```
-  -h, --help   help for env
+  -h, --help[=true|false]   help for env
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4757,22 +4757,22 @@ badges (Verifiable Credentials) to attest agent capabilities.
 ### Options
 
 ```
-  -h, --help   help for identity
+  -h, --help[=true|false]   help for identity
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4794,22 +4794,22 @@ Issue and verify agent badges (Verifiable Credentials) for capability attestatio
 ### Options
 
 ```
-  -h, --help   help for badge
+  -h, --help[=true|false]   help for badge
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4837,22 +4837,22 @@ aps identity badge issue [flags]
 
 ```
       --capability string   Capability to attest (required)
-  -h, --help                help for issue
+  -h, --help[=true|false]   help for issue
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4877,22 +4877,22 @@ aps identity badge verify <badge-file> [flags]
 ### Options
 
 ```
-  -h, --help   help for verify
+  -h, --help[=true|false]   help for verify
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4922,24 +4922,24 @@ aps identity init [flags]
 ### Options
 
 ```
-  -h, --help            help for init
-      --method string   DID method (did:key, did:web) (default "did:key")
-  -n, --note string     Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for init
+      --method string       DID method (did:key, did:web) (default "did:key")
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -4964,22 +4964,22 @@ aps identity show [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5004,22 +5004,22 @@ aps identity verify <did> [flags]
 ### Options
 
 ```
-  -h, --help   help for verify
+  -h, --help[=true|false]   help for verify
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5051,23 +5051,23 @@ aps listen [flags]
 
 ```
       --exit-after-events int   Exit cleanly after N events received (0 = run until signal)
-  -h, --help                    help for listen
+  -h, --help[=true|false]       help for listen
       --topics string           Comma-separated topic patterns to subscribe to (kit/bus glob: * = one segment, # = trailing) (default "aps.#,tlc.#")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5081,22 +5081,22 @@ Migrate legacy configurations to new formats
 ### Options
 
 ```
-  -h, --help   help for migrate
+  -h, --help[=true|false]   help for migrate
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5126,24 +5126,24 @@ aps migrate messengers [flags]
 ### Options
 
 ```
-      --backup        Create backup before migration
-  -h, --help          help for messengers
-      --only string   Migrate only specified messengers (comma-separated)
+      --backup[=true|false]   Create backup before migration
+  -h, --help[=true|false]     help for messengers
+      --only string           Migrate only specified messengers (comma-separated)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5164,22 +5164,22 @@ Supports OTLP (gRPC) and stdout exporters.
 ### Options
 
 ```
-  -h, --help   help for observability
+  -h, --help[=true|false]   help for observability
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5215,23 +5215,23 @@ aps observability toggle [flags]
       --enabled string        Enable (on), disable (off), or toggle (omit)
       --endpoint string       OTLP collector endpoint (e.g. localhost:4317)
       --exporter string       Exporter type (otlp, stdout, none) (default "stdout")
-  -h, --help                  help for toggle
+  -h, --help[=true|false]     help for toggle
       --sampling-rate float   Trace sampling rate (0.0–1.0) (default 1)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5245,22 +5245,22 @@ Inspect the reporting hierarchy across profiles
 ### Options
 
 ```
-  -h, --help   help for org
+  -h, --help[=true|false]   help for org
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5296,22 +5296,22 @@ aps org check [flags]
 ### Options
 
 ```
-  -h, --help   help for check
+  -h, --help[=true|false]   help for check
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5348,23 +5348,23 @@ aps org show <profile-id> [flags]
 ### Options
 
 ```
-      --depth int   Levels of transitive reports to include (0 = unlimited)
-  -h, --help        help for show
+      --depth int           Levels of transitive reports to include (0 = unlimited)
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5408,8 +5408,8 @@ aps org snapshot [flags]
 ### Options
 
 ```
-      --all                      Snapshot every profile on disk (default scope)
-  -h, --help                     help for snapshot
+      --all[=true|false]         Snapshot every profile on disk (default scope)
+  -h, --help[=true|false]        help for snapshot
       --root string              Snapshot a profile and its transitive reports
       --snapshot-format string   Snapshot rendering (json|yaml|tree|mermaid) (default "tree")
       --squad string             Snapshot the members of a squad
@@ -5418,16 +5418,16 @@ aps org snapshot [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5451,22 +5451,22 @@ they can do. Modes:
 ### Options
 
 ```
-  -h, --help   help for policy
+  -h, --help[=true|false]   help for policy
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5498,23 +5498,23 @@ aps policy list <workspace-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for list
-      --json   JSON output
+  -h, --help[=true|false]   help for list
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5549,8 +5549,8 @@ aps policy set [flags]
 ```
       --add-allow strings      Add devices to allow list
       --add-deny strings       Add devices to deny list
-  -h, --help                   help for set
-      --json                   JSON output
+  -h, --help[=true|false]      help for set
+      --json[=true|false]      JSON output
       --mode string            Policy mode: allow-all, allow-list, deny-list
   -n, --note string            Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
       --remove-allow strings   Remove devices from allow list
@@ -5560,16 +5560,16 @@ aps policy set [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5595,23 +5595,23 @@ aps policy show [flags]
 ### Options
 
 ```
-  -h, --help   help for show
-      --json   JSON output
+  -h, --help[=true|false]   help for show
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5629,22 +5629,22 @@ Configure trust verification for inbound A2A requests using DID-based identity.
 ### Options
 
 ```
-  -h, --help   help for trust
+  -h, --help[=true|false]   help for trust
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5677,24 +5677,24 @@ aps policy trust set [flags]
 ### Options
 
 ```
-      --allowed-issuers string   Comma-separated list of allowed DIDs
-  -h, --help                     help for set
-      --require-identity         Require X-Agent-DID header on inbound requests
+      --allowed-issuers string          Comma-separated list of allowed DIDs
+  -h, --help[=true|false]               help for set
+      --require-identity[=true|false]   Require X-Agent-DID header on inbound requests
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5719,22 +5719,22 @@ aps policy trust show [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5752,22 +5752,22 @@ Create, list, and inspect agent profiles.
 ### Options
 
 ```
-  -h, --help   help for profile
+  -h, --help[=true|false]   help for profile
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5793,22 +5793,22 @@ Manage capabilities on a profile
 ### Options
 
 ```
-  -h, --help   help for capability
+  -h, --help[=true|false]   help for capability
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5840,23 +5840,23 @@ aps profile capability add <profile> <capability> [flags]
 ### Options
 
 ```
-  -h, --help          help for add
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for add
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5885,23 +5885,23 @@ aps profile capability remove <profile> <capability> [flags]
 ### Options
 
 ```
-  -h, --help          help for remove
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for remove
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -5919,6 +5919,13 @@ $APS_DATA_PATH/profiles/<id>/. The id argument doubles as the
 directory name; display name, email, avatar URL, and color hex
 default to interactive prompts when omitted and stdin is a TTY.
 Pass --force to overwrite an existing profile directory.
+
+Because profiles move between machines (share/import), the id must
+be a valid directory name on every platform: not empty, "." or "..";
+no Windows device name (CON, PRN, AUX, NUL, COM1-9, LPT1-9, in any
+case, with or without an extension); none of < > : " / \ | ? * or
+control characters; no trailing dot or space. Invalid ids are
+rejected before anything is written.
 
 The --type flag sets the profile type discriminator (agent or
 human; empty means agent). The --reports-to flag links the profile
@@ -5945,36 +5952,36 @@ aps profile create [id] [flags]
 ### Options
 
 ```
-      --auto-avatar              Generate a deterministic avatar via the configured provider (overrides config)
-      --auto-color               Generate a deterministic palette color (overrides config)
-      --avatar string            URL or local path to profile image
-      --avatar-format string     Avatar format: svg, png, webp (provider-dependent)
-      --avatar-provider string   Avatar provider name (default: kit/avatar's default — dicebear)
-      --avatar-size int          Avatar size in pixels (0 = provider default)
-      --avatar-style string      Provider-specific style (e.g. dicebear: shapes, bottts, identicon)
-      --color string             Hex color (e.g. #3b82f6) for UI rendering
-      --display-name string      Display name for the profile
-      --email string             Email for profile and git config
-      --force                    Overwrite existing profile
-  -h, --help                     help for create
-  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --reports-to string        Profile id this profile reports to (must exist; no self-reference or cycles)
-      --type string              Profile type: agent or human (empty means agent)
+      --auto-avatar[=true|false]   Generate a deterministic avatar via the configured provider (overrides config)
+      --auto-color[=true|false]    Generate a deterministic palette color (overrides config)
+      --avatar string              URL or local path to profile image
+      --avatar-format string       Avatar format: svg, png, webp (provider-dependent)
+      --avatar-provider string     Avatar provider name (default: kit/avatar's default — dicebear)
+      --avatar-size int            Avatar size in pixels (0 = provider default)
+      --avatar-style string        Provider-specific style (e.g. dicebear: shapes, bottts, identicon)
+      --color string               Hex color (e.g. #3b82f6) for UI rendering
+      --display-name string        Display name for the profile
+      --email string               Email for profile and git config
+      --force[=true|false]         Overwrite existing profile
+  -h, --help[=true|false]          help for create
+  -n, --note string                Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --reports-to string          Profile id this profile reports to (must exist; no self-reference or cycles)
+      --type string                Profile type: agent or human (empty means agent)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6007,25 +6014,25 @@ aps profile delete <id> [flags]
 ### Options
 
 ```
-      --force         Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-  -y, --yes           Skip interactive confirmation
+      --force[=true|false]   Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)
+  -h, --help[=true|false]    help for delete
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -y, --yes[=true|false]     Skip interactive confirmation
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6059,35 +6066,35 @@ aps profile edit [id] [flags]
 ### Options
 
 ```
-      --auto-avatar              Generate and apply a deterministic avatar via the configured provider
-      --auto-color               Generate and apply a deterministic palette color
-      --avatar string            URL or local path to profile image (pass empty string to clear)
-      --avatar-format string     Avatar format for --auto-avatar
-      --avatar-provider string   Avatar provider name for --auto-avatar
-      --avatar-size int          Avatar size in pixels for --auto-avatar
-      --avatar-style string      Provider-specific style for --auto-avatar
-      --color string             Hex color (e.g. #3b82f6) for UI rendering (pass empty string to clear)
-      --display-name string      Display name for the profile
-      --email string             Email for profile and git config
-  -h, --help                     help for edit
-  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --reports-to string        Profile id this profile reports to (pass empty string to clear; must exist; no self-reference or cycles)
-      --type string              Profile type: agent or human (pass empty string to clear back to the agent default)
+      --auto-avatar[=true|false]   Generate and apply a deterministic avatar via the configured provider
+      --auto-color[=true|false]    Generate and apply a deterministic palette color
+      --avatar string              URL or local path to profile image (pass empty string to clear)
+      --avatar-format string       Avatar format for --auto-avatar
+      --avatar-provider string     Avatar provider name for --auto-avatar
+      --avatar-size int            Avatar size in pixels for --auto-avatar
+      --avatar-style string        Provider-specific style for --auto-avatar
+      --color string               Hex color (e.g. #3b82f6) for UI rendering (pass empty string to clear)
+      --display-name string        Display name for the profile
+      --email string               Email for profile and git config
+  -h, --help[=true|false]          help for edit
+  -n, --note string                Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --reports-to string          Profile id this profile reports to (pass empty string to clear; must exist; no self-reference or cycles)
+      --type string                Profile type: agent or human (pass empty string to clear back to the agent default)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6121,7 +6128,7 @@ aps profile export <id> [flags]
 ### Options
 
 ```
-  -h, --help                     help for export
+  -h, --help[=true|false]        help for export
       --manifest-format string   Manifest format: agentco (agent role manifest); omit for native yaml
       --out string               Write to a file instead of stdout
 ```
@@ -6129,16 +6136,16 @@ aps profile export <id> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6192,25 +6199,25 @@ aps profile import [bundle|AGENTS.md] [flags]
 ### Options
 
 ```
-      --force         Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)
-  -h, --help          help for import
-      --id string     Override profile ID from bundle
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)
+  -h, --help[=true|false]    help for import
+      --id string            Override profile ID from bundle
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6247,28 +6254,28 @@ aps profile list [flags]
 ### Options
 
 ```
-      --capability string   Filter by capability membership
-      --has-identity        Filter to profiles with (true) or without (false) a DID identity
-      --has-secrets         Filter to profiles with (true) or without (false) at least one secret
-  -h, --help                help for list
-      --role string         Filter by role membership (owner, assignee, evaluator, auditor)
-      --squad string        Filter by squad membership
-      --tone string         Filter by persona tone
+      --capability string           Filter by capability membership
+      --has-identity[=true|false]   Filter to profiles with (true) or without (false) a DID identity
+      --has-secrets[=true|false]    Filter to profiles with (true) or without (false) at least one secret
+  -h, --help[=true|false]           help for list
+      --role string                 Filter by role membership (owner, assignee, evaluator, auditor)
+      --squad string                Filter by squad membership
+      --tone string                 Filter by persona tone
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6301,23 +6308,23 @@ aps profile share [id] [flags]
 ### Options
 
 ```
-  -h, --help         help for share
-      --out string   Output path for the bundle
+  -h, --help[=true|false]   help for share
+      --out string          Output path for the bundle
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6347,22 +6354,22 @@ aps profile show [id] [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6395,22 +6402,22 @@ aps profile status [id] [flags]
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help[=true|false]   help for status
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6444,25 +6451,25 @@ aps profile trust <profile-id> [flags]
 ### Options
 
 ```
-      --domain string   Filter by trust domain
-  -h, --help            help for trust
-      --history         Show trust history entries
-      --json            Output as JSON
+      --domain string          Filter by trust domain
+  -h, --help[=true|false]      help for trust
+      --history[=true|false]   Show trust history entries
+      --json[=true|false]      Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6476,22 +6483,22 @@ Manage workspace link for a profile
 ### Options
 
 ```
-  -h, --help   help for workspace
+  -h, --help[=true|false]   help for workspace
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6514,23 +6521,23 @@ aps profile workspace set <profile-id> <workspace-name> [flags]
 ### Options
 
 ```
-  -h, --help          help for set
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for set
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6566,24 +6573,24 @@ aps run [profile] -- [command] [args...] [flags]
 ### Options
 
 ```
-      --env stringArray    Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys
-      --env-file strings   Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys
-  -h, --help               help for run
+      --env stringArray     Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys
+      --env-file strings    Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys
+  -h, --help[=true|false]   help for run
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6607,23 +6614,23 @@ aps serve [flags]
 ```
       --addr string         Address to listen on (default "127.0.0.1:8080")
       --auth-token string   Bearer token for authentication (optional)
-  -h, --help                help for serve
+  -h, --help[=true|false]   help for serve
       --log-level string    Log level (debug, info, warn, error) (default "info")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6637,22 +6644,22 @@ Manage profile-facing services
 ### Options
 
 ```
-  -h, --help   help for service
+  -h, --help[=true|false]   help for service
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6691,66 +6698,66 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
 ### Options
 
 ```
-      --adapter string                    Concrete adapter when --type is canonical
-      --allowed-channel stringArray       Allowed message channel ID, repeatable
-      --allowed-chat stringArray          Allowed Telegram chat ID, repeatable
-      --allowed-guild stringArray         Allowed Discord guild ID, repeatable
-      --allowed-number stringArray        Allowed phone number, repeatable
-      --allowed-sender stringArray        Allowed email sender: exact address or *@domain glob (case-insensitive), repeatable
-      --auth-scheme string                Generic webhook auth scheme: bearer, token, hmac-sha256, ed25519, slack-signing-secret (bearer/token read --auth-token-env; hmac-sha256/ed25519 read --signature-secret-env)
-      --auth-token-env string             Environment variable holding the generic webhook bearer/token secret
-      --bot-user-id string                Slack bot user ID used for mention-only routing
-      --contacts string                   Contacts snapshot YAML consulted by --route-table (org:/contact: selectors)
-      --dedup-ttl string                  Slack Events API duplicate event retention duration
-      --default-action string             Default profile action for routed messages or tickets
-      --description string                Human-readable description
-      --env stringArray                   Environment binding KEY=VALUE, repeatable; VALUE may be a literal or secret:NAME to resolve NAME from the profile secret store, then the environment
-      --events string                     Comma-separated ticket events to receive
-      --force                             Overwrite an existing service with the same ID
-      --from string                       Sender phone number or provider identity
-      --group string                      GitLab group path or ID
-  -h, --help                              help for add
-      --history-turns int                 Prior conversation turns attached to each routed action run (0 = default 20)
-      --jql string                        Jira issue query
-      --label stringArray                 Metadata label KEY=VALUE, repeatable
-      --language-code string              WhatsApp template language code
-      --linear-workspace string           Linear workspace key or ID
-      --option stringArray                Raw service option KEY=VALUE, repeatable; escape hatch for options without a flag (named flags win on the same key)
-      --phone-number-id string            WhatsApp phone number ID
-      --project string                    Ticket adapter project key, ID, or path
-      --provider string                   Message provider, such as twilio or whatsapp-cloud
-      --receive string                    Message receive mode: polling or webhook
-      --reply string                      Reply behavior: text, comment, status, auto, or none
-      --require-bot-mention               Require Slack channel messages to mention the bot
-      --route-table string                Sender route table YAML for message services (replaces --default-action; relative paths resolve against the services directory)
-      --signature-secret-env string       Environment variable holding the generic webhook HMAC secret or Ed25519 public key
-      --signing-secret-env string         Slack/WhatsApp provider signing secret environment variable (provider-native signature; for generic webhook auth use --signature-secret-env)
-      --site string                       Ticket adapter site or base URL
-      --team string                       Linear team key or ID
-      --template-name string              WhatsApp template name for business-initiated replies
-      --template-required                 Require WhatsApp outbound delivery to use a template
-      --type string                       Service type or adapter alias
-      --uma-adapter string                uma service adapter: http.mail, meta.whatsapp, relay.messages, twilio.sms, twilio.whatsapp
-      --verify-token string               WhatsApp Cloud webhook verification token
-      --verify-token-env string           Environment variable holding WhatsApp Cloud verification token
-      --webhook-secret-token string       Telegram webhook secret token
-      --webhook-secret-token-env string   Environment variable holding Telegram webhook secret token
-      --webhook-url string                Public provider webhook URL used for signature validation
+      --adapter string                     Concrete adapter when --type is canonical
+      --allowed-channel stringArray        Allowed message channel ID, repeatable
+      --allowed-chat stringArray           Allowed Telegram chat ID, repeatable
+      --allowed-guild stringArray          Allowed Discord guild ID, repeatable
+      --allowed-number stringArray         Allowed phone number, repeatable
+      --allowed-sender stringArray         Allowed email sender: exact address or *@domain glob (case-insensitive), repeatable
+      --auth-scheme string                 Generic webhook auth scheme: bearer, token, hmac-sha256, ed25519, slack-signing-secret (bearer/token read --auth-token-env; hmac-sha256/ed25519 read --signature-secret-env)
+      --auth-token-env string              Environment variable holding the generic webhook bearer/token secret
+      --bot-user-id string                 Slack bot user ID used for mention-only routing
+      --contacts string                    Contacts snapshot YAML consulted by --route-table (org:/contact: selectors)
+      --dedup-ttl string                   Slack Events API duplicate event retention duration
+      --default-action string              Default profile action for routed messages or tickets
+      --description string                 Human-readable description
+      --env stringArray                    Environment binding KEY=VALUE, repeatable; VALUE may be a literal or secret:NAME to resolve NAME from the profile secret store, then the environment
+      --events string                      Comma-separated ticket events to receive
+      --force[=true|false]                 Overwrite an existing service with the same ID
+      --from string                        Sender phone number or provider identity
+      --group string                       GitLab group path or ID
+  -h, --help[=true|false]                  help for add
+      --history-turns int                  Prior conversation turns attached to each routed action run (0 = default 20)
+      --jql string                         Jira issue query
+      --label stringArray                  Metadata label KEY=VALUE, repeatable
+      --language-code string               WhatsApp template language code
+      --linear-workspace string            Linear workspace key or ID
+      --option stringArray                 Raw service option KEY=VALUE, repeatable; escape hatch for options without a flag (named flags win on the same key)
+      --phone-number-id string             WhatsApp phone number ID
+      --project string                     Ticket adapter project key, ID, or path
+      --provider string                    Message provider, such as twilio or whatsapp-cloud
+      --receive string                     Message receive mode: polling or webhook
+      --reply string                       Reply behavior: text, comment, status, auto, or none
+      --require-bot-mention[=true|false]   Require Slack channel messages to mention the bot
+      --route-table string                 Sender route table YAML for message services (replaces --default-action; relative paths resolve against the services directory)
+      --signature-secret-env string        Environment variable holding the generic webhook HMAC secret or Ed25519 public key
+      --signing-secret-env string          Slack/WhatsApp provider signing secret environment variable (provider-native signature; for generic webhook auth use --signature-secret-env)
+      --site string                        Ticket adapter site or base URL
+      --team string                        Linear team key or ID
+      --template-name string               WhatsApp template name for business-initiated replies
+      --template-required[=true|false]     Require WhatsApp outbound delivery to use a template
+      --type string                        Service type or adapter alias
+      --uma-adapter string                 uma service adapter: http.mail, meta.whatsapp, relay.messages, twilio.sms, twilio.whatsapp
+      --verify-token string                WhatsApp Cloud webhook verification token
+      --verify-token-env string            Environment variable holding WhatsApp Cloud verification token
+      --webhook-secret-token string        Telegram webhook secret token
+      --webhook-secret-token-env string    Environment variable holding Telegram webhook secret token
+      --webhook-url string                 Public provider webhook URL used for signature validation
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6773,22 +6780,22 @@ action runs as prior_turns.
 ### Options
 
 ```
-  -h, --help   help for conversation
+  -h, --help[=true|false]   help for conversation
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6819,25 +6826,25 @@ aps service conversation list [flags]
 ### Options
 
 ```
-  -h, --help              help for list
-      --limit int         Maximum conversations to list (0 = all)
-      --platform string   Only conversations on this platform (sms, whatsapp, telegram, slack, discord)
-      --service string    Only conversations recorded by this service ID
+  -h, --help[=true|false]   help for list
+      --limit int           Maximum conversations to list (0 = all)
+      --platform string     Only conversations on this platform (sms, whatsapp, telegram, slack, discord)
+      --service string      Only conversations recorded by this service ID
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6866,24 +6873,24 @@ aps service conversation show <conversation-id> [flags]
 ### Options
 
 ```
-  -h, --help             help for show
-      --limit int        Maximum turns to show, newest kept (default 500)
-      --session string   Only turns in this session (thread) key
+  -h, --help[=true|false]   help for show
+      --limit int           Maximum turns to show, newest kept (default 500)
+      --session string      Only turns in this session (thread) key
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6911,22 +6918,22 @@ aps service routes <service-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for routes
+  -h, --help[=true|false]   help for routes
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6957,22 +6964,22 @@ aps service show <service-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -6999,24 +7006,24 @@ aps service start <service-id> [flags]
 ### Options
 
 ```
-      --addr string       Address to listen on (default "127.0.0.1:8080")
-      --base-url string   Public base URL used to report reachable webhook URLs (default "http://127.0.0.1:8080")
-  -h, --help              help for start
+      --addr string         Address to listen on (default "127.0.0.1:8080")
+      --base-url string     Public base URL used to report reachable webhook URLs (default "http://127.0.0.1:8080")
+  -h, --help[=true|false]   help for start
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7046,23 +7053,23 @@ aps service status <service-id> [flags]
 ### Options
 
 ```
-      --base-url string   Public base URL used to report reachable webhook URLs (default "http://127.0.0.1:8080")
-  -h, --help              help for status
+      --base-url string     Public base URL used to report reachable webhook URLs (default "http://127.0.0.1:8080")
+  -h, --help[=true|false]   help for status
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7091,22 +7098,22 @@ aps service stop <service-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for stop
+  -h, --help[=true|false]   help for stop
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7146,25 +7153,25 @@ aps service test <service-id> [flags]
 ### Options
 
 ```
-      --base-url string    Public base URL to probe (default "http://127.0.0.1:8080")
-  -h, --help               help for test
-      --probe              POST a synthetic message payload to the webhook URL
-      --timeout duration   Webhook probe timeout (default 5s)
+      --base-url string      Public base URL to probe (default "http://127.0.0.1:8080")
+  -h, --help[=true|false]    help for test
+      --probe[=true|false]   POST a synthetic message payload to the webhook URL
+      --timeout duration     Webhook probe timeout (default 5s)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7178,22 +7185,22 @@ Manage sessions
 ### Options
 
 ```
-  -h, --help   help for session
+  -h, --help[=true|false]   help for session
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7239,25 +7246,25 @@ aps session attach <session-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for attach
-  -l, --latest        Attach to the most recent session
-  -m, --mode string   Attachment mode (view|control) (default "control")
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]     help for attach
+  -l, --latest[=true|false]   Attach to the most recent session
+  -m, --mode string           Attachment mode (view|control) (default "control")
+  -n, --note string           Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7297,24 +7304,24 @@ aps session delete <session-id> [flags]
 ### Options
 
 ```
-      --force         Force delete without confirmation
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Force delete without confirmation
+  -h, --help[=true|false]    help for delete
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7348,24 +7355,24 @@ aps session detach [session-id] [flags]
 ### Options
 
 ```
-  -a, --all           Detach from all sessions
-  -h, --help          help for detach
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -a, --all[=true|false]    Detach from all sessions
+  -h, --help[=true|false]   help for detach
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7398,24 +7405,24 @@ aps session inspect <session-id> [flags]
 ### Options
 
 ```
-  -h, --help     help for inspect
-      --json     Output in JSON format
-      --pretty   Pretty-print JSON output
+  -h, --help[=true|false]     help for inspect
+      --json[=true|false]     Output in JSON format
+      --pretty[=true|false]   Pretty-print JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7448,25 +7455,25 @@ aps session list [flags]
 ### Options
 
 ```
-  -h, --help            help for list
-      --status string   Filter sessions by status (active, inactive, errored)
-      --tier string     Filter sessions by tier (basic, standard, premium)
-      --type string     Filter sessions by type (standard, voice); default = all
+  -h, --help[=true|false]   help for list
+      --status string       Filter sessions by status (active, inactive, errored)
+      --tier string         Filter sessions by tier (basic, standard, premium)
+      --type string         Filter sessions by type (standard, voice); default = all
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7506,25 +7513,25 @@ aps session logs <session-id> [flags]
 ### Options
 
 ```
-  -f, --follow        Follow log output
-  -h, --help          help for logs
-      --tail string   Number of lines to show from the end ("all" for entire buffer)
-      --timestamps    Show timestamps
+  -f, --follow[=true|false]       Follow log output
+  -h, --help[=true|false]         help for logs
+      --tail string               Number of lines to show from the end ("all" for entire buffer)
+      --timestamps[=true|false]   Show timestamps
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7564,25 +7571,25 @@ aps session terminate <session-id> [flags]
 ### Options
 
 ```
-      --force         Force terminate without graceful shutdown
-  -h, --help          help for terminate
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --timeout int   Graceful shutdown timeout in seconds (default 10)
+      --force[=true|false]   Force terminate without graceful shutdown
+  -h, --help[=true|false]    help for terminate
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --timeout int          Graceful shutdown timeout in seconds (default 10)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7600,22 +7607,22 @@ Manage Agent Skills - discover, install, run, and configure skills for your prof
 ### Options
 
 ```
-  -h, --help   help for skill
+  -h, --help[=true|false]   help for skill
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7644,23 +7651,23 @@ aps skill install <path> [flags]
 ### Options
 
 ```
-      --global   Install to global skills directory
-  -h, --help     help for install
+      --global[=true|false]   Install to global skills directory
+  -h, --help[=true|false]     help for install
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7682,23 +7689,23 @@ aps skill list [flags]
 ### Options
 
 ```
-  -h, --help            help for list
-      --source string   Filter by source label (Profile, Global, User, Claude Code, Cursor, Zed, VS Code, Windsurf)
+  -h, --help[=true|false]   help for list
+      --source string       Filter by source label (Profile, Global, User, Claude Code, Cursor, Zed, VS Code, Windsurf)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7720,22 +7727,22 @@ aps skill run <skill-name> -- <script> [args...] [flags]
 ### Options
 
 ```
-  -h, --help   help for run
+  -h, --help[=true|false]   help for run
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7765,22 +7772,22 @@ aps skill show <skill-name> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7811,22 +7818,22 @@ aps skill stats [flags]
 ### Options
 
 ```
-  -h, --help   help for stats
+  -h, --help[=true|false]   help for stats
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7848,22 +7855,22 @@ aps skill suggest [flags]
 ### Options
 
 ```
-  -h, --help   help for suggest
+  -h, --help[=true|false]   help for suggest
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7885,22 +7892,22 @@ aps skill validate <path> [flags]
 ### Options
 
 ```
-  -h, --help   help for validate
+  -h, --help[=true|false]   help for validate
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7914,22 +7921,22 @@ Manage agent squads (topology, membership, scope)
 ### Options
 
 ```
-  -h, --help   help for squad
+  -h, --help[=true|false]   help for squad
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -7971,22 +7978,22 @@ aps squad check [flags]
 ### Options
 
 ```
-  -h, --help   help for check
+  -h, --help[=true|false]   help for check
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8028,7 +8035,7 @@ aps squad create <name> [flags]
 ```
       --description string   Squad description
       --domain string        Domain boundary
-  -h, --help                 help for create
+  -h, --help[=true|false]    help for create
       --members strings      Comma-separated profile IDs
   -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
       --type string          Squad type (stream-aligned, enabling, complicated-subsystem, platform)
@@ -8037,16 +8044,16 @@ aps squad create <name> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8078,23 +8085,23 @@ aps squad delete <id> [flags]
 ### Options
 
 ```
-  -h, --help          help for delete
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for delete
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8129,24 +8136,24 @@ aps squad list [flags]
 ### Options
 
 ```
-  -h, --help            help for list
-      --member string   Filter to squads containing this profile ID
-      --role string     Filter by squad type (stream-aligned, enabling, complicated-subsystem, platform)
+  -h, --help[=true|false]   help for list
+      --member string       Filter to squads containing this profile ID
+      --role string         Filter by squad type (stream-aligned, enabling, complicated-subsystem, platform)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8160,22 +8167,22 @@ Manage squad membership
 ### Options
 
 ```
-  -h, --help   help for members
+  -h, --help[=true|false]   help for members
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8212,23 +8219,23 @@ aps squad members add <squad-id> <profile-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for add
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for add
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8262,23 +8269,23 @@ aps squad members remove <squad-id> <profile-id> [flags]
 ### Options
 
 ```
-  -h, --help          help for remove
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for remove
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8314,22 +8321,22 @@ aps squad show <id> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
+  -h, --help[=true|false]   help for show
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8358,22 +8365,22 @@ aps status [flags]
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help[=true|false]   help for status
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8398,22 +8405,22 @@ aps toolspec [flags]
 ### Options
 
 ```
-  -h, --help   help for toolspec
+  -h, --help[=true|false]   help for toolspec
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8435,23 +8442,23 @@ aps upgrade [flags]
 ### Options
 
 ```
-      --auto   Install without prompting
-  -h, --help   help for upgrade
+      --auto[=true|false]   Install without prompting
+  -h, --help[=true|false]   help for upgrade
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8475,25 +8482,25 @@ aps upgrade preamble [flags]
 ### Options
 
 ```
-      --auto      Emit auto-upgrade (SnoozeNever) variant
-  -h, --help      help for preamble
-      --install   Write preamble to ~/.config/aps/skills/
-      --never     Emit check-only (SnoozeAlways) variant
+      --auto[=true|false]      Emit auto-upgrade (SnoozeNever) variant
+  -h, --help[=true|false]      help for preamble
+      --install[=true|false]   Write preamble to ~/.config/aps/skills/
+      --never[=true|false]     Emit check-only (SnoozeAlways) variant
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8515,23 +8522,23 @@ aps version [flags]
 ### Options
 
 ```
-  -h, --help    help for version
-      --short   Output only the version number
+  -h, --help[=true|false]    help for version
+      --short[=true|false]   Output only the version number
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8545,22 +8552,22 @@ Manage voice sessions and the voice backend service
 ### Options
 
 ```
-  -h, --help   help for voice
+  -h, --help[=true|false]   help for voice
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8576,22 +8583,22 @@ Control the voice backend service
 ### Options
 
 ```
-  -h, --help   help for service
+  -h, --help[=true|false]   help for service
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8626,22 +8633,22 @@ aps voice service start [flags]
 ### Options
 
 ```
-  -h, --help   help for start
+  -h, --help[=true|false]   help for start
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8667,22 +8674,22 @@ aps voice service status [flags]
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help[=true|false]   help for status
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8711,22 +8718,22 @@ aps voice service stop [flags]
 ### Options
 
 ```
-  -h, --help   help for stop
+  -h, --help[=true|false]   help for stop
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8758,23 +8765,23 @@ aps voice start [flags]
 ### Options
 
 ```
-      --channel string   Channel: web | tui | telegram | twilio (default "web")
-  -h, --help             help for start
+      --channel string      Channel: web | tui | telegram | twilio (default "web")
+  -h, --help[=true|false]   help for start
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8797,22 +8804,22 @@ The webhook command group provides operations for:
 ### Options
 
 ```
-  -h, --help   help for webhook
+  -h, --help[=true|false]   help for webhook
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8850,23 +8857,23 @@ aps webhook server [flags]
       --addr string           Address to listen on (default "127.0.0.1:8080")
       --allow-event strings   Allowed event types
       --event-map strings     Map event to action (event=profile:action)
-  -h, --help                  help for server
+  -h, --help[=true|false]     help for server
       --secret string         Shared secret for HMAC validation
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8896,23 +8903,23 @@ aps webhook toggle [flags]
 ### Options
 
 ```
-      --enabled string   Enable (on), disable (off), or toggle (omit or blank)
-  -h, --help             help for toggle
+      --enabled string      Enable (on), disable (off), or toggle (omit or blank)
+  -h, --help[=true|false]   help for toggle
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8937,22 +8944,22 @@ workspace to avoid repeating its name:
 ### Options
 
 ```
-  -h, --help   help for workspace
+  -h, --help[=true|false]   help for workspace
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -8998,29 +9005,29 @@ aps workspace activity <workspace-id> [flags]
 ### Options
 
 ```
-      --device string    Filter by device ID
-      --exclude string   Exclude event type category
-  -f, --follow           Follow the activity log (live tail)
-  -h, --help             help for activity
-      --json             JSON output
-  -n, --limit int        Maximum number of events to display (default 50)
-      --since string     Show events since duration (e.g. 1h, 30m, 7d) (default "24h")
-  -t, --type string      Filter by event type: profile, action, device, workspace, conflict
+      --device string         Filter by device ID
+      --exclude string        Exclude event type category
+  -f, --follow[=true|false]   Follow the activity log (live tail)
+  -h, --help[=true|false]     help for activity
+      --json[=true|false]     JSON output
+  -n, --limit int             Maximum number of events to display (default 50)
+      --since string          Show events since duration (e.g. 1h, 30m, 7d) (default "24h")
+  -t, --type string           Filter by event type: profile, action, device, workspace, conflict
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9045,25 +9052,25 @@ aps workspace agents [flags]
 ### Options
 
 ```
-      --cap string    Capability name to match
-  -h, --help          help for agents
-      --json          Output as JSON
-      --task string   Task description for fuzzy matching
+      --cap string          Capability name to match
+  -h, --help[=true|false]   help for agents
+      --json[=true|false]   Output as JSON
+      --task string         Task description for fuzzy matching
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9086,25 +9093,25 @@ aps workspace archive [workspace] [flags]
 ### Options
 
 ```
-      --force         Skip confirmation
-  -h, --help          help for archive
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation
+  -h, --help[=true|false]    help for archive
+      --json[=true|false]    Output as JSON
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9131,27 +9138,27 @@ aps workspace audit [workspace] [flags]
 ### Options
 
 ```
-      --actor string   Filter by actor (agent ID)
-      --event string   Filter by event type (supports glob, e.g. task.*)
-  -h, --help           help for audit
-      --json           Output as JSON
-      --limit int      Maximum results (default 25)
-      --since string   Show events since duration (e.g. 1h, 24h)
+      --actor string        Filter by actor (agent ID)
+      --event string        Filter by event type (supports glob, e.g. task.*)
+  -h, --help[=true|false]   help for audit
+      --json[=true|false]   Output as JSON
+      --limit int           Maximum results (default 25)
+      --since string        Show events since duration (e.g. 1h, 24h)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9175,24 +9182,24 @@ aps workspace caps [flags]
 ### Options
 
 ```
-      --agent string   Filter by agent profile ID
-  -h, --help           help for caps
-      --json           Output as JSON
+      --agent string        Filter by agent profile ID
+  -h, --help[=true|false]   help for caps
+      --json[=true|false]   Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9214,22 +9221,22 @@ commands to list, inspect, and resolve them.
 ### Options
 
 ```
-  -h, --help   help for conflicts
+  -h, --help[=true|false]   help for conflicts
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9261,23 +9268,23 @@ aps workspace conflicts list [flags]
 ### Options
 
 ```
-  -h, --help         help for list
-      --unresolved   Show only conflicts not yet fully resolved
+  -h, --help[=true|false]         help for list
+      --unresolved[=true|false]   Show only conflicts not yet fully resolved
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9305,26 +9312,26 @@ aps workspace conflicts resolve <conflict-id> [flags]
 ### Options
 
 ```
-      --choice string     Event ID to choose as winner (for manual strategy)
-      --force             Skip confirmation prompt
-  -h, --help              help for resolve
-      --json              JSON output
-      --strategy string   Resolution strategy: lww, manual (default "lww")
+      --choice string        Event ID to choose as winner (for manual strategy)
+      --force[=true|false]   Skip confirmation prompt
+  -h, --help[=true|false]    help for resolve
+      --json[=true|false]    JSON output
+      --strategy string      Resolution strategy: lww, manual (default "lww")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9346,23 +9353,23 @@ aps workspace conflicts show <conflict-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for show
-      --json   JSON output
+  -h, --help[=true|false]   help for show
+      --json[=true|false]   JSON output
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9388,8 +9395,8 @@ aps workspace create <name> [flags]
 
 ```
       --description string         Workspace description
-  -h, --help                       help for create
-      --json                       Output as JSON
+  -h, --help[=true|false]          help for create
+      --json[=true|false]          Output as JSON
   -n, --note string                Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
       --resolution-policy string   Conflict resolution policy (default "priority")
 ```
@@ -9397,16 +9404,16 @@ aps workspace create <name> [flags]
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9427,22 +9434,22 @@ Changes are tracked with version history and ACL enforcement.
 ### Options
 
 ```
-  -h, --help   help for ctx
+  -h, --help[=true|false]   help for ctx
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9484,25 +9491,25 @@ aps workspace ctx delete <key> [flags]
 ### Options
 
 ```
-      --force         Skip confirmation
-  -h, --help          help for delete
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation
+  -h, --help[=true|false]    help for delete
+      --json[=true|false]    Output as JSON
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9535,23 +9542,23 @@ aps workspace ctx get <key> [flags]
 ### Options
 
 ```
-  -h, --help   help for get
-      --json   Output as JSON
+  -h, --help[=true|false]   help for get
+      --json[=true|false]   Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9583,24 +9590,24 @@ aps workspace ctx history <key> [flags]
 ### Options
 
 ```
-  -h, --help        help for history
-      --json        Output as JSON
-      --limit int   Maximum results (default 25)
+  -h, --help[=true|false]   help for history
+      --json[=true|false]   Output as JSON
+      --limit int           Maximum results (default 25)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9626,23 +9633,23 @@ aps workspace ctx list [flags]
 ### Options
 
 ```
-  -h, --help                help for list
+  -h, --help[=true|false]   help for list
       --key-prefix string   Filter to keys with this prefix (set membership)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9669,25 +9676,25 @@ aps workspace ctx set <key> <value> [flags]
 ### Options
 
 ```
-  -h, --help          help for set
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --private       Scope variable to the current profile (default: shared workspace-wide)
+  -h, --help[=true|false]      help for set
+      --json[=true|false]      Output as JSON
+  -n, --note string            Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --private[=true|false]   Scope variable to the current profile (default: shared workspace-wide)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9711,24 +9718,24 @@ aps workspace join <workspace> [flags]
 ### Options
 
 ```
-  -h, --help          help for join
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for join
+      --json[=true|false]   Output as JSON
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9752,25 +9759,25 @@ aps workspace leave [workspace] [flags]
 ### Options
 
 ```
-      --force         Skip confirmation
-  -h, --help          help for leave
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation
+  -h, --help[=true|false]    help for leave
+      --json[=true|false]    Output as JSON
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9792,26 +9799,26 @@ aps workspace list [flags]
 ### Options
 
 ```
-      --archived        Filter to archived (true) or non-archived (false) workspaces
-  -h, --help            help for list
-      --limit int       Maximum results (default 25)
-      --member string   Filter to workspaces containing this profile ID
-      --owner string    Filter by workspace owner profile ID
+      --archived[=true|false]   Filter to archived (true) or non-archived (false) workspaces
+  -h, --help[=true|false]       help for list
+      --limit int               Maximum results (default 25)
+      --member string           Filter to workspaces containing this profile ID
+      --owner string            Filter by workspace owner profile ID
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9833,23 +9840,23 @@ aps workspace members [workspace] [flags]
 ### Options
 
 ```
-  -h, --help   help for members
-      --json   Output as JSON
+  -h, --help[=true|false]   help for members
+      --json[=true|false]   Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9883,26 +9890,26 @@ aps workspace policy [workspace] [flags]
 ### Options
 
 ```
-  -h, --help          help for policy
-      --json          Output as JSON
-      --key string    Resource key for override (use with --set)
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --set string    Set default resolution strategy
+  -h, --help[=true|false]   help for policy
+      --json[=true|false]   Output as JSON
+      --key string          Resource key for override (use with --set)
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --set string          Set default resolution strategy
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9925,25 +9932,25 @@ aps workspace remove <agent> [workspace] [flags]
 ### Options
 
 ```
-      --force         Skip confirmation
-  -h, --help          help for remove
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]   Skip confirmation
+  -h, --help[=true|false]    help for remove
+      --json[=true|false]    Output as JSON
+  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -9969,24 +9976,24 @@ aps workspace role <agent> [role] [workspace] [flags]
 ### Options
 
 ```
-  -h, --help          help for role
-      --json          Output as JSON
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for role
+      --json[=true|false]   Output as JSON
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10014,28 +10021,28 @@ aps workspace send <recipient> [flags]
 ### Options
 
 ```
-      --action string    Task action (required)
-  -h, --help             help for send
-      --input string     Task input (JSON string, @file, or - for stdin)
-      --json             Output as JSON
-  -n, --note string      Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --set strings      Set key=value input pairs
-      --timeout string   Task timeout (e.g. 5m, 1h)
+      --action string       Task action (required)
+  -h, --help[=true|false]   help for send
+      --input string        Task input (JSON string, @file, or - for stdin)
+      --json[=true|false]   Output as JSON
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --set strings         Set key=value input pairs
+      --timeout string      Task timeout (e.g. 5m, 1h)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10057,23 +10064,23 @@ aps workspace show [workspace] [flags]
 ### Options
 
 ```
-  -h, --help   help for show
-      --json   Output as JSON
+  -h, --help[=true|false]   help for show
+      --json[=true|false]   Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10101,25 +10108,25 @@ aps workspace sync <workspace-id> [flags]
 ### Options
 
 ```
-      --device string   Device ID to sync (defaults to current device)
-  -h, --help            help for sync
-      --json            JSON output
-  -n, --note string     Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --device string       Device ID to sync (defaults to current device)
+  -h, --help[=true|false]   help for sync
+      --json[=true|false]   JSON output
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10141,23 +10148,23 @@ aps workspace task <task-id> [flags]
 ### Options
 
 ```
-  -h, --help   help for task
-      --json   Output as JSON
+  -h, --help[=true|false]   help for task
+      --json[=true|false]   Output as JSON
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10179,26 +10186,26 @@ aps workspace tasks [workspace] [flags]
 ### Options
 
 ```
-      --agent string    Filter by agent (sender or recipient)
-  -h, --help            help for tasks
-      --json            Output as JSON
-      --limit int       Maximum results (default 25)
-      --status string   Filter by status (submitted, working, completed, failed, cancelled)
+      --agent string        Filter by agent (sender or recipient)
+  -h, --help[=true|false]   help for tasks
+      --json[=true|false]   Output as JSON
+      --limit int           Maximum results (default 25)
+      --status string       Filter by status (submitted, working, completed, failed, cancelled)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
@@ -10223,23 +10230,23 @@ aps workspace use <workspace> [flags]
 ### Options
 
 ```
-  -h, --help          help for use
-  -n, --note string   Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]   help for use
+  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --format string      Output format (csv, human, json, table, text, yaml) (default "table")
-      --instance string    backend instance to target (defaults to config)
-      --no-color           Disable ANSI color
-      --no-hints           Suppress next-step hints after command output
-      --no-redact          disable redaction of secrets/PII in logs and output (DEBUG ONLY)
-      --offline            Disable network access
-  -p, --profile string     profile id (defaults to active profile)
-      --quiet              Suppress non-essential output
-  -V, --verbose count      Increase log verbosity (-V=debug, -VV=trace)
-      --workspace string   workspace id (defaults to active workspace)
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (defaults to active profile)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
 ```
 
 ### SEE ALSO
