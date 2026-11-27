@@ -191,20 +191,34 @@ func TestFileManager_SaveReplacesFileAtomically(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := filepath.Join(dir, "demo", "manifest.yaml")
-	before, err := os.Stat(p)
-	if err != nil {
-		t.Fatal(err)
-	}
+	before := statByHandle(t, p)
 	if err := m.AddMember("demo", "b"); err != nil {
 		t.Fatal(err)
 	}
-	after, err := os.Stat(p)
-	if err != nil {
-		t.Fatal(err)
-	}
+	after := statByHandle(t, p)
 	if os.SameFile(before, after) {
 		t.Error("manifest rewritten in place; want temp file + rename")
 	}
+}
+
+// statByHandle stats p through an open handle, so the file's identity is
+// read now. os.Stat on windows resolves identity lazily from the path, which
+// after a rename names the replacement file. The handle is closed before
+// returning: an open one would block the rename there.
+func statByHandle(t *testing.T, p string) os.FileInfo {
+	t.Helper()
+	f, err := os.Open(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fi, err := f.Stat()
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fi
 }
 
 // Readers racing a writer must always see a complete record.
