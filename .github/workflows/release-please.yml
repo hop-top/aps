@@ -1,29 +1,20 @@
 name: release-please
 
+# next carries prereleases, main cuts stable from a promoted rc
+# (target versioning: hop-top/.github references/how-to/target-versioning.md).
 on:
   push:
-    branches: [main]
+    branches: [main, next]
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
-    steps:
-      # Mint a short-lived installation token from the hop-top
-      # release-bot GitHub App so the release PRs are opened by
-      # release-bot[bot] rather than the human owner.
-      - uses: actions/create-github-app-token@v3
-        id: app-token
-        with:
-          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
-
-      - uses: googleapis/release-please-action@v5
-        with:
-          config-file: .github/release-please-config.json
-          manifest-file: .github/.release-please-manifest.json
-          token: ${{ steps.app-token.outputs.token }}
+    uses: hop-top/.github/.github/workflows/release-please-on-push.yml@v0
+    secrets:
+      RELEASE_BOT_APP_ID: ${{ secrets.RELEASE_BOT_APP_ID }}
+      RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+    with:
+      versioning-extension: true

@@ -5,8 +5,8 @@ Agent Profile System: run commands and agent workflows under isolated, local-fir
 Prerelease: versions stay on the `0.x` alpha channel until 1.0, and a minor bump can carry breaking changes ([CHANGELOG.md](CHANGELOG.md)).
 
 [![Release](https://img.shields.io/github/v/release/hop-top/aps?include_prereleases&sort=semver)](https://github.com/hop-top/aps/releases)
-[![CI](https://github.com/hop-top/aps/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hop-top/aps/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/hop-top/aps/branch/main/graph/badge.svg)](https://codecov.io/gh/hop-top/aps)
+[![CI](https://github.com/hop-top/aps/actions/workflows/ci.yml/badge.svg?branch=next)](https://github.com/hop-top/aps/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/hop-top/aps/branch/next/graph/badge.svg)](https://codecov.io/gh/hop-top/aps)
 [![12-factor AI-CLI conformance](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hop-top/aps/main/.12fc.json)](e2e/conformance/README.md)
 
 ## Table of contents
@@ -488,10 +488,12 @@ end-to-end Go tests; golangci-lint; the generated-docs staleness check; and the 
 check. Tables between cog markers, including the adapter list above, are generated from
 code: change the source, run `make docs-gen`, and commit both.
 
-Releases are automated by release-please on `main`: merging its release PR tags `aps/v` plus
-the version, publishes the GitHub Release and the CHANGELOG entry, and GoReleaser uploads
-the archives and updates the Homebrew tap and Scoop bucket. Versions stay on the prerelease
-channel until 1.0. Details: [RELEASING.md](RELEASING.md).
+Work lands on `next`, the default branch; `main` carries stable releases only. Releases are
+automated by release-please: merging its release PR tags `aps/v` plus the version, publishes
+the GitHub Release and the CHANGELOG entry, and GoReleaser uploads the archives and updates
+the Homebrew tap and Scoop bucket. `next` cuts prereleases (alpha, then beta and rc by
+promotion); `main` cuts the stable version an rc previewed. Details:
+[RELEASING.md](RELEASING.md).
 
 ### Test
 

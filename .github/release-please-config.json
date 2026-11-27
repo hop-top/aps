@@ -6,6 +6,9 @@
   "tag-separator": "/",
   "label": "status:release-pending",
   "release-label": "status:release-tagged",
+  "plugins": [
+    { "type": "target-context" }
+  ],
   "changelog-sections": [
     { "type": "feat",     "section": "Features" },
     { "type": "fix",      "section": "Bug Fixes" },
@@ -24,7 +27,7 @@
       "release-type": "go",
       "prerelease": true,
       "prerelease-type": "alpha.0",
-      "versioning": "prerelease",
+      "versioning": "target",
       "bump-minor-pre-major": true
     }
   }
