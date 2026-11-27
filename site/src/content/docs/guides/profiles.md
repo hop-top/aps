@@ -7,22 +7,42 @@ description: Understanding APS profiles — identity, config, and capabilities.
 
 A profile is a separate identity and environment for an agent. It carries:
 
-- Its own environment variables and shell config
-- Its own git identity (`user.name`, `user.email`)
-- Its own credential store
-- Optional capability bundles (e.g. `cap:payment`)
+- Its own environment variables and shell setting
+- Its own git identity (`user.name`, `user.email`), written to a `gitconfig` file
+- Its own secrets, in `secrets.env` (mode 0600)
+- Optional capabilities (for example `a2a`)
 
-Profiles are stored under `$XDG_DATA_HOME/aps/profiles/` (default: `~/.local/share/aps/profiles/`).
+Each profile is a directory under `profiles/` in the aps data directory: `$APS_DATA_PATH`,
+else `$XDG_DATA_HOME/aps`, else `~/.local/share/aps`. It holds `profile.yaml`, `secrets.env`,
+`gitconfig`, `notes.md`, and an `actions/` directory.
 
 ## Create
 
 ```bash
-aps profile new <name> [flags]
+aps profile create [id] [flags]
 
 Flags:
-  --display-name string   Human-readable name
-  --email string          Git author email
+  --display-name string   Display name for the profile
+  --email string          Email for profile and git config
+  --force                 Overwrite existing profile
+  --type string           Profile type: agent or human (empty means agent)
+  --reports-to string     Profile id this profile reports to (must exist)
+  --avatar string         Url or local path to profile image
+  --color string          Hex color (e.g. #3b82f6) for UI rendering
+  -n, --note string       Audit note recorded with the bus event
 ```
+
+`--auto-avatar`, `--auto-color`, and the `--avatar-*` provider flags generate those values
+from the profile id; see `aps profile create --help`. On a terminal, `create` prompts for
+missing fields. Without one, it uses only the flags you pass. Creating an id that already
+exists fails with a conflict unless you pass `--force`.
+
+```console
+$ aps profile create myagent --display-name "My AI Agent" --email agent@example.com
+Profile 'myagent' created successfully.
+```
+
+To change a profile later, use `aps profile edit <id>` with the same identity flags.
 
 ## List
 
@@ -30,11 +50,36 @@ Flags:
 aps profile list
 ```
 
+```console
+ID       DISPLAY NAME  ROLES  CAPABILITIES  WORKSPACE  EMAIL              SECRETS  DID    COLOR  AVATAR
+myagent  My AI Agent                                   agent@example.com  false    false
+```
+
+Filters: `--capability`, `--role`, `--squad`, `--tone`, `--has-secrets`, `--has-identity`.
+Add `--format json`, `yaml`, or `csv` for machine-readable output.
+
 ## Show
 
 ```bash
 aps profile show <name>
 ```
+
+```console
+id: myagent
+display_name: My AI Agent
+email: agent@example.com
+preferences:
+    shell: /bin/zsh
+git:
+    enabled: true
+isolation:
+    level: process
+    strict: false
+    fallback: false
+```
+
+The shell setting follows your environment. Capabilities, when present, are listed after
+the isolation block.
 
 ## Delete
 
@@ -42,12 +87,23 @@ aps profile show <name>
 aps profile delete <name>
 ```
 
-## Capability bundles
+On a terminal, `delete` asks for confirmation. In a script it prints a confirmation token
+and exits; run it again with `--yes --confirm-token <token>`. `--force` deletes a profile
+that still has active sessions or inbound `reports_to` links.
 
-Add capabilities to a profile:
+## Capabilities
+
+Add a capability to a profile, or remove it:
 
 ```bash
-aps profile cap add <name> cap:payment --network base
+aps profile capability add <name> <capability>
+aps profile capability remove <name> <capability>
 ```
 
-See [reference/capabilities](/reference/capabilities/) for available bundles.
+`aps capability list` shows the names that exist: the built-in ones (`a2a`,
+`agent-protocol`, `webhooks`, `agntcy-observability`, `agntcy-directory`, `agntcy-identity`,
+`agntcy-trust`, `ibr`) and any you installed with `aps capability install`. Naming one that
+does not exist fails with `capability '<name>' does not exist`.
+
+Capability bundles, which group several capabilities, are managed with `aps bundle`
+(`list`, `show`, `create`, `edit`, `validate`, `delete`).
