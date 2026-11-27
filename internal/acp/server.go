@@ -641,7 +641,7 @@ func (s *Server) handleTerminalCreate(req *JSONRPCRequest) *JSONRPCResponse {
 
 	result := TerminalCreateResult{
 		TerminalID: terminal.ID,
-		Status:     terminal.Status,
+		Status:     terminal.State(),
 	}
 
 	return s.successResponse(req.ID, result)

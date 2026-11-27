@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -366,7 +369,7 @@ func TestHandler_Terminal_CreateAndExecute(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, term)
 	assert.NotEmpty(t, term.ID)
-	assert.Equal(t, "running", term.Status)
+	assert.Contains(t, []string{"running", "exited"}, term.State())
 }
 
 // Test 17: Terminal output retrieval
@@ -676,11 +679,11 @@ func TestStateManagement_TerminalStateTracking(t *testing.T) {
 	term, err := tm.CreateTerminal("echo", []string{"test"}, "", map[string]string{})
 	require.NoError(t, err)
 
-	assert.Equal(t, "running", term.Status)
+	assert.Contains(t, []string{"running", "exited"}, term.State())
 
 	status := term.GetStatus()
 	assert.NotNil(t, status)
-	assert.Equal(t, "running", status["status"])
+	assert.Contains(t, []string{"running", "exited"}, status["status"])
 }
 
 // Test 32: Session permission rules state persistence
@@ -1172,4 +1175,33 @@ func TestAdvanced_NotificationHandling(t *testing.T) {
 		"progress": 50,
 	})
 	assert.Equal(t, "session/update", statusNotif.Method)
+}
+
+// Output written before exit must be fully observable once the terminal
+// reports exited: stdout and stderr readers must drain before exit.
+func TestHandler_Terminal_OutputCompleteAtExit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires POSIX sh")
+	}
+	const lines = 1500
+	script := `i=0; while [ $i -lt ` + strconv.Itoa(lines) + ` ]; do ` +
+		`echo "out-line-$i"; echo "err-line-$i" >&2; i=$((i+1)); done`
+
+	for run := 0; run < 20; run++ {
+		tm := NewTerminalManager()
+		term, err := tm.CreateTerminal("sh", []string{"-c", script}, "", nil)
+		require.NoError(t, err)
+
+		code, err := tm.WaitForExit(term.ID)
+		require.NoError(t, err)
+		require.Equal(t, 0, code)
+
+		// No polling: output must already be complete.
+		output, err := tm.GetOutput(term.ID)
+		require.NoError(t, err)
+		require.Equal(t, 2*lines, strings.Count(output, "-line-"),
+			"run %d: output lost or delayed after exit", run)
+		assert.Contains(t, output, "out-line-"+strconv.Itoa(lines-1))
+		assert.Contains(t, output, "[STDERR] err-line-"+strconv.Itoa(lines-1))
+	}
 }
