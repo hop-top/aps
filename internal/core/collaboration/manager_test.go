@@ -2,6 +2,8 @@ package collaboration_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"hop.top/aps/internal/core/collaboration"
@@ -403,6 +405,41 @@ func TestManager_ResolveArchivedByName(t *testing.T) {
 	require.NoError(t, m.Archive(ctx, "test-workspace"))
 
 	id, err := m.Resolve(ctx, "test-workspace")
+	require.NoError(t, err)
+	assert.Equal(t, ws.ID, id)
+}
+
+// A ref that is no valid workspace ID must be refused before any storage
+// access outside the root, even when a manifest sits where it would resolve.
+func TestManager_ResolveRejectsUncontainedRefs(t *testing.T) {
+	outer := filepath.Join(t.TempDir(), "outer")
+	root := filepath.Join(outer, "root")
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	for _, dir := range []string{outer, root} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.yaml"), []byte("name: planted\nowner_profile_id: o\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "state.json"), []byte(`{"id":"planted"}`), 0o644))
+	}
+	s, err := storage.NewCollaborationStorage(root)
+	require.NoError(t, err)
+	m := collaboration.NewManager(s)
+	ctx := context.Background()
+
+	for _, ref := range []string{"", ".", ".."} {
+		var inv *collaboration.InvalidWorkspaceIDError
+		_, err := m.Resolve(ctx, ref)
+		require.ErrorAs(t, err, &inv, "resolve %q", ref)
+		_, err = m.Get(ctx, ref)
+		require.ErrorAs(t, err, &inv, "get %q", ref)
+		require.ErrorAs(t, m.Archive(ctx, ref), &inv, "archive %q", ref)
+		assert.Contains(t, err.Error(), "invalid workspace id")
+	}
+	_, err = os.Stat(filepath.Join(outer, "audit.json"))
+	assert.True(t, os.IsNotExist(err))
+
+	// A workspace legitimately named "." is still found by name.
+	ws, err := m.Create(ctx, collaboration.WorkspaceConfig{Name: ".", OwnerProfileID: "o"})
+	require.NoError(t, err)
+	id, err := m.Resolve(ctx, ".")
 	require.NoError(t, err)
 	assert.Equal(t, ws.ID, id)
 }

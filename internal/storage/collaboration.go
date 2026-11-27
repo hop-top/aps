@@ -110,11 +110,37 @@ func legacyEligible(id string) bool {
 	return unescapeWorkspaceID(id) == id
 }
 
+// containedJoin joins name under root and refuses any result that is not a
+// strict child of root (root itself, its parent, or anything above or beside
+// it). Pure path arithmetic after filepath.Clean, no filesystem access.
+func containedJoin(root, name string) (string, bool) {
+	root = filepath.Clean(root)
+	p := filepath.Clean(filepath.Join(root, name))
+	if !strings.HasPrefix(p, root+string(filepath.Separator)) {
+		return "", false
+	}
+	return p, true
+}
+
+// validWorkspaceID reports whether id maps to a directory strictly inside
+// the storage root.
+func (s *CollaborationStorage) validWorkspaceID(id string) bool {
+	_, err := s.workspaceDir(id)
+	return err == nil
+}
+
 // workspaceDir returns the canonical (escaped) directory for a workspace.
 // Pure path construction, no filesystem access — always the write target,
-// so saves converge every workspace to the escaped layout over time.
-func (s *CollaborationStorage) workspaceDir(id string) string {
-	return filepath.Join(s.root, escapeWorkspaceID(id))
+// so saves converge every workspace to the escaped layout over time. IDs
+// whose directory is not a strict child of the root ("", ".", "..") yield
+// an InvalidWorkspaceIDError; every operation goes through here or
+// resolveWorkspaceDir, so no filesystem access happens for them.
+func (s *CollaborationStorage) workspaceDir(id string) (string, error) {
+	dir, ok := containedJoin(s.root, escapeWorkspaceID(id))
+	if !ok {
+		return "", &collab.InvalidWorkspaceIDError{ID: id}
+	}
+	return dir, nil
 }
 
 // resolveWorkspaceDir returns the directory to read/delete a workspace
@@ -126,20 +152,25 @@ func (s *CollaborationStorage) workspaceDir(id string) string {
 // no reserved characters resolves to the same path either way. An ID that
 // is itself the escaped form of another ID (e.g. "a%3Ab" for "a:b") has no
 // legacy candidate: its verbatim directory is that other workspace's
-// escaped directory (see legacyEligible).
-func (s *CollaborationStorage) resolveWorkspaceDir(id string) string {
-	dir := s.workspaceDir(id)
-	if _, err := os.Stat(dir); err == nil {
-		return dir
+// escaped directory (see legacyEligible). Both candidates are
+// containment-checked before any filesystem access: an escaped candidate
+// outside the root is an error; a legacy one is simply not a candidate.
+func (s *CollaborationStorage) resolveWorkspaceDir(id string) (string, error) {
+	dir, err := s.workspaceDir(id)
+	if err != nil {
+		return "", err
 	}
-	legacyDir := filepath.Join(s.root, id)
-	if legacyDir == dir || !legacyEligible(id) {
-		return dir
+	if _, err := os.Stat(dir); err == nil {
+		return dir, nil
+	}
+	legacyDir, ok := containedJoin(s.root, id)
+	if !ok || legacyDir == dir || !legacyEligible(id) {
+		return dir, nil
 	}
 	if _, err := os.Stat(legacyDir); err == nil {
-		return legacyDir
+		return legacyDir, nil
 	}
-	return dir
+	return dir, nil
 }
 
 // SaveWorkspace persists a workspace to disk as manifest.yaml + state.json.
@@ -147,7 +178,10 @@ func (s *CollaborationStorage) SaveWorkspace(ws *collab.Workspace) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	dir := s.workspaceDir(ws.ID)
+	dir, err := s.workspaceDir(ws.ID)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
@@ -186,7 +220,10 @@ func (s *CollaborationStorage) LoadWorkspace(id string) (*collab.Workspace, erro
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	dir := s.resolveWorkspaceDir(id)
+	dir, err := s.resolveWorkspaceDir(id)
+	if err != nil {
+		return nil, err
+	}
 
 	// Read manifest.yaml
 	manifestData, err := os.ReadFile(filepath.Join(dir, "manifest.yaml"))
@@ -248,9 +285,13 @@ func (s *CollaborationStorage) ListWorkspaces() ([]string, error) {
 			continue
 		}
 		// Only include directories that contain a manifest.yaml
+		id := unescapeWorkspaceID(entry.Name())
+		if !s.validWorkspaceID(id) {
+			continue
+		}
 		manifestPath := filepath.Join(s.root, entry.Name(), "manifest.yaml")
 		if _, err := os.Stat(manifestPath); err == nil {
-			ids = append(ids, unescapeWorkspaceID(entry.Name()))
+			ids = append(ids, id)
 		}
 	}
 
@@ -262,7 +303,10 @@ func (s *CollaborationStorage) DeleteWorkspace(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	dir := s.resolveWorkspaceDir(id)
+	dir, err := s.resolveWorkspaceDir(id)
+	if err != nil {
+		return err
+	}
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return &collab.WorkspaceNotFoundError{ID: id}
 	}
@@ -392,7 +436,10 @@ func (s *CollaborationStorage) LoadActiveWorkspace() (string, error) {
 // saveJSON marshals v as indented JSON and writes it atomically to
 // {workspaceDir}/{filename}. Caller must hold the write lock.
 func (s *CollaborationStorage) saveJSON(workspaceID, filename string, v any) error {
-	dir := s.workspaceDir(workspaceID)
+	dir, err := s.workspaceDir(workspaceID)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
@@ -411,7 +458,11 @@ func (s *CollaborationStorage) saveJSON(workspaceID, filename string, v any) err
 // loadJSON reads {workspaceDir}/{filename} and unmarshals it into v.
 // Returns nil (no error) if the file does not exist. Caller must hold the read lock.
 func (s *CollaborationStorage) loadJSON(workspaceID, filename string, v any) error {
-	path := filepath.Join(s.resolveWorkspaceDir(workspaceID), filename)
+	dir, err := s.resolveWorkspaceDir(workspaceID)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, filename)
 
 	data, err := os.ReadFile(path)
 	if err != nil {

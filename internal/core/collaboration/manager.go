@@ -66,8 +66,12 @@ func (m *Manager) load(ref string) (*Workspace, error) {
 	if err == nil {
 		return ws, nil
 	}
+	// An ID the storage refuses is no ID hit: fall through to name matching
+	// (a workspace may be named "." or ""), and report the invalid ID when
+	// nothing matches.
 	var nf *WorkspaceNotFoundError
-	if !errors.As(err, &nf) {
+	var inv *InvalidWorkspaceIDError
+	if !errors.As(err, &nf) && !errors.As(err, &inv) {
 		return nil, err //nolint:wrapcheck // every caller wraps with the workspace ref
 	}
 	ids, lerr := m.storage.ListWorkspaces()
