@@ -60,5 +60,9 @@ jobs:
       - name: Test link-check script
         run: make test-scripts
 
+      # Tests must set HOME/XDG via t.Setenv so the env is restored.
+      - name: Check test env guard
+        run: make lint-test-env
+
       - name: Check documentation links
         run: make lint-docs
