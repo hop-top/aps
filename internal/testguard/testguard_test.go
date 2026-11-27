@@ -30,6 +30,7 @@ func TestRunFailsWhenTestLeaksEnv(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", "")
 	code := Run(fakeM{func() {
 		// Simulates a test restoring a "real" dir with os.Setenv.
+		// envguard:allow exercises the sandbox leak detector
 		if err := os.Setenv("XDG_CONFIG_HOME", "/real/home/.config"); err != nil {
 			t.Errorf("setenv: %v", err)
 		}

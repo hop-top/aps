@@ -914,9 +914,7 @@ func TestCapabilityPathAbsolute(t *testing.T) {
 // BenchmarkInstall benchmarks capability installation
 func BenchmarkInstall(b *testing.B) {
 	tmpDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	b.Cleanup(func() { os.Setenv("HOME", oldHome) })
-	os.Setenv("HOME", tmpDir)
+	b.Setenv("HOME", tmpDir)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -928,9 +926,7 @@ func BenchmarkInstall(b *testing.B) {
 // BenchmarkList benchmarks listing capabilities
 func BenchmarkList(b *testing.B) {
 	tmpDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	b.Cleanup(func() { os.Setenv("HOME", oldHome) })
-	os.Setenv("HOME", tmpDir)
+	b.Setenv("HOME", tmpDir)
 
 	// Create some capabilities
 	for i := 0; i < 10; i++ {
@@ -946,9 +942,7 @@ func BenchmarkList(b *testing.B) {
 // BenchmarkLoadCapability benchmarks loading a capability
 func BenchmarkLoadCapability(b *testing.B) {
 	tmpDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	b.Cleanup(func() { os.Setenv("HOME", oldHome) })
-	os.Setenv("HOME", tmpDir)
+	b.Setenv("HOME", tmpDir)
 
 	Install("bench-cap", "")
 

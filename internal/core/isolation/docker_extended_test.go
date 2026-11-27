@@ -892,11 +892,7 @@ func TestConfigureContainerSSHSuccess(t *testing.T) {
 	err := os.WriteFile(adminPubKeyPath, []byte("ssh-rsa AAAAB3..."), 0600)
 	require.NoError(t, err)
 
-	// Save original HOME
-	origHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", origHome)
-
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	engine := NewMockDockerEngine()
 	opts := ContainerRunOptions{Image: "ubuntu:22.04"}
@@ -914,9 +910,7 @@ func TestConfigureContainerSSHMissingKey(t *testing.T) {
 	require.NoError(t, os.MkdirAll(keysDir, 0700))
 
 	// Don't create admin_pub key
-	origHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", origHome)
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	engine := NewMockDockerEngine()
 	opts := ContainerRunOptions{Image: "ubuntu:22.04"}
