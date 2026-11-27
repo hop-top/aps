@@ -2,7 +2,9 @@ package e2e
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -111,6 +113,41 @@ func TestA2AToggle_ForceEnable(t *testing.T) {
 	assert.Contains(t, string(content), "listen_addr: 127.0.0.1:9001")
 }
 
+// startUntilProfileHas starts cmd, waits until every want substring is
+// present in the profile file, then kills it. A fixed sleep before the
+// kill races process start-up under load (parallel tests, cold caches);
+// polling for the effect the test asserts on removes the race. The
+// kill only happens after the last write is observed, so it cannot
+// truncate a write in flight. Fails with the file content on timeout.
+func startUntilProfileHas(t *testing.T, cmd *exec.Cmd, profilePath string, want ...string) {
+	t.Helper()
+
+	require.NoError(t, cmd.Start())
+	defer func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	}()
+
+	var content []byte
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		content, _ = os.ReadFile(profilePath)
+		all := true
+		for _, w := range want {
+			if !strings.Contains(string(content), w) {
+				all = false
+				break
+			}
+		}
+		if all {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("profile %s never contained %q within 30s; last content:\n%s",
+		profilePath, want, content)
+}
+
 func TestA2AServer_AutoEnable(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
@@ -124,19 +161,11 @@ func TestA2AServer_AutoEnable(t *testing.T) {
 	// We'll use a short timeout since the goal is to verify auto-enable message
 	cmd := prepareAPS(t, home, nil, "a2a", "server", "--profile", profileID)
 
-	// Start the command in the background
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	// Give it time to auto-enable and start, then kill it
-	time.Sleep(500 * time.Millisecond)
-	if cmd.Process != nil {
-		cmd.Process.Kill()
-		cmd.Wait()
-	}
+	// Run until the server has persisted the auto-enabled config, then stop it
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
+	startUntilProfileHas(t, cmd, profilePath, "- a2a", "protocol_binding: jsonrpc")
 
 	// Verify profile now has A2A enabled
-	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- a2a")
@@ -220,19 +249,11 @@ func TestACPServer_AutoEnable(t *testing.T) {
 	// Start server - it should auto-enable ACP
 	cmd := prepareAPS(t, home, nil, "acp", "server", profileID)
 
-	// Start the command in the background
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	// Give it time to auto-enable and start, then kill it
-	time.Sleep(500 * time.Millisecond)
-	if cmd.Process != nil {
-		cmd.Process.Kill()
-		cmd.Wait()
-	}
+	// Run until the server has persisted the auto-enabled config, then stop it
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
+	startUntilProfileHas(t, cmd, profilePath, "- agent-protocol", "enabled: true")
 
 	// Verify profile now has ACP enabled
-	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- agent-protocol")
@@ -323,19 +344,11 @@ func TestWebhookServer_AutoEnable(t *testing.T) {
 	// Start server with --profile - it should auto-enable webhooks
 	cmd := prepareAPS(t, home, nil, "webhook", "server", "--profile", profileID, "--addr", "127.0.0.1:0")
 
-	// Start the command in the background
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	// Give it time to auto-enable and start, then kill it
-	time.Sleep(500 * time.Millisecond)
-	if cmd.Process != nil {
-		cmd.Process.Kill()
-		cmd.Wait()
-	}
+	// Run until the server has persisted the auto-enabled config, then stop it
+	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
+	startUntilProfileHas(t, cmd, profilePath, "- webhooks")
 
 	// Verify profile now has webhooks enabled
-	profilePath := filepath.Join(home, ".local", "share", "aps", "profiles", profileID, "profile.yaml")
 	content, err := os.ReadFile(profilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "- webhooks")
