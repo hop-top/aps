@@ -76,6 +76,18 @@ func (a *APSAdapter) ExecuteRun(ctx context.Context, input RunInput, stream Stre
 	a.runRegistry[runID] = state
 	a.runMutex.Unlock()
 
+	// Refuse a profile whose isolation level cannot be enforced, as `aps run`
+	// does. Reported like any other failure to start: a failed run carrying
+	// the message; nothing is executed.
+	if err := profile.EnsureIsolationEnforceable(); err != nil {
+		a.updateRunState(runID, func(state *RunState) {
+			state.Status = RunStatusFailed
+			state.Error = err.Error()
+			state.EndTime = &now
+		})
+		return state, nil
+	}
+
 	var cmd *exec.Cmd
 	var stdoutBuffer bytes.Buffer
 	var stdoutPipe *os.File

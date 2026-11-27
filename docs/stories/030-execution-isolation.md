@@ -32,8 +32,8 @@ fail for `platform` and `container` with `<level> isolation not yet implemented`
 | 3 | Yes, with `process`. A profile with no level runs at `process`; the global `isolation.default_level` is not read by the run path. |
 | 4 | No. `strict` and `fallback` are stored but not read on the run path, and there is no fallback to a lower level. |
 
-`aps serve` and messenger and ticket routing run actions as plain host processes without
-reading the level. Current behaviour: [Isolation levels](../user/isolation.md).
+`aps serve` and messenger and ticket routing refuse `platform` and `container` profiles the
+same way. Current behaviour: [Isolation levels](../user/isolation.md).
 
 ## Tests
 

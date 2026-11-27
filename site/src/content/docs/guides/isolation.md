@@ -29,8 +29,8 @@ implemented` and run nothing. The `strict` and `fallback` fields, and the global
 `isolation.default_level` and `isolation.fallback_enabled`, are stored but not applied, so
 there is no automatic fallback to `process`.
 
-`aps serve` and messenger and ticket routing run a profile's actions as plain host processes
-whatever level the profile sets, so those paths give no sandbox either.
+`aps serve` and messenger and ticket routing refuse such a profile the same way: the run is
+reported as failed with that message and the action is not started.
 
 Do not rely on either setting to contain an untrusted agent. Adapter code for a macOS and
 Linux sandbox user and for Docker exists in the source tree, but no command calls it.

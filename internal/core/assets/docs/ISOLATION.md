@@ -53,9 +53,9 @@ container isolation not yet implemented
 ```
 
 This applies to `aps run`, `aps <profile> -- <command>`, `aps action run`, the webhook
-server, and background action jobs. Some other paths ignore the level instead of failing:
-`aps serve` (agent-protocol run endpoints) and messenger and ticket routing run the profile's
-action as a plain host process, with no sandbox and no error.
+server, background action jobs, `aps serve` (agent-protocol run endpoints), and messenger and
+ticket routing. On the last three the refusal is reported as a failed run or result carrying
+the same message, and the action is not started.
 
 Adapter code for a macOS and Linux sandbox user and for Docker exists in the source tree,
 with its own tests, but no command calls it. Do not rely on either level to isolate agents
