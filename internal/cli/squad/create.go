@@ -23,8 +23,13 @@ func newCreateCmd() *cobra.Command {
 		Short: "Create a new squad",
 		Long: `Create a new squad entry in the local squad store. The ID is
 derived from the <name> argument by lower-casing and replacing
-spaces with dashes. --type and --domain are required: --type must
-be one of the four team-topology values (stream-aligned, enabling,
+spaces with dashes. The squad is stored under
+$APS_DATA_PATH/squads/<id>/manifest.yaml, so an ID that is not a
+safe directory name (path separators, "..", reserved device names,
+or any of : * ? " < > |) is refused.
+
+--type and --domain are required: --type must be one of the four
+team-topology values (stream-aligned, enabling,
 complicated-subsystem, platform), and --domain names the squad's
 domain boundary. --description and --members are optional; the
 members slice takes a comma-separated list of profile IDs.

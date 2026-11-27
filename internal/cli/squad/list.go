@@ -37,7 +37,9 @@ squad has more).
 The output respects the global --format flag (table|json|yaml): json
 and yaml emit an array of rows (id, name, type, domain, member_count,
 members), [] when nothing matches. Squads whose manifest cannot be
-read are skipped and named on stderr. The local filter flags are: --member selects squads containing a given
+read are skipped and named on stderr.
+
+Local filter flags: --member selects squads containing a given
 profile ID, and --role selects by team-topology type. Read-only:
 no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
