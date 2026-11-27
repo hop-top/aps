@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/creack/pty"
 )
@@ -65,8 +66,12 @@ func runAPSPTY(t *testing.T, home string, args ...string) []byte {
 	}
 	t.Cleanup(func() { _ = f.Close() })
 
-	// Drain master end concurrently — the writer side blocks until the
-	// kernel buffer drains.
+	// Drain the master end concurrently — the writer side blocks until
+	// the kernel buffer drains. The copy ends on EOF/EIO, which the
+	// kernel delivers only after every byte the child wrote has been
+	// read, so wait for it before closing the master. Closing right
+	// after cmd.Wait() discards output still queued in the pty and
+	// yields truncated captures under load.
 	done := make(chan []byte, 1)
 	go func() {
 		var buf bytes.Buffer
@@ -74,11 +79,19 @@ func runAPSPTY(t *testing.T, home string, args ...string) []byte {
 		done <- buf.Bytes()
 	}()
 
-	if err := cmd.Wait(); err != nil {
-		t.Fatalf("aps wait: %v\nptyOutput: %s", err, string(<-done))
+	waitErr := cmd.Wait()
+	var out []byte
+	select {
+	case out = <-done:
+	case <-time.After(10 * time.Second):
+		_ = f.Close()
+		out = <-done
+		t.Fatalf("timed out draining pty after child exit; partial output: %q", out)
 	}
-	_ = f.Close()
-	return <-done
+	if waitErr != nil {
+		t.Fatalf("aps wait: %v\nptyOutput: %s", waitErr, string(out))
+	}
+	return out
 }
 
 // e2eEnv mirrors helpers_test.go:runAPS env construction so PTY runs
