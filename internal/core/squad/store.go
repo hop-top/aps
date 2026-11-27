@@ -104,7 +104,7 @@ func (m *Manager) readManifest(name string) (*Squad, error) {
 	data, err := os.ReadFile(p) // #nosec G304 -- under squads dir
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, err
+			return nil, fmt.Errorf("no manifest %s: %w", p, err)
 		}
 		return nil, fmt.Errorf("load squad manifest %s: %w", p, err)
 	}
@@ -213,7 +213,7 @@ func (m *Manager) save(s *Squad) error {
 	if err != nil {
 		return fmt.Errorf("marshal squad: %w", err)
 	}
-	if err := os.MkdirAll(sd, 0o755); err != nil {
+	if err := os.MkdirAll(sd, 0o755); err != nil { //nolint:gosec // squad data is not secret; mode matches the profile store
 		return fmt.Errorf("create squad dir: %w", err)
 	}
 	tmpPath, err := writeTemp(sd, data)
@@ -234,7 +234,7 @@ func writeTemp(dir string, data []byte) (string, error) {
 	for i := 0; ; i++ {
 		name := fmt.Sprintf(".manifest-%d-%d.tmp", os.Getpid(), time.Now().UnixNano()+int64(i))
 		p := filepath.Join(dir, name)
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644) // #nosec G304 -- under squads dir
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644) //nolint:gosec // under squads dir; mode matches the profile store
 		if errors.Is(err, os.ErrExist) && i < 16 {
 			continue
 		}
