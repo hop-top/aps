@@ -98,8 +98,11 @@ func TestFileManager_CorruptFileSurfaced(t *testing.T) {
 	if _, err := m.ListChecked(); err == nil {
 		t.Error("expected load error")
 	}
-	if err := m.Create(newTestSquad("other", "a")); err == nil {
-		t.Error("mutation over corrupt store should fail loudly")
+	// A mutation of an unrelated squad used to be refused here; that
+	// pinned abort-on-first-bad-file, not a requirement. Isolation is
+	// asserted in TestFileManager_CorruptSquadIsolated.
+	if err := m.Create(newTestSquad("other", "a")); err != nil {
+		t.Errorf("unrelated create must not be blocked: %v", err)
 	}
 }
 
