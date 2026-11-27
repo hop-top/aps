@@ -1,7 +1,7 @@
 package acp
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -19,8 +19,6 @@ type Terminal struct {
 	Environment    []string
 	Cmd            *exec.Cmd
 	Stdin          io.WriteCloser
-	Stdout         *bufio.Reader
-	Stderr         *bufio.Reader
 	ExitCode       int
 	Status         string // "created", "running", "exited"
 	StartTime      time.Time
@@ -28,18 +26,25 @@ type Terminal struct {
 	OutputBuffer   []string
 	mu             sync.RWMutex
 	outputMutex    sync.Mutex
+	done           chan struct{} // closed once the exit watcher has finished
 }
+
+// defaultOutputDrainDelay bounds how long, after the process exits, output
+// copiers may keep draining pipes still held open by orphaned children.
+const defaultOutputDrainDelay = 2 * time.Second
 
 // TerminalManager manages running terminals
 type TerminalManager struct {
-	terminals map[string]*Terminal
-	mu        sync.RWMutex
+	terminals  map[string]*Terminal
+	mu         sync.RWMutex
+	drainDelay time.Duration
 }
 
 // NewTerminalManager creates a new terminal manager
 func NewTerminalManager() *TerminalManager {
 	return &TerminalManager{
-		terminals: make(map[string]*Terminal),
+		terminals:  make(map[string]*Terminal),
+		drainDelay: defaultOutputDrainDelay,
 	}
 }
 
@@ -80,16 +85,6 @@ func (tm *TerminalManager) CreateTerminal(command string, args []string, working
 		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
-	}
-
 	// Create terminal struct
 	term := &Terminal{
 		ID:          termID,
@@ -99,12 +94,21 @@ func (tm *TerminalManager) CreateTerminal(command string, args []string, working
 		Environment: environment,
 		Cmd:         cmd,
 		Stdin:       stdin,
-		Stdout:      bufio.NewReader(stdout),
-		Stderr:      bufio.NewReader(stderr),
 		Status:      "created",
 		StartTime:   time.Now(),
 		OutputBuffer: make([]string, 0),
+		done:         make(chan struct{}),
 	}
+
+	// cmd.Wait waits for the copiers feeding these writers, so output
+	// written before exit is buffered once the terminal reports exited.
+	// WaitDelay bounds the drain when a child outlives the process and
+	// keeps the pipes open.
+	stdoutW := &lineWriter{t: term}
+	stderrW := &lineWriter{t: term, stderr: true}
+	cmd.Stdout = stdoutW
+	cmd.Stderr = stderrW
+	cmd.WaitDelay = tm.drainDelay
 
 	// Store terminal
 	tm.mu.Lock()
@@ -121,25 +125,13 @@ func (tm *TerminalManager) CreateTerminal(command string, args []string, working
 
 	term.Status = "running"
 
-	// Start output reading goroutines
-	var readers sync.WaitGroup
-	readers.Add(2)
+	// Wait for process to complete in background. Expiry of WaitDelay
+	// (ErrWaitDelay) is a normal exit; the exit code is still recorded.
 	go func() {
-		defer readers.Done()
-		term.readOutput(term.Stdout, false)
-	}()
-	go func() {
-		defer readers.Done()
-		term.readOutput(term.Stderr, true)
-	}()
-
-	// Wait for process to complete in background. cmd.Wait closes the
-	// pipes, so all reads must finish first (os/exec contract); otherwise
-	// output still queued in the pipe is lost. Readers hit EOF once the
-	// process and any children holding the pipe exit.
-	go func() {
-		readers.Wait()
+		defer close(term.done)
 		_ = cmd.Wait()
+		stdoutW.flush()
+		stderrW.flush()
 		term.mu.Lock()
 		term.Status = "exited"
 		term.EndTime = time.Now()
@@ -272,24 +264,43 @@ func (tm *TerminalManager) ReleaseAll() {
 	}
 }
 
-// readOutput reads output from a stream and buffers it
-func (t *Terminal) readOutput(reader *bufio.Reader, isStderr bool) {
+// lineWriter splits a command's output stream into lines and appends them
+// to the terminal's output buffer. Each stream gets its own writer; exec
+// serialises writes per stream.
+type lineWriter struct {
+	t       *Terminal
+	stderr  bool
+	partial []byte
+}
+
+func (w *lineWriter) Write(p []byte) (int, error) {
+	w.partial = append(w.partial, p...)
 	for {
-		line, err := reader.ReadString('\n')
-
-		if line != "" {
-			t.outputMutex.Lock()
-			if isStderr {
-				line = "[STDERR] " + line
-			}
-			t.OutputBuffer = append(t.OutputBuffer, line)
-			t.outputMutex.Unlock()
-		}
-
-		if err != nil {
+		i := bytes.IndexByte(w.partial, '\n')
+		if i < 0 {
 			break
 		}
+		w.t.appendLine(string(w.partial[:i]), w.stderr)
+		w.partial = w.partial[i+1:]
 	}
+	return len(p), nil
+}
+
+// flush emits a trailing line that had no newline. Call after cmd.Wait.
+func (w *lineWriter) flush() {
+	if len(w.partial) > 0 {
+		w.t.appendLine(string(w.partial), w.stderr)
+		w.partial = nil
+	}
+}
+
+func (t *Terminal) appendLine(line string, isStderr bool) {
+	if isStderr {
+		line = "[STDERR] " + line
+	}
+	t.outputMutex.Lock()
+	t.OutputBuffer = append(t.OutputBuffer, line)
+	t.outputMutex.Unlock()
 }
 
 // State returns the current lifecycle status ("running" or "exited").
