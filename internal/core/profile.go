@@ -685,27 +685,58 @@ func ListProfiles() ([]string, error) {
 	return profiles, nil
 }
 
+// SkippedProfilesError reports profiles left out of a listing because their
+// profile.yaml could not be loaded. Each wrapped error names the profile.
+// Results returned alongside it are valid and complete for the profiles
+// that did load.
+type SkippedProfilesError struct{ Errs []error }
+
+func (e *SkippedProfilesError) Error() string { return errors.Join(e.Errs...).Error() }
+
+// Unwrap exposes the individual load errors to errors.Is / errors.As.
+func (e *SkippedProfilesError) Unwrap() []error { return e.Errs }
+
 // ListProfilesFull returns fully-loaded Profile objects for every
 // profile on disk. It is the rich counterpart to ListProfiles, used by
 // `aps profile list` to render multi-column rows and apply filter
 // predicates. Each YAML file is loaded once via LoadProfile; profiles
 // that fail to load are skipped (their IDs are silently dropped) so
-// one corrupt file does not break listing for the rest.
+// one corrupt file does not break listing for the rest. Callers that
+// must report the skipped profiles use ListProfilesChecked.
 //
 // Cheap callers that only need IDs (capability lookups, action
 // resolution, etc.) should keep using ListProfiles.
 func ListProfilesFull() ([]Profile, error) {
+	out, err := ListProfilesChecked()
+	var skipped *SkippedProfilesError
+	if errors.As(err, &skipped) {
+		return out, nil
+	}
+	return out, err
+}
+
+// ListProfilesChecked is ListProfilesFull with load errors surfaced: it
+// returns every profile that loaded together with a *SkippedProfilesError
+// naming each profile that did not, in directory order. Callers decide
+// whether a partial result is acceptable. Any other error means the
+// profiles directory could not be read and the result is empty.
+func ListProfilesChecked() ([]Profile, error) {
 	ids, err := ListProfiles()
 	if err != nil {
 		return nil, err
 	}
 	out := make([]Profile, 0, len(ids))
+	var errs []error
 	for _, id := range ids {
 		p, err := LoadProfile(id)
 		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 		out = append(out, *p)
+	}
+	if len(errs) > 0 {
+		return out, &SkippedProfilesError{Errs: errs}
 	}
 	return out, nil
 }
