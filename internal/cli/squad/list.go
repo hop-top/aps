@@ -1,8 +1,8 @@
 package squad
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -11,7 +11,6 @@ import (
 	"hop.top/aps/internal/cli/listing"
 	coresquad "hop.top/aps/internal/core/squad"
 	kitcli "hop.top/kit/go/console/cli"
-	"hop.top/kit/go/console/output"
 )
 
 // squadSummaryRow is the table/json/yaml row shape for `aps squad
@@ -35,8 +34,10 @@ complicated-subsystem, platform), domain boundary, member count,
 and a truncated member-ID list (first three IDs plus "+N" when the
 squad has more).
 
-The output respects the global --format flag (table|json|yaml) and
-the local filter flags: --member selects squads containing a given
+The output respects the global --format flag (table|json|yaml): json
+and yaml emit an array of rows (id, name, type, domain, member_count,
+members), [] when nothing matches. Squads whose manifest cannot be
+read are skipped and named on stderr. The local filter flags are: --member selects squads containing a given
 profile ID, and --role selects by team-topology type. Read-only:
 no state mutation. Idempotent.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,8 +49,16 @@ no state mutation. Idempotent.`,
 			// field is Squad.Type.
 			roleFilter, _ := cmd.Flags().GetString("role")
 
+			// A squad whose manifest cannot be read is left out of the
+			// listing, as profile list does for a damaged profile, but is
+			// named on stderr so it is not silently lost. Only an
+			// unreadable squads directory fails the command.
 			squads, err := defaultManager.ListChecked()
-			if err != nil {
+			var skipped *coresquad.SkippedError
+			switch {
+			case errors.As(err, &skipped):
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: skipped unreadable squads:\n%v\n", err)
+			case err != nil:
 				return fmt.Errorf("list squads: %w", err)
 			}
 
@@ -64,11 +73,7 @@ no state mutation. Idempotent.`,
 				rows = append(rows, squadToSummaryRow(s))
 			}
 
-			format, _ := cmd.Flags().GetString("format")
-			if format == "" {
-				format = output.Table
-			}
-			return listing.RenderList(os.Stdout, format, rows)
+			return listing.RenderList(cmd.OutOrStdout(), formatOf(cmd), rows)
 		},
 	}
 

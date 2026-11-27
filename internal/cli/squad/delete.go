@@ -2,7 +2,7 @@ package squad
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"hop.top/aps/internal/cli/clinote"
 
@@ -23,10 +23,11 @@ Destructive: the squad record is removed irreversibly. The
 destructive-token confirmation flow gates the apply path, and
 --dry-run is opted out because preview would only restate the
 squad ID. Idempotent on the pair. Use --note to attach an audit
-reason that flows to the event bus alongside the mutation.`,
+reason that flows to the event bus alongside the mutation. With
+--format json|yaml the result prints as {"id": ..., "deleted": true}.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDelete(args[0])
+			return runDelete(cmd.OutOrStdout(), formatOf(cmd), args[0])
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
@@ -45,11 +46,14 @@ reason that flows to the event bus alongside the mutation.`,
 	return cmd
 }
 
-func runDelete(id string) error {
+func runDelete(w io.Writer, format, id string) error {
 	if err := defaultManager.Delete(id); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "Deleted squad %q\n", id)
+	if structured(format) {
+		return renderStructured(w, format, deleteResult{ID: id, Deleted: true})
+	}
+	fmt.Fprintf(w, "Deleted squad %q\n", id)
 	return nil
 }

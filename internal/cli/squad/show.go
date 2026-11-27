@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"hop.top/aps/internal/cli/globals"
 	kitcli "hop.top/kit/go/console/cli"
-	"hop.top/kit/go/console/output"
 )
 
 func newShowCmd() *cobra.Command {
@@ -18,20 +16,21 @@ func newShowCmd() *cobra.Command {
 		Long: `Print the full record for a single squad — ID, name,
 team-topology type, domain boundary, description, the complete
 member ID list (no truncation, unlike aps squad list), and the
-created/updated timestamps. The squad is looked up by ID; unknown
-IDs return an error from the underlying squad manager.
+created/updated timestamps. The squad is looked up by ID in
+$APS_DATA_PATH/squads/<id>/manifest.yaml; an unknown ID is a
+"squad not found" error, and a manifest that cannot be read is an
+error naming the file.
 
-The output respects the global --format flag (table|json|yaml); json
-and yaml emit the squad record alone.
+The output respects the global --format flag: json and yaml emit
+the squad record alone, as one object (id, name, type, domain,
+description, members, golden_path_defined, created_at, updated_at;
+members is a list of profile IDs, [] when empty); any other format
+prints the text view.
 
 Read-only: no state mutation. Idempotent.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			format, _ := cmd.Flags().GetString("format")
-			if format == "" {
-				format = globals.Format()
-			}
-			return runShow(cmd.OutOrStdout(), args[0], format)
+			return runShow(cmd.OutOrStdout(), args[0], formatOf(cmd))
 		},
 	}
 	// T-0648 — kit 0.4 signature annotations.
@@ -46,12 +45,8 @@ func runShow(w io.Writer, id, format string) error {
 		return err
 	}
 
-	switch f := strings.ToLower(format); f {
-	case output.JSON, output.YAML:
-		if err := output.Render(w, f, s); err != nil {
-			return fmt.Errorf("render squad: %w", err)
-		}
-		return nil
+	if structured(format) {
+		return renderStructured(w, format, newSquadRecord(s))
 	}
 
 	fmt.Fprintf(w, "Squad: %s\n", s.Name)

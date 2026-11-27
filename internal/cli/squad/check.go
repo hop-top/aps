@@ -2,13 +2,12 @@ package squad
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/spf13/cobra"
 	"hop.top/aps/internal/cli/listing"
 	coresquad "hop.top/aps/internal/core/squad"
 	kitcli "hop.top/kit/go/console/cli"
-	"hop.top/kit/go/console/output"
 )
 
 // checkRow is the table/json/yaml row shape for `aps squad check`.
@@ -35,11 +34,15 @@ contributes a row to the output with CHECK name, PASS/FAIL
 status, and a DETAIL string. The command exits non-zero when any
 check fails so it can gate CI.
 
-Read-only: no state mutation. Idempotent. The output respects the
-table renderer and works on a TTY (styled table) and non-TTY
-(plain tabwriter) alike.`,
+Squads are read from the local squad store ($APS_DATA_PATH/squads);
+a manifest that cannot be read fails the command, naming the file,
+rather than being validated around. Read-only: no state mutation.
+Idempotent. The output respects the global --format flag: the table
+renderer works on a TTY (styled table) and non-TTY (plain tabwriter)
+alike, and json/yaml emit the rows alone (the pass/fail summary then
+goes to stderr).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCheck()
+			return runCheck(cmd.OutOrStdout(), cmd.ErrOrStderr(), formatOf(cmd))
 		},
 	}
 	// T-0648 — read-only topology validation; safely repeatable.
@@ -48,7 +51,7 @@ table renderer and works on a TTY (styled table) and non-TTY
 	return cmd
 }
 
-func runCheck() error {
+func runCheck(w, errw io.Writer, format string) error {
 	squads, err := defaultManager.ListChecked()
 	if err != nil {
 		return fmt.Errorf("list squads: %w", err)
@@ -80,11 +83,17 @@ func runCheck() error {
 			Detail: detail,
 		})
 	}
-	if err := listing.RenderList(os.Stdout, output.Table, rows); err != nil {
+	if err := listing.RenderList(w, format, rows); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "\n%d/%d checks passed\n", passed, len(results))
+	// The summary line is text: keep it off stdout when stdout carries a
+	// json/yaml document.
+	summary := w
+	if structured(format) {
+		summary = errw
+	}
+	fmt.Fprintf(summary, "\n%d/%d checks passed\n", passed, len(results))
 
 	if passed < len(results) {
 		return fmt.Errorf("%d/%d checks failed", len(results)-passed, len(results))
