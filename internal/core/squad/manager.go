@@ -17,6 +17,8 @@ type Manager struct {
 	dir    string                 // empty = in-memory only
 	dirFn  func() (string, error) // resolves dir per operation when set
 	broken map[string]error       // squads on disk that failed to load, by dir name
+
+	lockTimeout time.Duration // store lock wait bound; zero = default
 }
 
 // NewManager creates a Manager with an empty squad registry.
@@ -48,6 +50,46 @@ func (m *Manager) lock() (func(), error) {
 	return m.mu.Unlock, nil
 }
 
+// lockWrite is lock for mutating operations. File-backed managers also hold
+// the cross-process store lock across the reload and the save, so the whole
+// read-modify-write is atomic with respect to other managers and processes.
+// id is validated first so a refused id leaves nothing on disk. The store
+// lock is taken before the reload, so the state mutated is the
+// state left by the previous holder.
+func (m *Manager) lockWrite(id string) (func(), error) {
+	m.mu.Lock()
+	if m.dirFn != nil {
+		dir, err := m.dirFn()
+		if err != nil {
+			m.mu.Unlock()
+			return nil, err
+		}
+		m.dir = dir
+	}
+	if m.dir == "" {
+		return m.mu.Unlock, nil
+	}
+	// An id the store would refuse must not create the lock file or dir.
+	if err := validStorageID(id); err != nil {
+		m.mu.Unlock()
+		return nil, err
+	}
+	release, err := acquireStoreLock(m.dir, m.lockTimeout)
+	if err != nil {
+		m.mu.Unlock()
+		return nil, err
+	}
+	if err := m.reload(); err != nil {
+		release()
+		m.mu.Unlock()
+		return nil, err
+	}
+	return func() {
+		release()
+		m.mu.Unlock()
+	}, nil
+}
+
 // Create validates and stores a new squad. Returns an error if a squad with the
 // same ID already exists.
 func (m *Manager) Create(s Squad) error {
@@ -58,7 +100,7 @@ func (m *Manager) Create(s Squad) error {
 		return fmt.Errorf("squad name is required")
 	}
 
-	unlock, err := m.lock()
+	unlock, err := m.lockWrite(s.ID)
 	if err != nil {
 		return err
 	}
@@ -138,7 +180,7 @@ func (m *Manager) Update(s Squad) error {
 		return fmt.Errorf("squad name is required")
 	}
 
-	unlock, err := m.lock()
+	unlock, err := m.lockWrite(s.ID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +200,7 @@ func (m *Manager) Update(s Squad) error {
 
 // Delete removes a squad by ID. Returns an error if the squad does not exist.
 func (m *Manager) Delete(id string) error {
-	unlock, err := m.lock()
+	unlock, err := m.lockWrite(id)
 	if err != nil {
 		return err
 	}
@@ -182,7 +224,7 @@ func (m *Manager) Delete(id string) error {
 // AddMember adds a profile to the squad's member list. If the profile is
 // already a member, this is a no-op (returns nil).
 func (m *Manager) AddMember(squadID, profileID string) error {
-	unlock, err := m.lock()
+	unlock, err := m.lockWrite(squadID)
 	if err != nil {
 		return err
 	}
@@ -208,7 +250,7 @@ func (m *Manager) AddMember(squadID, profileID string) error {
 // RemoveMember removes a profile from the squad's member list. Returns an
 // error if the profile is not a member.
 func (m *Manager) RemoveMember(squadID, profileID string) error {
-	unlock, err := m.lock()
+	unlock, err := m.lockWrite(squadID)
 	if err != nil {
 		return err
 	}

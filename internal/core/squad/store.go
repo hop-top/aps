@@ -198,9 +198,8 @@ func (m *Manager) find(id string) (*Squad, error) {
 // modes follow the profile store (0755 / 0644, before umask). No-op for
 // in-memory managers.
 //
-// There is no cross-process lock. Two processes saving the same squad at
-// once each write a complete manifest and the later rename wins, so a
-// concurrent member add can be lost; the store itself is never corrupted.
+// Callers hold the store lock (Manager.lockWrite) across the preceding
+// reload and this save.
 func (m *Manager) save(s *Squad) error {
 	if m.dir == "" {
 		return nil
