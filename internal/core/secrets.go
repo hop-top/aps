@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"hop.top/aps/internal/fsperm"
 	"hop.top/kit/go/storage/secret"
 	_ "hop.top/kit/go/storage/secret/env"         // register "env"
@@ -68,7 +67,11 @@ func LoadSecrets(path string) (map[string]string, error) {
 	if warning != "" {
 		fmt.Fprintf(os.Stderr, "WARNING: Secrets file %s has %s\n", path, warning)
 	}
-	return godotenv.Read(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is the profile's secrets file
+	if err != nil {
+		return nil, fmt.Errorf("read secrets %s: %w", path, err)
+	}
+	return parseSecretsEnv(path, data)
 }
 
 // LoadProfileSecrets returns the env-style key→value map for a profile,
