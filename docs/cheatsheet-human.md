@@ -108,10 +108,10 @@ aps workspace activity               # activity log
 ```bash
 aps squad list                       # all squads
 aps squad show <id>                  # details
-aps squad create <name>              # new squad
+aps squad create <name> --type <type> --domain <domain>  # new squad
 aps squad members add <id> <profile>  # add member
 aps squad members remove <id> <p>     # remove member
-aps squad check <id>                 # validate topology (8-item checklist)
+aps squad check                      # validate all squads (8-item checklist)
 aps squad delete <id>                # delete squad
 ```
 
