@@ -85,7 +85,7 @@ func checkPlatformGoldenPath(t Topology) CheckResult {
 	for _, s := range t.Squads {
 		if s.Type == SquadTypePlatform && !s.GoldenPathDefined {
 			return fail("platform-golden-path",
-				fmt.Sprintf("platform squad %q missing golden path definition", s.ID))
+				fmt.Sprintf("platform squad %q missing golden path definition; create it with --golden-path-defined (aps squad create), or set golden_path_defined: true in its manifest", s.ID))
 		}
 	}
 	return pass("platform-golden-path")

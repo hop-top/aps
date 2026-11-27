@@ -8025,6 +8025,12 @@ complicated-subsystem, platform), and --domain names the squad's
 domain boundary. --description and --members are optional; the
 members slice takes a comma-separated list of profile IDs.
 
+--golden-path-defined records that the squad has a defined
+self-service golden path (stored as golden_path_defined in the
+manifest). aps squad check requires it on every platform squad, so
+pass it when creating one; it defaults to false. A squad's flags
+are fixed at creation: there is no verb to edit them afterwards.
+
 Mints a new local record. Not idempotent — re-running with the
 same name on an existing squad fails. --dry-run is opted out
 because the resulting record is fully determined by the flags.
@@ -8039,12 +8045,13 @@ aps squad create <name> [flags]
 ### Options
 
 ```
-      --description string   Squad description
-      --domain string        Domain boundary
-  -h, --help[=true|false]    help for create
-      --members strings      Comma-separated profile IDs
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --type string          Squad type (stream-aligned, enabling, complicated-subsystem, platform)
+      --description string                 Squad description
+      --domain string                      Domain boundary
+      --golden-path-defined[=true|false]   Mark the squad's self-service golden path as defined (required by 'aps squad check' for platform squads)
+  -h, --help[=true|false]                  help for create
+      --members strings                    Comma-separated profile IDs
+  -n, --note string                        Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --type string                        Squad type (stream-aligned, enabling, complicated-subsystem, platform)
 ```
 
 ### Options inherited from parent commands

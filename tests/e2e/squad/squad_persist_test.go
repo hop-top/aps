@@ -350,3 +350,30 @@ func sortedKeys(m map[string]any) []string {
 	}
 	return k
 }
+
+// A platform squad created with --golden-path-defined passes `squad check`
+// in a later process; without the flag the failure names the flag.
+func TestSquadCheck_GoldenPathFlagAcrossProcesses(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	mustAPS(t, home, "squad", "create", "plat", "--type", "platform",
+		"--domain", "infra", "--members", "alice", "--golden-path-defined")
+
+	var rec struct {
+		GoldenPath bool `json:"golden_path_defined"`
+	}
+	mustJSON(t, mustAPS(t, home, "squad", "show", "plat", "--format", "json"), &rec)
+	if !rec.GoldenPath {
+		t.Error("golden_path_defined not persisted")
+	}
+	if _, stderr, err := runAPS(t, home, "squad", "check"); err != nil {
+		t.Errorf("check on flagged platform squad: %v\n%s", err, stderr)
+	}
+
+	mustAPS(t, home, "squad", "create", "plat2", "--type", "platform",
+		"--domain", "infra2", "--members", "bob")
+	out, _, err := runAPS(t, home, "squad", "check")
+	if err == nil || !strings.Contains(out, "--golden-path-defined") || !strings.Contains(out, "plat2") {
+		t.Errorf("check without flag: err=%v out=%q", err, out)
+	}
+}
