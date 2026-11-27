@@ -27,8 +27,11 @@ TEMPLATE=$("$BIN" template reply "$ID" \
 
 # Replace the empty body placeholder with actual body
 # Template has the quoted original after a blank line
-HEADER=$(echo "$TEMPLATE" | sed '/^$/q')
-QUOTED=$(echo "$TEMPLATE" | sed '1,/^$/d')
+# Here-strings, not `echo | sed`: `sed '/^$/q'` quits at the first blank
+# line, and under pipefail the still-writing echo then dies of SIGPIPE
+# (exit 141) on any template larger than a pipe buffer.
+HEADER=$(sed '/^$/q' <<<"$TEMPLATE")
+QUOTED=$(sed '1,/^$/d' <<<"$TEMPLATE")
 
 "$BIN" template send ${ACCOUNT_FLAG+"${ACCOUNT_FLAG[@]}"} <<EOF
 $HEADER
