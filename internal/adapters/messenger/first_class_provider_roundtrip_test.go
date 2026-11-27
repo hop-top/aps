@@ -1,3 +1,12 @@
+// Self-generated round trips for the first-class message providers.
+//
+// Every inbound payload under testdata/synthetic_payloads is hand-written,
+// and every provider response comes from an in-test synthetic responder.
+// The round trip records those responders into t.TempDir() and replays them
+// within the same test, so it proves the provider code is stable against
+// its own synthetic traffic. No real provider traffic is recorded or
+// committed, and these tests are not evidence of provider compatibility.
+
 package messenger
 
 import (
@@ -26,18 +35,18 @@ import (
 	msgtypes "hop.top/aps/internal/core/messenger"
 )
 
-func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXRR(t *testing.T) {
+func TestFirstClassMessageProviders_SelfGeneratedRoundTrip_ReceiveAuthAllowListAndExecution(t *testing.T) {
 	tests := []struct {
-		name          string
-		service       *core.ServiceConfig
-		adapter       string
-		fixture       string
-		contentType   string
-		headers       func([]byte) http.Header
-		wantMessageID string
-		wantRoute     string
-		wantBody      string
-		xrrDelivery   func(t *testing.T) []func(*Handler)
+		name                  string
+		service               *core.ServiceConfig
+		adapter               string
+		fixture               string
+		contentType           string
+		headers               func([]byte) http.Header
+		wantMessageID         string
+		wantRoute             string
+		wantBody              string
+		selfRoundTripDelivery func(t *testing.T) []func(*Handler)
 	}{
 		{
 			name:        "telegram",
@@ -55,11 +64,11 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			},
 			wantMessageID: "telegram:update:555",
 			wantRoute:     "assistant=handle_telegram",
-			xrrDelivery: func(t *testing.T) []func(*Handler) {
+			selfRoundTripDelivery: func(t *testing.T) []func(*Handler) {
 				t.Setenv("TELEGRAM_BOT_TOKEN", "bot-token")
 				return []func(*Handler){WithTelegramTransport(&TelegramHTTPTransport{
 					BaseURL:    "https://telegram.test",
-					HTTPClient: newXRRHTTPDoer(t, "telegram-delivery", xrrTelegramSendMessageResponder(t), xrr.ModeRecord),
+					HTTPClient: newSelfRoundTripHTTPDoer(t, "telegram-delivery", syntheticTelegramSendMessageResponder(t), xrr.ModeRecord),
 				})}
 			},
 		},
@@ -88,11 +97,11 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			},
 			wantMessageID: "msg-slack-1",
 			wantRoute:     "assistant=handle_slack",
-			xrrDelivery: func(t *testing.T) []func(*Handler) {
+			selfRoundTripDelivery: func(t *testing.T) []func(*Handler) {
 				t.Setenv("SLACK_BOT_TOKEN", "xoxb-test")
 				return []func(*Handler){WithSlackTransport(&SlackHTTPTransport{
 					BaseURL:    "https://slack.test/api",
-					HTTPClient: newXRRHTTPDoer(t, "slack-delivery", xrrSlackPostMessageResponder(t, http.StatusOK, `{"ok":true,"channel":"C012CHAN","ts":"1710000000.000099"}`), xrr.ModeRecord),
+					HTTPClient: newSelfRoundTripHTTPDoer(t, "slack-delivery", syntheticSlackPostMessageResponder(t, http.StatusOK, `{"ok":true,"channel":"C012CHAN","ts":"1710000000.000099"}`), xrr.ModeRecord),
 				})}
 			},
 		},
@@ -115,10 +124,10 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			},
 			wantMessageID: "msg-teams-1",
 			wantRoute:     "assistant=handle_teams",
-			xrrDelivery: func(t *testing.T) []func(*Handler) {
+			selfRoundTripDelivery: func(t *testing.T) []func(*Handler) {
 				return []func(*Handler){
 					WithServiceValidator(teamsTestValidator(nil)),
-					WithTeamsTransport(teamsXRRSDKTransport(t, filepath.Join(t.TempDir(), "teams-delivery"), xrr.ModeRecord, "reply from action")),
+					WithTeamsTransport(teamsSelfRoundTripSDKTransport(t, filepath.Join(t.TempDir(), "teams-delivery"), xrr.ModeRecord, "reply from action")),
 				}
 			},
 		},
@@ -171,11 +180,11 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 			}, map[string]string{"WHATSAPP_ACCESS_TOKEN": "secret:WHATSAPP_ACCESS_TOKEN"}),
 			wantMessageID: "wamid.HBgLMTU1NTEyMzAwMDE=",
 			wantRoute:     "assistant=handle_whatsapp",
-			xrrDelivery: func(t *testing.T) []func(*Handler) {
+			selfRoundTripDelivery: func(t *testing.T) []func(*Handler) {
 				t.Setenv("WHATSAPP_ACCESS_TOKEN", "wa-token")
 				transport := msgtypes.NewWhatsAppCloudTransport("", "https://whatsapp.test", &http.Client{
 					Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-						return newXRRHTTPDoer(t, "whatsapp-delivery", xrrWhatsAppCloudResponder(t, http.StatusOK, `{"messages":[{"id":"wamid.delivery.1"}]}`), xrr.ModeRecord).Do(req)
+						return newSelfRoundTripHTTPDoer(t, "whatsapp-delivery", syntheticWhatsAppCloudResponder(t, http.StatusOK, `{"messages":[{"id":"wamid.delivery.1"}]}`), xrr.ModeRecord).Do(req)
 					}),
 				})
 				return []func(*Handler){WithWhatsAppTransport(transport)}
@@ -187,12 +196,12 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("XDG_DATA_HOME", t.TempDir())
 			require.NoError(t, core.SaveService(tt.service))
-			body := providerFixture(t, tt.fixture)
+			body := syntheticPayload(t, tt.fixture)
 			executor := &fakeActionExecutor{output: "reply from action"}
-			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.xrrDelivery)...)
+			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.selfRoundTripDelivery)...)
 			headers := providerHeaders(tt.contentType, body, tt.headers)
 
-			resp := serveWebhookThroughXRR(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
+			resp := serveWebhookSelfRoundTrip(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
 
 			assert.Equal(t, http.StatusOK, resp.Status)
 			if tt.wantMessageID != "" {
@@ -210,7 +219,7 @@ func TestFirstClassMessageProviders_FixtureReceiveAuthAllowListAndExecutionUseXR
 	}
 }
 
-func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *testing.T) {
+func TestFirstClassMessageProviders_SelfGeneratedRoundTrip_AuthFailureAndAllowListRejection(t *testing.T) {
 	tests := []struct {
 		name        string
 		service     *core.ServiceConfig
@@ -323,12 +332,12 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 		t.Run(tt.name+"/auth_failure", func(t *testing.T) {
 			t.Setenv("XDG_DATA_HOME", t.TempDir())
 			require.NoError(t, core.SaveService(tt.service))
-			body := providerFixture(t, tt.fixture)
+			body := syntheticPayload(t, tt.fixture)
 			executor := &fakeActionExecutor{}
 			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.opts)...)
 			headers := providerHeaders(tt.contentType, body, func([]byte) http.Header { return tt.badHeaders })
 
-			resp := serveWebhookThroughXRR(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
+			resp := serveWebhookSelfRoundTrip(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
 
 			assert.Equal(t, http.StatusUnauthorized, resp.Status)
 			assert.Empty(t, executor.input.ProfileID)
@@ -343,7 +352,7 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 			blocked.Options["allowed_chats"] = "-1009999999999"
 			blocked.Options["allowed_numbers"] = "+15559999999"
 			require.NoError(t, core.SaveService(blocked))
-			body := providerFixture(t, tt.fixture)
+			body := syntheticPayload(t, tt.fixture)
 			executor := &fakeActionExecutor{}
 			handler := newServiceTestHandler(executor, appendHandlerOptions(t, tt.opts)...)
 			headers := providerHeaders(tt.contentType, body, func(body []byte) http.Header {
@@ -362,7 +371,7 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 				return tt.authHeaders
 			})
 
-			resp := serveWebhookThroughXRR(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
+			resp := serveWebhookSelfRoundTrip(t, handler, tt.service.ID, tt.adapter, tt.contentType, headers, body)
 
 			assert.Equal(t, http.StatusForbidden, resp.Status)
 			assert.Empty(t, executor.input.ProfileID)
@@ -370,20 +379,20 @@ func TestFirstClassMessageProviders_AuthFailureAndAllowListRejectionUseXRR(t *te
 	}
 }
 
-func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
+func TestFirstClassProviderDelivery_SelfGeneratedRoundTrip(t *testing.T) {
 	tests := []struct {
 		name       string
-		deliver    func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error)
+		deliver    func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error)
 		assertions func(t *testing.T, receipt *msgtypes.DeliveryReceipt)
 	}{
 		{
 			name: "telegram",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				provider := NewTelegramProvider(TelegramProviderConfig{
 					BotToken: "bot-token",
 					Transport: &TelegramHTTPTransport{
 						BaseURL:    "https://telegram.test",
-						HTTPClient: newXRRHTTPDoerWithDir(t, cassetteDir, xrrTelegramSendMessageResponder(t), mode),
+						HTTPClient: newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticTelegramSendMessageResponder(t), mode),
 					},
 					Now: fixedProviderNow,
 				})
@@ -405,12 +414,12 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 		},
 		{
 			name: "slack",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				provider := NewSlackProvider(SlackProviderConfig{
 					BotToken: "xoxb-test",
 					Transport: &SlackHTTPTransport{
 						BaseURL:    "https://slack.test/api",
-						HTTPClient: newXRRHTTPDoerWithDir(t, cassetteDir, xrrSlackPostMessageResponder(t, http.StatusOK, `{"ok":true,"channel":"C012CHAN","ts":"1710000000.000099"}`), mode),
+						HTTPClient: newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticSlackPostMessageResponder(t, http.StatusOK, `{"ok":true,"channel":"C012CHAN","ts":"1710000000.000099"}`), mode),
 					},
 					Now: fixedProviderNow,
 				})
@@ -429,11 +438,11 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 		},
 		{
 			name: "teams",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				provider := NewTeamsProvider(TeamsProviderConfig{
 					AppID:       "bot-app-id",
 					AppPassword: "bot-secret",
-					Transport:   teamsXRRSDKTransport(t, cassetteDir, mode, "ack"),
+					Transport:   teamsSelfRoundTripSDKTransport(t, roundTripDir, mode, "ack"),
 					Now:         fixedProviderNow,
 				})
 				return provider.DeliverMessage(context.Background(), msgtypes.DeliveryRequest{
@@ -455,11 +464,11 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 		},
 		{
 			name: "discord",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				provider := NewDiscordProvider(DiscordProviderConfig{
 					BotToken:   "test-token",
 					APIBaseURL: "https://discord.test/api/v10",
-					Client:     newXRRHTTPDoerWithDir(t, cassetteDir, xrrDiscordMessageResponder(t, http.StatusOK, `{"id":"2200000000000000001","channel_id":"1200000000000000002"}`), mode),
+					Client:     newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticDiscordMessageResponder(t, http.StatusOK, `{"id":"2200000000000000001","channel_id":"1200000000000000002"}`), mode),
 				})
 				return provider.DeliverMessage(context.Background(), msgtypes.DeliveryRequest{
 					Provider:  "discord",
@@ -476,10 +485,10 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 		},
 		{
 			name: "sms",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				transport := msgtypes.NewTwilioSMSTransport("AC123", "token", &http.Client{
 					Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-						return newXRRHTTPDoerWithDir(t, cassetteDir, xrrTwilioMessageResponder(t, http.StatusCreated, `{"sid":"SMDELIVERED","status":"queued"}`), mode).Do(req)
+						return newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticTwilioMessageResponder(t, http.StatusCreated, `{"sid":"SMDELIVERED","status":"queued"}`), mode).Do(req)
 					}),
 				})
 				transport.BaseURL = "https://twilio.test"
@@ -505,10 +514,10 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 		},
 		{
 			name: "whatsapp",
-			deliver: func(t *testing.T, mode xrr.Mode, cassetteDir string) (*msgtypes.DeliveryReceipt, error) {
+			deliver: func(t *testing.T, mode xrr.Mode, roundTripDir string) (*msgtypes.DeliveryReceipt, error) {
 				transport := msgtypes.NewWhatsAppCloudTransport("", "https://whatsapp.test", &http.Client{
 					Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-						return newXRRHTTPDoerWithDir(t, cassetteDir, xrrWhatsAppCloudResponder(t, http.StatusOK, `{"messages":[{"id":"wamid.delivery.1"}]}`), mode).Do(req)
+						return newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticWhatsAppCloudResponder(t, http.StatusOK, `{"messages":[{"id":"wamid.delivery.1"}]}`), mode).Do(req)
 					}),
 				})
 				provider := msgtypes.NewWhatsAppProvider(msgtypes.WhatsAppProviderConfig{
@@ -547,14 +556,14 @@ func TestFirstClassProviderDelivery_UsesXRRHTTPMocks(t *testing.T) {
 	}
 }
 
-func TestFirstClassProviderRuntime_RetryAndErrorHooksUseXRRDeliveryFailure(t *testing.T) {
-	body := providerFixture(t, "slack_event_callback.json")
-	cassetteDir := t.TempDir()
+func TestFirstClassProviderRuntime_SelfGeneratedRoundTrip_RetryAndErrorHooksOnDeliveryFailure(t *testing.T) {
+	body := syntheticPayload(t, "slack_event_callback.json")
+	roundTripDir := t.TempDir()
 	provider := NewSlackProvider(SlackProviderConfig{
 		BotToken: "xoxb-test",
 		Transport: &SlackHTTPTransport{
 			BaseURL:    "https://slack.test/api",
-			HTTPClient: newXRRHTTPDoerWithDir(t, cassetteDir, xrrSlackPostMessageResponder(t, http.StatusTooManyRequests, `{"ok":false,"error":"rate_limited"}`), xrr.ModeRecord),
+			HTTPClient: newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticSlackPostMessageResponder(t, http.StatusTooManyRequests, `{"ok":false,"error":"rate_limited"}`), xrr.ModeRecord),
 		},
 		Now: fixedProviderNow,
 	})
@@ -611,7 +620,7 @@ func TestFirstClassProviderRuntime_RetryAndErrorHooksUseXRRDeliveryFailure(t *te
 
 func TestWhatsAppSupport_CurrentFixtureNormalizeAndDenormalize(t *testing.T) {
 	var raw map[string]any
-	require.NoError(t, json.Unmarshal(providerFixture(t, "whatsapp_cloud_message.json"), &raw))
+	require.NoError(t, json.Unmarshal(syntheticPayload(t, "whatsapp_cloud_message.json"), &raw))
 	normalizer := NewNormalizer()
 
 	msg, err := normalizer.Normalize("whatsapp", raw)
@@ -645,9 +654,9 @@ func appendHandlerOptions(t *testing.T, build func(*testing.T) []func(*Handler))
 	return build(t)
 }
 
-func providerFixture(t *testing.T, name string) []byte {
+func syntheticPayload(t *testing.T, name string) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("testdata", "provider_fixtures", name))
+	data, err := os.ReadFile(filepath.Join("testdata", "synthetic_payloads", name))
 	require.NoError(t, err)
 	return data
 }
@@ -662,7 +671,7 @@ func providerHeaders(contentType string, body []byte, build func([]byte) http.He
 	return headers
 }
 
-func serveWebhookThroughXRR(t *testing.T, handler *Handler, serviceID, adapter, contentType string, headers http.Header, body []byte) *xhttp.Response {
+func serveWebhookSelfRoundTrip(t *testing.T, handler *Handler, serviceID, adapter, contentType string, headers http.Header, body []byte) *xhttp.Response {
 	t.Helper()
 	url := "https://hooks.example.test/services/" + serviceID + "/webhook"
 	xreq := &xhttp.Request{
@@ -699,31 +708,31 @@ func serveWebhookThroughXRR(t *testing.T, handler *Handler, serviceID, adapter, 
 	return resp.(*xhttp.Response)
 }
 
-type xrrHTTPDoer struct {
+type selfRoundTripHTTPDoer struct {
 	t         *testing.T
 	session   xrr.Session
 	responder func(*xhttp.Request) (*xhttp.Response, error)
 }
 
-func newXRRHTTPDoer(t *testing.T, name string, responder func(*xhttp.Request) (*xhttp.Response, error), mode xrr.Mode) *xrrHTTPDoer {
+func newSelfRoundTripHTTPDoer(t *testing.T, name string, responder func(*xhttp.Request) (*xhttp.Response, error), mode xrr.Mode) *selfRoundTripHTTPDoer {
 	t.Helper()
-	return newXRRHTTPDoerWithDir(t, filepath.Join(t.TempDir(), name), responder, mode)
+	return newSelfRoundTripHTTPDoerWithDir(t, filepath.Join(t.TempDir(), name), responder, mode)
 }
 
-func newXRRHTTPDoerWithDir(t *testing.T, dir string, responder func(*xhttp.Request) (*xhttp.Response, error), mode xrr.Mode) *xrrHTTPDoer {
+func newSelfRoundTripHTTPDoerWithDir(t *testing.T, dir string, responder func(*xhttp.Request) (*xhttp.Response, error), mode xrr.Mode) *selfRoundTripHTTPDoer {
 	t.Helper()
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	if mode == xrr.ModeReplay {
 		responder = nil
 	}
-	return &xrrHTTPDoer{
+	return &selfRoundTripHTTPDoer{
 		t:         t,
 		session:   xrr.NewSession(mode, xrr.NewFileCassette(dir)),
 		responder: responder,
 	}
 }
 
-func (d *xrrHTTPDoer) Do(req *http.Request) (*http.Response, error) {
+func (d *selfRoundTripHTTPDoer) Do(req *http.Request) (*http.Response, error) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
@@ -801,7 +810,7 @@ func intFromAny(t *testing.T, value any) int {
 	}
 }
 
-func xrrTelegramSendMessageResponder(t *testing.T) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticTelegramSendMessageResponder(t *testing.T) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://telegram.test/botbot-token/sendMessage", req.URL)
@@ -811,7 +820,7 @@ func xrrTelegramSendMessageResponder(t *testing.T) func(*xhttp.Request) (*xhttp.
 	}
 }
 
-func xrrSlackPostMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticSlackPostMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://slack.test/api/chat.postMessage", req.URL)
@@ -821,9 +830,9 @@ func xrrSlackPostMessageResponder(t *testing.T, status int, body string) func(*x
 	}
 }
 
-// xrrTeamsResponder answers both connector calls the SDK transport makes:
+// syntheticTeamsResponder answers both connector calls the SDK transport makes:
 // the client-credentials token request, then the activity post.
-func xrrTeamsResponder(t *testing.T, wantText string) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticTeamsResponder(t *testing.T, wantText string) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		if strings.HasPrefix(req.URL, "https://login.teams.test/") {
@@ -843,11 +852,11 @@ func xrrTeamsResponder(t *testing.T, wantText string) func(*xhttp.Request) (*xht
 	}
 }
 
-// teamsXRRSDKTransport builds the real SDK connector transport with its HTTP
-// clients routed through an XRR cassette.
-func teamsXRRSDKTransport(t *testing.T, cassetteDir string, mode xrr.Mode, wantText string) *TeamsSDKTransport {
+// teamsSelfRoundTripSDKTransport builds the real SDK connector transport with its HTTP
+// clients routed through a self-generated round trip.
+func teamsSelfRoundTripSDKTransport(t *testing.T, roundTripDir string, mode xrr.Mode, wantText string) *TeamsSDKTransport {
 	t.Helper()
-	doer := newXRRHTTPDoerWithDir(t, cassetteDir, xrrTeamsResponder(t, wantText), mode)
+	doer := newSelfRoundTripHTTPDoerWithDir(t, roundTripDir, syntheticTeamsResponder(t, wantText), mode)
 	httpClient := &http.Client{Transport: roundTripFunc(doer.Do)}
 	transport, err := NewTeamsSDKTransportWithConfig(TeamsSDKTransportConfig{
 		AppID:       "bot-app-id",
@@ -860,7 +869,7 @@ func teamsXRRSDKTransport(t *testing.T, cassetteDir string, mode xrr.Mode, wantT
 	return transport
 }
 
-func xrrDiscordMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticDiscordMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://discord.test/api/v10/channels/1200000000000000002/messages", req.URL)
@@ -870,7 +879,7 @@ func xrrDiscordMessageResponder(t *testing.T, status int, body string) func(*xht
 	}
 }
 
-func xrrTwilioMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticTwilioMessageResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://twilio.test/2010-04-01/Accounts/AC123/Messages.json", req.URL)
@@ -881,7 +890,7 @@ func xrrTwilioMessageResponder(t *testing.T, status int, body string) func(*xhtt
 	}
 }
 
-func xrrWhatsAppCloudResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
+func syntheticWhatsAppCloudResponder(t *testing.T, status int, body string) func(*xhttp.Request) (*xhttp.Response, error) {
 	return func(req *xhttp.Request) (*xhttp.Response, error) {
 		require.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://whatsapp.test/123456789012345/messages", req.URL)

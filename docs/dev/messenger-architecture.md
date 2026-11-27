@@ -466,6 +466,14 @@ service-less component path: it skips request validation (provider auth
 hooks, generic webhook auth, allowlists), so it is deliberately not exposed
 over HTTP. Reach a platform through a message service.
 
+The first-class provider tests in
+`internal/adapters/messenger/first_class_provider_roundtrip_test.go` are
+self-generated round trips: hand-written payloads under
+`testdata/synthetic_payloads` and synthetic responders recorded into
+`t.TempDir()` and replayed within the same test. No real provider traffic is
+recorded or committed. These tests are not evidence of provider
+compatibility.
+
 Use `aps adapter messenger test <device>` only for adapter-device route
 simulation. It is not a service-route test and it does not verify live platform
 delivery.

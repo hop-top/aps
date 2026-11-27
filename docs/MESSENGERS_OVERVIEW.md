@@ -643,6 +643,16 @@ when one subprocess device needs many channel-to-action mappings.
 | Reply failed | Check outbound provider token, bot permissions, channel membership, and rate limits. |
 | Need polling or Gateway runtime | Run a provider relay or legacy adapter device; service config is not that runtime. |
 
+## Provider Round-Trip Tests
+
+The first-class provider tests in `internal/adapters/messenger`
+(`first_class_provider_roundtrip_test.go`) are self-generated round trips.
+Inbound payloads under `testdata/synthetic_payloads` are hand-written, and
+provider responses come from in-test synthetic responders. Each test records
+those responders into `t.TempDir()` and replays them within the same test; no
+real provider traffic is recorded or committed. These tests are not evidence
+of provider compatibility.
+
 ## Legacy Adapter Devices
 
 Legacy messenger-device commands remain for subprocess devices and existing link
