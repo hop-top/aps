@@ -130,7 +130,7 @@ func TestHandler_ServiceWebhookMetaWhatsAppKeepsJSONResponse(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("SaveService: %v", err)
 	}
-	body := providerFixture(t, "whatsapp_cloud_message.json")
+	body := syntheticPayload(t, "whatsapp_cloud_message.json")
 	transport := &recordingWhatsAppTransport{}
 	handler := newServiceTestHandler(&fakeActionExecutor{output: "ack"}, WithWhatsAppTransport(transport))
 	req := httptest.NewRequest(http.MethodPost, "https://hooks.example.test/services/wa-meta/webhook", strings.NewReader(string(body)))
