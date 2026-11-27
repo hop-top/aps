@@ -122,12 +122,24 @@ func (tm *TerminalManager) CreateTerminal(command string, args []string, working
 	term.Status = "running"
 
 	// Start output reading goroutines
-	go term.readOutput(term.Stdout, false)
-	go term.readOutput(term.Stderr, true)
-
-	// Wait for process to complete in background
+	var readers sync.WaitGroup
+	readers.Add(2)
 	go func() {
-		cmd.Wait()
+		defer readers.Done()
+		term.readOutput(term.Stdout, false)
+	}()
+	go func() {
+		defer readers.Done()
+		term.readOutput(term.Stderr, true)
+	}()
+
+	// Wait for process to complete in background. cmd.Wait closes the
+	// pipes, so all reads must finish first (os/exec contract); otherwise
+	// output still queued in the pipe is lost. Readers hit EOF once the
+	// process and any children holding the pipe exit.
+	go func() {
+		readers.Wait()
+		_ = cmd.Wait()
 		term.mu.Lock()
 		term.Status = "exited"
 		term.EndTime = time.Now()
@@ -229,7 +241,10 @@ func (tm *TerminalManager) Release(terminalID string) error {
 	}
 
 	// Kill if still running
-	if term.Status == "running" {
+	term.mu.RLock()
+	running := term.Status == "running"
+	term.mu.RUnlock()
+	if running {
 		term.Cmd.Process.Kill()
 	}
 
@@ -277,8 +292,19 @@ func (t *Terminal) readOutput(reader *bufio.Reader, isStderr bool) {
 	}
 }
 
+// State returns the current lifecycle status ("running" or "exited").
+func (t *Terminal) State() string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.Status
+}
+
 // GetStatus returns the terminal status
 func (t *Terminal) GetStatus() map[string]interface{} {
+	t.outputMutex.Lock()
+	lines := len(t.OutputBuffer)
+	t.outputMutex.Unlock()
+
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -289,7 +315,7 @@ func (t *Terminal) GetStatus() map[string]interface{} {
 		"exitCode":   t.ExitCode,
 		"startTime":  t.StartTime,
 		"endTime":    t.EndTime,
-		"outputLines": len(t.OutputBuffer),
+		"outputLines": lines,
 	}
 }
 
