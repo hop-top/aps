@@ -503,3 +503,44 @@ func argvHasPair(inv backendInvocation, flag, value string) bool {
 	}
 	return false
 }
+
+// TestCardamumNote_LargeCardAppendsToExisting guards the NOTE-present
+// check against SIGPIPE. The check stops reading at the first NOTE
+// line; with a card larger than a pipe buffer pipefail made it read as
+// "no NOTE", so the script took the insert branch and wrote a second
+// NOTE line instead of appending to the existing one.
+func TestCardamumNote_LargeCardAppendsToExisting(t *testing.T) {
+	requireBash(t)
+	t.Parallel()
+
+	var stored strings.Builder
+	stored.WriteString("BEGIN:VCARD\nVERSION:3.0\nFN:Ada\nNOTE:first note\n")
+	for i := range 20000 {
+		stored.WriteString("X-FILLER:" + itoa5(i) + " padding padding padding\n")
+	}
+	stored.WriteString("END:VCARD\n")
+
+	invs, out, err := runBackendScriptMulti(t, cardamumScript("note"), map[string]string{
+		"CONTACT_ID":   "c1",
+		"CONTACT_TEXT": "second note",
+	}, cardsStub(stored.String()))
+	if err != nil {
+		t.Fatalf("note.sh failed on a large card: %v\noutput: %s", err, out)
+	}
+	if len(invs) != 2 {
+		t.Fatalf("expected 2 invocations, got %d:\n%s", len(invs), invocationsString(invs))
+	}
+
+	var notes []string
+	for _, line := range invs[1].stdinLines() {
+		if strings.HasPrefix(line, "NOTE:") {
+			notes = append(notes, line)
+		}
+	}
+	if len(notes) != 1 {
+		t.Fatalf("want exactly 1 NOTE line, got %d: %q", len(notes), notes)
+	}
+	if !strings.Contains(notes[0], "first note") || !strings.Contains(notes[0], "second note") {
+		t.Errorf("append lost a note: %q", notes[0])
+	}
+}

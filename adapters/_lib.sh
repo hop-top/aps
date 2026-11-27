@@ -110,7 +110,10 @@ aps__yaml_value() {
   fi
 
   local raw
-  raw=$(printf '%s\n' "$all" | head -1)
+  # First line by parameter expansion, not `| head -1`: head exits after
+  # one line and under pipefail the still-writing printf dies of SIGPIPE
+  # (141) once the matches exceed a pipe buffer.
+  raw="${all%%$'\n'*}"
   raw="${raw%$'\r'}"
   raw="${raw#"${key}":}"
   raw="${raw#"${raw%%[![:space:]]*}"}"

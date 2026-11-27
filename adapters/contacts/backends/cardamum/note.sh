@@ -31,7 +31,10 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # whole matched line. Both are ordinary in note text (URLs, "R&D").
 ESCAPED_TEXT="$(aps_sed_replacement "$TEXT")"
 
-if printf '%s\n' "$CURRENT" | grep -q "^NOTE:"; then
+# Here-string, not `printf | grep -q`: grep -q stops at the first match
+# and under pipefail the still-writing printf dies of SIGPIPE on a big
+# card, which read as "no NOTE" and inserted a second NOTE line.
+if grep -q "^NOTE:" <<<"$CURRENT"; then
   CURRENT=$(printf '%s\n' "$CURRENT" | \
     sed "s/^NOTE:\(.*\)/NOTE:\1 | [$TIMESTAMP] $ESCAPED_TEXT/")
 else

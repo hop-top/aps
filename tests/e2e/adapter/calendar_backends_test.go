@@ -743,3 +743,38 @@ func TestCalendarMissingRequiredVars(t *testing.T) {
 		})
 	}
 }
+
+// TestGamRespond_LargeAttendeeListStillMatches guards the attendee
+// pre-check against SIGPIPE. The check stops reading at the first
+// matching line; when the writer still has data (a big event with many
+// attendees) pipefail turned that into a failed pipeline, which the
+// negated condition read as "not an attendee" and refused a response
+// the user was entitled to give.
+func TestGamRespond_LargeAttendeeListStillMatches(t *testing.T) {
+	requireBash(t)
+	t.Parallel()
+
+	var info strings.Builder
+	info.WriteString("Event: evt1\nAttendees:\n  email: ops@example.com\n")
+	for i := range 20000 {
+		info.WriteString("  email: guest" + itoa5(i) + "@example.com\n")
+	}
+
+	invs, out, err := runBackendScriptMulti(t, gamScript("respond-event"), map[string]string{
+		"APS_EMAIL_FROM": "ops@example.com",
+		"CAL_EVENT_ID":   "evt1",
+		"CAL_RESPONSE":   "accepted",
+	}, stubOptions{Responses: []stubResponse{
+		{Match: []string{"calendar"}, Stdout: info.String()},
+	}})
+	if err != nil {
+		t.Fatalf("respond-event.sh failed on a large attendee list: %v\noutput: %s", err, out)
+	}
+	if len(invs) != 2 {
+		t.Fatalf("expected info + updateevent, got %d:\n%s",
+			len(invs), invocationsString(invs))
+	}
+	if !argvHasPair(invs[1], "responsestatus", "accepted") {
+		t.Errorf("response status not patched: %s", invs[1].argvString())
+	}
+}

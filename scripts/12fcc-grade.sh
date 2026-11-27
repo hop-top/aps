@@ -71,7 +71,7 @@ SERVE_PID=$!
 
 PORT=""
 for _ in $(seq 1 50); do
-  PORT="$(sed -n 's/.*"port": *\([0-9][0-9]*\).*/\1/p' "$SERVE_LOG" | head -1)"
+  PORT="$(sed -n 's/.*"port": *\([0-9][0-9]*\).*/\1/p' "$SERVE_LOG" | sed -n 1p)"
   [ -n "$PORT" ] && break
   if ! kill -0 "$SERVE_PID" 2>/dev/null; then
     echo "ERROR: grading service exited at boot:" >&2

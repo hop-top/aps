@@ -27,6 +27,18 @@ n=$(( $(cat "$STUB_DIR/calls" 2>/dev/null || echo 0) + 1 ))
 echo "$n" > "$STUB_DIR/calls"
 fail=false
 if [ "${STUB_FAIL_CALLS:-0}" = always ] || [ "$n" -le "${STUB_FAIL_CALLS:-0}" ]; then fail=true; fi
+if $fail && [ "${STUB_KIND:-}" = file-many ]; then
+  # One missing local file sorted ahead of thousands of http failures: the
+  # url list handed to the non-http check exceeds a pipe buffer.
+  {
+    printf '{"error_map":{"docs/a.md":[{"url":"file:///nope/missing.md","status":{"text":"Cannot find file","code":404},"span":{"line":1}}'
+    for i in $(seq 1 4000); do
+      printf ',{"url":"https://example.com/page/%05d","status":{"text":"503","code":503},"span":{"line":2}}' "$i"
+    done
+    printf ']},"timeout_map":{}}\n'
+  } > "$out"
+  exit 2
+fi
 if $fail; then
   url="https://github.com/example/repo/blob/main/x.md"
   [ "${STUB_KIND:-}" = file ] && url="file:///nope/missing.md"
@@ -62,6 +74,8 @@ run_case transient-1      0 2 1
 run_case transient-3      0 4 3
 run_case persistent       1 4 always
 run_case permanent-file   1 1 always file
+# A permanent failure must not be retried however long the failed-url list is.
+run_case permanent-file-large 1 1 always file-many
 WAITS="" run_case retry-disabled 1 1 always
 
 if grep -q 'github.com/example/repo/blob/main/x.md' "$work/persistent/out"; then

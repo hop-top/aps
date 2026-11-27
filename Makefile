@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X hop.top/aps/internal/version.Version=$(VERSION) -X hop.top/
 CGO_ENABLED=1
 export CGO_ENABLED
 
-.PHONY: all build build-vault test lint lint-test-env lint-docs test-scripts docs-gen docs-check run clean release release-snapshot ci help setup \
+.PHONY: all build build-vault test lint lint-test-env lint-sigpipe lint-docs test-scripts docs-gen docs-check run clean release release-snapshot ci help setup \
 	test-stories \
 	12fcc-record 12fcc-grade 12fcc-badge 12fcc-scan \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
@@ -51,12 +51,15 @@ test-workflows: ## Run GitHub Actions locally with act
 	@echo "Running workflows locally with act..."
 	@act push --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
-lint: docs-check lint-test-env ## Run golangci-lint, the generated-docs staleness check and the test-env guard
+lint: docs-check lint-test-env lint-sigpipe ## Run golangci-lint, the generated-docs staleness check and the test-env and SIGPIPE guards
 	@echo "Running linter..."
 	@golangci-lint run ./...
 
 lint-test-env: ## Fail on os.Setenv/Unsetenv of HOME/XDG/etc in tests (use t.Setenv)
 	@bash scripts/check-test-env.sh
+
+lint-sigpipe: ## Fail on a writer piped into an early-exit reader (head, grep -q) in pipefail scripts
+	@bash scripts/check-sigpipe.sh
 
 lint-docs: ## Validate documentation links and referenced test files
 	@bash scripts/check-links.sh
