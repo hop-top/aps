@@ -25,9 +25,78 @@ fi
 errors=0
 
 # --- Part 1: Lychee markdown link check ---
+#
+# External hosts (notably github.com blob pages) intermittently answer 503
+# for URLs that are fine seconds later. lychee already retries 5xx/429/timeouts
+# itself (max_retries, exponential retry_wait_time), but that backoff is too
+# short to outlast the burst. So: run once; if only http(s) links failed,
+# re-check just those URLs in a fresh lychee run after a growing wait. A link
+# is reported broken only if it fails every attempt. Permanent failures
+# (missing local files, bad config) fail at once, without waiting.
+#
+# LINK_CHECK_RETRY_WAITS: space-separated seconds to wait before each re-check
+# (default "20 40 80": 140s of waiting at most). Empty disables re-checks.
+read -ra retry_waits <<< "${LINK_CHECK_RETRY_WAITS-20 40 80}"
+
+work_dir="$(mktemp -d)"
+missing_file="$work_dir/missing"
+trap 'rm -rf "$work_dir"' EXIT
+
+# print_failures <json>: one line per failed link with its source location.
+print_failures() {
+  jq -r '(.error_map, .timeout_map // {}) | to_entries[]
+         | .key as $f | .value[]
+         | "  \(.url)  [\(.status.text // "failed")]  (\($f):\(.span.line // 0))"' "$1"
+}
+
+# failed_urls <json>: unique failed URLs, one per line.
+failed_urls() {
+  jq -r '[(.error_map, .timeout_map // {})[][].url] | unique[]' "$1"
+}
+
+check_docs_links() {
+  local json="$work_dir/lychee.json" rc=0 attempt=0 wait_s urls recheck
+  lychee --config .lychee.toml --no-progress --format json \
+    --output "$json" 'docs/**/*.md' >/dev/null || rc=$?
+  [ "$rc" -eq 0 ] && return 0
+
+  # Anything but "links failed" (exit 2) is a runtime/config error: no retry.
+  if [ "$rc" -ne 2 ] || ! jq -e . "$json" >/dev/null 2>&1; then
+    echo "lychee exited with status $rc" >&2
+    return 1
+  fi
+
+  urls="$(failed_urls "$json")"
+  if printf '%s\n' "$urls" | grep -qvE '^https?://'; then
+    print_failures "$json" >&2
+    return 1 # a non-http failure (e.g. missing file) will not heal
+  fi
+
+  for wait_s in ${retry_waits[@]+"${retry_waits[@]}"}; do
+    attempt=$((attempt + 1))
+    echo -e "${CYAN}$(printf '%s\n' "$urls" | wc -l | tr -d ' ') link(s) failed; re-checking in ${wait_s}s (re-check ${attempt}/${#retry_waits[@]})...${RESET}"
+    sleep "$wait_s"
+    recheck="$work_dir/recheck.md"
+    printf '%s\n' "$urls" | sed 's/.*/<&>/' > "$recheck"
+    rc=0
+    lychee --config .lychee.toml --no-progress --format json \
+      --output "$json" "$recheck" >/dev/null || rc=$?
+    [ "$rc" -eq 0 ] && return 0
+    if [ "$rc" -ne 2 ] || ! jq -e . "$json" >/dev/null 2>&1; then
+      echo "lychee exited with status $rc" >&2
+      return 1
+    fi
+    urls="$(failed_urls "$json")"
+  done
+
+  echo "Still failing after $((${#retry_waits[@]} + 1)) attempt(s):" >&2
+  printf '%s\n' "$urls" | sed 's/^/  /' >&2
+  return 1
+}
+
 echo -e "${BOLD}Checking markdown links with lychee...${RESET}"
 if command -v lychee >/dev/null 2>&1; then
-  if ! lychee --config .lychee.toml 'docs/**/*.md'; then
+  if ! check_docs_links; then
     echo -e "${RED}Lychee found broken links.${RESET}"
     errors=$((errors + 1))
   else
@@ -46,9 +115,6 @@ fi
 # sibling repo are skipped even inside that section.
 echo ""
 echo -e "${BOLD}Checking referenced test file paths in stories...${RESET}"
-
-missing_file="$(mktemp)"
-trap 'rm -f "$missing_file"' EXIT
 
 for story in docs/stories/[0-9]*.md; do
   [ -f "$story" ] || continue

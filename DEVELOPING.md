@@ -31,6 +31,9 @@ make test-go     # just the Go tests
 make lint        # docs-check + golangci-lint run ./...
 make lint-docs   # scripts/check-links.sh: lychee over docs/**/*.md
                  # + story-referenced .go paths must exist
+                 # (failed URLs are re-checked after 20s/40s/80s waits;
+                 # LINK_CHECK_RETRY_WAITS="..." overrides, "" disables)
+make test-scripts  # stub-lychee tests for that retry logic
 ```
 
 `make lint` runs `docs-check` first — stale generated doc regions fail

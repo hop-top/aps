@@ -94,7 +94,9 @@ Validate documentation links and test file references.
 ```
 
 **Checks:**
-1. Markdown links (using `lychee`)
+1. Markdown links (using `lychee`); failed URLs are re-checked after
+   20s/40s/80s waits and reported only if they fail every attempt
+   (`LINK_CHECK_RETRY_WAITS="..."` overrides; empty disables)
 2. Referenced test files exist
 
 **Useful for:**
