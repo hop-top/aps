@@ -759,6 +759,14 @@ func (h *Handler) handleWhatsAppServiceWebhook(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// Twilio discards a non-TwiML webhook response (error 12300). Replies
+	// go out through the Messages API, so acknowledge with an empty
+	// <Response/>. Other WhatsApp providers keep the JSON contract.
+	if serviceProvider(service, "whatsapp-cloud") == providerTwilio {
+		writeTwiML(w, "")
+		return
+	}
+
 	response := map[string]any{
 		"status":    "accepted",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
