@@ -16,6 +16,7 @@ type Manager struct {
 	squads map[string]*Squad
 	dir    string                 // empty = in-memory only
 	dirFn  func() (string, error) // resolves dir per operation when set
+	broken map[string]error       // squads on disk that failed to load, by dir name
 }
 
 // NewManager creates a Manager with an empty squad registry.
@@ -66,6 +67,9 @@ func (m *Manager) Create(s Squad) error {
 	if _, exists := m.squads[s.ID]; exists {
 		return fmt.Errorf("squad already exists: %s", s.ID)
 	}
+	if err, bad := m.broken[s.ID]; bad {
+		return fmt.Errorf("squad already exists but cannot be loaded: %w", err)
+	}
 
 	now := time.Now()
 	s.CreatedAt = now
@@ -83,9 +87,9 @@ func (m *Manager) Get(id string) (*Squad, error) {
 	}
 	defer unlock()
 
-	s, exists := m.squads[id]
-	if !exists {
-		return nil, fmt.Errorf("squad not found: %s", id)
+	s, err := m.find(id)
+	if err != nil {
+		return nil, err
 	}
 
 	cp := *s
@@ -95,14 +99,16 @@ func (m *Manager) Get(id string) (*Squad, error) {
 	return &cp, nil
 }
 
-// List returns copies of all squads. Load failures yield an empty result;
-// use ListChecked to observe them.
+// List returns copies of all squads that load. Squads whose manifest is
+// unreadable are skipped; use ListChecked to observe them.
 func (m *Manager) List() []Squad {
 	out, _ := m.ListChecked()
 	return out
 }
 
-// ListChecked is List with load errors surfaced.
+// ListChecked is List with load errors surfaced: it returns every squad
+// that loaded together with an error naming each manifest that did not.
+// Callers decide whether a partial result is acceptable.
 func (m *Manager) ListChecked() ([]Squad, error) {
 	unlock, err := m.lock()
 	if err != nil {
@@ -119,7 +125,7 @@ func (m *Manager) ListChecked() ([]Squad, error) {
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 
-	return result, nil
+	return result, m.brokenErr()
 }
 
 // Update validates and replaces an existing squad. Returns an error if the
@@ -138,9 +144,9 @@ func (m *Manager) Update(s Squad) error {
 	}
 	defer unlock()
 
-	existing, exists := m.squads[s.ID]
-	if !exists {
-		return fmt.Errorf("squad not found: %s", s.ID)
+	existing, err := m.find(s.ID)
+	if err != nil {
+		return err
 	}
 
 	s.CreatedAt = existing.CreatedAt
@@ -158,7 +164,11 @@ func (m *Manager) Delete(id string) error {
 	}
 	defer unlock()
 
-	if _, exists := m.squads[id]; !exists {
+	// A squad that fails to load can still be deleted: that is how a
+	// damaged record is cleared.
+	_, loaded := m.squads[id]
+	_, broken := m.broken[id]
+	if !loaded && !broken {
 		return fmt.Errorf("squad not found: %s", id)
 	}
 
@@ -178,9 +188,9 @@ func (m *Manager) AddMember(squadID, profileID string) error {
 	}
 	defer unlock()
 
-	s, exists := m.squads[squadID]
-	if !exists {
-		return fmt.Errorf("squad not found: %s", squadID)
+	s, err := m.find(squadID)
+	if err != nil {
+		return err
 	}
 
 	for _, member := range s.Members {
@@ -204,9 +214,9 @@ func (m *Manager) RemoveMember(squadID, profileID string) error {
 	}
 	defer unlock()
 
-	s, exists := m.squads[squadID]
-	if !exists {
-		return fmt.Errorf("squad not found: %s", squadID)
+	s, err := m.find(squadID)
+	if err != nil {
+		return err
 	}
 
 	for i, member := range s.Members {
@@ -278,9 +288,9 @@ func (m *Manager) GetInheritedConfig(squadID string) (map[string]any, error) {
 	}
 	defer unlock()
 
-	s, exists := m.squads[squadID]
-	if !exists {
-		return nil, fmt.Errorf("squad not found: %s", squadID)
+	s, err := m.find(squadID)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]any{
