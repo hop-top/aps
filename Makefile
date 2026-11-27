@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X hop.top/aps/internal/version.Version=$(VERSION) -X hop.top/
 CGO_ENABLED=1
 export CGO_ENABLED
 
-.PHONY: all build build-vault test lint lint-docs docs-gen docs-check run clean release release-snapshot ci help setup \
+.PHONY: all build build-vault test lint lint-docs test-scripts docs-gen docs-check run clean release release-snapshot ci help setup \
 	test-stories \
 	12fcc-record 12fcc-grade 12fcc-badge 12fcc-scan \
 	docker-build-test docker-test-up docker-test-down docker-test-shell \
@@ -57,6 +57,9 @@ lint: docs-check ## Run golangci-lint and the generated-docs staleness check
 
 lint-docs: ## Validate documentation links and referenced test files
 	@bash scripts/check-links.sh
+
+test-scripts: ## Test script logic (link-check retry) with a stubbed lychee
+	@bash scripts/test-check-links.sh
 
 # Generated doc regions (cog markers). Marker files are discovered
 # dynamically, so both targets are a green no-op until the first
