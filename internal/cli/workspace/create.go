@@ -33,8 +33,10 @@ exchange tasks, and resolve conflicts.`,
 			description, _ := cmd.Flags().GetString("description")
 			policy, _ := cmd.Flags().GetString("resolution-policy")
 
-			// Interactive prompts when flags not provided
-			if description == "" {
+			// Interactive prompts when flags not provided and stdin is a
+			// terminal; headless callers get the flag defaults.
+			interactive := stdinIsTerminal()
+			if description == "" && interactive {
 				if err := huh.NewInput().
 					Title("Description (optional)").
 					Value(&description).
@@ -43,7 +45,7 @@ exchange tasks, and resolve conflicts.`,
 				}
 			}
 
-			if !cmd.Flags().Changed("resolution-policy") {
+			if !cmd.Flags().Changed("resolution-policy") && interactive {
 				if err := huh.NewSelect[string]().
 					Title("Conflict resolution policy").
 					Options(

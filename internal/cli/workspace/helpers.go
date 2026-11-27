@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	collab "hop.top/aps/internal/core/collaboration"
 	"hop.top/aps/internal/storage"
@@ -59,6 +60,10 @@ func resolveProfile(cmd *cobra.Command) (string, error) {
 	}
 	return "", fmt.Errorf("no profile specified\n\n  Use: --profile <name> or set APS_PROFILE")
 }
+
+// stdinIsTerminal reports whether stdin is an interactive terminal.
+// Variable so tests can force either mode.
+var stdinIsTerminal = func() bool { return term.IsTerminal(int(os.Stdin.Fd())) }
 
 // getStorage creates a CollaborationStorage with the default root.
 func getStorage() (*storage.CollaborationStorage, error) {
