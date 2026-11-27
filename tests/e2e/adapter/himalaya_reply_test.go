@@ -248,14 +248,15 @@ func TestHimalayaReply_LargeQuotedOriginal(t *testing.T) {
 		"To: sender@example.com\n" +
 		"Subject: Re: Long thread\n" +
 		"\n")
-	want := []string{
+	want := make([]string, 0, 6+quotedLines)
+	want = append(want,
 		"From: ops@example.com",
 		"To: sender@example.com",
 		"Subject: Re: Long thread",
 		"",
 		"Confirmed, shipping now.",
 		"",
-	}
+	)
 	for i := range quotedLines {
 		line := "> quoted line " + itoa5(i) + " of a long original message"
 		tmpl.WriteString(line + "\n")
