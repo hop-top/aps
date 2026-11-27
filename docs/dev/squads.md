@@ -53,6 +53,48 @@ squads:
   - squad-id-2
 ```
 
+### Storage
+
+Squads persist under the data dir, one directory per squad, like profiles
+(`profiles/<id>/profile.yaml`) and capabilities (`capabilities/<name>/manifest.yaml`):
+
+```
+$APS_DATA_PATH/squads/<id>/manifest.yaml     # default: ~/.local/share/aps
+```
+
+```yaml
+id: demo-squad
+name: Demo Squad
+type: platform
+domain: core
+members:
+    - alice
+    - bob
+created_at: 2026-11-27T06:04:43.119964-05:00
+updated_at: 2026-11-27T06:04:43.119964-05:00
+```
+
+- Every command reads the store afresh, so separate invocations agree.
+- A manifest is replaced atomically (temp file in the squad dir, synced,
+  renamed), so a crash leaves the old or the new record, never a partial one.
+- There is no cross-process lock: two commands changing the same squad at
+  the same instant can lose one of the changes (last writer wins). The
+  manifest is never left corrupt.
+- Member IDs are stored verbatim; they are not checked against the profile store.
+- IDs must be safe directory names on every platform: no path separators or
+  `..`, no `: * ? " < > |`, no control characters, no trailing dot or space,
+  no Windows device names (`con`, `nul`, `com1`, ...), at most 255 bytes.
+- A manifest that cannot be read, or whose `id` differs from its directory
+  name, is reported with its file path. `list` skips it and names it on
+  stderr; `show <id>` and mutations of that squad fail with the error;
+  `check` fails rather than validate a partial topology; `delete <id>` removes it.
+
+`--format json|yaml` on `show` prints one squad object (`id`, `name`, `type`,
+`domain`, `description`, `members`, `golden_path_defined`, `created_at`,
+`updated_at`; `members` is `[]` when empty; `scope` appears when set).
+`list` prints an array of summary rows. `create` and `members add|remove`
+print the resulting squad object; `delete` prints `{"id": ..., "deleted": true}`.
+
 ### Export / Import
 
 ```bash
