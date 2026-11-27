@@ -213,7 +213,7 @@ func (m *Manager) save(s *Squad) error {
 	if err != nil {
 		return fmt.Errorf("marshal squad: %w", err)
 	}
-	if err := os.MkdirAll(sd, 0o755); err != nil { //nolint:gosec // squad data is not secret; mode matches the profile store
+	if err := os.MkdirAll(sd, 0o755); err != nil { // #nosec G301 -- squad data is not secret; mode matches the profile store
 		return fmt.Errorf("create squad dir: %w", err)
 	}
 	tmpPath, err := writeTemp(sd, data)
@@ -234,7 +234,7 @@ func writeTemp(dir string, data []byte) (string, error) {
 	for i := 0; ; i++ {
 		name := fmt.Sprintf(".manifest-%d-%d.tmp", os.Getpid(), time.Now().UnixNano()+int64(i))
 		p := filepath.Join(dir, name)
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644) //nolint:gosec // under squads dir; mode matches the profile store
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644) // #nosec G302 G304 -- under squads dir; mode matches the profile store
 		if errors.Is(err, os.ErrExist) && i < 16 {
 			continue
 		}
