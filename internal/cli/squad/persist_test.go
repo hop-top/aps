@@ -3,8 +3,11 @@ package squad
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
+
+	coresquad "hop.top/aps/internal/core/squad"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,6 +22,12 @@ func useDataDir(t *testing.T) func() {
 	fresh := func() { defaultManager = newManager() }
 	fresh()
 	return fresh
+}
+
+// squadsDirForTest returns the squads directory under the test data dir.
+func squadsDirForTest(t *testing.T) (string, error) {
+	t.Helper()
+	return coresquad.SquadsDir()
 }
 
 func runShowWith(t *testing.T, args ...string) string {
@@ -37,12 +46,12 @@ func runShowWith(t *testing.T, args ...string) string {
 
 func TestSquadCLI_PersistsAcrossProcesses(t *testing.T) {
 	fresh := useDataDir(t)
-	if err := runCreate("demo-squad", "platform", "ops", "", []string{"alice", "bob"}); err != nil {
+	if err := runCreate(io.Discard, "", "demo-squad", "platform", "ops", "", []string{"alice", "bob"}); err != nil {
 		t.Fatal(err)
 	}
 
 	fresh() // new process
-	if err := runAddMember("demo-squad", "carol"); err != nil {
+	if err := runAddMember(io.Discard, "", "demo-squad", "carol"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -58,7 +67,7 @@ func TestSquadCLI_PersistsAcrossProcesses(t *testing.T) {
 		t.Errorf("list len = %d", got)
 	}
 
-	if err := runDelete("demo-squad"); err != nil {
+	if err := runDelete(io.Discard, "", "demo-squad"); err != nil {
 		t.Fatal(err)
 	}
 	fresh()
@@ -69,7 +78,7 @@ func TestSquadCLI_PersistsAcrossProcesses(t *testing.T) {
 
 func TestSquadShow_FormatJSONYAML(t *testing.T) {
 	fresh := useDataDir(t)
-	if err := runCreate("demo-squad", "platform", "ops", "d", []string{"alice", "bob"}); err != nil {
+	if err := runCreate(io.Discard, "", "demo-squad", "platform", "ops", "d", []string{"alice", "bob"}); err != nil {
 		t.Fatal(err)
 	}
 	fresh()

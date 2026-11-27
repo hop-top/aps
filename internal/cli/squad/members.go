@@ -2,7 +2,7 @@ package squad
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"hop.top/aps/internal/cli/clinote"
 
@@ -42,10 +42,12 @@ remove to undo. Not idempotent at the manager level (re-running
 returns an error on duplicate membership). --dry-run is opted out
 because the result is fully determined by the two positional
 arguments. Use --note to attach an audit reason that flows to the
-event bus alongside the mutation.`,
+event bus alongside the mutation. With --format json|yaml the
+updated squad prints as a record, in the same shape as aps squad
+show.`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAddMember(args[0], args[1])
+			return runAddMember(cmd.OutOrStdout(), formatOf(cmd), args[0], args[1])
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
@@ -61,13 +63,11 @@ event bus alongside the mutation.`,
 	return cmd
 }
 
-func runAddMember(squadID, profileID string) error {
+func runAddMember(w io.Writer, format, squadID, profileID string) error {
 	if err := defaultManager.AddMember(squadID, profileID); err != nil {
 		return err
 	}
-
-	fmt.Fprintf(os.Stdout, "Added %q to squad %q\n", profileID, squadID)
-	return nil
+	return reportMembership(w, format, squadID, fmt.Sprintf("Added %q to squad %q\n", profileID, squadID))
 }
 
 func newRemoveMemberCmd() *cobra.Command {
@@ -84,10 +84,12 @@ Destructive at the squad level: the membership entry is removed
 irreversibly from the squad store. The destructive-token
 confirmation flow gates the apply path, and --dry-run is opted out
 because preview would only restate the two positional arguments.
-Idempotent on already-absent membership.`,
+Idempotent on already-absent membership. With --format json|yaml
+the updated squad prints as a record, in the same shape as aps
+squad show.`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRemoveMember(args[0], args[1])
+			return runRemoveMember(cmd.OutOrStdout(), formatOf(cmd), args[0], args[1])
 		},
 	}
 	clinote.AddFlag(cmd) // T-1291
@@ -105,11 +107,23 @@ Idempotent on already-absent membership.`,
 	return cmd
 }
 
-func runRemoveMember(squadID, profileID string) error {
+func runRemoveMember(w io.Writer, format, squadID, profileID string) error {
 	if err := defaultManager.RemoveMember(squadID, profileID); err != nil {
 		return err
 	}
+	return reportMembership(w, format, squadID, fmt.Sprintf("Removed %q from squad %q\n", profileID, squadID))
+}
 
-	fmt.Fprintf(os.Stdout, "Removed %q from squad %q\n", profileID, squadID)
-	return nil
+// reportMembership prints the outcome of a membership change: the human
+// line, or under --format json|yaml the squad record as it now stands.
+func reportMembership(w io.Writer, format, squadID, line string) error {
+	if !structured(format) {
+		_, err := io.WriteString(w, line)
+		return err
+	}
+	s, err := defaultManager.Get(squadID)
+	if err != nil {
+		return err
+	}
+	return renderStructured(w, format, newSquadRecord(s))
 }
