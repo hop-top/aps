@@ -1,6 +1,9 @@
 package collaboration
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // WorkspaceNotFoundError indicates a workspace does not exist.
 type WorkspaceNotFoundError struct {
@@ -64,4 +67,25 @@ type WorkspaceCapacityError struct {
 
 func (e *WorkspaceCapacityError) Error() string {
 	return fmt.Sprintf("workspace %q at capacity (%d agents)", e.WorkspaceID, e.MaxAgents)
+}
+
+// WorkspaceMatch identifies one workspace in an ambiguous name lookup.
+type WorkspaceMatch struct {
+	ID    string
+	State WorkspaceState
+}
+
+// AmbiguousWorkspaceError indicates a name matches several workspaces.
+type AmbiguousWorkspaceError struct {
+	Name    string
+	Matches []WorkspaceMatch
+}
+
+func (e *AmbiguousWorkspaceError) Error() string {
+	parts := make([]string, len(e.Matches))
+	for i, m := range e.Matches {
+		parts[i] = fmt.Sprintf("%s (%s)", m.ID, m.State)
+	}
+	return fmt.Sprintf("workspace name %q is ambiguous: matches %s; pass the workspace ID",
+		e.Name, strings.Join(parts, ", "))
 }
