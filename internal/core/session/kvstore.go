@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"hop.top/aps/internal/core"
@@ -70,11 +69,15 @@ func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir strin
 	if err := json.Unmarshal(data, &legacy); err != nil {
 		return fmt.Errorf("parse legacy registry: %w", err)
 	}
+	s, err := r.getStore()
+	if err != nil {
+		return err
+	}
 	for id, info := range legacy {
 		if info == nil {
 			continue
 		}
-		if _, ok, err := r.store.Get(ctx, sessionKey(id)); err != nil {
+		if _, ok, err := s.Get(ctx, sessionKey(id)); err != nil {
 			return fmt.Errorf("kv get during legacy migration: %w", err)
 		} else if ok {
 			continue
@@ -83,7 +86,7 @@ func (r *SessionRegistry) migrateLegacyJSONLocked(ctx context.Context, dir strin
 		if err != nil {
 			return fmt.Errorf("marshal legacy session %q: %w", id, err)
 		}
-		if err := r.store.Put(ctx, sessionKey(id), buf); err != nil {
+		if err := s.Put(ctx, sessionKey(id), buf); err != nil {
 			return fmt.Errorf("kv put during legacy migration: %w", err)
 		}
 	}
@@ -106,11 +109,15 @@ func archiveLegacy(path string) error {
 // needs atomicity; for single-key writes the sqlite backend is
 // already safe.
 func (r *SessionRegistry) kvPutSessionLocked(ctx context.Context, info *SessionInfo) error {
+	s, err := r.getStore()
+	if err != nil {
+		return err
+	}
 	buf, err := json.Marshal(info)
 	if err != nil {
 		return fmt.Errorf("marshal session: %w", err)
 	}
-	if err := r.store.Put(ctx, sessionKey(info.ID), buf); err != nil {
+	if err := s.Put(ctx, sessionKey(info.ID), buf); err != nil {
 		return fmt.Errorf("kv put: %w", err)
 	}
 	return nil
@@ -118,7 +125,11 @@ func (r *SessionRegistry) kvPutSessionLocked(ctx context.Context, info *SessionI
 
 // kvGetSession returns the session row for id, or nil if absent.
 func (r *SessionRegistry) kvGetSession(ctx context.Context, id string) (*SessionInfo, error) {
-	raw, ok, err := r.store.Get(ctx, sessionKey(id))
+	s, err := r.getStore()
+	if err != nil {
+		return nil, err
+	}
+	raw, ok, err := s.Get(ctx, sessionKey(id))
 	if err != nil {
 		return nil, fmt.Errorf("kv get: %w", err)
 	}
@@ -134,7 +145,11 @@ func (r *SessionRegistry) kvGetSession(ctx context.Context, id string) (*Session
 
 // kvDeleteSession removes a session row.
 func (r *SessionRegistry) kvDeleteSession(ctx context.Context, id string) error {
-	if err := r.store.Delete(ctx, sessionKey(id)); err != nil {
+	s, err := r.getStore()
+	if err != nil {
+		return err
+	}
+	if err := s.Delete(ctx, sessionKey(id)); err != nil {
 		return fmt.Errorf("kv delete: %w", err)
 	}
 	return nil
@@ -144,13 +159,17 @@ func (r *SessionRegistry) kvDeleteSession(ctx context.Context, id string) error 
 // List/ListByProfile/ListByStatus/ListByTier/ListByType and by the
 // reaper's CleanupInactive sweep.
 func (r *SessionRegistry) kvListSessions(ctx context.Context) ([]*SessionInfo, error) {
-	keys, err := r.store.List(ctx, sessionKeyPrefix)
+	s, err := r.getStore()
+	if err != nil {
+		return nil, err
+	}
+	keys, err := s.List(ctx, sessionKeyPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("kv list: %w", err)
 	}
 	out := make([]*SessionInfo, 0, len(keys))
 	for _, k := range keys {
-		raw, ok, err := r.store.Get(ctx, k)
+		raw, ok, err := s.Get(ctx, k)
 		if err != nil {
 			return nil, fmt.Errorf("kv get during list: %w", err)
 		}
@@ -166,45 +185,109 @@ func (r *SessionRegistry) kvListSessions(ctx context.Context) ([]*SessionInfo, e
 	return out, nil
 }
 
+// ErrRegistryClosed is returned by registry operations invoked after
+// Close. A closed registry never reopens its store.
+var ErrRegistryClosed = errors.New("session registry closed")
+
+// getStore returns the open kv store, or ErrRegistryClosed / the open
+// error. Every store access goes through it so a concurrent Close
+// can never surface as a nil dereference.
+func (r *SessionRegistry) getStore() (kv.Store, error) {
+	r.smu.RLock()
+	defer r.smu.RUnlock()
+	if r.closed {
+		return nil, ErrRegistryClosed
+	}
+	if r.store == nil {
+		if r.storeErr != nil {
+			return nil, r.storeErr
+		}
+		return nil, errors.New("session registry store not open")
+	}
+	return r.store, nil
+}
+
 // ensureStore lazily attaches a kv store to the registry. Called from
 // the constructor and on the first mutation when callers built the
 // registry via the zero-value path (existing tests do so via
 // &SessionRegistry{}). Honours APS_DATA_PATH via core.GetDataDir().
+// Returns ErrRegistryClosed after Close.
 func (r *SessionRegistry) ensureStore() error {
+	r.smu.RLock()
+	closed := r.closed
+	r.smu.RUnlock()
+	if closed {
+		return ErrRegistryClosed
+	}
 	r.storeOnce.Do(func() {
 		dataDir, err := core.GetDataDir()
 		if err != nil {
-			r.storeErr = fmt.Errorf("data dir: %w", err)
+			r.setStoreErr(fmt.Errorf("data dir: %w", err))
 			return
 		}
 		dir := filepath.Join(dataDir, SessionsDir)
 		store, err := openSessionStore(dir)
 		if err != nil {
-			r.storeErr = err
+			r.setStoreErr(err)
+			return
+		}
+		r.smu.Lock()
+		if r.closed {
+			r.smu.Unlock()
+			_ = store.Close()
 			return
 		}
 		r.store = store
+		r.smu.Unlock()
 		if err := r.migrateLegacyJSONLocked(context.Background(), dir); err != nil {
-			r.storeErr = err
+			r.setStoreErr(err)
 		}
 	})
+	r.smu.RLock()
+	defer r.smu.RUnlock()
+	if r.closed {
+		return ErrRegistryClosed
+	}
 	return r.storeErr
 }
 
-// Close releases the underlying kv store. Idempotent — repeat calls
-// are safe and return the error from the first close, if any.
+func (r *SessionRegistry) setStoreErr(err error) {
+	r.smu.Lock()
+	r.storeErr = err
+	r.smu.Unlock()
+}
+
+// Close stops every reaper started on the registry, waits for it to
+// exit, then closes the kv store. Idempotent: repeat calls return nil.
+// After Close all operations return ErrRegistryClosed (reads return
+// nil/empty). Must not be called from a reaper tick.
 func (r *SessionRegistry) Close() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if r.store == nil {
+	r.smu.Lock()
+	if r.closed {
+		r.smu.Unlock()
 		return nil
 	}
-	err := r.store.Close()
+	r.closed = true
+	stops := r.reaperStops
+	r.reaperStops = nil
+	r.smu.Unlock()
+
+	for _, stop := range stops {
+		stop()
+	}
+	r.reaperWG.Wait()
+
+	// Drain in-flight compound operations before closing the store.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.smu.Lock()
+	store := r.store
 	r.store = nil
-	// Reset the once so a subsequent ensureStore() can reopen.
-	r.storeOnce = sync.Once{}
-	r.storeErr = nil
-	if err != nil {
+	r.smu.Unlock()
+	if store == nil {
+		return nil
+	}
+	if err := store.Close(); err != nil {
 		return fmt.Errorf("kv close: %w", err)
 	}
 	return nil
