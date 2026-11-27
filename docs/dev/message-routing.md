@@ -202,10 +202,13 @@ action it received an unrouted sender.
 
 A route resolves to a `profile=action` mapping exactly like a channel
 mapping. `MessageRouter` stamps `message.profile_id`, and execution goes
-through the same profile-scoped `ExecuteRun(RunInput{ProfileID, ActionID})`
-path that `aps action run` uses: the target profile is loaded, its action is
-resolved inside that profile, and the action process runs with that
-profile's environment and isolation. Chat-mode services (`execution: chat`)
+through the profile-scoped `ExecuteRun(RunInput{ProfileID, ActionID})`
+path: the target profile is loaded, its action is resolved inside that
+profile, and the action process runs as a host process with that profile's
+environment. This path does not read `isolation.level`, so no sandbox applies
+whatever the profile sets (`aps action run` uses a different function and
+refuses `platform` and `container`); see
+[Isolation levels](../user/isolation.md). Chat-mode services (`execution: chat`)
 receive the resolved profile in the execution handoff the same way. No shell
 re-invocation of `aps` is involved.
 

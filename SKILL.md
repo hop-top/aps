@@ -1,12 +1,13 @@
 ---
 name: aps
-description: "Local-first Agent Profile System: run commands and agent workflows under isolated profiles (process, platform, or container isolation) with per-profile secrets and git identity injection, session tracking, action automation, messenger webhooks (Telegram, Slack, Discord, Teams, SMS, WhatsApp, email), ticket routing, A2A/ACP protocols, skills, squads, and voice sessions. Use when running a command under an agent profile, creating or managing profiles and their secrets, wiring messenger or webhook integrations, attaching to sessions, or scripting the aps CLI."
+description: "Local-first Agent Profile System: run commands and agent workflows under per-profile environments (process isolation; platform and container levels are not wired in yet) with per-profile secrets and git identity injection, session tracking, action automation, messenger webhooks (Telegram, Slack, Discord, Teams, SMS, WhatsApp, email), ticket routing, A2A/ACP protocols, skills, squads, and voice sessions. Use when running a command under an agent profile, creating or managing profiles and their secrets, wiring messenger or webhook integrations, attaching to sessions, or scripting the aps CLI."
 ---
 
 # Using aps
 
 `aps` gives every agent (or context) its own profile: an identity, a
-secrets store, a git config, actions, adapters, and an isolation level.
+secrets store, a git config, actions, adapters, and an isolation setting (only
+`process` is implemented; it is not a sandbox).
 `aps run <profile> -- <cmd>` executes anything inside that environment;
 everything else in the CLI manages the profiles and the surfaces
 (messengers, webhooks, protocols, voice) that feed work into them.

@@ -7,7 +7,8 @@ Security best practices and guidelines for APS.
 APS is designed with security as a core principle:
 
 - **Local-first**: All data stays on your machine
-- **Process-scoped isolation**: No global state modifications
+- **Process-scoped execution**: No global state modifications. Commands run as your user with
+  no sandbox; `platform` and `container` isolation levels are not wired into `aps run`
 - **Secure defaults**: Secrets are protected by default
 - **Explicit configuration**: Nothing happens without your consent
 
@@ -148,11 +149,15 @@ APS uses the profile's SSH key for the git operation.
 
 ### Profile Isolation
 
-Each profile has its own environment:
+Each profile has its own injected environment. This is environment separation, not a
+sandbox: the command inherits the parent environment and can read any file your user can,
+including other profiles' `secrets.env`.
+
+Each profile injects:
 
 - `<PREFIX>_PROFILE_*` variables are profile-specific
 - Secrets from `secrets.env` are only injected when running that profile
-- No cross-profile leakage
+- Another profile's secrets are not injected into the run
 
 ### Sensitive Variables
 
@@ -293,7 +298,7 @@ server {
 
 - Each Linux user has their own `~/.agents/` directory
 - No cross-user access unless explicitly shared
-- Profile actions run as the invoking user
+- Profile actions run as the invoking user; no sandbox user or container is used
 
 ### Best Practices
 

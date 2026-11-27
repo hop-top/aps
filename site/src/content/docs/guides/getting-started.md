@@ -23,20 +23,18 @@ aps profile new myagent --display-name "My AI Agent" --email "agent@example.com"
 ## Choose an isolation level
 
 ```bash
-# Process isolation (default, fastest)
-aps profile new myagent
-
-# Platform isolation — macOS/Linux user-level sandbox
-aps profile new myagent --isolation-level platform
-
-# Container isolation — strongest, requires Docker
-aps profile new myagent --isolation-level container
+# Process isolation is the default and the only implemented level.
+# A profile with no isolation block runs at `process`: a child process as
+# your user, with the profile's environment and no sandbox.
+#
+# `platform` and `container` can be set in profile.yaml but `aps run`
+# fails for them; see the Isolation Levels guide.
 ```
 
 ## Run a command under a profile
 
 ```bash
-# Run any command isolated under the profile
+# Run any command under the profile's environment
 aps myagent -- echo "Hello from agent!"
 
 # Git with profile's own config

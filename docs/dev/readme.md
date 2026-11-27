@@ -2,6 +2,10 @@
 
 This notebook contains comprehensive documentation for the APS (Adaptive Platform System) project, organized by functional area.
 
+> **Isolation status:** only process isolation is wired into the CLI. The platform and container
+> adapter, design, and benchmark documents below describe code in `internal/core/isolation/` that no
+> command calls. See [Isolation levels](../user/isolation.md) for current behaviour.
+
 ## 📁 Directory Structure
 
 ### 🏗️ Architecture
@@ -44,7 +48,7 @@ Platform-specific implementation documentation.
 Implementation guides and summaries.
 
 - **[guides/](implementation/guides/)** - How-to guides
-  - [migration-guide.md](implementation/guides/migration-guide.md) - Migration from process to platform isolation
+  - [migration-guide.md](implementation/guides/migration-guide.md) - Migration from process to platform isolation (design reference; platform is not wired into the CLI)
   - [platform-adapter-preparation.md](implementation/guides/platform-adapter-preparation.md) - Platform adapter preparation checklist
 
 - **[summaries/](implementation/summaries/)** - Implementation summaries

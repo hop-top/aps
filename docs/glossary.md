@@ -55,7 +55,7 @@ table below.
 
 | Phrase | Means | Key / store | Surface |
 | --- | --- | --- | --- |
-| process session | Managed process of a profile; tmux-backed, optionally in a platform sandbox; registry status `active`, `inactive`, `errored`. | session ID in the session registry | `aps session ...`, `GET /sessions` |
+| process session | Managed process of a profile; tmux-backed; registry status `active`, `inactive`, `errored`. | session ID in the session registry | `aps session ...`, `GET /sessions` |
 | voice session | Process-registry entry registered by `aps voice start` for metadata and routing; `type: voice`. | session registry | `aps session list --type voice`, [Voice](dev/voice.md) |
 | message session | Multi-turn scope inside one conversation; what an action sees as `prior_turns`. | `SessionID` (`msgsess:v1:...`), turn `session_id` | `aps service conversation show <id> --session <session-id>` |
 | `RunInput.ThreadID`, `RunState.thread_id` | Run-state correlation key of a routed action; equals the message `session_id`. | `SessionID` | [Attachment contract](dev/message-conversation-policy.md#attachment-contract) |

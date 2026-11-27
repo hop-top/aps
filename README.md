@@ -54,19 +54,19 @@ that feed work into them: messengers, webhooks, ticket queues, agent protocols, 
 - Local-first. Profiles are YAML files on disk, and `--offline` disables every network call.
 - Secrets, git identity, and profile variables reach the child process as environment
   variables; secrets and PII are redacted from logs and output unless you pass `--no-redact`.
-- Three isolation levels: process, platform (a sandbox user account on macOS and Linux), and
-  container (Docker), with a configurable fallback when the requested level is unavailable.
+- Per-profile isolation setting with three values: `process`, `platform`, and `container`.
+  Only `process` is implemented (a child process with the profile's environment, no sandbox).
+  `platform` and `container` are accepted in `profile.yaml` but not wired into `aps run`,
+  which fails for them.
 - Every command speaks `--format json`, `yaml`, or `csv`, honours `--dry-run` and
   `--confirm`, and exits with canonical codes; `aps toolspec` describes the whole surface for
   tool runners. Graded 12/12 against the 12-factor AI-CLI contract.
 
 **When not to use it**
 
-- Platform isolation needs passwordless sudo and an OpenSSH server (macOS 10.15 or later
-  with the Xcode Command Line Tools; Linux kernel 3.10 or later with `useradd` and
-  `setfacl`), and container isolation needs a running Docker daemon. Without them a profile
-  falls back to process isolation, or fails when it sets `strict: true`. On Windows only
-  process isolation is available; the platform sandbox there is documented as planned.
+- You need a sandbox between an agent and your files, credentials, or other profiles. aps does
+  not provide one today: commands run as your user, and `platform` and `container` isolation
+  are not wired into `aps run` (see [docs/user/isolation.md](docs/user/isolation.md)).
 - Data lives under `~/.local/share/aps`, `~/.config/aps`, `~/.local/state/aps`, and
   `~/.cache/aps` on every OS, including macOS and Windows. There is no OS-native layout.
 - `aps service add` records a message service on the aps side only. It does not create the
@@ -88,8 +88,7 @@ shell as that profile, and `aps` with no arguments opens the interactive TUI.
 ## Install
 
 Prebuilt binaries need nothing else. Building from source or `go install` needs Go 1.27.4
-or later. Platform and container isolation have their own requirements, listed in
-[docs/user/isolation.md](docs/user/isolation.md).
+or later. Isolation levels and their status: [docs/user/isolation.md](docs/user/isolation.md).
 
 | Path | Command |
 |---|---|
@@ -224,8 +223,8 @@ generated reference for every command and flag is
 
 Sessions: `aps session list` (filters `--status`, `--tier`, `--type`; voice sessions are
 `--type voice`), `inspect`, `logs`, `attach`, `detach`, `terminate`, and `delete`. Attach
-uses tmux; for a platform-sandboxed session it tunnels over SSH into the sandbox user, for a
-container session into the container.
+uses tmux, with an SSH branch for sessions recorded as platform sandbox sessions; no aps
+command creates such a session today.
 
 Capabilities: `aps capability install`, `list`, `show`, `link`, `adopt` (move a file or
 directory under aps and symlink it back), `watch` (symlink an external file in), `enable`
@@ -307,8 +306,8 @@ capability_sources:
 | Field | Default | Effect |
 |---|---|---|
 | `prefix` | `APS` | Prefix for the variables injected into sessions |
-| `isolation.default_level` | `process` | Default isolation level for profiles that do not set one |
-| `isolation.fallback_enabled` | `true` | Allow degraded-mode operation if the preferred isolation is unavailable |
+| `isolation.default_level` | `process` | Parsed and saved; `aps run` does not read it (a profile with no level runs at `process`) |
+| `isolation.fallback_enabled` | `true` | Parsed and saved; no command applies it |
 | `capability_sources` | `[]` | Additional directories to search for capability definitions |
 
 `secrets.backend` selects where secrets live: `file` (the profile's `secrets.env`, mode
@@ -316,7 +315,7 @@ capability_sources:
 build), `infisical`, or `ghsecrets`; the keys each backend needs are listed under Secret
 Store Backends in [docs/user/messengers.md](docs/user/messengers.md). Per-profile isolation
 lives in `profile.yaml` (`isolation.level`, `strict`, `fallback`, and the `platform` and
-`container` blocks): [docs/user/isolation.md](docs/user/isolation.md).
+`container` blocks; only `process` takes effect): [docs/user/isolation.md](docs/user/isolation.md).
 
 Environment variables aps reads:
 
@@ -355,7 +354,7 @@ profiles/reviewer/
   actions/             profile action scripts
 sessions/registry.db   session registry
 capabilities/          installed capabilities
-keys/admin_priv        admin key for attaching to sandboxed sessions
+keys/admin_priv        admin key for the platform sandbox attach path
 docs/                  output of aps docs
 ```
 
@@ -442,11 +441,10 @@ pages linked below.
   export formats), [commands](docs/cli/commands.md) (generated),
   [human cheatsheet](docs/cheatsheet-human.md), [agent cheatsheet](docs/cheatsheet-agent.md),
   [redaction](docs/cli/redaction.md).
-- Isolation: [levels and requirements](docs/user/isolation.md),
-  [macOS](docs/dev/platforms/macos/overview.md), [Linux](docs/dev/platforms/linux/overview.md),
-  [container](docs/dev/platforms/container/overview.md),
-  [migrating a profile from process to platform or container](docs/dev/implementation/guides/migration-guide.md),
-  [benchmarks](docs/dev/testing/performance-benchmarks.md).
+- Isolation: [levels and status](docs/user/isolation.md). Adapter design notes for the
+  unwired levels (not current behaviour): [macOS](docs/dev/platforms/macos/overview.md),
+  [Linux](docs/dev/platforms/linux/overview.md),
+  [container](docs/dev/platforms/container/overview.md).
 - Messaging and tickets: [overview](docs/MESSENGERS_OVERVIEW.md),
   [quick reference](docs/MESSENGER_SETUP_QUICK_REF.md),
   [message services](docs/user/messengers.md), [conversations](docs/user/conversations.md),

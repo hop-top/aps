@@ -52,7 +52,7 @@ export APS_PROFILE=<name>            # default profile for session
 ## Run Commands
 
 ```bash
-aps run <profile> -- <cmd> [args]    # run cmd under profile env isolation
+aps run <profile> -- <cmd> [args]    # run cmd with profile env (process level only; no sandbox)
 aps env <profile>                    # emit env vars (source into shell)
 ```
 

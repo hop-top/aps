@@ -240,9 +240,9 @@ aps myagent run-detached -- process-queue
 # Attach to running session
 aps session attach sess_abc123
 
-# For platform/container isolation, SSH connection is established
-# Connection to myagent-sandbox (macOS/Linux)
-# Connection to container sess_abc123 (Docker)
+# Sessions recorded as platform sandbox sessions attach over SSH.
+# No aps command creates platform or container sessions today:
+# those levels are not wired into `aps run`.
 ```
 
 ### Detach (Pause)
@@ -258,9 +258,9 @@ aps session terminate sess_abc123
 ```
 
 **Under the hood:**
-- **Process isolation:** Direct shell fork/exec
-- **Platform isolation:** SSH to sandbox user account + tmux
-- **Container isolation:** SSH to container + tmux
+- **Process isolation:** Direct shell fork/exec (the only level `aps run` implements)
+- **Platform isolation:** adapter design: SSH to sandbox user account + tmux; not wired into the CLI
+- **Container isolation:** adapter design: SSH to container + tmux; not wired into the CLI
 
 **Files:**
 - `internal/session/lifecycle.go` - Lifecycle management

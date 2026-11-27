@@ -152,13 +152,22 @@ work (fire-and-forget).
 
 ### Isolation layer (`internal/core/isolation/`)
 
-Three levels:
+Three level settings, one implemented:
 
-- `process` (default) — environment injection only
-- `platform` — Docker
-- `container` — Docker + extra constraints
+- `process` (default) — environment injection only; child process as the
+  invoking user, no sandbox. Implemented in `internal/core/execution.go`.
+- `platform` — sandbox-user adapters (macOS, Linux) exist in this package.
+  Not wired into the CLI: `RunCommand` / `RunAction` return
+  `platform isolation not yet implemented`.
+- `container` — Docker adapter exists in this package. Not wired into the
+  CLI: same `not yet implemented` error.
 
-Set per-profile or globally. tmux capture for session logs.
+Nothing outside tests imports this package. The `strict` / `fallback`
+profile fields, `isolation.default_level`, `isolation.fallback_enabled`, and
+the fallback resolver in `manager.go` are not consulted on the run path. The
+protocol adapter (`internal/core/protocol`, used by `aps serve` and the
+messenger and ticket routers) starts actions as host processes without
+reading the isolation level. tmux capture for session logs.
 
 ### Capability system (`internal/core/capability/`)
 
@@ -343,7 +352,7 @@ Embedded specs (`internal/core/assets/docs/`):
 - [PROFILES.md](../internal/core/assets/docs/PROFILES.md) — profile creation, YAML schema, capabilities, accounts
 - [CLI.md](../internal/core/assets/docs/CLI.md) — full command reference
 - [SECURITY.md](../internal/core/assets/docs/SECURITY.md) — secrets management (`0600`), file permissions, best practices
-- [ISOLATION.md](../internal/core/assets/docs/ISOLATION.md) — process / platform / container levels
+- [ISOLATION.md](../internal/core/assets/docs/ISOLATION.md) — isolation level status
 - [SESSIONS.md](../internal/core/assets/docs/SESSIONS.md) — session lifecycle, tmux log capture
 - [WEBHOOKS.md](../internal/core/assets/docs/WEBHOOKS.md) — event-driven action dispatch
 

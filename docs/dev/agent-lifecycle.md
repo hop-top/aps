@@ -10,7 +10,10 @@ transitioned, and torn down. Covers the actual state model in
 `internal/core/session/registry.go` and the callers that move state.
 
 Audience: contributors modifying lifecycle code, debugging stuck
-sessions, or implementing new isolation backends.
+sessions, or implementing new isolation backends. The isolation backends
+referenced below (`internal/core/isolation/`) are not called by any CLI
+command today, so no `aps` command starts a session through them; see
+[Isolation levels](../user/isolation.md).
 
 ## Two lifecycles, one relationship
 

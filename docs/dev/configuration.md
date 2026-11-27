@@ -55,7 +55,7 @@ The `email` field is used by:
 prefix: APS                        # environment variable prefix
 isolation:
   default_level: process           # process | platform | container
-  fallback_enabled: true           # fall back to process isolation if preferred level fails
+  fallback_enabled: true           # saved; not applied by aps run
 capability_sources:
   - /path/to/additional/capabilities
 ```
