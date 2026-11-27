@@ -516,8 +516,11 @@ func (a *APSAdapter) storeNamespaceDir(namespace string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// A legacy path that fails containment is not an error for the caller:
+	// it only means there is no legacy candidate.
 	legacy, legacyErr := containedJoin(a.storeDir, namespace)
-	if legacyErr != nil || legacy == escaped || !storeLegacyEligible(namespace) {
+	hasLegacy := legacyErr == nil && legacy != escaped && storeLegacyEligible(namespace)
+	if !hasLegacy {
 		return escaped, nil
 	}
 	if _, err := os.Stat(escaped); err == nil {
