@@ -7,7 +7,7 @@ description: Complete command reference for the aps CLI.
 
 The global flags, then every top-level command with its subcommands. This listing is
 generated from the command tree, so it always matches the binary. The
-[full generated reference](https://github.com/hop-top/aps/blob/main/docs/cli/commands.md)
+[full generated reference](https://github.com/hop-top/aps/blob/next/docs/cli/commands.md)
 lists every subcommand and flag.
 
 `aps --help-all` lists every global flag, and `aps <command> --help` is the full reference
@@ -33,7 +33,7 @@ cog.out(subprocess.check_output(
 ]]] -->
 ```
       --format string                  Output format (csv, human, json, table, text, yaml) (default "table")
-  -h, --help[=true|false]              help for aps
+  -h, --help                           help for aps
       --help-all[=true|false]          Show all commands and global flags
       --help-instance[=true|false]     Show only instance commands
       --help-interact[=true|false]     Show only interact commands
@@ -46,7 +46,7 @@ cog.out(subprocess.check_output(
       --no-hints[=true|false]          Suppress next-step hints after command output
       --no-redact[=true|false]         disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]           Disable network access
-  -p, --profile string                 profile id (defaults to active profile)
+  -p, --profile string                 profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]             Suppress non-essential output
   -V, --verbose count                  Increase log verbosity (-V=debug, -VV=trace)
       --workspace string               workspace id (defaults to active workspace)
@@ -62,7 +62,7 @@ cog.out(subprocess.check_output(
 | `aps bundle` | Manage capability bundles | `create`, `delete`, `edit`, `list`, `show`, `validate` |
 | `aps capability` | Manage capabilities (tools, configs, dotfiles) | `adopt`, `delete`, `disable`, `enable`, `install`, `link`, `list`, `patterns`, `show`, `watch` |
 | `aps chat` | Chat with a profile-backed assistant |  |
-| `aps completion` | Generate completion script |  |
+| `aps completion` | Generate completion script | `fig`, `usage` |
 | `aps config` | Inspect aps configuration | `path`, `paths` |
 | `aps contact` | Manage contacts via adapter | `add`, `delete`, `find`, `list`, `note`, `show`, `update` |
 | `aps directory` | Manage AGNTCY Directory registration and discovery | `delete`, `discover`, `register`, `show` |

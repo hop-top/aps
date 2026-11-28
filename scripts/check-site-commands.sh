@@ -10,6 +10,10 @@
 # cannot drift from the code. Flag values and `<placeholders>` are not
 # checked; arguments after a `--` separator are not aps flags.
 #
+# Limit: `aps <word>` with nothing after it is accepted as the profile-first
+# shorthand, so a mistyped single top-level command (`aps wallet`) passes;
+# it cannot be told apart from a profile id.
+#
 # Opt out for a single illustrative line with a trailing comment:
 #   aps made up command --x   # docs-check: skip
 #

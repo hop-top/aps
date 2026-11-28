@@ -6,12 +6,23 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"hop.top/aps/internal/cli"
 )
 
+func rootOrFail(t *testing.T) *cobra.Command {
+	t.Helper()
+	root, err := cli.RootCommand()
+	if err != nil {
+		t.Fatalf("RootCommand: %v", err)
+	}
+	return root
+}
+
 func renderOrFail(t *testing.T) string {
 	t.Helper()
-	out, err := render(cli.RootCommand())
+	out, err := render(rootOrFail(t))
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -23,7 +34,7 @@ func TestRenderCoversEveryTopLevelCommand(t *testing.T) {
 	if !strings.HasPrefix(out, "## aps\n") {
 		t.Errorf("output does not start with the root command page:\n%.120s", out)
 	}
-	for _, child := range cli.RootCommand().Commands() {
+	for _, child := range rootOrFail(t).Commands() {
 		if !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {
 			continue
 		}
@@ -91,14 +102,14 @@ func TestRunWithArgsExitsNonZero(t *testing.T) {
 }
 
 func TestRenderTopListsEveryTopLevelCommand(t *testing.T) {
-	out := renderTop(cli.RootCommand())
+	out := renderTop(rootOrFail(t))
 	if !strings.HasPrefix(out, "```\n") {
 		t.Errorf("output does not start with the global flags block:\n%.80s", out)
 	}
 	if !strings.Contains(out, "| Command | Description | Subcommands |") {
 		t.Error("missing table header")
 	}
-	for _, child := range cli.RootCommand().Commands() {
+	for _, child := range rootOrFail(t).Commands() {
 		if !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {
 			continue
 		}
@@ -107,7 +118,7 @@ func TestRenderTopListsEveryTopLevelCommand(t *testing.T) {
 			t.Errorf("missing row for %q (want substring %q)", child.Name(), want)
 		}
 	}
-	if renderTop(cli.RootCommand()) != out {
+	if renderTop(rootOrFail(t)) != out {
 		t.Error("unstable output")
 	}
 }
@@ -123,7 +134,7 @@ func TestMdTextEscapesMarkup(t *testing.T) {
 }
 
 func TestRenderPathsListsCommandsAndFlags(t *testing.T) {
-	out := renderPaths(cli.RootCommand())
+	out := renderPaths(rootOrFail(t))
 	flagsOf := map[string]string{}
 	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
 		path, flags, ok := strings.Cut(line, "\t")
@@ -143,10 +154,17 @@ func TestRenderPathsListsCommandsAndFlags(t *testing.T) {
 			t.Errorf("aps profile create lacks flag %s", flag)
 		}
 	}
+	// Kit attaches these when the root executes; the documented tree must
+	// already carry them.
+	for _, flag := range []string{"--confirm-token", "--idempotency-key", "--note", "--output"} {
+		if !strings.Contains(flagsOf["aps profile delete"], " "+flag+" ") {
+			t.Errorf("aps profile delete lacks flag %s", flag)
+		}
+	}
 	if _, ok := flagsOf["aps profile new"]; ok {
 		t.Error("lists a command that does not exist")
 	}
-	if renderPaths(cli.RootCommand()) != out {
+	if renderPaths(rootOrFail(t)) != out {
 		t.Error("unstable output")
 	}
 }

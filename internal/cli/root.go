@@ -349,13 +349,28 @@ ID followed by a command to run that command under the selected profile.`
 	}
 }
 
-// Execute runs the CLI through fang (styled help, version, etc.)
-func Execute() error {
-	rootCmd.SilenceErrors = true
+// decorateTree applies the aps-side tree setup Execute needs before kit
+// wraps and dispatches the commands. RootCommand runs it too, so the
+// documented tree is the one the binary serves.
+func decorateTree() {
 	// Assign group IDs to every top-level subcommand before kit
 	// renders help (root.Execute calls applyGroupVisibility internally
 	// after our hook has run).
 	applyCommandGroups()
+	// Attach the envelope implied by each domain error's class before
+	// kit wraps the leaves: kit flattens anything that does not already
+	// implement AsCLIError into GENERIC/exit 1, which otherwise
+	// collapsed conflict (4) and not-found (3) into an
+	// indistinguishable 1. Must precede kit's WrapRunE.
+	classifyLeafErrors(rootCmd)
+}
+
+// Execute runs the CLI through fang (styled help, version, etc.)
+func Execute() error {
+	rootCmd.SilenceErrors = true
+	// Group IDs and error classification, the aps-side tree setup shared
+	// with RootCommand (see decorateTree).
+	decorateTree()
 	// A mistyped subcommand under a group node (`aps profile
 	// frobnicate`) exits 0 with help under stock cobra — see
 	// findUnknownSubcommand for why neither cmd.Args nor a RunE shim
@@ -370,12 +385,6 @@ func Execute() error {
 		renderPreDispatchError(err)
 		return err
 	}
-	// Attach the envelope implied by each domain error's class before
-	// kit wraps the leaves: kit flattens anything that does not already
-	// implement AsCLIError into GENERIC/exit 1, which otherwise
-	// collapsed conflict (4) and not-found (3) into an
-	// indistinguishable 1.
-	classifyLeafErrors(rootCmd)
 	// Drain in-flight bus events before returning so short-lived CLI
 	// invocations don't exit before async network forwarders flush
 	// their writes to the hub. drainBus is a no-op when the bus is
