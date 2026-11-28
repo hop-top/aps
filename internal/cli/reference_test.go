@@ -2,9 +2,9 @@ package cli
 
 import (
 	"bytes"
-	"context"
-	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -15,28 +15,29 @@ import (
 
 var helpFlagLine = regexp.MustCompile(`^\s+(?:-[A-Za-z] )?(--[a-z][a-z0-9-]*)\b`)
 
-// captureStdout runs fn with os.Stdout redirected and returns what it
-// wrote; the styled help renderer writes there.
-func captureStdout(t *testing.T, fn func()) string {
+// binaryHelp returns what `aps <args>` prints on stdout, from a child
+// process: dispatch changes the shared command tree in place (commands
+// added at dispatch fail the validation other tests run), so it must not
+// happen in this process.
+func binaryHelp(t *testing.T, args ...string) string {
 	t.Helper()
-	orig := os.Stdout
-	r, w, err := os.Pipe()
+	dataHome := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestExecuteHelperProcess$")
+	cmd.Env = append(os.Environ(),
+		execHelperEnv+"="+strings.Join(args, " "),
+		"XDG_DATA_HOME="+dataHome,
+		"XDG_STATE_HOME="+filepath.Join(dataHome, "state"),
+		"APS_DATA_PATH="+filepath.Join(dataHome, "aps"),
+		"APS_NO_BUS_WARN=1",
+		"APS_JOBS_DISABLE=",
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("aps %s: %v\n%s", strings.Join(args, " "), err, stderr.String())
 	}
-	os.Stdout = w
-	done := make(chan string)
-	go func() {
-		var b bytes.Buffer
-		_, _ = io.Copy(&b, r)
-		done <- b.String()
-	}()
-	func() {
-		defer func() { os.Stdout = orig }()
-		fn()
-	}()
-	_ = w.Close()
-	return <-done
+	return string(out)
 }
 
 func allFlagNames(cmd *cobra.Command) map[string]bool {
@@ -51,8 +52,6 @@ func allFlagNames(cmd *cobra.Command) map[string]bool {
 // ones kit attaches at dispatch (--confirm-token, --idempotency-key)
 // and the persistent globals.
 func TestRootCommandFlagsCoverBinaryHelp(t *testing.T) {
-	// Documentation tree first: dispatch below makes fang add its own
-	// commands, which the validation Prepare runs would reject.
 	prepared, err := RootCommand()
 	if err != nil {
 		t.Fatalf("RootCommand: %v", err)
@@ -62,12 +61,9 @@ func TestRootCommandFlagsCoverBinaryHelp(t *testing.T) {
 		t.Fatalf("profile delete not found: %v", err)
 	}
 	have := allFlagNames(cmd)
-	// Snapshot taken before dispatch: Execute decorates the same tree in
-	// place, which would hide a RootCommand that skipped the decoration.
-	// Then the real dispatch path, as the binary runs it; read the help
-	// it renders.
-	root.SetArgs([]string{"profile", "delete", "--help"})
-	helpOut := captureStdout(t, func() { _ = root.Execute(context.Background()) })
+	// The real dispatch path, as the binary runs it; read the help it
+	// renders.
+	helpOut := binaryHelp(t, "profile", "delete", "--help")
 
 	seen := 0
 	for _, line := range strings.Split(helpOut, "\n") {
