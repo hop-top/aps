@@ -50,7 +50,7 @@ var listenCmd = &cobra.Command{
 for the given profile and prints every matching event as JSONL on stdout.
 
 Honors SIGTERM/SIGINT for graceful shutdown — in-flight async forwarders
-flush before exit (see drainBus in internal/cli/bus.go).
+flush before exit.
 
 Examples:
   aps listen --profile noor
