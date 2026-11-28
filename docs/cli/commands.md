@@ -36,7 +36,7 @@ aps [flags]
 
 ```
       --format string                  Output format (csv, human, json, table, text, yaml) (default "table")
-  -h, --help[=true|false]              help for aps
+  -h, --help                           help for aps
       --help-all[=true|false]          Show all commands and global flags
       --help-instance[=true|false]     Show only instance commands
       --help-interact[=true|false]     Show only interact commands
@@ -348,8 +348,9 @@ aps a2a tasks cancel <task-id> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for cancel
-  -t, --target string       Target profile ID (required)
+  -h, --help[=true|false]        help for cancel
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -t, --target string            Target profile ID (required)
 ```
 
 ### Options inherited from parent commands
@@ -429,10 +430,11 @@ aps a2a tasks send [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for send
-  -m, --message string      Message text (required)
-  -t, --target string       Target profile ID (required)
-      --task-id string      Existing task ID (optional, creates new if not specified)
+  -h, --help[=true|false]        help for send
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -m, --message string           Message text (required)
+  -t, --target string            Target profile ID (required)
+      --task-id string           Existing task ID (optional, creates new if not specified)
 ```
 
 ### Options inherited from parent commands
@@ -507,10 +509,11 @@ aps a2a tasks stream [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for stream
-  -m, --message string      Message text
-  -t, --target string       Target profile ID
-      --task-id string      Existing task ID (optional)
+  -h, --help[=true|false]        help for stream
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -m, --message string           Message text
+  -t, --target string            Target profile ID
+      --task-id string           Existing task ID (optional)
 ```
 
 ### Options inherited from parent commands
@@ -550,9 +553,10 @@ aps a2a tasks subscribe <task-id> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for subscribe
-  -t, --target string       Target profile ID (required)
-      --webhook string      Webhook URL for push notifications (required)
+  -h, --help[=true|false]        help for subscribe
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -t, --target string            Target profile ID (required)
+      --webhook string           Webhook URL for push notifications (required)
 ```
 
 ### Options inherited from parent commands
@@ -598,12 +602,13 @@ aps a2a toggle [flags]
 ### Options
 
 ```
-      --enabled string      Enable (on), disable (off), or toggle (omit or blank)
-  -h, --help[=true|false]   help for toggle
-      --host string         Listen host (default "127.0.0.1")
-      --port string         Listen port (default "8081")
-      --protocol string     Protocol binding (jsonrpc, grpc, http) (default "jsonrpc")
-      --url string          Public endpoint URL (defaults to http://{host}:{port})
+      --enabled string           Enable (on), disable (off), or toggle (omit or blank)
+  -h, --help[=true|false]        help for toggle
+      --host string              Listen host (default "127.0.0.1")
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --port string              Listen port (default "8081")
+      --protocol string          Protocol binding (jsonrpc, grpc, http) (default "jsonrpc")
+      --url string               Public endpoint URL (defaults to http://{host}:{port})
 ```
 
 ### Options inherited from parent commands
@@ -731,11 +736,12 @@ aps acp toggle [flags]
 ### Options
 
 ```
-      --enabled string      Enable (on), disable (off), or toggle (omit or blank)
-  -h, --help[=true|false]   help for toggle
-      --host string         Listen host for network transports (default "127.0.0.1")
-      --port string         Listen port for network transports (default "8088")
-      --transport string    Transport (stdio, ws, websocket) (default "stdio")
+      --enabled string           Enable (on), disable (off), or toggle (omit or blank)
+  -h, --help[=true|false]        help for toggle
+      --host string              Listen host for network transports (default "127.0.0.1")
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --port string              Listen port for network transports (default "8088")
+      --transport string         Transport (stdio, ws, websocket) (default "stdio")
 ```
 
 ### Options inherited from parent commands
@@ -856,6 +862,8 @@ resolved action path without executing.
 Mutating: invokes an opaque user-supplied script whose side effects
 aps cannot enumerate. Idempotency is conditional on the action.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps action run [profile] [action] [flags]
 ```
@@ -864,6 +872,7 @@ aps action run [profile] [action] [flags]
 
 ```
   -h, --help[=true|false]            help for run
+      --idempotency-key string       Idempotency key for replay. Same key + same tool replays the recorded output.
       --payload-file string          File to send to action stdin
       --payload-stdin[=true|false]   Read stdin and forward to action
 ```
@@ -1216,10 +1225,12 @@ aps adapter detach <device-id> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Skip confirmation prompt
-  -h, --help[=true|false]    help for detach
-      --json[=true|false]    JSON output
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip confirmation prompt
+  -h, --help[=true|false]        help for detach
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        JSON output
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -1280,9 +1291,10 @@ aps adapter exec <adapter> <action> [flags]
 ### Options
 
 ```
-      --from string         Explicit From address (overrides profile lookup)
-  -h, --help[=true|false]   help for exec
-  -i, --input stringArray   Action input as key=value (repeatable)
+      --from string              Explicit From address (overrides profile lookup)
+  -h, --help[=true|false]        help for exec
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -i, --input stringArray        Action input as key=value (repeatable)
 ```
 
 ### Options inherited from parent commands
@@ -1368,6 +1380,8 @@ Mutates the local registry. Idempotent: re-linking an already-
 linked device is a no-op; messenger mapping flags act on the
 existing link when one is already present.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps adapter link add <device> [flags]
 ```
@@ -1426,6 +1440,8 @@ mutating anything.
 Mutates the local registry only. Not naturally idempotent — a
 second invocation against an already-unlinked device returns a
 "not linked" error so the operator can distinguish drift.
+
+Dry-run support: this command honors --dry-run.
 
 ```
 aps adapter link delete <device> [flags]
@@ -1797,6 +1813,8 @@ Mutates the local registry. Idempotent: re-linking an already-
 linked device is a no-op; messenger mapping flags act on the
 existing link when one is already present.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps adapter messenger link add <device> [flags]
 ```
@@ -1855,6 +1873,8 @@ mutating anything.
 Mutates the local registry only. Not naturally idempotent — a
 second invocation against an already-unlinked device returns a
 "not linked" error so the operator can distinguish drift.
+
+Dry-run support: this command honors --dry-run.
 
 ```
 aps adapter messenger link delete <device> [flags]
@@ -2150,6 +2170,8 @@ sense; force-stopping a healthy adapter is destructive only for
 the in-flight work the device was handling, not for the device
 record itself (use aps adapter delete to remove the record).
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps adapter messenger stop <name> [flags]
 ```
@@ -2197,12 +2219,13 @@ aps adapter messenger test <messenger> [flags]
 ### Options
 
 ```
-      --channel string      Channel ID (defaults to first mapped channel)
-  -h, --help[=true|false]   help for test
-      --json[=true|false]   JSON output
-      --message string      Test message content (default "test query")
-      --send[=true|false]   Actually deliver the test message
-      --timeout duration    Pipeline timeout (default 30s)
+      --channel string           Channel ID (defaults to first mapped channel)
+  -h, --help[=true|false]        help for test
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        JSON output
+      --message string           Test message content (default "test query")
+      --send[=true|false]        Actually deliver the test message
+      --timeout duration         Pipeline timeout (default 30s)
 ```
 
 ### Options inherited from parent commands
@@ -2525,6 +2548,8 @@ json or yaml it is in the error's message and suggested_fix). Then run
 it again with --confirm-token=<token>. The token is fixed per command:
 it is the same on every run and does not depend on the arguments.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps adapter revoke [device-id] [flags]
 ```
@@ -2532,11 +2557,13 @@ aps adapter revoke [device-id] [flags]
 ### Options
 
 ```
-      --all[=true|false]     Revoke all devices
-      --force[=true|false]   Skip confirmation
-  -h, --help[=true|false]    help for revoke
-      --json[=true|false]    JSON output
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --all[=true|false]         Revoke all devices
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip confirmation
+  -h, --help[=true|false]        help for revoke
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        JSON output
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -2687,6 +2714,8 @@ sense; force-stopping a healthy adapter is destructive only for
 the in-flight work the device was handling, not for the device
 record itself (use aps adapter delete to remove the record).
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps adapter stop <name> [flags]
 ```
@@ -2734,12 +2763,13 @@ aps adapter test <messenger> [flags]
 ### Options
 
 ```
-      --channel string      Channel ID (defaults to first mapped channel)
-  -h, --help[=true|false]   help for test
-      --json[=true|false]   JSON output
-      --message string      Test message content (default "test query")
-      --send[=true|false]   Actually deliver the test message
-      --timeout duration    Pipeline timeout (default 30s)
+      --channel string           Channel ID (defaults to first mapped channel)
+  -h, --help[=true|false]        help for test
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        JSON output
+      --message string           Test message content (default "test query")
+      --send[=true|false]        Actually deliver the test message
+      --timeout duration         Pipeline timeout (default 30s)
 ```
 
 ### Options inherited from parent commands
@@ -2819,6 +2849,8 @@ Add or update an alias
 
 Persist a new alias (or replace an existing one) in the YAML store and register a runtime shim so subsequent invocations dispatch to <target>. <target> may include flags, captured as a single shell-quoted string.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps alias add <name> <target...> [flags]
 ```
@@ -2855,6 +2887,8 @@ Delete an alias
 ### Synopsis
 
 Remove an alias from the YAML store and tear down its runtime shim. Idempotent: deleting a missing alias returns success. The legacy `remove`/`rm` aliases keep working through the deprecation window.
+
+Dry-run support: this command honors --dry-run.
 
 ```
 aps alias delete <name> [flags]
@@ -3023,9 +3057,10 @@ aps bundle create <name> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Overwrite existing bundle file
-  -h, --help[=true|false]    help for create
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]       Overwrite existing bundle file
+  -h, --help[=true|false]        help for create
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -3080,9 +3115,11 @@ aps bundle delete <name> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Skip confirmation prompt
-  -h, --help[=true|false]    help for delete
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip confirmation prompt
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -3131,8 +3168,9 @@ aps bundle edit <name> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for edit
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]        help for edit
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -3419,9 +3457,11 @@ aps capability delete <name> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Skip link warning
-  -h, --help[=true|false]    help for delete
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip link warning
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -3987,6 +4027,88 @@ aps completion [bash|zsh|fish|powershell]
 ### SEE ALSO
 
 * [aps](#aps)	 - Agent Profile System CLI
+* [aps completion fig](#aps-completion-fig)	 - Generate a Fig completion spec
+* [aps completion usage](#aps-completion-usage)	 - Generate a Usage (usage.jdx.dev) completion spec
+
+## aps completion fig
+
+Generate a Fig completion spec
+
+### Synopsis
+
+Print a Fig completion spec for this tool: an ES module whose default
+export is the spec. VS Code terminal suggest, Kiro CLI, inshellisense
+and Warp read this format. Values a completion function computes are
+fetched from this binary when the user asks.
+
+```
+aps completion fig
+```
+
+### Options
+
+```
+  -h, --help[=true|false]   help for fig
+```
+
+### Options inherited from parent commands
+
+```
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
+```
+
+### SEE ALSO
+
+* [aps completion](#aps-completion)	 - Generate completion script
+
+## aps completion usage
+
+Generate a Usage (usage.jdx.dev) completion spec
+
+### Synopsis
+
+Print a Usage KDL spec for this tool, for usage.jdx.dev and mise:
+`usage generate completion <shell>` turns it into a shell script, and
+`usage generate markdown` into reference docs. Values a completion
+function computes are fetched from this binary when the user asks.
+
+```
+aps completion usage
+```
+
+### Options
+
+```
+  -h, --help[=true|false]   help for usage
+```
+
+### Options inherited from parent commands
+
+```
+      --format string            Output format (csv, human, json, table, text, yaml) (default "table")
+      --instance string          backend instance to target (defaults to config)
+      --no-color[=true|false]    Disable ANSI color
+      --no-hints[=true|false]    Suppress next-step hints after command output
+      --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]     Disable network access
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
+      --quiet[=true|false]       Suppress non-essential output
+  -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string         workspace id (defaults to active workspace)
+```
+
+### SEE ALSO
+
+* [aps completion](#aps-completion)	 - Generate completion script
 
 ## aps config
 
@@ -4174,12 +4296,13 @@ aps contact add <email> [flags]
 ### Options
 
 ```
-      --addressbook string   Addressbook ID
-  -h, --help[=true|false]    help for add
-      --name string          Contact name
-      --note string          Note
-      --org string           Organization
-      --phone string         Phone number
+      --addressbook string       Addressbook ID
+  -h, --help[=true|false]        help for add
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --name string              Contact name
+      --note string              Note
+      --org string               Organization
+      --phone string             Phone number
 ```
 
 ### Options inherited from parent commands
@@ -4225,7 +4348,8 @@ aps contact delete <id> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for delete
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
 ```
 
 ### Options inherited from parent commands
@@ -4365,7 +4489,8 @@ aps contact note <id> <text> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for note
+  -h, --help[=true|false]        help for note
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
 ```
 
 ### Options inherited from parent commands
@@ -4454,12 +4579,13 @@ aps contact update <id> [flags]
 ### Options
 
 ```
-      --email string        Email address
-  -h, --help[=true|false]   help for update
-      --name string         Contact name
-      --note string         Note
-      --org string          Organization
-      --phone string        Phone number
+      --email string             Email address
+  -h, --help[=true|false]        help for update
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --name string              Contact name
+      --note string              Note
+      --org string               Organization
+      --phone string             Phone number
 ```
 
 ### Options inherited from parent commands
@@ -4547,8 +4673,10 @@ aps directory delete [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for delete
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -4634,8 +4762,9 @@ aps directory register [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for register
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -h, --help[=true|false]        help for register
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -5160,6 +5289,8 @@ comma-separated allowlist; --backup snapshots the source tree under
 xdg.DataDir("aps")/backups/messengers-<YYYYMMDD>/ before any mutation;
 --dry-run previews the plan without touching disk. Idempotent: re-running
 after a successful migration is a no-op when no legacy entries remain.
+
+Dry-run support: this command honors --dry-run.
 
 ```
 aps migrate messengers [flags]
@@ -6068,10 +6199,12 @@ aps profile delete <id> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)
-  -h, --help[=true|false]    help for delete
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-  -y, --yes[=true|false]     Skip the yes/no question asked on a terminal (--confirm-token is still required)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+  -y, --yes[=true|false]         Skip the yes/no question asked on a terminal (--confirm-token is still required)
 ```
 
 ### Options inherited from parent commands
@@ -6246,6 +6379,8 @@ tracking event. The --note metadata is attached to the
 ProfileCreated payload. Secrets are NOT imported (they are not
 part of the bundle); set them separately after import.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps profile import <bundle|AGENTS.md> [flags]
 ```
@@ -6253,10 +6388,11 @@ aps profile import <bundle|AGENTS.md> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)
-  -h, --help[=true|false]    help for import
-      --id string            Override profile ID from bundle
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --force[=true|false]       Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)
+  -h, --help[=true|false]        help for import
+      --id string                Override profile ID from bundle
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -6638,9 +6774,10 @@ aps run [profile] -- [command] [args...] [flags]
 ### Options
 
 ```
-      --env stringArray     Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys
-      --env-file strings    Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys
-  -h, --help[=true|false]   help for run
+      --env stringArray          Set KEY=VALUE in the child env; repeatable; later --env wins for duplicate keys
+      --env-file strings         Read KEY=VALUE entries from a dotenv-style file; repeatable; later files win for duplicate keys
+  -h, --help[=true|false]        help for run
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
 ```
 
 ### Options inherited from parent commands
@@ -7377,9 +7514,11 @@ aps session delete <session-id> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Force delete without confirmation
-  -h, --help[=true|false]    help for delete
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Force delete without confirmation
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -7652,10 +7791,12 @@ aps session terminate <session-id> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Force terminate without graceful shutdown
-  -h, --help[=true|false]    help for terminate
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --timeout int          Graceful shutdown timeout in seconds (default 10)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Force terminate without graceful shutdown
+  -h, --help[=true|false]        help for terminate
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --timeout int              Graceful shutdown timeout in seconds (default 10)
 ```
 
 ### Options inherited from parent commands
@@ -8181,8 +8322,10 @@ aps squad delete <id> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for delete
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -8373,8 +8516,10 @@ aps squad members remove <squad-id> <profile-id> [flags]
 ### Options
 
 ```
-  -h, --help[=true|false]   help for remove
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+  -h, --help[=true|false]        help for remove
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -9411,6 +9556,8 @@ Strategies:
 
 Use --dry-run to see what would happen without applying changes.
 
+Dry-run support: this command honors --dry-run.
+
 ```
 aps workspace conflicts resolve <conflict-id> [flags]
 ```
@@ -9605,10 +9752,12 @@ aps workspace ctx delete <key> [flags]
 ### Options
 
 ```
-      --force[=true|false]   Skip confirmation
-  -h, --help[=true|false]    help for delete
-      --json[=true|false]    Output as JSON
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip confirmation
+  -h, --help[=true|false]        help for delete
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        Output as JSON
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -10054,10 +10203,12 @@ aps workspace remove <agent> [workspace] [flags]
 ### Options
 
 ```
-      --force[=true|false]   Skip confirmation
-  -h, --help[=true|false]    help for remove
-      --json[=true|false]    Output as JSON
-  -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --confirm-token string     Typed confirmation token (sha) printed by the command's prompt. Required for kit/destructive-token commands.
+      --force[=true|false]       Skip confirmation
+  -h, --help[=true|false]        help for remove
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        Output as JSON
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands
@@ -10143,13 +10294,14 @@ aps workspace send <recipient> [flags]
 ### Options
 
 ```
-      --action string       Task action (required)
-  -h, --help[=true|false]   help for send
-      --input string        Task input (JSON string, @file, or - for stdin)
-      --json[=true|false]   Output as JSON
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-      --set strings         Set key=value input pairs
-      --timeout string      Task timeout (e.g. 5m, 1h)
+      --action string            Task action (required)
+  -h, --help[=true|false]        help for send
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --input string             Task input (JSON string, @file, or - for stdin)
+      --json[=true|false]        Output as JSON
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --set strings              Set key=value input pairs
+      --timeout string           Task timeout (e.g. 5m, 1h)
 ```
 
 ### Options inherited from parent commands
@@ -10230,10 +10382,11 @@ aps workspace sync <workspace-id> [flags]
 ### Options
 
 ```
-      --device string       Device ID to sync (defaults to current device)
-  -h, --help[=true|false]   help for sync
-      --json[=true|false]   JSON output
-  -n, --note string         Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
+      --device string            Device ID to sync (defaults to current device)
+  -h, --help[=true|false]        help for sync
+      --idempotency-key string   Idempotency key for replay. Same key + same tool replays the recorded output.
+      --json[=true|false]        JSON output
+  -n, --note string              Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
 ```
 
 ### Options inherited from parent commands

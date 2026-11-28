@@ -36,16 +36,27 @@ func run(args []string, stdout, stderr io.Writer) int {
 		out string
 		err error
 	)
+	mode := ""
 	switch {
 	case len(args) == 0:
-		out, err = render(cli.RootCommand())
-	case len(args) == 1 && args[0] == "--top":
-		out = renderTop(cli.RootCommand())
-	case len(args) == 1 && args[0] == "--paths":
-		out = renderPaths(cli.RootCommand())
+	case len(args) == 1 && (args[0] == "--top" || args[0] == "--paths"):
+		mode = args[0]
 	default:
 		_, _ = fmt.Fprintln(stderr, "usage: climd [--top | --paths]")
 		return 2
+	}
+	root, err := cli.RootCommand()
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "building command tree: %v\n", err)
+		return 1
+	}
+	switch mode {
+	case "--top":
+		out = renderTop(root)
+	case "--paths":
+		out = renderPaths(root)
+	default:
+		out, err = render(root)
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "rendering command reference: %v\n", err)
