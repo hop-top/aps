@@ -424,7 +424,7 @@ func TestDotenvStorePropertyUntouchedStatementsIdentical(t *testing.T) {
 }
 
 // eolOf is the line terminator of the last line of text.
-func eolOf(text, def string) string {
+func eolOf(text string) string {
 	if strings.HasSuffix(text, "\r\n") {
 		return "\r\n"
 	}
@@ -437,7 +437,7 @@ func eolOf(text, def string) string {
 // lastEOL is the style of the last terminated line of the file, or def.
 func lastEOL(stmts []propStmt, def string) string {
 	for i := len(stmts) - 1; i >= 0; i-- {
-		if e := eolOf(stmts[i].text, def); e != "" {
+		if e := eolOf(stmts[i].text); e != "" {
 			return e
 		}
 	}
@@ -515,7 +515,7 @@ func propStep(ctx context.Context, r *rand.Rand, store *dotenvStore, stmts []pro
 				last = i
 			}
 		}
-		stmts[last] = propStmt{prefix: stmts[last].prefix, text: stmts[last].prefix + k + "=" + encodeSecretValue(v) + eolOf(stmts[last].text, eol), key: k, val: v}
+		stmts[last] = propStmt{prefix: stmts[last].prefix, text: stmts[last].prefix + k + "=" + encodeSecretValue(v) + eolOf(stmts[last].text), key: k, val: v}
 		return stmts, nil
 	}
 	if len(stmts) > 0 && !strings.HasSuffix(stmts[len(stmts)-1].text, "\n") {
