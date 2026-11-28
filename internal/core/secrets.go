@@ -318,3 +318,25 @@ func (d *dotenvStore) Set(_ context.Context, key string, value []byte) error {
 func (d *dotenvStore) Delete(_ context.Context, key string) error {
 	return d.edit(key, nil)
 }
+
+// ProfileSecretCount returns the number of secret keys the profile holds,
+// through the configured backend. It is the one definition of "has
+// secrets": a profile has secrets iff this count is above zero. A fresh
+// profile's secrets.env holds only a comment template (0 keys), and a
+// missing file is also 0. An unreadable or malformed store is an error
+// (location only, never content) with a count of 0.
+func ProfileSecretCount(profileID string) (int, error) {
+	secrets, err := LoadProfileSecrets(profileID)
+	if err != nil {
+		return 0, err
+	}
+	return len(secrets), nil
+}
+
+// ProfileHasSecrets reports whether ProfileSecretCount is above zero. An
+// unreadable store reports false; callers that must tell "none" from
+// "unreadable" use ProfileSecretCount.
+func ProfileHasSecrets(profileID string) bool {
+	n, err := ProfileSecretCount(profileID)
+	return err == nil && n > 0
+}

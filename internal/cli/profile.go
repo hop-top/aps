@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
+	"hop.top/aps/internal/cli/confirmtoken"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/output"
 	"hop.top/kit/go/storage/secret/ref"
@@ -194,15 +194,13 @@ func validateReportsTo(id, reportsTo string) error {
 	return reportsToCycleCheck(id, reportsTo, profiles)
 }
 
-// profileHasSecrets reports whether the profile has at least one
-// non-empty secret entry. Used by the --has-secrets filter; absence
-// of the file (or an empty file) is treated as "no secrets".
+// profileHasSecrets reports whether the profile holds at least one
+// secret key. Used by the list row and the --has-secrets filter; it is
+// the same predicate profile show uses (core.ProfileHasSecrets), so a
+// template-only secrets.env is "no secrets" everywhere. An unreadable
+// store reads as false here; profile show names the failure.
 func profileHasSecrets(p core.Profile) bool {
-	secrets, err := core.LoadProfileSecrets(p.ID)
-	if err != nil {
-		return false
-	}
-	return len(secrets) > 0
+	return core.ProfileHasSecrets(p.ID)
 }
 
 // profileToSummaryRow projects a Profile into the row shape rendered
@@ -231,13 +229,17 @@ func profileToSummaryRow(p core.Profile) profileSummaryRow {
 }
 
 var profileCreateCmd = &cobra.Command{
-	Use:   "create [id]",
+	Use:   "create <id>",
 	Short: "Create a new profile",
 	Long: `Create a new agent profile under
 $APS_DATA_PATH/profiles/<id>/. The id argument doubles as the
-directory name; display name, email, avatar URL, and color hex
-default to interactive prompts when omitted and stdin is a TTY.
-Pass --force to overwrite an existing profile directory.
+directory name and is required. When stdin is a terminal, display
+name and email are asked for if the flags are omitted; avatar and
+color are never asked for. Without a terminal nothing is asked and
+the profile is created with what the flags give: the display name
+defaults to the id, the rest stays empty (so "aps profile create
+<id>" alone succeeds). Creating an id that already exists fails
+unless --force overwrites the existing profile directory.
 
 Because profiles move between machines (share/import), the id must
 be a valid directory name on every platform: not empty, "." or "..";
@@ -261,8 +263,8 @@ behavior when the flags are unset.
 
 Mutating: writes the profile.yaml record and (optionally) seeds the
 git config block. Emits a ProfileCreated bus event with the --note
-metadata attached. Not idempotent — each call creates a fresh
-record (use --force to replace).`,
+metadata attached. Not idempotent: a second create of the same id
+fails with a conflict (use --force to replace).`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -401,7 +403,7 @@ record (use --force to replace).`,
 }
 
 var profileEditCmd = &cobra.Command{
-	Use:   "edit [id]",
+	Use:   "edit <id>",
 	Short: "Edit fields on an existing profile",
 	Long: `Update display name, email, avatar, color, type, or reports-to on an
 existing profile.
@@ -504,14 +506,18 @@ from the profile id and overwrite the existing value when set.`,
 }
 
 var profileShowCmd = &cobra.Command{
-	Use:   "show [id]",
+	Use:   "show <id>",
 	Short: "Show profile details",
 	Long: `Show the full profile record as YAML: identity fields,
 workspace link, capability list (annotated as builtin or external
-with description), and the status of optional modules
-(secrets present/missing, redacted secret keys). Capability
-descriptions are looked up from the builtin registry or the
-external capability path.
+with description), and the status of optional modules: the secrets
+line gives the number of secret keys ("none" when the secrets file
+holds no keys, a bare comment template included; "unreadable" with
+the file location when it cannot be parsed), followed by each key
+with its value redacted. The same count backs the list SECRETS column
+and --has-secrets. The json and yaml formats print the profile record
+only. Capability descriptions are looked up from the builtin registry
+or the external capability path.
 
 Read-only: loads $APS_DATA_PATH/profiles/<id>/profile.yaml and
 prints a human-friendly render. Idempotent.`,
@@ -567,10 +573,19 @@ func writeProfileShowHuman(w io.Writer, profile *core.Profile) error {
 	}
 
 	_, _ = fmt.Fprintln(w, "\nModules:")
-	dir, _ := core.GetProfileDir(profile.ID)
-	if _, err := os.Stat(filepath.Join(dir, "secrets.env")); err == nil {
-		_, _ = fmt.Fprintln(w, "- Secrets: present")
-		secrets, _ := core.LoadProfileSecrets(profile.ID)
+	secrets, serr := core.LoadProfileSecrets(profile.ID)
+	switch {
+	case serr != nil:
+		// The parse error names file and line or key only, never content.
+		_, _ = fmt.Fprintf(w, "- Secrets: unreadable (%v)\n", serr)
+	case len(secrets) == 0:
+		_, _ = fmt.Fprintln(w, "- Secrets: none")
+	default:
+		noun := "keys"
+		if len(secrets) == 1 {
+			noun = "key"
+		}
+		_, _ = fmt.Fprintf(w, "- Secrets: %d %s\n", len(secrets), noun)
 		keys := make([]string, 0, len(secrets))
 		for k := range secrets {
 			keys = append(keys, k)
@@ -585,8 +600,6 @@ func writeProfileShowHuman(w io.Writer, profile *core.Profile) error {
 			}
 			_, _ = fmt.Fprintf(w, "  - %s: ***redacted***\n", k)
 		}
-	} else {
-		_, _ = fmt.Fprintln(w, "- Secrets: missing")
 	}
 	return nil
 }
@@ -683,7 +696,7 @@ capability that isn't on the profile is a no-op.`,
 // It shows per-bundle binary results (skipped/blocked/warned) and, with --verbose,
 // the full resolved scope and injected env var keys for each bundle.
 var profileStatusCmd = &cobra.Command{
-	Use:   "status [id]",
+	Use:   "status <id>",
 	Short: "Show bundle resolution status for a profile",
 	Long: `Show per-bundle binary resolution for a profile: which required
 binaries are active, missing/skipped, or blocked. Bundles are
@@ -823,7 +836,7 @@ func joinStrings(ss []string, sep string) string {
 }
 
 var profileShareCmd = &cobra.Command{
-	Use:   "share [id]",
+	Use:   "share <id>",
 	Short: "Export a shareable profile bundle",
 	Long: `Export a profile as a portable bundle file that another aps
 install can ingest via aps profile import. The default output path
@@ -864,7 +877,7 @@ aps profile import on the receiving install.`,
 }
 
 var profileImportCmd = &cobra.Command{
-	Use:   "import [bundle|AGENTS.md]",
+	Use:   "import <bundle|AGENTS.md>",
 	Short: "Import a shared profile bundle or an agent role manifest",
 	Long: `Import a profile bundle previously produced by aps profile
 share, or an agent role manifest (AGENTS.md — YAML frontmatter +
@@ -945,8 +958,8 @@ var profileDeleteCmd = &cobra.Command{
 	Short:   "Delete a profile",
 	Long: `Delete a profile directory under $APS_DATA_PATH/profiles/<id>/
 along with its profile.yaml, secrets, and any side-car files.
-Interactive confirmation prompts unless --yes is set or stdin is
-not a TTY.
+On a terminal it also asks a yes/no question unless --yes is set;
+off a terminal it does not ask. --yes only skips that question.
 
 Destructive: irreversible without a prior aps profile share
 export. Blocked when the profile has active sessions in the
@@ -1077,7 +1090,7 @@ func init() {
 	profileImportCmd.Flags().String("id", "", "Override profile ID from bundle")
 	profileImportCmd.Flags().Bool("force", false, "Overwrite an existing profile (bundle imports); import despite a reportsTo that names no existing profile (manifest imports)")
 	profileDeleteCmd.Flags().Bool("force", false, "Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)")
-	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip interactive confirmation")
+	profileDeleteCmd.Flags().BoolP("yes", "y", false, "Skip the yes/no question asked on a terminal (--confirm-token is still required)")
 
 	// T-1291 — --note|-n on every state-changing profile subcommand.
 	// The note is attached to ctx via policy.ContextAttrsKey before the
@@ -1134,6 +1147,7 @@ func init() {
 	kitcli.SetSideEffect(profileDeleteCmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(profileDeleteCmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(profileDeleteCmd)
+	profileDeleteCmd.Long += confirmtoken.Help
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the profile ID being removed.
 	kitcli.OptOutDryRun(profileDeleteCmd)
