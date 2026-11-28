@@ -280,7 +280,7 @@ func (nh *NotificationHandler) CreateStatusNotification(sessionID string, status
 		Params: map[string]interface{}{
 			"sessionId": sessionID,
 			"type":      "StatusUpdate",
-			"status":    status,
+			keyStatus:   status,
 			"details":   details,
 		},
 	}

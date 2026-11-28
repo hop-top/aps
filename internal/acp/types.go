@@ -9,6 +9,9 @@ import (
 	"hop.top/aps/internal/core/protocol"
 )
 
+// keyStatus is the JSON key under which results report a status.
+const keyStatus = "status"
+
 // SessionMode defines how the session handles permissions
 type SessionMode string
 

@@ -721,7 +721,7 @@ func (s *Server) handleTerminalKill(req *JSONRPCRequest) *JSONRPCResponse {
 
 	result := map[string]interface{}{
 		"terminalId": params.TerminalID,
-		"status":     "killed",
+		keyStatus:    "killed",
 	}
 
 	return s.successResponse(req.ID, result)
@@ -747,7 +747,7 @@ func (s *Server) handleTerminalRelease(req *JSONRPCRequest) *JSONRPCResponse {
 
 	result := map[string]interface{}{
 		"terminalId": params.TerminalID,
-		"status":     "released",
+		keyStatus:    "released",
 	}
 
 	return s.successResponse(req.ID, result)

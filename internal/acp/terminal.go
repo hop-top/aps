@@ -322,7 +322,7 @@ func (t *Terminal) GetStatus() map[string]interface{} {
 	return map[string]interface{}{
 		"id":         t.ID,
 		"command":    t.Command,
-		"status":     t.Status,
+		keyStatus:     t.Status,
 		"exitCode":   t.ExitCode,
 		"startTime":  t.StartTime,
 		"endTime":    t.EndTime,
