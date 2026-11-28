@@ -57,16 +57,17 @@ func TestRootCommandFlagsCoverBinaryHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RootCommand: %v", err)
 	}
-	// Then the real dispatch path, as the binary runs it; read the help
-	// it renders.
-	root.SetArgs([]string{"profile", "delete", "--help"})
-	helpOut := captureStdout(t, func() { _ = root.Execute(context.Background()) })
-
 	cmd, _, err := prepared.Find([]string{"profile", "delete"})
 	if err != nil || cmd.Name() != "delete" {
 		t.Fatalf("profile delete not found: %v", err)
 	}
 	have := allFlagNames(cmd)
+	// Snapshot taken before dispatch: Execute decorates the same tree in
+	// place, which would hide a RootCommand that skipped the decoration.
+	// Then the real dispatch path, as the binary runs it; read the help
+	// it renders.
+	root.SetArgs([]string{"profile", "delete", "--help"})
+	helpOut := captureStdout(t, func() { _ = root.Execute(context.Background()) })
 
 	seen := 0
 	for _, line := range strings.Split(helpOut, "\n") {
@@ -75,7 +76,8 @@ func TestRootCommandFlagsCoverBinaryHelp(t *testing.T) {
 			continue
 		}
 		seen++
-		if !have[m[1]] {
+		// cobra adds --help lazily; climd lists it for every command.
+		if m[1] != "--help" && !have[m[1]] {
 			t.Errorf("binary help for `profile delete` shows %s, RootCommand tree lacks it", m[1])
 		}
 	}
