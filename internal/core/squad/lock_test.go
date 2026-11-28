@@ -102,6 +102,9 @@ func TestStore_ConcurrentAddMemberNoLostUpdate(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			m := NewFileManager(dir)
+			// Generous bound: this test is about lost updates, not speed, and
+			// sixteen queued writers can exceed the default wait on a slow disk.
+			m.lockTimeout = 30 * time.Second
 			<-start
 			if err := m.AddMember("shared", fmt.Sprintf("p%d", i)); err != nil {
 				t.Errorf("add p%d: %v", i, err)
