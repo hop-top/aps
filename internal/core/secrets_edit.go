@@ -31,7 +31,9 @@ func editSecretsEnv(path string, data []byte, key string, val *string) (out []by
 	}
 	stmts, bad := segmentSecretsEnv(data)
 	if bad > 0 {
-		return nil, false, &SecretsParseError{Path: path, Line: bad}
+		// The file parsed above, so it is not malformed: the segmenter gave
+		// up. Say so without claiming a syntax error.
+		return nil, false, fmt.Errorf("secrets.env: %s: could not edit in place near line %d; edit the file by hand", path, bad)
 	}
 	cur, present := old[key]
 
@@ -73,28 +75,66 @@ func editSecretsEnv(path string, data []byte, key string, val *string) (out []by
 	}
 	skip := expandingKeys(data, stmts, key)
 	for _, enc := range secretValueCandidates(*val) {
-		var cand []byte
-		if target >= 0 && len(stmts[target].Keys) == 1 {
-			s := stmts[target]
-			line := key + "=" + enc + lineEnding(data[s.Start:s.End])
-			cand = append(cand, data[:s.Start]...)
-			cand = append(cand, line...)
-			cand = append(cand, data[s.End:]...)
-		} else {
-			eol := fileLineEnding(data)
-			cand = append(cand, data...)
-			if len(cand) > 0 && cand[len(cand)-1] != '\n' {
-				cand = append(cand, eol...)
-			}
-			cand = append(cand, key+"="+enc+eol...)
-		}
-		// The candidate is checked in the context of the real file: a value
+		// Each candidate is checked in the context of the real file: a value
 		// that reads back alone must still do so after the statements before it.
-		if verifySecretsEdit(path, old, cand, key, val, skip) == nil {
-			return cand, true, nil
+		for _, cand := range editedContents(data, stmts, target, key, enc) {
+			if verifySecretsEdit(path, old, cand, key, val, skip) == nil {
+				return cand, true, nil
+			}
 		}
 	}
 	return nil, false, fmt.Errorf("secrets.env: key %s did not read back after the edit; file left unchanged", key)
+}
+
+// stmtPrefix is the leading indentation plus, when present, the export
+// keyword and the whitespace after it (the reader requires at least one
+// space or tab after export), so a rewritten line stays sourceable.
+func stmtPrefix(text []byte) string {
+	i := 0
+	for i < len(text) && (text[i] == ' ' || text[i] == '\t') {
+		i++
+	}
+	rest := text[i:]
+	if bytes.HasPrefix(rest, []byte("export")) {
+		j := len("export")
+		k := j
+		for k < len(rest) && (rest[k] == ' ' || rest[k] == '\t') {
+			k++
+		}
+		if k > j {
+			return string(text[:i+k])
+		}
+	}
+	return string(text[:i])
+}
+
+// editedContents lists the file contents that set key to the encoded value
+// enc, most faithful first: the statement at index target rewritten with its
+// indentation and export keyword, then without them; or, with no single-key
+// statement to rewrite, the file with a line appended.
+func editedContents(data []byte, stmts []secretsStmt, target int, key, enc string) [][]byte {
+	if target >= 0 && len(stmts[target].Keys) == 1 {
+		s := stmts[target]
+		text := data[s.Start:s.End]
+		eol := lineEnding(text)
+		var out [][]byte
+		for _, pre := range []string{stmtPrefix(text), ""} {
+			c := append([]byte{}, data[:s.Start]...)
+			c = append(c, pre+key+"="+enc+eol...)
+			c = append(c, data[s.End:]...)
+			out = append(out, c)
+			if pre == "" {
+				break
+			}
+		}
+		return out
+	}
+	eol := fileLineEnding(data)
+	c := append([]byte{}, data...)
+	if len(c) > 0 && c[len(c)-1] != '\n' {
+		c = append(c, eol...)
+	}
+	return [][]byte{append(c, key+"="+enc+eol...)}
 }
 
 func stmtHasKey(s secretsStmt, key string) bool {
