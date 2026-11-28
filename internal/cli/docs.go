@@ -52,7 +52,7 @@ func init() {
 	// T-0679 — depth-1 runnable leaf under `aps`; mark intentional so the
 	// shape validator (kit/top-level-verb) accepts it under EnforceValidate.
 	kitcli.SetTopLevelVerb(docsCmd)
-	// T-0656 — docs copies the embedded markdown set; preview would
+	// docs copies the embedded markdown set; preview would
 	// have to list the same files the command writes.
 	kitcli.OptOutDryRun(docsCmd)
 	if err := kitcli.SetDryRunRationale(docsCmd, "docs copies the embedded markdown set to the data dir; previewing would only list the same files it writes."); err != nil {
