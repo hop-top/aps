@@ -255,8 +255,9 @@ func (d *dotenvStore) read() (map[string]string, error) {
 }
 
 // edit sets key to *val (deletes it when val is nil), changing only that
-// key's statement in the file. The file is written in place (truncate, then
-// write; owner-only mode), not via a temp file and rename.
+// key's statement in the file. The file is replaced atomically (temp file,
+// sync, rename; owner-only throughout), so a failed write leaves the old
+// content intact.
 func (d *dotenvStore) edit(key string, val *string) error {
 	data, _, err := readSecretsFile(d.path)
 	if err != nil {

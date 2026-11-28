@@ -9,6 +9,8 @@ package fsperm
 
 import (
 	"os"
+
+	"hop.top/aps/internal/atomicfile"
 )
 
 // OpenSecret opens path like os.OpenFile and, on Windows, restricts its ACL
@@ -18,18 +20,14 @@ func OpenSecret(path string, flag int, perm os.FileMode) (*os.File, error) {
 	return openSecret(path, flag, perm)
 }
 
-// WriteSecret is os.WriteFile for secret material: create or truncate path,
-// then write data, with owner-only access enforced on Windows.
+// WriteSecret is os.WriteFile for secret material, made atomic: data goes to
+// a hidden exclusive temp file beside path (created through OpenSecret, so
+// owner-only access holds before any byte is written), is synced, then
+// renamed over path; see atomicfile.Write for the guarantees (old or new
+// content, temp removed on failure, symlinks preserved, replaced file ends
+// with perm rather than its old, possibly broader, mode).
 func WriteSecret(path string, data []byte, perm os.FileMode) error {
-	f, err := OpenSecret(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(data)
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	return err
+	return atomicfile.Write(path, data, perm, OpenSecret) //nolint:wrapcheck // error passthrough, same contract as os.WriteFile
 }
 
 // CheckSecret audits path. It returns a non-empty warning phrase when access
