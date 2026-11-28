@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"hop.top/aps/internal/atomicfile"
 	"hop.top/kit/go/storage/secret"
 )
 
@@ -275,3 +277,26 @@ func TestMarkerValueDecodes(t *testing.T) {
 }
 
 var _ secret.MutableStore = (*dotenvStore)(nil)
+
+func TestDotenvStoreFailedWriteKeepsFile(t *testing.T) {
+	for _, stage := range []string{atomicfile.StageWrite, atomicfile.StageSync, atomicfile.StageRename} {
+		t.Run(stage, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, "secrets.env")
+			orig := "# keep\nA=1\nB=two\n"
+			require.NoError(t, os.WriteFile(path, []byte(orig), 0o600))
+			store := newDotenvStore(path)
+
+			restore := atomicfile.InjectFault(stage, errors.New("boom"))
+			err := store.Set(context.Background(), "C", []byte("a-much-longer-value-than-before"))
+			restore()
+			require.Error(t, err)
+
+			got, rerr := os.ReadFile(path)
+			require.NoError(t, rerr)
+			assert.Equal(t, orig, string(got))
+			ents, _ := os.ReadDir(dir)
+			assert.Len(t, ents, 1, "no temp file left")
+		})
+	}
+}

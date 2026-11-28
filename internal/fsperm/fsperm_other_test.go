@@ -28,3 +28,19 @@ func TestPOSIXModeAndWarning(t *testing.T) {
 		t.Fatalf("warn = %q, want %q", warn, want)
 	}
 }
+
+func TestWriteSecretTightensBroaderMode(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "s")
+	if err := os.WriteFile(p, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(p, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteSecret(p, []byte("new"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if fi, _ := os.Stat(p); fi.Mode().Perm() != 0o600 {
+		t.Fatalf("mode = %o, want 600", fi.Mode().Perm())
+	}
+}
