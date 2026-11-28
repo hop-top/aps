@@ -87,9 +87,13 @@ the isolation block.
 aps profile delete <name>
 ```
 
-On a terminal, `delete` asks for confirmation. In a script it prints a confirmation token
-and exits; run it again with `--yes --confirm-token <token>`. `--force` deletes a profile
-that still has active sessions or inbound `reports_to` links.
+`delete` always needs a confirmation token, on a terminal and in a script. Run it once
+without one: nothing is deleted, it exits with code 5, and it prints the token (under
+`--format json` the error carries it in `message` and `suggested_fix`). Run it again with
+`--confirm-token <token>`. The token depends only on the command, not on the profile, so it
+is the same every time. On a terminal `delete` then asks a yes/no question; `--yes` skips
+that question and does not replace the token. `--force` deletes a profile that still has
+active sessions or inbound `reports_to` links.
 
 ## Capabilities
 

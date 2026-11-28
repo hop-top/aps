@@ -49,7 +49,7 @@ aps [flags]
       --no-hints[=true|false]          Suppress next-step hints after command output
       --no-redact[=true|false]         disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]           Disable network access
-  -p, --profile string                 profile id (defaults to active profile)
+  -p, --profile string                 profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]             Suppress non-essential output
   -V, --verbose count                  Increase log verbosity (-V=debug, -VV=trace)
       --workspace string               workspace id (defaults to active workspace)
@@ -122,7 +122,7 @@ The a2a command group provides operations for:
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -159,7 +159,7 @@ Show local profile cards or fetch remote agent cards.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -202,7 +202,7 @@ aps a2a card fetch [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -239,7 +239,7 @@ aps a2a card show [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -284,7 +284,7 @@ aps a2a server [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -317,7 +317,7 @@ List, inspect, send, cancel, and subscribe to A2A tasks.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -361,7 +361,7 @@ aps a2a tasks cancel <task-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -400,7 +400,7 @@ aps a2a tasks list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -444,7 +444,7 @@ aps a2a tasks send [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -482,7 +482,7 @@ aps a2a tasks show <task-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -522,7 +522,7 @@ aps a2a tasks stream [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -564,7 +564,7 @@ aps a2a tasks subscribe <task-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -615,7 +615,7 @@ aps a2a toggle [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -653,7 +653,7 @@ The acp command group provides operations for:
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -698,7 +698,7 @@ aps acp server [profile] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -747,7 +747,7 @@ aps acp toggle [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -776,7 +776,7 @@ Manage and execute profile actions
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -826,7 +826,7 @@ aps action list [profile] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -877,7 +877,7 @@ aps action run [profile] [action] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -920,7 +920,7 @@ aps action show [profile] [action] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -964,7 +964,7 @@ of this tree.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1038,7 +1038,7 @@ aps adapter approve <device-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1083,7 +1083,7 @@ aps adapter attach <device-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1121,7 +1121,7 @@ aps adapter channels <messenger> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1179,7 +1179,7 @@ aps adapter create <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1200,6 +1200,16 @@ Detach a device from a workspace, removing all access.
 This is a destructive operation. The device will lose access to the
 workspace and any pending offline queue entries will be discarded.
 Use --force to skip confirmation.
+
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
 
 ```
 aps adapter detach <device-id> [flags]
@@ -1223,7 +1233,7 @@ aps adapter detach <device-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1286,7 +1296,7 @@ aps adapter exec <adapter> <action> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1322,7 +1332,7 @@ and profile are the parties.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1385,7 +1395,7 @@ aps adapter link add <device> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1440,7 +1450,7 @@ aps adapter link delete <device> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1478,7 +1488,7 @@ aps adapter link list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1526,7 +1536,7 @@ aps adapter list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1574,7 +1584,7 @@ aps adapter logs <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1610,7 +1620,7 @@ pre-filtered for messenger-type devices.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1657,7 +1667,7 @@ aps adapter messenger channels <messenger> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1715,7 +1725,7 @@ aps adapter messenger create <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1751,7 +1761,7 @@ and profile are the parties.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1814,7 +1824,7 @@ aps adapter messenger link add <device> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1869,7 +1879,7 @@ aps adapter messenger link delete <device> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1907,7 +1917,7 @@ aps adapter messenger link list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -1955,7 +1965,7 @@ aps adapter messenger list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2003,7 +2013,7 @@ aps adapter messenger logs <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2060,7 +2070,7 @@ aps adapter messenger start <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2108,7 +2118,7 @@ aps adapter messenger status <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2164,7 +2174,7 @@ aps adapter messenger stop <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2206,7 +2216,7 @@ aps adapter messenger test <messenger> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2256,7 +2266,7 @@ aps adapter pair [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2307,7 +2317,7 @@ aps adapter pending [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2344,7 +2354,7 @@ aps adapter status / show.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2399,7 +2409,7 @@ aps adapter permissions set <device-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2439,7 +2449,7 @@ aps adapter presence [workspace-id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2489,7 +2499,7 @@ aps adapter reject <device-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2508,6 +2518,16 @@ Revoke a paired mobile device
 Revoke a mobile device's access token, disconnecting it immediately.
 
 The device must re-pair via a new QR code to reconnect.
+
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
 
 ```
 aps adapter revoke [device-id] [flags]
@@ -2532,7 +2552,7 @@ aps adapter revoke [device-id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2589,7 +2609,7 @@ aps adapter start <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2637,7 +2657,7 @@ aps adapter status <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2693,7 +2713,7 @@ aps adapter stop <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2735,7 +2755,7 @@ aps adapter test <messenger> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2781,7 +2801,7 @@ aps alias [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2822,7 +2842,7 @@ aps alias add <name> <target...> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2859,7 +2879,7 @@ aps alias delete <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2896,7 +2916,7 @@ aps alias list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2937,7 +2957,7 @@ aps alias shell [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -2966,7 +2986,7 @@ Manage capability bundles
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3021,7 +3041,7 @@ aps bundle create <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3049,6 +3069,16 @@ The destructive-token confirmation flow gates the apply path, and
 bundle name. Idempotent on already-absent records — re-running on
 a missing user bundle reports the bundle as not found.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps bundle delete <name> [flags]
 ```
@@ -3070,7 +3100,7 @@ aps bundle delete <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3120,7 +3150,7 @@ aps bundle edit <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3170,7 +3200,7 @@ aps bundle list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3216,7 +3246,7 @@ aps bundle show <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3263,7 +3293,7 @@ aps bundle validate <file> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3292,7 +3322,7 @@ Manage capabilities (tools, configs, dotfiles)
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3352,7 +3382,7 @@ aps capability adopt <path> --name <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3380,6 +3410,16 @@ irreversibly. The destructive-token confirmation flow gates the
 apply path, and --dry-run is opted out because preview would only
 restate the capability name. Idempotent on already-absent records.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps capability delete <name> [flags]
 ```
@@ -3401,7 +3441,7 @@ aps capability delete <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3450,7 +3490,7 @@ aps capability disable <profile> <capability> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3498,7 +3538,7 @@ aps capability enable <profile> <capability> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3547,7 +3587,7 @@ aps capability install <source> --name <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3596,7 +3636,7 @@ aps capability link <name> [--target <path>] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3648,7 +3688,7 @@ aps capability list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3677,7 +3717,7 @@ Smart patterns + builtin capabilities
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3722,7 +3762,7 @@ aps capability patterns list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3766,7 +3806,7 @@ aps capability show <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3817,7 +3857,7 @@ aps capability watch <path> --name <name> | --tool <tool> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3888,7 +3928,7 @@ aps chat <profile-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3946,7 +3986,7 @@ aps completion [bash|zsh|fish|powershell]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -3975,7 +4015,7 @@ Inspect aps configuration
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4020,7 +4060,7 @@ aps config path [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4065,7 +4105,7 @@ aps config paths [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4101,7 +4141,7 @@ Dispatches to the configured contacts adapter backend
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4159,7 +4199,7 @@ aps contact add <email> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4205,7 +4245,7 @@ aps contact delete <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4248,7 +4288,7 @@ aps contact find <query> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4301,7 +4341,7 @@ aps contact list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4345,7 +4385,7 @@ aps contact note <id> <text> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4388,7 +4428,7 @@ aps contact show <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4439,7 +4479,7 @@ aps contact update <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4475,7 +4515,7 @@ discover agents by capability, and manage directory records.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4500,6 +4540,16 @@ Remove an agent profile's record from the AGNTCY Directory.
 Profile is supplied via the tool-level --profile global:
   aps --profile worker directory delete
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps directory delete [flags]
 ```
@@ -4520,7 +4570,7 @@ aps directory delete [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4564,7 +4614,7 @@ aps directory discover [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4607,7 +4657,7 @@ aps directory register [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4647,7 +4697,7 @@ aps directory show [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4663,16 +4713,18 @@ Generate documentation
 
 ### Synopsis
 
-Generate a markdown documentation tree under
-<agents-dir>/docs/ describing every aps command, flag, and
-subcommand. The agents dir resolves via core.GetAgentsDir (default:
-$APS_DATA_PATH/agents).
+Write the documentation set embedded in the aps binary (README,
+CLI, PROFILES, ISOLATION, SESSIONS, EXAMPLES, WEBHOOKS, SECURITY,
+and SPEC, as markdown) to <data-dir>/docs/. The data dir is
+$APS_DATA_PATH when set, else $XDG_DATA_HOME/aps, else
+~/.local/share/aps. There is no flag or config key to choose another
+destination.
 
-The output is a deterministic projection of the live cobra command
-tree, so rerunning overwrites existing files with identical content
-when the binary hasn't changed. --dry-run is opted out because the
-preview would have to render the same output and discard it instead
-of writing it.
+The files are a fixed copy shipped with the binary, not generated
+from the live command tree (aps <command> --help is the live
+reference), so rerunning overwrites existing files with identical
+content for the same binary. --dry-run is opted out because the
+preview would have to list the same files the command writes.
 
 Idempotent overwrite: safe to rerun. No network calls.
 
@@ -4695,7 +4747,7 @@ aps docs [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4733,7 +4785,7 @@ aps env [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4769,7 +4821,7 @@ badges (Verifiable Credentials) to attest agent capabilities.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4806,7 +4858,7 @@ Issue and verify agent badges (Verifiable Credentials) for capability attestatio
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4849,7 +4901,7 @@ aps identity badge issue [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4889,7 +4941,7 @@ aps identity badge verify <badge-file> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4936,7 +4988,7 @@ aps identity init [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -4976,7 +5028,7 @@ aps identity show [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5016,7 +5068,7 @@ aps identity verify <did> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5064,7 +5116,7 @@ aps listen [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5093,7 +5145,7 @@ Migrate legacy configurations to new formats
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5140,7 +5192,7 @@ aps migrate messengers [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5176,7 +5228,7 @@ Supports OTLP (gRPC) and stdout exporters.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5228,7 +5280,7 @@ aps observability toggle [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5257,7 +5309,7 @@ Inspect the reporting hierarchy across profiles
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5308,7 +5360,7 @@ aps org check [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5361,7 +5413,7 @@ aps org show <profile-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5424,7 +5476,7 @@ aps org snapshot [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5463,7 +5515,7 @@ they can do. Modes:
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5511,7 +5563,7 @@ aps policy list <workspace-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5566,7 +5618,7 @@ aps policy set [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5608,7 +5660,7 @@ aps policy show [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5641,7 +5693,7 @@ Configure trust verification for inbound A2A requests using DID-based identity.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5691,7 +5743,7 @@ aps policy trust set [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5731,7 +5783,7 @@ aps policy trust show [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5764,7 +5816,7 @@ Create, list, and inspect agent profiles.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5805,7 +5857,7 @@ Manage capabilities on a profile
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5853,7 +5905,7 @@ aps profile capability add <profile> <capability> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5898,7 +5950,7 @@ aps profile capability remove <profile> <capability> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5916,9 +5968,13 @@ Create a new profile
 
 Create a new agent profile under
 $APS_DATA_PATH/profiles/<id>/. The id argument doubles as the
-directory name; display name, email, avatar URL, and color hex
-default to interactive prompts when omitted and stdin is a TTY.
-Pass --force to overwrite an existing profile directory.
+directory name and is required. When stdin is a terminal, display
+name and email are asked for if the flags are omitted; avatar and
+color are never asked for. Without a terminal nothing is asked and
+the profile is created with what the flags give: the display name
+defaults to the id, the rest stays empty (so "aps profile create
+<id>" alone succeeds). Creating an id that already exists fails
+unless --force overwrites the existing profile directory.
 
 Because profiles move between machines (share/import), the id must
 be a valid directory name on every platform: not empty, "." or "..";
@@ -5942,11 +5998,11 @@ behavior when the flags are unset.
 
 Mutating: writes the profile.yaml record and (optionally) seeds the
 git config block. Emits a ProfileCreated bus event with the --note
-metadata attached. Not idempotent — each call creates a fresh
-record (use --force to replace).
+metadata attached. Not idempotent: a second create of the same id
+fails with a conflict (use --force to replace).
 
 ```
-aps profile create [id] [flags]
+aps profile create <id> [flags]
 ```
 
 ### Options
@@ -5978,7 +6034,7 @@ aps profile create [id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -5996,8 +6052,8 @@ Delete a profile
 
 Delete a profile directory under $APS_DATA_PATH/profiles/<id>/
 along with its profile.yaml, secrets, and any side-car files.
-Interactive confirmation prompts unless --yes is set or stdin is
-not a TTY.
+On a terminal it also asks a yes/no question unless --yes is set;
+off a terminal it does not ask. --yes only skips that question.
 
 Destructive: irreversible without a prior aps profile share
 export. Blocked when the profile has active sessions in the
@@ -6006,6 +6062,16 @@ listed); --force overrides both guards and removes the profile
 anyway, leaving orphaned sessions to fail on next lookup and
 inbound reports_to links dangling. A ProfileDeleted bus event
 fires with the --note metadata attached.
+
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
 
 ```
 aps profile delete <id> [flags]
@@ -6017,7 +6083,7 @@ aps profile delete <id> [flags]
       --force[=true|false]   Delete even if there are active sessions (orphans them — they keep running but lose profile context) or inbound reports_to links (they are left dangling)
   -h, --help[=true|false]    help for delete
   -n, --note string          Audit note (recorded against the bus event payload and exposed to policy engine via context.note)
-  -y, --yes[=true|false]     Skip interactive confirmation
+  -y, --yes[=true|false]     Skip the yes/no question asked on a terminal (--confirm-token is still required)
 ```
 
 ### Options inherited from parent commands
@@ -6029,7 +6095,7 @@ aps profile delete <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6060,7 +6126,7 @@ The --auto-avatar / --auto-color flags generate a deterministic value
 from the profile id and overwrite the existing value when set.
 
 ```
-aps profile edit [id] [flags]
+aps profile edit <id> [flags]
 ```
 
 ### Options
@@ -6091,7 +6157,7 @@ aps profile edit [id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6142,7 +6208,7 @@ aps profile export <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6193,7 +6259,7 @@ ProfileCreated payload. Secrets are NOT imported (they are not
 part of the bundle); set them separately after import.
 
 ```
-aps profile import [bundle|AGENTS.md] [flags]
+aps profile import <bundle|AGENTS.md> [flags]
 ```
 
 ### Options
@@ -6214,7 +6280,7 @@ aps profile import [bundle|AGENTS.md] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6273,7 +6339,7 @@ aps profile list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6303,7 +6369,7 @@ Mutating (filesystem write): creates the bundle file. Pair with
 aps profile import on the receiving install.
 
 ```
-aps profile share [id] [flags]
+aps profile share <id> [flags]
 ```
 
 ### Options
@@ -6322,7 +6388,7 @@ aps profile share [id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6340,16 +6406,20 @@ Show profile details
 
 Show the full profile record as YAML: identity fields,
 workspace link, capability list (annotated as builtin or external
-with description), and the status of optional modules
-(secrets present/missing, redacted secret keys). Capability
-descriptions are looked up from the builtin registry or the
-external capability path.
+with description), and the status of optional modules: the secrets
+line gives the number of secret keys ("none" when the secrets file
+holds no keys, a bare comment template included; "unreadable" with
+the file location when it cannot be parsed), followed by each key
+with its value redacted. The same count backs the list SECRETS column
+and --has-secrets. The json and yaml formats print the profile record
+only. Capability descriptions are looked up from the builtin registry
+or the external capability path.
 
 Read-only: loads $APS_DATA_PATH/profiles/<id>/profile.yaml and
 prints a human-friendly render. Idempotent.
 
 ```
-aps profile show [id] [flags]
+aps profile show <id> [flags]
 ```
 
 ### Options
@@ -6367,7 +6437,7 @@ aps profile show [id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6397,7 +6467,7 @@ Read-only: loads profile.yaml and runs the bundle resolver; no
 disk writes. Idempotent up to filesystem drift between calls.
 
 ```
-aps profile status [id] [flags]
+aps profile status <id> [flags]
 ```
 
 ### Options
@@ -6415,7 +6485,7 @@ aps profile status [id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6467,7 +6537,7 @@ aps profile trust <profile-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6496,7 +6566,7 @@ Manage workspace link for a profile
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6535,7 +6605,7 @@ aps profile workspace set <profile-id> <workspace-name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6594,7 +6664,7 @@ aps run [profile] -- [command] [args...] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6634,7 +6704,7 @@ aps serve [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6663,7 +6733,7 @@ Manage profile-facing services
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6761,7 +6831,7 @@ aps service add <service-id> --type <type-or-adapter-alias> --profile <profile-i
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6799,7 +6869,7 @@ action runs as prior_turns.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6848,7 +6918,7 @@ aps service conversation list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6894,7 +6964,7 @@ aps service conversation show <conversation-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6937,7 +7007,7 @@ aps service routes <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -6983,7 +7053,7 @@ aps service show <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7027,7 +7097,7 @@ aps service start <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7073,7 +7143,7 @@ aps service status <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7117,7 +7187,7 @@ aps service stop <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7175,7 +7245,7 @@ aps service test <service-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7204,7 +7274,7 @@ Manage sessions
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7268,7 +7338,7 @@ aps session attach <session-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7304,6 +7374,16 @@ destructive-token confirmation flow gates the apply path, and
 session ID. Idempotent on already-absent records. Use --note to
 attach an audit reason that flows to the SessionStopped event.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps session delete <session-id> [flags]
 ```
@@ -7325,7 +7405,7 @@ aps session delete <session-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7376,7 +7456,7 @@ aps session detach [session-id] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7426,7 +7506,7 @@ aps session inspect <session-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7477,7 +7557,7 @@ aps session list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7535,7 +7615,7 @@ aps session logs <session-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7571,6 +7651,16 @@ signal path that defines the operation. Idempotent on the registry
 status — terminated sessions stay inactive. Use --note to attach an
 audit reason that flows to the SessionStopped event payload.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps session terminate <session-id> [flags]
 ```
@@ -7593,7 +7683,7 @@ aps session terminate <session-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7626,7 +7716,7 @@ Manage Agent Skills - discover, install, run, and configure skills for your prof
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7671,7 +7761,7 @@ aps skill install <path> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7709,7 +7799,7 @@ aps skill list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7746,7 +7836,7 @@ aps skill run <skill-name> -- <script> [args...] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7791,7 +7881,7 @@ aps skill show <skill-name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7837,7 +7927,7 @@ aps skill stats [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7874,7 +7964,7 @@ aps skill suggest [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7911,7 +8001,7 @@ aps skill validate <path> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7940,7 +8030,7 @@ Manage agent squads (topology, membership, scope)
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -7997,7 +8087,7 @@ aps squad check [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8064,7 +8154,7 @@ aps squad create <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8092,6 +8182,16 @@ squad ID. Idempotent on the pair. Use --note to attach an audit
 reason that flows to the event bus alongside the mutation. With
 --format json|yaml the result prints as {"id": ..., "deleted": true}.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps squad delete <id> [flags]
 ```
@@ -8112,7 +8212,7 @@ aps squad delete <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8164,7 +8264,7 @@ aps squad list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8193,7 +8293,7 @@ Manage squad membership
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8246,7 +8346,7 @@ aps squad members add <squad-id> <profile-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8276,6 +8376,16 @@ Idempotent on already-absent membership. With --format json|yaml
 the updated squad prints as a record, in the same shape as aps
 squad show.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps squad members remove <squad-id> <profile-id> [flags]
 ```
@@ -8296,7 +8406,7 @@ aps squad members remove <squad-id> <profile-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8347,7 +8457,7 @@ aps squad show <id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8365,9 +8475,11 @@ Show aps configuration and runtime status
 
 Show a snapshot of the current aps configuration and runtime state.
 
-Reports the active profile, active workspace, build version, and event-bus
-connection state. Read-only: no network calls, no state mutation. Intended
-as a quick "is aps wired up" probe for users and agents.
+Reports the --profile and --workspace values given for this invocation, the
+build version, and event-bus connection state. It does not read APS_PROFILE and
+does not look up the workspace chosen with aps workspace use, so both show
+"(none)" unless the flags are passed. Read-only: no network calls, no state
+mutation. Intended as a quick "is aps wired up" probe for users and agents.
 
 Output respects the --format global (table|json|yaml). Empty profile or
 workspace values render as "(none)" to distinguish unset from blank.
@@ -8391,7 +8503,7 @@ aps status [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8431,7 +8543,7 @@ aps toolspec [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8469,7 +8581,7 @@ aps upgrade [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8511,7 +8623,7 @@ aps upgrade preamble [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8549,7 +8661,7 @@ aps version [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8578,7 +8690,7 @@ Manage voice sessions and the voice backend service
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8609,7 +8721,7 @@ Control the voice backend service
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8659,7 +8771,7 @@ aps voice service start [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8700,7 +8812,7 @@ aps voice service status [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8744,7 +8856,7 @@ aps voice service stop [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8792,7 +8904,7 @@ aps voice start [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8830,7 +8942,7 @@ The webhook command group provides operations for:
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8884,7 +8996,7 @@ aps webhook server [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8930,7 +9042,7 @@ aps webhook toggle [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -8970,7 +9082,7 @@ workspace to avoid repeating its name:
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9038,7 +9150,7 @@ aps workspace activity <workspace-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9081,7 +9193,7 @@ aps workspace agents [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9122,7 +9234,7 @@ aps workspace archive [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9169,7 +9281,7 @@ aps workspace audit [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9210,7 +9322,7 @@ aps workspace caps [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9247,7 +9359,7 @@ commands to list, inspect, and resolve them.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9295,7 +9407,7 @@ aps workspace conflicts list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9342,7 +9454,7 @@ aps workspace conflicts resolve <conflict-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9380,7 +9492,7 @@ aps workspace conflicts show <conflict-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9424,7 +9536,7 @@ aps workspace create <name> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9460,7 +9572,7 @@ Changes are tracked with version history and ACL enforcement.
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9498,6 +9610,16 @@ preview would only restate the key argument. Deleting a key that
 is absent (or private and owned by another profile, per T-1309)
 returns a not-found error rather than silently succeeding.
 
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
+
 ```
 aps workspace ctx delete <key> [flags]
 ```
@@ -9520,7 +9642,7 @@ aps workspace ctx delete <key> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9569,7 +9691,7 @@ aps workspace ctx get <key> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9618,7 +9740,7 @@ aps workspace ctx history <key> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9660,7 +9782,7 @@ aps workspace ctx list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9705,7 +9827,7 @@ aps workspace ctx set <key> <value> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9746,7 +9868,7 @@ aps workspace join <workspace> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9788,7 +9910,7 @@ aps workspace leave [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9829,7 +9951,7 @@ aps workspace list [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9867,7 +9989,7 @@ aps workspace members [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9920,7 +10042,7 @@ aps workspace policy [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -9938,6 +10060,16 @@ Remove an agent from the workspace
 
 Remove an agent from a collaboration workspace. Only the workspace owner
 can perform this action. Use --force to skip confirmation.
+
+Confirmation token: this command refuses to run without --confirm-token,
+on a terminal and off one; --yes, --force and --confirm=yes do not
+replace it. Run the command once without the token: it changes nothing,
+exits with code 5 (UNAUTHORIZED), and prints the token (under --format
+json or yaml it is in the error's message and suggested_fix). Then run
+it again with --confirm-token=<token>. The token is the first 12 hex
+characters of the SHA-256 of the command path (for example
+"aps profile delete"), so it is the same on every run and does not
+depend on the arguments.
 
 ```
 aps workspace remove <agent> [workspace] [flags]
@@ -9961,7 +10093,7 @@ aps workspace remove <agent> [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10004,7 +10136,7 @@ aps workspace role <agent> [role] [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10053,7 +10185,7 @@ aps workspace send <recipient> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10091,7 +10223,7 @@ aps workspace show [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10137,7 +10269,7 @@ aps workspace sync <workspace-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10175,7 +10307,7 @@ aps workspace task <task-id> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10216,7 +10348,7 @@ aps workspace tasks [workspace] [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)
@@ -10257,7 +10389,7 @@ aps workspace use <workspace> [flags]
       --no-hints[=true|false]    Suppress next-step hints after command output
       --no-redact[=true|false]   disable redaction of secrets/PII in logs and output (DEBUG ONLY)
       --offline[=true|false]     Disable network access
-  -p, --profile string           profile id (defaults to active profile)
+  -p, --profile string           profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)
       --quiet[=true|false]       Suppress non-essential output
   -V, --verbose count            Increase log verbosity (-V=debug, -VV=trace)
       --workspace string         workspace id (defaults to active workspace)

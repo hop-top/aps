@@ -35,9 +35,7 @@ Creates:
 ```bash
 aps profile create openai-agent \
   --display-name "OpenAI Agent" \
-  --email "openai@example.com" \
-  --github "openai-bot" \
-  --twitter "openai_agent"
+  --email "openai@example.com"
 ```
 
 ## Profile Configuration
@@ -181,12 +179,14 @@ line fails with the file path and line number only; line content is never printe
 aps profile show myagent
 ```
 
-Shows keys but redacts values:
+Shows the number of secret keys ("none" when the secrets file has no keys), then each key
+with its value redacted:
 ```
-secrets:
-  GITHUB_TOKEN: ***redacted***
-  OPENAI_API_KEY: ***redacted***
-  MY_API_KEY: ***redacted***
+Modules:
+- Secrets: 3 keys
+  - GITHUB_TOKEN: ***redacted***
+  - MY_API_KEY: ***redacted***
+  - OPENAI_API_KEY: ***redacted***
 ```
 
 ### Accessing Secrets in Actions
@@ -521,8 +521,7 @@ rm -rf ~/.agents/profiles/myagent
 ```bash
 aps profile create github-bot \
   --display-name "GitHub Bot" \
-  --email "bot@example.com" \
-  --github "mybot"
+  --email "bot@example.com"
 
 # Add secrets
 nano ~/.agents/profiles/github-bot/secrets.env

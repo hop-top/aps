@@ -264,7 +264,7 @@ Set the role per-shell:
 
 ```bash
 export KIT_POLICY_ROLE=admin
-aps profile delete noor --note "rotated identity to noor-2"
+aps profile delete noor --note "rotated identity to noor-2" --confirm-token <token>
 ```
 
 ### Compose with the default
