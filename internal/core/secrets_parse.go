@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -35,8 +34,8 @@ func (e *SecretsParseError) Error() string {
 	return fmt.Sprintf("%s: %s at line %d (content withheld)", e.Path, ErrSecretsParse.Error(), e.Line)
 }
 
-// firstBadLineBudget caps the bytes firstBadLine may re-parse while locating
-// a syntax error. Far above what an ordinary secrets file needs; it only
+// firstBadLineBudget caps the bytes segmentSecretsEnv may re-parse while
+// locating a syntax error. Far above what an ordinary secrets file needs; it only
 // bounds the pathological case.
 const firstBadLineBudget = 16 << 20
 
@@ -71,37 +70,75 @@ func parseSecretsEnv(path string, data []byte) (map[string]string, error) {
 	return m, nil
 }
 
-// firstBadLine finds the 1-based line where the first statement the reader
-// rejects begins, without reading the reader's error text. It consumes lines
-// greedily, each statement being the shortest run of lines that parses (a
-// quoted value may span lines); the first line from which no run parses is
-// the bad statement.
+// secretsStmt is one statement of a secrets.env file: a comment or blank
+// line (no keys), a key assignment, or, when the reader accepts several
+// assignments on one line, a run with several keys. Start and End are byte
+// offsets into the file, always on line boundaries; the range includes the
+// line terminators.
+type secretsStmt struct {
+	Start, End int
+	Keys       []string // sorted, distinct
+}
+
+// segmentSecretsEnv splits data into statements, each being the shortest run
+// of lines the reader accepts (a quoted value may span lines). It is the one
+// place the file is segmented: the write path uses the statements to edit in
+// place, and firstBadLine uses the failure position to locate syntax errors.
+// bad is 0 when the whole file segments; otherwise it is the 1-based line
+// where the first statement the reader rejects begins, and stmts holds the
+// statements before it.
 //
 // Re-parsing growing runs is quadratic in the worst case (a bad statement
 // followed by many lines), so the scan stops after firstBadLineBudget bytes
 // of parse work and reports the statement it was examining. On a file that
 // large the line is then a lower bound, which still beats stalling the
 // command that only wants to report the error.
-func firstBadLine(data []byte) int {
-	src := bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-	lines := bytes.Split(src, []byte("\n"))
+func segmentSecretsEnv(data []byte) (stmts []secretsStmt, bad int) {
+	// offs[i] is the byte offset of line i; the last entry is len(data).
+	offs := []int{0}
+	for i, c := range data {
+		if c == '\n' {
+			offs = append(offs, i+1)
+		}
+	}
+	if offs[len(offs)-1] != len(data) {
+		offs = append(offs, len(data))
+	}
+	nlines := len(offs) - 1
 	work := 0
-	for start := 0; start < len(lines); {
+	for start := 0; start < nlines; {
 		next := -1
-		for end := start + 1; end <= len(lines); end++ {
-			chunk := bytes.Join(lines[start:end], []byte("\n"))
+		for end := start + 1; end <= nlines; end++ {
+			chunk := data[offs[start]:offs[end]]
 			if work += len(chunk) + 1; work > firstBadLineBudget {
-				return start + 1
+				return stmts, start + 1
 			}
-			if _, err := godotenv.UnmarshalBytes(chunk); err == nil {
-				next = end
-				break
+			m, err := godotenv.UnmarshalBytes(chunk)
+			if err != nil {
+				continue
 			}
+			keys := make([]string, 0, len(m))
+			for k := range m {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			stmts = append(stmts, secretsStmt{Start: offs[start], End: offs[end], Keys: keys})
+			next = end
+			break
 		}
 		if next < 0 {
-			return start + 1
+			return stmts, start + 1
 		}
 		start = next
+	}
+	return stmts, 0
+}
+
+// firstBadLine finds the 1-based line where the first statement the reader
+// rejects begins, without reading the reader's error text.
+func firstBadLine(data []byte) int {
+	if _, bad := segmentSecretsEnv(data); bad > 0 {
+		return bad
 	}
 	return 1
 }

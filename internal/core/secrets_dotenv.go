@@ -2,8 +2,6 @@ package core
 
 import (
 	"encoding/base64"
-	"fmt"
-	"sort"
 	"strings"
 	"unicode"
 
@@ -29,28 +27,6 @@ func validSecretKey(k string) bool {
 	return true
 }
 
-// encodeSecretsEnv renders m as secrets.env content, keys sorted. Every value
-// goes through encodeSecretValue.
-func encodeSecretsEnv(m map[string]string) (string, error) {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	var b strings.Builder
-	for _, k := range keys {
-		if !validSecretKey(k) {
-			return "", fmt.Errorf("secrets.env: invalid key %q", k)
-		}
-		enc := encodeSecretValue(m[k])
-		b.WriteString(k)
-		b.WriteByte('=')
-		b.WriteString(enc)
-		b.WriteByte('\n')
-	}
-	return b.String(), nil
-}
-
 // encodeSecretValue is the single encoder for secrets.env values. godotenv
 // has gaps (single quotes cannot hold ' or end in \; double quotes cannot end
 // in " or \, and strip trailing quote chars; CRLF is rewritten inside any
@@ -72,19 +48,39 @@ func encodeSecretValue(v string) string {
 // encodePlain returns the first plain (non-base64) encoding the reader reads
 // back exactly.
 func encodePlain(v string) (string, bool) {
-	dq := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`, "\r", `\r`, "$", `\$`)
-	candidates := []string{
-		v,
-		"'" + v + "'",
-		`"` + dq.Replace(v) + `"`,
-		strings.ReplaceAll(v, "$", `\$`),
-	}
-	for _, c := range candidates {
+	for _, c := range plainCandidates(v) {
 		if readsBack(c, v) {
 			return c, true
 		}
 	}
 	return "", false
+}
+
+// plainCandidates lists the plain encodings of v in preference order.
+func plainCandidates(v string) []string {
+	dq := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`, "\r", `\r`, "$", `\$`)
+	return []string{
+		v,
+		"'" + v + "'",
+		`"` + dq.Replace(v) + `"`,
+		strings.ReplaceAll(v, "$", `\$`),
+	}
+}
+
+// secretValueCandidates lists, in preference order, the encodings of v that
+// read back alone: the plain ones that do, then the base64 form. The first is
+// what encodeSecretValue returns; the editor verifies them in the context of
+// the real file and takes the first that still reads back there.
+func secretValueCandidates(v string) []string {
+	var out []string
+	if !strings.HasPrefix(v, secretsB64Marker) {
+		for _, c := range plainCandidates(v) {
+			if readsBack(c, v) {
+				out = append(out, c)
+			}
+		}
+	}
+	return append(out, secretsB64Marker+base64.StdEncoding.EncodeToString([]byte(v)))
 }
 
 func readsBack(encoded, want string) bool {

@@ -57,21 +57,31 @@ var SecretsBackends = []string{
 // handlers that pass an explicit secrets.env path. Returns nil for missing
 // files. Warns on insecure permissions.
 func LoadSecrets(path string) (map[string]string, error) {
+	data, found, err := readSecretsFile(path)
+	if err != nil || !found {
+		return nil, err
+	}
+	return parseSecretsEnv(path, data)
+}
+
+// readSecretsFile reads the raw secrets.env bytes, warning on insecure
+// permissions. found is false for a missing file.
+func readSecretsFile(path string) (data []byte, found bool, err error) {
 	warning, err := fsperm.CheckSecret(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil
+			return nil, false, nil
 		}
-		return nil, err
+		return nil, false, fmt.Errorf("check secrets %s: %w", path, err)
 	}
 	if warning != "" {
 		fmt.Fprintf(os.Stderr, "WARNING: Secrets file %s has %s\n", path, warning)
 	}
-	data, err := os.ReadFile(path) // #nosec G304 -- path is the profile's secrets file
+	data, err = os.ReadFile(path) // #nosec G304 -- path is the profile's secrets file
 	if err != nil {
-		return nil, fmt.Errorf("read secrets %s: %w", path, err)
+		return nil, false, fmt.Errorf("read secrets %s: %w", path, err)
 	}
-	return parseSecretsEnv(path, data)
+	return data, true, nil
 }
 
 // LoadProfileSecrets returns the env-style key→value map for a profile,
@@ -244,15 +254,22 @@ func (d *dotenvStore) read() (map[string]string, error) {
 	return m, nil
 }
 
-func (d *dotenvStore) write(m map[string]string) error {
-	if err := os.MkdirAll(filepath.Dir(d.path), 0o700); err != nil {
-		return err
-	}
-	content, err := encodeSecretsEnv(m)
+// edit sets key to *val (deletes it when val is nil), changing only that
+// key's statement in the file. The file is written in place (truncate, then
+// write; owner-only mode), not via a temp file and rename.
+func (d *dotenvStore) edit(key string, val *string) error {
+	data, _, err := readSecretsFile(d.path)
 	if err != nil {
 		return err
 	}
-	if err := fsperm.WriteSecret(d.path, []byte(content), 0o600); err != nil {
+	out, changed, err := editSecretsEnv(d.path, data, key, val)
+	if err != nil || !changed {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(d.path), 0o700); err != nil {
+		return err
+	}
+	if err := fsperm.WriteSecret(d.path, out, 0o600); err != nil {
 		return fmt.Errorf("write secrets %s: %w", d.path, err)
 	}
 	return nil
@@ -294,22 +311,10 @@ func (d *dotenvStore) Exists(_ context.Context, key string) (bool, error) {
 }
 
 func (d *dotenvStore) Set(_ context.Context, key string, value []byte) error {
-	m, err := d.read()
-	if err != nil {
-		return err
-	}
-	m[key] = string(value)
-	return d.write(m)
+	v := string(value)
+	return d.edit(key, &v)
 }
 
 func (d *dotenvStore) Delete(_ context.Context, key string) error {
-	m, err := d.read()
-	if err != nil {
-		return err
-	}
-	if _, ok := m[key]; !ok {
-		return secret.ErrNotFound
-	}
-	delete(m, key)
-	return d.write(m)
+	return d.edit(key, nil)
 }
