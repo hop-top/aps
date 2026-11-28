@@ -87,8 +87,10 @@ func TestDotenvStoreValuesRoundTrip(t *testing.T) {
 
 // Every value, including NUL bytes and invalid UTF-8, reads back exactly.
 func TestDotenvStoreRandomValuesAlwaysRoundTrip(t *testing.T) {
-	alphabet := []string{"a", "b", " ", "\t", "#", "\n", "\r", "\r\n", "'", `"`, `\`, "$", "{", "}", "=", "\u00e9", "X", "(", ")",
-		"\x00", "\xff", "aps-b64:", "base64:", "\u00a0", "\\n", "${A}", `\"`, `\'`}
+	alphabet := []string{
+		"a", "b", " ", "\t", "#", "\n", "\r", "\r\n", "'", `"`, `\`, "$", "{", "}", "=", "\u00e9", "X", "(", ")",
+		"\x00", "\xff", "aps-b64:", "base64:", "\u00a0", "\\n", "${A}", `\"`, `\'`,
+	}
 	rng := rand.New(rand.NewSource(1))
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "secrets.env")

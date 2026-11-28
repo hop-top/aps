@@ -268,7 +268,7 @@ func (d *dotenvStore) edit(key string, val *string) error {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(d.path), 0o700); err != nil {
-		return err
+		return fmt.Errorf("create secrets dir for %s: %w", d.path, err)
 	}
 	if err := fsperm.WriteSecret(d.path, out, 0o600); err != nil {
 		return fmt.Errorf("write secrets %s: %w", d.path, err)
