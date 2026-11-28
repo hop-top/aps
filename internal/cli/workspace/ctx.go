@@ -78,7 +78,7 @@ func newCtxSetCmd() *cobra.Command {
 By default variables are workspace-wide ("shared"): visible to every
 member, gated by the per-key ACL. Pass --private to scope the
 variable to the current profile only — private variables are
-invisible to other profiles' workspace ctx get/list (T-1309).`,
+invisible to other profiles' workspace ctx get/list.`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key, value := args[0], args[1]
@@ -173,11 +173,11 @@ func newCtxGetCmd() *cobra.Command {
 		Long: `Read a single context variable from the active or selected
 workspace and print its value to stdout.
 
-The lookup honours the T-1309 visibility filter: when --profile (or
+The lookup honours the visibility filter: when --profile (or
 the inherited APS_PROFILE global) is set, private variables owned
 by other profiles are hidden and the key reads as not found.
 Passing no profile falls through to the raw view used by tooling
-and tests. --workspace inherits from the active workspace (T-0376);
+and tests. --workspace inherits from the active workspace;
 --json swaps the bare-value output for the full ContextVariable
 record. Companion: aps workspace ctx set, ctx list, ctx history.
 
@@ -240,7 +240,7 @@ func newCtxListCmd() *cobra.Command {
 		Short: "List all context variables",
 		Long: `List context variables in the active or selected workspace.
 
-The --workspace flag is a global (T-0376) and inherits from the
+The --workspace flag is a global and inherits from the
 active workspace when not supplied. Use --key-prefix to narrow
 the listing to keys starting with a given string.`,
 		RunE: runCtxList,
@@ -372,19 +372,19 @@ func newCtxDeleteCmd() *cobra.Command {
 		Short: "Delete a context variable",
 		Long: `Remove a key from the workspace's shared context store and
 persist the truncated snapshot. The delete is mediated by the
-T-1292 policy gate: the kit pre_persisted topic is published with
+policy gate: the kit pre_persisted topic is published with
 Op=delete and kind=workspace_context before the in-memory mutation
 fans out, and CEL rules can veto via context.request_attrs (the
 variable's visibility and the calling workspace_id are stuffed in
 for the principal/role resolver to read).
 
 --workspace inherits from the active workspace, --profile names
-the deleting agent, and --note (T-1291) attaches a free-form
+the deleting agent, and --note attaches a free-form
 rationale that flows into the policy context. Marked
 SideEffectDestructiveLocal: a destructive-token confirm gates the
 apply path (--force bypasses) and --dry-run is opted out because
 preview would only restate the key argument. Deleting a key that
-is absent (or private and owned by another profile, per T-1309)
+is absent (or private and owned by another profile)
 returns a not-found error rather than silently succeeding.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

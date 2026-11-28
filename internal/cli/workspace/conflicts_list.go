@@ -36,7 +36,7 @@ By default, all detected conflicts are listed (pending, auto-resolved
 awaiting review, manual, and fully resolved). Use --unresolved to
 narrow to only conflicts still requiring attention.
 
-The --workspace flag is a global (T-0376) and inherits from the active
+The --workspace flag is a global and inherits from the active
 workspace when not supplied.`,
 		RunE: runConflictsList,
 	}
