@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/confirmtoken"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/cli/listing"
 	"hop.top/aps/internal/cli/policygate"
@@ -476,6 +477,7 @@ returns a not-found error rather than silently succeeding.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the key being removed.
 	kitcli.OptOutDryRun(cmd)

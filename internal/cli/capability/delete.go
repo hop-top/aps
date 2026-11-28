@@ -7,6 +7,7 @@ import (
 	"hop.top/aps/internal/core/capability"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/confirmtoken"
 	kitcli "hop.top/kit/go/console/cli"
 )
 
@@ -62,6 +63,7 @@ restate the capability name. Idempotent on already-absent records.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — destructive-token confirm already gates the irreversible
 	// disk delete; preview would only restate the capability name.
 	kitcli.OptOutDryRun(cmd)

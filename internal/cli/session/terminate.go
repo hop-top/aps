@@ -14,6 +14,7 @@ import (
 	"hop.top/aps/internal/core/session"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/confirmtoken"
 	kitcli "hop.top/kit/go/console/cli"
 	"hop.top/kit/go/console/progress"
 	"hop.top/kit/go/core/uxp/invoke"
@@ -82,6 +83,7 @@ audit reason that flows to the SessionStopped event payload.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — terminate sends SIGTERM and waits for the tmux server
 	// to exit; preview would have to fake the OS signal path.
 	kitcli.OptOutDryRun(cmd)

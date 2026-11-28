@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"hop.top/aps/internal/cli/confirmtoken"
 	kitcli "hop.top/kit/go/console/cli"
 
 	"hop.top/aps/internal/cli/clinote"
@@ -51,6 +52,7 @@ Use --force to skip confirmation.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — detach drops any pending offline-queue entries for the
 	// device; preview would have to enumerate the queue, which is
 	// effectively the same disk read that detach itself performs.
