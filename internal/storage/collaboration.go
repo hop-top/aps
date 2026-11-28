@@ -67,11 +67,18 @@ const dirNameEscape = `<>:"/\|?*%`
 // escapeWorkspaceID returns a filesystem-safe directory name for the given
 // workspace ID. Reserved characters are percent-encoded so the mapping is
 // unambiguous and reversible via unescapeWorkspaceID; ordinary IDs (the
-// common case) are left untouched.
+// common case) are left untouched. A final dot or space is encoded too:
+// Windows drops trailing dots and spaces from a path component, so "x.."
+// and "x" would otherwise name the same directory there. "." and ".." are
+// left as they are so the containment check still refuses them.
 func escapeWorkspaceID(id string) string {
 	var b strings.Builder
-	for _, r := range id {
-		if r < 0x20 || strings.ContainsRune(dirNameEscape, r) {
+	last := -1
+	if id != "." && id != ".." {
+		last = len(id) - 1
+	}
+	for i, r := range id {
+		if r < 0x20 || strings.ContainsRune(dirNameEscape, r) || (i == last && (r == '.' || r == ' ')) {
 			fmt.Fprintf(&b, "%%%02X", r)
 			continue
 		}
