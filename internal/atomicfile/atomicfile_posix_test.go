@@ -69,18 +69,18 @@ func TestWriteKeepModeNewFileUsesPermMinusUmask(t *testing.T) {
 func TestWriteKeepModeSymlinkCarriesRealFileMode(t *testing.T) {
 	withUmask(t, 0o022)
 	dir := t.TempDir()
-	real := filepath.Join(dir, "real")
-	if err := os.WriteFile(real, []byte("old"), 0o600); err != nil {
+	realPath := filepath.Join(dir, "real")
+	if err := os.WriteFile(realPath, []byte("old"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	link := filepath.Join(dir, "link")
-	if err := os.Symlink(real, link); err != nil {
+	if err := os.Symlink(realPath, link); err != nil {
 		t.Skip(err)
 	}
 	if err := WriteKeepMode(link, []byte("new"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if fi, _ := os.Stat(real); fi.Mode().Perm() != 0o600 {
+	if fi, _ := os.Stat(realPath); fi.Mode().Perm() != 0o600 {
 		t.Fatalf("mode = %o, want 600", fi.Mode().Perm())
 	}
 }

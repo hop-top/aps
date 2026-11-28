@@ -76,7 +76,7 @@ func (s *Storage) Save(_ context.Context, task *a2a.Task, event a2a.Event, _ *a2
 	if err != nil {
 		return 0, ErrStorageFailed("marshal task", err)
 	}
-	if err := fsperm.WriteSecret(metaPath, data, 0o600); err != nil {
+	if err := fsperm.WriteSecretNoSync(metaPath, data, 0o600); err != nil {
 		return 0, ErrStorageFailed("write task", err)
 	}
 
@@ -85,7 +85,7 @@ func (s *Storage) Save(_ context.Context, task *a2a.Task, event a2a.Event, _ *a2
 		return 0, ErrStorageFailed("marshal event", err)
 	}
 	eventPath := filepath.Join(taskDir, fmt.Sprintf("event_%d_%s.json", time.Now().UnixNano(), uuid.New().String()))
-	if err := fsperm.WriteSecret(eventPath, eventData, 0o600); err != nil {
+	if err := fsperm.WriteSecretNoSync(eventPath, eventData, 0o600); err != nil {
 		return 0, ErrStorageFailed("write event", err)
 	}
 
@@ -187,7 +187,7 @@ func (s *Storage) SaveAgentCard(agentID string, card *a2a.AgentCard) error {
 	if err != nil {
 		return ErrStorageFailed("marshal agent card", err)
 	}
-	if err := fsperm.WriteSecret(cardPath, data, 0o600); err != nil {
+	if err := fsperm.WriteSecretNoSync(cardPath, data, 0o600); err != nil {
 		return ErrStorageFailed("write agent card", err)
 	}
 	return nil
@@ -234,7 +234,7 @@ func (s *Storage) CreateMessageFile(taskID a2a.TaskID, message *a2a.Message) err
 	if err != nil {
 		return ErrStorageFailed("marshal message", err)
 	}
-	if err := fsperm.WriteSecret(messagePath, data, 0o600); err != nil {
+	if err := fsperm.WriteSecretNoSync(messagePath, data, 0o600); err != nil {
 		return ErrStorageFailed("write message", err)
 	}
 	return nil

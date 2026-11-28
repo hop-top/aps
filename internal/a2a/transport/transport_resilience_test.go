@@ -650,8 +650,12 @@ func TestErrorScenario_ResourceExhaustion(t *testing.T) {
 
 	files, err := os.ReadDir(queueDir)
 	require.NoError(t, err)
-	assert.True(t, len(files) > 0)
-	assert.True(t, len(files) <= numMessages)
+	// Holds at any send/poll speed: the poller may drain the queue entirely,
+	// but never leaves more than was sent nor a hidden staging file behind.
+	assert.LessOrEqual(t, len(files), numMessages)
+	for _, f := range files {
+		assert.False(t, strings.HasPrefix(f.Name(), "."), "staging file left: %s", f.Name())
+	}
 }
 
 // TestErrorScenario_InvalidMessageFormat tests invalid message format handling

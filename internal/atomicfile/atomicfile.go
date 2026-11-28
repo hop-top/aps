@@ -31,7 +31,7 @@ type OpenFunc func(path string, flag int, perm os.FileMode) (*os.File, error)
 // killed mid-write can leave ".<name>.tmp-<random>" behind; it is not swept
 // (unsafe with concurrent writers).
 func Write(path string, data []byte, perm os.FileMode, open OpenFunc) error {
-	return write(path, data, perm, open, false)
+	return write(path, data, perm, open, opts{})
 }
 
 // WriteKeepMode is Write for non-secret files: when the resolved target
@@ -40,10 +40,21 @@ func Write(path string, data []byte, perm os.FileMode, open OpenFunc) error {
 // file gets perm minus umask. A Chmod failure is a pre-rename failure. On
 // Windows Chmod only toggles the read-only attribute.
 func WriteKeepMode(path string, data []byte, perm os.FileMode) error {
-	return write(path, data, perm, nil, true)
+	return write(path, data, perm, nil, opts{keepMode: true})
 }
 
-func write(path string, data []byte, perm os.FileMode, open OpenFunc, keepMode bool) (err error) {
+// WriteNoSync is Write without the file sync and the directory sync: same
+// temp file, owner-only open and rename, so readers never see a partial file
+// and a killed writer cannot truncate path, but the content is not forced to
+// disk and may be lost on power failure. For high-frequency writes where a
+// per-write fsync costs more than the durability is worth.
+func WriteNoSync(path string, data []byte, perm os.FileMode, open OpenFunc) error {
+	return write(path, data, perm, open, opts{noSync: true})
+}
+
+type opts struct{ keepMode, noSync bool }
+
+func write(path string, data []byte, perm os.FileMode, open OpenFunc, o opts) (err error) {
 	if open == nil {
 		open = os.OpenFile
 	}
@@ -53,7 +64,7 @@ func write(path string, data []byte, perm os.FileMode, open OpenFunc, keepMode b
 	}
 	carry := false
 	var mode os.FileMode
-	if keepMode {
+	if o.keepMode {
 		if fi, serr := os.Stat(path); serr == nil && fi.Mode().IsRegular() {
 			carry, mode = true, fi.Mode().Perm()
 		}
@@ -80,8 +91,10 @@ func write(path string, data []byte, perm os.FileMode, open OpenFunc, keepMode b
 			return err //nolint:wrapcheck // PathError passthrough
 		}
 	}
-	if err = hooks.sync(f); err != nil {
-		return err
+	if !o.noSync {
+		if err = hooks.sync(f); err != nil {
+			return err
+		}
 	}
 	closed = true
 	if err = f.Close(); err != nil {
@@ -90,7 +103,9 @@ func write(path string, data []byte, perm os.FileMode, open OpenFunc, keepMode b
 	if err = hooks.rename(tmp, path); err != nil {
 		return err
 	}
-	_ = syncDir(dir) // best effort: not every filesystem can fsync a directory
+	if !o.noSync {
+		_ = syncDir(dir) // best effort: not every filesystem can fsync a directory
+	}
 	return nil
 }
 
