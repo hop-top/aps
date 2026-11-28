@@ -93,7 +93,7 @@ func TestDotenvStoreSetDeletePreserveLayout(t *testing.T) {
 		ops = append(ops, op{"set existing", func(d *dotenvStore) error { return d.Set(ctx, "D", []byte("changed")) }, want, m})
 	}
 	{
-		want, m := mk(func(s string) string { return strings.Replace(s, "export A=one\n", "A=new\n", 1) },
+		want, m := mk(func(s string) string { return strings.Replace(s, "export A=one\n", "export A=new\n", 1) },
 			func(m map[string]string) { m["A"] = "new" })
 		ops = append(ops, op{"set exported", func(d *dotenvStore) error { return d.Set(ctx, "A", []byte("new")) }, want, m})
 	}
@@ -311,9 +311,10 @@ func TestVerifySecretsEditRejectsMismatch(t *testing.T) {
 // ---- property test ----
 
 type propStmt struct {
-	text string // exact bytes, including terminator
-	key  string // "" for comment/blank
-	val  string
+	prefix string // indentation and export keyword kept when the line is rewritten
+	text   string // exact bytes, including terminator
+	key    string // "" for comment/blank
+	val    string
 }
 
 func propValue(r *rand.Rand) string {
@@ -322,23 +323,33 @@ func propValue(r *rand.Rand) string {
 }
 
 // propRender writes (key, val) in a randomly chosen style the reader reads back.
-func propRender(r *rand.Rand, key, val string) string {
+func propRender(r *rand.Rand, key, val string) (text, prefix string) {
+	text, prefix = propRender1(r, key, val)
+	if r.Intn(4) == 0 {
+		ind := []string{"  ", "\t"}[r.Intn(2)]
+		return ind + text, ind + prefix
+	}
+	return text, prefix
+}
+
+func propRender1(r *rand.Rand, key, val string) (text, prefix string) {
 	enc := encodeSecretValue(val)
 	switch r.Intn(5) {
 	case 0:
-		return "export " + key + "=" + enc
+		pre := []string{"export ", "export\t", "export  "}[r.Intn(3)]
+		return pre + key + "=" + enc, pre
 	case 1:
-		return key + " = " + enc
+		return key + " = " + enc, ""
 	case 2:
 		if !strings.ContainsAny(val, "\n") && readsBack("'"+val+"'", val) {
-			return key + "='" + val + "'"
+			return key + "='" + val + "'", ""
 		}
 	case 3:
 		if !strings.ContainsAny(val, "\n\"\\$") && readsBack(`"`+val+`"`, val) {
-			return key + `="` + val + `"`
+			return key + `="` + val + `"`, ""
 		}
 	}
-	return key + "=" + enc
+	return key + "=" + enc, ""
 }
 
 func propFile(r *rand.Rand, keys []string, eol string) []propStmt {
@@ -353,12 +364,12 @@ func propFile(r *rand.Rand, keys []string, eol string) []propStmt {
 		default:
 			k := keys[r.Intn(len(keys))]
 			v := propValue(r)
-			t := propRender(r, k, v)
+			t, pre := propRender(r, k, v)
 			if r.Intn(4) == 0 && v != "" && !strings.ContainsAny(t, "'\"") {
 				t += " # inline"
 			}
 			t = strings.ReplaceAll(t, "\n", eol)
-			out = append(out, propStmt{text: t + eol, key: k, val: v})
+			out = append(out, propStmt{prefix: pre, text: t + eol, key: k, val: v})
 		}
 	}
 	return out
@@ -504,11 +515,65 @@ func propStep(ctx context.Context, r *rand.Rand, store *dotenvStore, stmts []pro
 				last = i
 			}
 		}
-		stmts[last] = propStmt{text: k + "=" + encodeSecretValue(v) + eolOf(stmts[last].text, eol), key: k, val: v}
+		stmts[last] = propStmt{prefix: stmts[last].prefix, text: stmts[last].prefix + k + "=" + encodeSecretValue(v) + eolOf(stmts[last].text, eol), key: k, val: v}
 		return stmts, nil
 	}
 	if len(stmts) > 0 && !strings.HasSuffix(stmts[len(stmts)-1].text, "\n") {
 		stmts[len(stmts)-1].text += eol
 	}
 	return append(stmts, propStmt{text: k + "=" + encodeSecretValue(v) + lastEOL(stmts, eol), key: k, val: v}), nil
+}
+
+// A rewritten line keeps its indentation and export keyword.
+func TestDotenvStoreSetKeepsExportAndIndent(t *testing.T) {
+	ctx := context.Background()
+	for in, want := range map[string]string{
+		"export A=1\n":        "export A=2\n",
+		"export\tA=1\n":       "export\tA=2\n",
+		"  export  A='x'\n":   "  export  A=2\n",
+		"\tA=1\n":             "\tA=2\n",
+		"export A=\"x\ny\"\n": "export A=2\n",
+	} {
+		p := writeSecretsFile(t, in)
+		require.NoError(t, newDotenvStore(p).Set(ctx, "A", []byte("2")), in)
+		assert.Equal(t, want, readFileString(t, p), in)
+	}
+}
+
+// A valid file holding a very large multi-line quoted value stays editable.
+func TestDotenvStoreLargeMultilineValue(t *testing.T) {
+	ctx := context.Background()
+	var b strings.Builder
+	b.WriteString("A=1\nBIG=\"")
+	for i := 0; i < 5000; i++ {
+		b.WriteString(strings.Repeat("x", 63) + "\n")
+	}
+	b.WriteString("\"\nC=2\n")
+	in := b.String()
+	big := strings.Repeat(strings.Repeat("x", 63)+"\n", 5000)
+
+	p := writeSecretsFile(t, in)
+	store := newDotenvStore(p)
+	require.NoError(t, store.Set(ctx, "C", []byte("3")))
+	assert.Equal(t, strings.Replace(in, "C=2\n", "C=3\n", 1), readFileString(t, p))
+	require.NoError(t, store.Delete(ctx, "A"))
+	assert.Equal(t, strings.Replace(strings.Replace(in, "C=2\n", "C=3\n", 1), "A=1\n", "", 1), readFileString(t, p))
+	got, err := LoadSecrets(p)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"BIG": big, "C": "3"}, got)
+}
+
+// A valid file the segmenter gives up on is not reported as malformed.
+func TestDotenvStoreSegmenterGiveUpIsNotMalformed(t *testing.T) {
+	old := firstBadLineBudget
+	firstBadLineBudget = 8
+	t.Cleanup(func() { firstBadLineBudget = old })
+	in := "A=1\nB=\"x\ny\"\n"
+	p := writeSecretsFile(t, in)
+	err := newDotenvStore(p).Set(context.Background(), "C", []byte("sentinel-v"))
+	require.Error(t, err)
+	assert.False(t, errors.Is(err, ErrSecretsParse))
+	assert.NotContains(t, err.Error(), "sentinel-v")
+	assert.Contains(t, err.Error(), "by hand")
+	assert.Equal(t, in, readFileString(t, p))
 }

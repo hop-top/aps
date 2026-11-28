@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -37,7 +38,7 @@ func (e *SecretsParseError) Error() string {
 // firstBadLineBudget caps the bytes segmentSecretsEnv may re-parse while
 // locating a syntax error. Far above what an ordinary secrets file needs; it only
 // bounds the pathological case.
-const firstBadLineBudget = 16 << 20
+var firstBadLineBudget = 16 << 20
 
 // Is makes errors.Is(err, ErrSecretsParse) true.
 func (e *SecretsParseError) Is(target error) bool { return target == ErrSecretsParse }
@@ -109,6 +110,16 @@ func segmentSecretsEnv(data []byte) (stmts []secretsStmt, bad int) {
 	for start := 0; start < nlines; {
 		next := -1
 		for end := start + 1; end <= nlines; end++ {
+			// In godotenv v1.5.1 a statement spans lines only inside a
+			// quoted value: an unquoted value ends at its line end, and a
+			// newline inside a key is a syntax error. A run that failed
+			// because its quote is still open can only start parsing on a
+			// line that holds a quote character (the closing one), so lines
+			// without one are added without re-parsing. This keeps a long
+			// multi-line value linear instead of quadratic.
+			if end > start+1 && !bytes.ContainsAny(data[offs[end-1]:offs[end]], "\"'") {
+				continue
+			}
 			chunk := data[offs[start]:offs[end]]
 			if work += len(chunk) + 1; work > firstBadLineBudget {
 				return stmts, start + 1
