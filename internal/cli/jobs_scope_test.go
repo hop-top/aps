@@ -16,6 +16,7 @@ import (
 
 	apsjobs "hop.top/aps/internal/runtime/jobs"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -126,14 +127,21 @@ func serveAndStop(t *testing.T, settle time.Duration) string {
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
 
-	require.Eventually(t, func() bool {
+	// The child's copy goroutine writes stderr until Wait returns, so the
+	// buffer is only read after the child has exited.
+	healthy := assert.Eventually(t, func() bool {
 		resp, err := http.Get("http://" + addr + "/health")
 		if err != nil {
 			return false
 		}
 		_ = resp.Body.Close()
 		return resp.StatusCode == http.StatusOK
-	}, 15*time.Second, 50*time.Millisecond, stderr.String())
+	}, 15*time.Second, 50*time.Millisecond)
+	if !healthy {
+		_ = cmd.Process.Kill()
+		<-done
+		t.Fatalf("serve never became healthy: %s", stderr.String())
+	}
 
 	// settle positions the signal inside a poll tick so a cancelled
 	// in-flight query is exercised.
@@ -145,6 +153,7 @@ func serveAndStop(t *testing.T, settle time.Duration) string {
 		require.NoError(t, err, stderr.String())
 	case <-time.After(20 * time.Second):
 		_ = cmd.Process.Kill()
+		<-done
 		t.Fatalf("serve did not exit after SIGTERM: %s", stderr.String())
 	}
 	return stderr.String()
