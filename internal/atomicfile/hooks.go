@@ -24,7 +24,9 @@ const (
 // InjectFault makes every Write fail with err at stage until the returned
 // restore func runs. Test-only: lets callers' tests prove a failed write
 // leaves the target intact. The write stage writes half of the data first, to
-// mimic a torn write.
+// mimic a torn write. It swaps an unsynchronised package-level hook, so use
+// it only from tests that do not run in parallel with other writers in the
+// same process.
 func InjectFault(stage string, err error) (restore func()) {
 	prev := hooks
 	switch stage {
