@@ -235,7 +235,7 @@ func (s *Server) handleSkillInvoke(req *JSONRPCRequest) *JSONRPCResponse {
 	result := map[string]interface{}{
 		"runId":      fmt.Sprintf("skill_%s", term.ID),
 		"terminalId": term.ID,
-		"status":     term.State(),
+		keyStatus:    term.State(),
 		"skillId":    skill.Name,
 		"script":     params.Script,
 		"sessionId":  params.SessionID,

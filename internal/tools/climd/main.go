@@ -143,8 +143,9 @@ func renderTop(root *cobra.Command) string {
 	b.WriteString("| Command | Description | Subcommands |\n")
 	b.WriteString("| --- | --- | --- |\n")
 	for _, c := range sortedChildren(root) {
-		var subs []string
-		for _, s := range sortedChildren(c) {
+		children := sortedChildren(c)
+		subs := make([]string, 0, len(children))
+		for _, s := range children {
 			subs = append(subs, "`"+s.Name()+"`")
 		}
 		fmt.Fprintf(&b, "| `%s` | %s | %s |\n",
