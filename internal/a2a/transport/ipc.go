@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
@@ -170,7 +171,9 @@ func (t *IPCTransport) processQueuedMessages() {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() {
+		// Skip directories and hidden files: fsperm.WriteSecret stages
+		// ".<name>.tmp-<rand>" beside the target until the rename publishes it.
+		if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
 		}
 
