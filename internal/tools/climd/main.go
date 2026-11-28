@@ -3,6 +3,14 @@
 // the live cobra command tree exposed by internal/cli. Invoked by the
 // cog marker embedded in docs/cli/commands.md (see `make docs-gen`);
 // never run in production paths.
+//
+// Modes:
+//
+//	climd                 full reference (docs/cli/commands.md)
+//	climd --top           global flags + top-level command table for the
+//	                      site reference page
+//	climd --paths         one line per valid command path:
+//	                      "<path>\t<flags>", for the docs drift check
 package main
 
 import (
@@ -14,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"github.com/spf13/pflag"
 
 	"hop.top/aps/internal/cli"
 )
@@ -23,11 +32,21 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
-	if len(args) != 0 {
-		_, _ = fmt.Fprintln(stderr, "usage: climd")
+	var (
+		out string
+		err error
+	)
+	switch {
+	case len(args) == 0:
+		out, err = render(cli.RootCommand())
+	case len(args) == 1 && args[0] == "--top":
+		out = renderTop(cli.RootCommand())
+	case len(args) == 1 && args[0] == "--paths":
+		out = renderPaths(cli.RootCommand())
+	default:
+		_, _ = fmt.Fprintln(stderr, "usage: climd [--top | --paths]")
 		return 2
 	}
-	out, err := render(cli.RootCommand())
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "rendering command reference: %v\n", err)
 		return 1
@@ -74,4 +93,94 @@ func render(root *cobra.Command) (string, error) {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+// available reports whether cmd is listed in the generated reference.
+func available(cmd *cobra.Command) bool {
+	return cmd.IsAvailableCommand() && !cmd.IsAdditionalHelpTopicCommand()
+}
+
+// sortedChildren returns cmd's listed subcommands ordered by name.
+func sortedChildren(cmd *cobra.Command) []*cobra.Command {
+	var out []*cobra.Command
+	for _, c := range cmd.Commands() {
+		if available(c) {
+			out = append(out, c)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name() < out[j].Name() })
+	return out
+}
+
+// mdText makes s safe as plain Markdown prose in a table cell: HTML
+// metacharacters are escaped (a bare "<name>" would be swallowed as a
+// tag) and pipes cannot end the cell.
+func mdText(s string) string {
+	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "|", "\\|", "\n", " ")
+	return r.Replace(strings.TrimSpace(s))
+}
+
+// renderTop renders the page body used by the site reference: the global
+// flags and one table row per top-level command with its subcommands.
+// Rows carry no links: each link would be one more external URL for the
+// link checker to fetch, and the page links to the full reference once.
+func renderTop(root *cobra.Command) string {
+	var b strings.Builder
+	b.WriteString("```\n")
+	b.WriteString(root.NonInheritedFlags().FlagUsages())
+	b.WriteString("```\n\n")
+	b.WriteString("| Command | Description | Subcommands |\n")
+	b.WriteString("| --- | --- | --- |\n")
+	for _, c := range sortedChildren(root) {
+		var subs []string
+		for _, s := range sortedChildren(c) {
+			subs = append(subs, "`"+s.Name()+"`")
+		}
+		fmt.Fprintf(&b, "| `%s` | %s | %s |\n",
+			c.CommandPath(), mdText(c.Short), strings.Join(subs, ", "))
+	}
+	return b.String()
+}
+
+// renderPaths lists every valid command path (hidden commands and
+// command aliases included) with the flags it accepts, own and
+// inherited, as "<path>\t--long -s ...". The auto-added help flag is
+// listed for every command.
+func renderPaths(root *cobra.Command) string {
+	var lines []string
+	var walk func(cmd *cobra.Command, prefixes []string)
+	walk = func(cmd *cobra.Command, prefixes []string) {
+		flags := map[string]bool{"--help": true, "-h": true}
+		add := func(f *pflag.Flag) {
+			flags["--"+f.Name] = true
+			if f.Shorthand != "" {
+				flags["-"+f.Shorthand] = true
+			}
+		}
+		cmd.LocalFlags().VisitAll(add)
+		cmd.InheritedFlags().VisitAll(add)
+		names := make([]string, 0, len(flags))
+		for f := range flags {
+			names = append(names, f)
+		}
+		sort.Strings(names)
+		for _, p := range prefixes {
+			lines = append(lines, p+"\t"+strings.Join(names, " "))
+		}
+		for _, c := range cmd.Commands() {
+			if c.Name() == "help" {
+				continue
+			}
+			var next []string
+			for _, p := range prefixes {
+				for _, n := range append([]string{c.Name()}, c.Aliases...) {
+					next = append(next, p+" "+n)
+				}
+			}
+			walk(c, next)
+		}
+	}
+	walk(root, []string{root.Name()})
+	sort.Strings(lines)
+	return strings.Join(lines, "\n") + "\n"
 }

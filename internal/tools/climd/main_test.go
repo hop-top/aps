@@ -89,3 +89,81 @@ func TestRunWithArgsExitsNonZero(t *testing.T) {
 		t.Errorf("stderr missing usage line: %q", stderr.String())
 	}
 }
+
+func TestRenderTopListsEveryTopLevelCommand(t *testing.T) {
+	out := renderTop(cli.RootCommand())
+	if !strings.HasPrefix(out, "```\n") {
+		t.Errorf("output does not start with the global flags block:\n%.80s", out)
+	}
+	if !strings.Contains(out, "| Command | Description | Subcommands |") {
+		t.Error("missing table header")
+	}
+	for _, child := range cli.RootCommand().Commands() {
+		if !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {
+			continue
+		}
+		want := "| `aps " + child.Name() + "` |"
+		if !strings.Contains(out, want) {
+			t.Errorf("missing row for %q (want substring %q)", child.Name(), want)
+		}
+	}
+	if renderTop(cli.RootCommand()) != out {
+		t.Error("unstable output")
+	}
+}
+
+// A raw "<" or "|" in a description would break the page: the first
+// is swallowed as an HTML tag, the second ends the table cell.
+func TestMdTextEscapesMarkup(t *testing.T) {
+	got := mdText("run <cmd> | a&b\nnext")
+	want := "run &lt;cmd&gt; \\| a&amp;b next"
+	if got != want {
+		t.Errorf("mdText = %q, want %q", got, want)
+	}
+}
+
+func TestRenderPathsListsCommandsAndFlags(t *testing.T) {
+	out := renderPaths(cli.RootCommand())
+	flagsOf := map[string]string{}
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		path, flags, ok := strings.Cut(line, "\t")
+		if !ok {
+			t.Fatalf("line without tab separator: %q", line)
+		}
+		flagsOf[path] = " " + flags + " "
+	}
+	for _, path := range []string{"aps", "aps profile", "aps profile create", "aps run"} {
+		if _, ok := flagsOf[path]; !ok {
+			t.Errorf("missing path %q", path)
+		}
+	}
+	// Own flag, inherited persistent flag, and the auto help flag.
+	for _, flag := range []string{"--display-name", "--profile", "-p", "--help", "-h"} {
+		if !strings.Contains(flagsOf["aps profile create"], " "+flag+" ") {
+			t.Errorf("aps profile create lacks flag %s", flag)
+		}
+	}
+	if _, ok := flagsOf["aps profile new"]; ok {
+		t.Error("lists a command that does not exist")
+	}
+	if renderPaths(cli.RootCommand()) != out {
+		t.Error("unstable output")
+	}
+}
+
+func TestRunModes(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want int
+	}{
+		{[]string{"--top"}, 0},
+		{[]string{"--paths"}, 0},
+		{[]string{"--top", "x"}, 2},
+		{[]string{"--paths", "x"}, 2},
+	} {
+		var stdout, stderr bytes.Buffer
+		if got := run(tc.args, &stdout, &stderr); got != tc.want {
+			t.Errorf("run(%v) = %d, want %d (stderr %s)", tc.args, got, tc.want, stderr.String())
+		}
+	}
+}

@@ -61,11 +61,12 @@ lint-test-env: ## Fail on os.Setenv/Unsetenv of HOME/XDG/etc in tests (use t.Set
 lint-sigpipe: ## Fail on a writer piped into an early-exit reader (head, grep -q) in pipefail scripts
 	@bash scripts/check-sigpipe.sh
 
-lint-docs: ## Validate documentation links and referenced test files
-	@bash scripts/check-links.sh
+lint-docs: ## Validate documentation links, site routes, site command examples and referenced test files
+	@rc=0; bash scripts/check-links.sh || rc=1; bash scripts/check-site-commands.sh || rc=1; exit $$rc
 
-test-scripts: ## Test script logic (link-check retry) with a stubbed lychee
+test-scripts: ## Test script logic (link-check retry and site checks) with stubs
 	@bash scripts/test-check-links.sh
+	@bash scripts/test-check-site-commands.sh
 
 # Generated doc regions (cog markers). Marker files are discovered
 # dynamically, so both targets are a green no-op until the first
