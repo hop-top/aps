@@ -5,13 +5,13 @@ description: Complete command reference for the aps CLI.
 
 ## Global flags and commands
 
-The global flags, then every top-level command with its subcommands. This listing is
-generated from the command tree, so it always matches the binary. The
+The commonly used global flags, then every top-level command with its subcommands. This
+listing is generated from the same command tree the binary dispatches, so it tracks the code. The
 [full generated reference](https://github.com/hop-top/aps/blob/next/docs/cli/commands.md)
 lists every subcommand and flag.
 
-`aps --help-all` lists every global flag, and `aps <command> --help` is the full reference
-for one command.
+`aps --help-all` lists every global flag, including ones not shown below such as `--dry-run`,
+`--confirm` and `--output`, and `aps <command> --help` is the full reference for one command.
 
 `--profile` has no default. The `APS_PROFILE` environment variable stands in for it in two
 places only: `aps workspace` commands (`create`, `join`, `leave`, `remove`, `send`,
