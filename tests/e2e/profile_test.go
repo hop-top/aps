@@ -32,7 +32,7 @@ func TestProfileLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "display_name: Agent One")
 	assert.Contains(t, stdout, "id: agent-1")
-	assert.Contains(t, stdout, "Secrets: present") // Created by default
+	assert.Contains(t, stdout, "Secrets: none") // default secrets.env is a comment template, no keys
 }
 
 func TestProfileOverwrite(t *testing.T) {
