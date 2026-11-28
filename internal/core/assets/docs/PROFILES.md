@@ -166,6 +166,9 @@ that no dotenv quoting can carry is stored as `aps-b64:` plus base64, for exampl
 the file path and key only. Other tools reading the file see the marker text, and
 a value you write by hand that starts with `aps-b64:` is decoded too.
 
+aps keeps your comments, blank lines, order and quoting; setting or deleting a
+key edits only that key's line(s).
+
 When editing by hand, quote values containing ` #`, `$`, or spaces at the ends:
 `KEY='{"a":"b # c"}'` is literal; `KEY="a\nb"` expands `\n` and `$VAR`. A malformed
 line fails with the file path and line number only; line content is never printed.
