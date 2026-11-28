@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
@@ -47,7 +48,7 @@ type IPCTransport struct {
 	msgChan chan *a2a.Message
 	ctx     context.Context
 	cancel  context.CancelFunc
-	running bool
+	running atomic.Bool
 	mu      chan struct{}
 }
 
@@ -75,7 +76,6 @@ func NewIPCTransport(config *IPCConfig, handler MessageHandler) (*IPCTransport, 
 		msgChan: make(chan *a2a.Message, 100),
 		ctx:     ctx,
 		cancel:  cancel,
-		running: false,
 		mu:      make(chan struct{}, 1),
 	}, nil
 }
@@ -137,7 +137,7 @@ func (t *IPCTransport) Start() error {
 		return nil
 	}
 
-	t.running = true
+	t.running.Store(true)
 	go t.pollMessages()
 
 	return nil
@@ -145,14 +145,14 @@ func (t *IPCTransport) Start() error {
 
 // Stop halts IPC message polling
 func (t *IPCTransport) Stop() error {
-	t.running = false
+	t.running.Store(false)
 	<-t.mu
 	return nil
 }
 
 // pollMessages continuously checks queue directory for new messages
 func (t *IPCTransport) pollMessages() {
-	for t.running {
+	for t.running.Load() {
 		select {
 		case <-t.ctx.Done():
 			return
