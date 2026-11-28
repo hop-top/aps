@@ -7,6 +7,7 @@ import (
 
 	"hop.top/aps/internal/agntcy/discovery"
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/confirmtoken"
 	"hop.top/aps/internal/cli/globals"
 	"hop.top/aps/internal/core"
 	kitcli "hop.top/kit/go/console/cli"
@@ -77,6 +78,7 @@ Profile is supplied via the tool-level --profile global:
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveShared)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — destructive-token confirm already gates the upstream
 	// deregistration call; preview would need the same wire round-trip.
 	kitcli.OptOutDryRun(cmd)

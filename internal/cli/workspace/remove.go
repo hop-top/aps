@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"hop.top/aps/internal/cli/clinote"
+	"hop.top/aps/internal/cli/confirmtoken"
 	"hop.top/aps/internal/cli/prompt"
 	kitcli "hop.top/kit/go/console/cli"
 )
@@ -82,6 +83,7 @@ can perform this action. Use --force to skip confirmation.`,
 	kitcli.SetSideEffect(cmd, kitcli.SideEffectDestructiveLocal)
 	kitcli.SetIdempotency(cmd, kitcli.IdempotencyConditional)
 	kitcli.SetDestructiveToken(cmd)
+	cmd.Long += confirmtoken.Help
 	// T-0656 — destructive-token confirm already gates the apply path;
 	// preview would only restate the workspace/profile IDs.
 	kitcli.OptOutDryRun(cmd)

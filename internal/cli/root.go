@@ -192,7 +192,7 @@ var root = kitcli.New(kitcli.Config{
 		// migrate by removing the local registration and reading via
 		// root.Viper.GetString("profile") or the inherited persistent
 		// flag set.
-		{Name: profileFlagName, Short: "p", Usage: "profile id (defaults to active profile)"},
+		{Name: profileFlagName, Short: "p", Usage: "profile id (no default; workspace commands and the policy principal id fall back to $APS_PROFILE)"},
 		{Name: "workspace", Usage: "workspace id (defaults to active workspace)"},
 		// --offline is a kit-reserved global (registered by kit/cli,
 		// bound to the "offline" viper key that globals.IsOffline

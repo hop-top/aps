@@ -51,9 +51,11 @@ var statusCmd = &cobra.Command{
 	Short: "Show aps configuration and runtime status",
 	Long: `Show a snapshot of the current aps configuration and runtime state.
 
-Reports the active profile, active workspace, build version, and event-bus
-connection state. Read-only: no network calls, no state mutation. Intended
-as a quick "is aps wired up" probe for users and agents.
+Reports the --profile and --workspace values given for this invocation, the
+build version, and event-bus connection state. It does not read APS_PROFILE and
+does not look up the workspace chosen with aps workspace use, so both show
+"(none)" unless the flags are passed. Read-only: no network calls, no state
+mutation. Intended as a quick "is aps wired up" probe for users and agents.
 
 Output respects the --format global (table|json|yaml). Empty profile or
 workspace values render as "(none)" to distinguish unset from blank.`,
