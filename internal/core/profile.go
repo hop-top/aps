@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"hop.top/kit/go/runtime/domain"
 
+	"hop.top/aps/internal/atomicfile"
 	"hop.top/aps/internal/events"
 	"hop.top/aps/internal/fsperm"
 )
@@ -500,7 +501,7 @@ func SaveProfile(profile *Profile) error {
 	}
 
 	path := filepath.Join(dir, "profile.yaml")
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := atomicfile.Write(path, data, 0644, nil); err != nil {
 		return fmt.Errorf("failed to write profile.yaml: %w", err)
 	}
 
