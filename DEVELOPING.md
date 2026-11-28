@@ -29,11 +29,15 @@ versions.
 make test        # Go tests + GitHub workflows locally via act
 make test-go     # just the Go tests
 make lint        # docs-check + golangci-lint run ./...
-make lint-docs   # scripts/check-links.sh: lychee over docs/**/*.md
+make lint-docs   # scripts/check-links.sh: lychee over docs/**/*.md and the
+                 # site pages (site/src/content/docs/**/*.md, *.mdx), one run
+                 # + site root-relative links and sidebar slugs must resolve
                  # + story-referenced .go paths must exist
                  # (failed URLs are re-checked after 20s/40s/80s waits;
                  # LINK_CHECK_RETRY_WAITS="..." overrides, "" disables)
-make test-scripts  # stub-lychee tests for that retry logic
+                 # + scripts/check-site-commands.sh: `aps ...` examples on
+                 # the site must name real commands and flags
+make test-scripts  # stub tests for the link-check retry and site checks
 ```
 
 `make lint` runs `docs-check` first — stale generated doc regions fail
@@ -54,6 +58,12 @@ The source of truth is metadata in code:
 - `internal/core/secrets_meta.go`, `internal/core/service_meta.go` —
   secrets/service tables
 - `internal/core/adapter/types.go` — adapter kinds and strategies
+
+The site's `reference/cli.md` embeds a generated global-flags block and
+top-level command table (`climd --top`); the full reference is
+`docs/cli/commands.md` (`climd`). Hand-written `aps ...` examples on site
+pages are checked against the command tree by `make lint-docs`; mark an
+illustrative line with a trailing `# docs-check: skip`.
 
 To change a generated table: edit the metadata (or the renderer), then
 `make docs-gen`, and commit both. Editing the rendered region by hand

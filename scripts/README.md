@@ -94,10 +94,32 @@ Validate documentation links and test file references.
 ```
 
 **Checks:**
-1. Markdown links (using `lychee`); failed URLs are re-checked after
-   20s/40s/80s waits and reported only if they fail every attempt
-   (`LINK_CHECK_RETRY_WAITS="..."` overrides; empty disables)
-2. Referenced test files exist
+1. Markdown links in `docs/**/*.md` and the docs-site pages
+   (`site/src/content/docs/**/*.md`, `*.mdx`), using `lychee` in one run;
+   failed URLs are re-checked after 20s/40s/80s waits and reported only if
+   they fail every attempt (`LINK_CHECK_RETRY_WAITS="..."` overrides; empty
+   disables)
+2. Docs-site routes: every root-relative link in a site page
+   (`/guides/isolation/`) resolves to a content page or `public/` asset,
+   and every sidebar `slug` / `autogenerate` directory in
+   `site/astro.config.*` exists (lychee cannot check these without
+   loosening the `docs/` checks)
+3. Referenced test files exist
+
+### `check-site-commands.sh`
+Check `aps ...` examples in fenced bash blocks of site pages against the
+command tree (`go run ./internal/tools/climd --paths`): the command path and
+each flag before a `--` separator must exist. `aps <profile> [-- cmd]`
+shorthand is accepted. Opt out for one line with a trailing
+`# docs-check: skip`. Run by `make lint-docs`.
+
+```bash
+./scripts/check-site-commands.sh
+```
+
+### `test-check-links.sh`, `test-check-site-commands.sh`
+Offline tests (stub `lychee`, fixture command tree) for the two scripts
+above. Run by `make test-scripts`.
 
 **Useful for:**
 - Documentation maintenance

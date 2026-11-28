@@ -3,18 +3,12 @@ title: CLI Reference
 description: Complete command reference for the aps CLI.
 ---
 
-## Global flags
+## Global flags and commands
 
-```
--p, --profile string   Profile id (no default)
---format string        Output format: csv, human, json, table, text, yaml (default table)
---dry-run              Preview side effects, on commands that support it
---confirm string       Confirmation policy for destructive commands: auto, yes, no, prompt
---offline              Disable network access
---quiet                Suppress non-essential output
--V, --verbose          Increase log verbosity (-V debug, -VV trace)
--h, --help             Show help
-```
+The global flags, then every top-level command with its subcommands. This listing is
+generated from the command tree, so it always matches the binary. The
+[full generated reference](https://github.com/hop-top/aps/blob/main/docs/cli/commands.md)
+lists every subcommand and flag.
 
 `aps --help-all` lists every global flag, and `aps <command> --help` is the full reference
 for one command.
@@ -30,6 +24,76 @@ Destructive commands (`profile delete`, `session delete`, `session terminate`,
 `directory delete`) need `--confirm-token <token>`; `--yes` and `--force` do not replace it.
 Run the command once without it: nothing changes, it exits with code 5, and the error
 prints the token. Run it again with the token.
+
+<!-- [[[cog
+import subprocess
+cog.out(subprocess.check_output(
+    ["go", "run", "./internal/tools/climd", "--top"],
+    text=True))
+]]] -->
+```
+      --format string                  Output format (csv, human, json, table, text, yaml) (default "table")
+  -h, --help[=true|false]              help for aps
+      --help-all[=true|false]          Show all commands and global flags
+      --help-instance[=true|false]     Show only instance commands
+      --help-interact[=true|false]     Show only interact commands
+      --help-management[=true|false]   Show only management commands
+      --help-organize[=true|false]     Show only organize commands
+      --help-pipelines[=true|false]    Show only pipelines commands
+      --help-security[=true|false]     Show only security commands
+      --instance string                backend instance to target (defaults to config)
+      --no-color[=true|false]          Disable ANSI color
+      --no-hints[=true|false]          Suppress next-step hints after command output
+      --no-redact[=true|false]         disable redaction of secrets/PII in logs and output (DEBUG ONLY)
+      --offline[=true|false]           Disable network access
+  -p, --profile string                 profile id (defaults to active profile)
+      --quiet[=true|false]             Suppress non-essential output
+  -V, --verbose count                  Increase log verbosity (-V=debug, -VV=trace)
+      --workspace string               workspace id (defaults to active workspace)
+```
+
+| Command | Description | Subcommands |
+| --- | --- | --- |
+| `aps a2a` | Manage A2A (Agent-to-Agent) protocol operations | `card`, `server`, `tasks`, `toggle` |
+| `aps acp` | Manage ACP (Agent Client Protocol) server | `server`, `toggle` |
+| `aps action` | Manage and execute profile actions | `list`, `run`, `show` |
+| `aps adapter` | Manage adapters (messengers, protocols, mobile, desktop) | `approve`, `attach`, `channels`, `create`, `detach`, `exec`, `link`, `list`, `logs`, `messenger`, `pair`, `pending`, `permissions`, `presence`, `reject`, `revoke`, `start`, `status`, `stop`, `test` |
+| `aps alias` | Manage command aliases | `add`, `delete`, `list`, `shell` |
+| `aps bundle` | Manage capability bundles | `create`, `delete`, `edit`, `list`, `show`, `validate` |
+| `aps capability` | Manage capabilities (tools, configs, dotfiles) | `adopt`, `delete`, `disable`, `enable`, `install`, `link`, `list`, `patterns`, `show`, `watch` |
+| `aps chat` | Chat with a profile-backed assistant |  |
+| `aps completion` | Generate completion script |  |
+| `aps config` | Inspect aps configuration | `path`, `paths` |
+| `aps contact` | Manage contacts via adapter | `add`, `delete`, `find`, `list`, `note`, `show`, `update` |
+| `aps directory` | Manage AGNTCY Directory registration and discovery | `delete`, `discover`, `register`, `show` |
+| `aps docs` | Generate documentation |  |
+| `aps env` | Output environment variables for configured capabilities |  |
+| `aps identity` | Manage DID-based agent identity | `badge`, `init`, `show`, `verify` |
+| `aps listen` | Subscribe to bus topics for a profile and print events as JSONL |  |
+| `aps migrate` | Migrate legacy configurations to new formats | `messengers` |
+| `aps observability` | Manage OpenTelemetry observability | `toggle` |
+| `aps org` | Inspect the reporting hierarchy across profiles | `check`, `show`, `snapshot` |
+| `aps policy` | Manage workspace access policies | `list`, `set`, `show`, `trust` |
+| `aps profile` | Manage agent profiles | `capability`, `create`, `delete`, `edit`, `export`, `import`, `list`, `share`, `show`, `status`, `trust`, `workspace` |
+| `aps run` | Run a command in a profile context |  |
+| `aps serve` | Start protocol server |  |
+| `aps service` | Manage profile-facing services | `add`, `conversation`, `routes`, `show`, `start`, `status`, `stop`, `test` |
+| `aps session` | Manage sessions | `attach`, `delete`, `detach`, `inspect`, `list`, `logs`, `terminate` |
+| `aps skill` | Manage Agent Skills | `install`, `list`, `run`, `show`, `stats`, `suggest`, `validate` |
+| `aps squad` | Manage agent squads (topology, membership, scope) | `check`, `create`, `delete`, `list`, `members`, `show` |
+| `aps status` | Show aps configuration and runtime status |  |
+| `aps toolspec` | Print the aps tool specification (commands, flags, errors, workflows) |  |
+| `aps upgrade` | Check for and install updates | `preamble` |
+| `aps version` | Print version information |  |
+| `aps voice` | Manage voice sessions and the voice backend service | `service`, `start` |
+| `aps webhook` | Manage Webhook server | `server`, `toggle` |
+| `aps workspace` | Manage multi-agent workspaces | `activity`, `agents`, `archive`, `audit`, `caps`, `conflicts`, `create`, `ctx`, `join`, `leave`, `list`, `members`, `policy`, `remove`, `role`, `send`, `show`, `sync`, `task`, `tasks`, `use` |
+<!-- [[[end]]] -->
+
+## Common commands
+
+The sections below cover the commands used most. Their examples are checked against the
+command tree by `make lint-docs`.
 
 ## aps profile
 
