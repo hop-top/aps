@@ -1206,10 +1206,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps adapter detach <device-id> [flags]
@@ -2524,10 +2522,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps adapter revoke [device-id] [flags]
@@ -3074,10 +3070,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps bundle delete <name> [flags]
@@ -3415,10 +3409,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps capability delete <name> [flags]
@@ -4545,10 +4537,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps directory delete [flags]
@@ -6068,10 +6058,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps profile delete <id> [flags]
@@ -7379,10 +7367,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps session delete <session-id> [flags]
@@ -7656,10 +7642,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps session terminate <session-id> [flags]
@@ -8187,10 +8171,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps squad delete <id> [flags]
@@ -8381,10 +8363,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps squad members remove <squad-id> <profile-id> [flags]
@@ -9615,10 +9595,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps workspace ctx delete <key> [flags]
@@ -10066,10 +10044,8 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.
 
 ```
 aps workspace remove <agent> [workspace] [flags]
