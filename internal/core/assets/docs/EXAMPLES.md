@@ -8,8 +8,7 @@ Practical examples and common use cases for APS.
 ```bash
 aps profile create triage-bot \
   --display-name "Issue Triage Bot" \
-  --email "triage@example.com" \
-  --github "triage-bot"
+  --email "triage@example.com"
 ```
 
 **Add GitHub Token:**
@@ -266,8 +265,7 @@ aps prod -- npm run deploy
 ```bash
 aps profile create reddit-bot \
   --display-name "Reddit Bot" \
-  --email "reddit@example.com" \
-  --reddit "mybot"
+  --email "reddit@example.com"
 ```
 
 **Add Reddit Credentials:**

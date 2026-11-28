@@ -86,7 +86,7 @@ aps profile show test-agent
 aps profile update test-agent --display-name "Updated Test Agent"
 
 # Delete profile
-aps profile delete test-agent --force
+aps profile delete test-agent --force --confirm-token <token>   # token: see docs/cli/reference.md#confirmation-token
 ```
 
 ### Running Commands
@@ -314,7 +314,7 @@ make docker-test-cleanup
 ```bash
 # Remove all profiles
 for profile in $(aps profile list | grep -v "^ID" | awk '{print $1}'); do
-    aps profile delete $profile --force
+    aps profile delete $profile --force --confirm-token <token>
 done
 
 # Or use cleanup test

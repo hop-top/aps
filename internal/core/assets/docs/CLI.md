@@ -59,12 +59,15 @@ aps profile create <profile-id> [flags]
 
 - `--display-name <name>` - Human-readable name for the profile
 - `--email <email>` - Email for git config
-- `--github <username>` - GitHub username
-- `--reddit <username>` - Reddit username
-- `--twitter <username>` - Twitter/X username
 - `--type <type>` - Profile type: `agent` (default) or `human`; anything else is rejected
 - `--reports-to <profile-id>` - Profile this one reports to (must exist; no self-reference or cycles)
-- `--force` - Overwrite existing profile
+- `--avatar <url-or-path>`, `--color <hex>` - Profile image and UI colour
+- `--auto-avatar`, `--auto-color` - Generate them from the profile id
+- `--force` - Overwrite an existing profile (without it, creating an existing id fails)
+
+The id is required. In a terminal, display name and email are asked for when their flags are
+omitted; avatar and colour are not. Without a terminal nothing is asked and the display name
+defaults to the id.
 
 **Examples:**
 
@@ -84,11 +87,10 @@ aps profile create myagent --display-name "My AI Agent"
 # Profile with git config
 aps profile create myagent --display-name "Agent" --email "agent@example.com"
 
-# Profile with social accounts
-aps profile openai-agent \
+# Profile with a display name and email
+aps profile create openai-agent \
   --display-name "OpenAI Agent" \
-  --email "openai@example.com" \
-  --github "openai-bot"
+  --email "openai@example.com"
 
 # Overwrite existing profile
 aps profile create myagent --force
@@ -147,14 +149,25 @@ aps profile show <profile-id>
 id: myagent
 display_name: My AI Agent
 preferences:
-  shell: /bin/zsh
-modules:
-  gitconfig: present
-  secrets.env: present (2 keys)
-  actions: 3 actions found
+    shell: /bin/zsh
+isolation:
+    level: process
+    strict: false
+    fallback: false
+
+
+Modules:
+- Secrets: 2 keys
+  - GITHUB_TOKEN: ***redacted***
+  - OPENAI_API_KEY: ***redacted***
 ```
 
-Secret values are redacted (shown as `***redacted***`).
+The secrets line is the number of keys in the secrets file ("none" when it holds only the
+comment template). Secret values are never printed (shown as `***redacted***`). With
+`--format json` or `yaml` only the profile record is printed.
+
+`aps profile list` reports the same predicate in its `SECRETS` column and `--has-secrets`
+filter.
 
 ### `aps profile import`
 

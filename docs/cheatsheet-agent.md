@@ -11,7 +11,7 @@ Scannable in 30 seconds.
 aps version                          # verify client
 aps serve --addr 127.0.0.1:8080      # start REST API (optional; CLI works standalone)
 curl http://127.0.0.1:8080/health    # verify server if using REST
-export APS_PROFILE=<profile>         # default profile for CLI calls
+export APS_PROFILE=<profile>         # profile for `aps workspace` commands and the policy principal id
 ```
 
 Config: XDG (`~/.config/aps/`); data: `$APS_DATA_PATH`
@@ -44,7 +44,7 @@ aps profile show <name>              # full profile detail (caps, workspace link
 aps profile status <name>            # bundle resolution; check before running
 
 # Env-based targeting
-export APS_PROFILE=<name>            # default profile for session
+export APS_PROFILE=<name>            # profile for `aps workspace` commands and the policy principal id
 ```
 
 ---

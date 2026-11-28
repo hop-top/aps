@@ -174,7 +174,8 @@ isolation:
 
 
 Modules:
-- Secrets: present
+- Secrets: 1 key
+  - GITHUB_TOKEN: ***redacted***
 ```
 
 ## Commands
@@ -270,11 +271,11 @@ for first:
 | Flag | Default | Effect |
 |---|---|---|
 | `--format` | `table` | Output format: `csv`, `human`, `json`, `table`, `text`, `yaml` |
-| `-p`, `--profile` | active profile | Profile id; `APS_PROFILE` sets the default |
+| `-p`, `--profile` | none | Profile id. There is no default profile; `aps workspace` commands and the policy principal id fall back to `APS_PROFILE` (see Environment variables) |
 | `--workspace` | active workspace | Workspace id |
 | `--offline` | off | Disable all network calls |
 | `--dry-run` | off | Preview side effects without applying them, on commands that support it |
-| `--confirm` | `prompt` on a TTY, `no` otherwise | Confirmation policy for destructive commands: `auto`, `yes`, `no`, `prompt` |
+| `--confirm` | `prompt` on a TTY, `no` otherwise | Confirmation policy for destructive commands: `auto`, `yes`, `no`, `prompt`; commands that need a confirmation token (below) ignore it |
 | `--max-ops` | `0` (unlimited) | Cap mutating operations per invocation |
 | `--quiet` | off | Suppress non-essential output |
 | `--no-color` | off | Disable ANSI colour |
@@ -285,6 +286,15 @@ Per-command flags come from `-h`. `run` takes `--env KEY=VALUE` (repeatable, lat
 subcommand takes `-n`, `--note`, an audit note recorded with the bus event and visible to
 the policy engine; some policies reject destructive operations without one
 ([docs/cli/reference.md](docs/cli/reference.md)).
+
+Destructive commands (`profile delete`, `session delete`, `session terminate`, `squad delete`,
+`squad members remove`, `workspace remove`, `workspace ctx delete`, `capability delete`,
+`bundle delete`, `adapter detach`, `adapter revoke`, `directory delete`) refuse to run without
+`--confirm-token`, on a terminal and off one; `--yes`, `--force` and `--confirm=yes` do not
+replace it. Run the command without the token: nothing is changed, it exits with code 5, and
+the error prints the token (under `--format json` or `yaml`, in `message` and
+`suggested_fix`). Run it again with `--confirm-token=<token>`. The token depends only on the
+command path (`aps profile delete`), not on its arguments.
 
 ## Configuration
 
@@ -323,7 +333,7 @@ Environment variables aps reads:
 |---|---|
 | `APS_DATA_PATH` | Data directory; overrides `$XDG_DATA_HOME/aps` and `~/.local/share/aps` |
 | `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME` | Roots for config, state, and cache, each with an `aps` subdirectory |
-| `APS_PROFILE` | Default profile when `--profile` is not passed |
+| `APS_PROFILE` | Profile for `aps workspace create`, `join`, `leave`, `remove`, `send` and `ctx set/get/list/delete` when `--profile` is not passed, and the policy principal id (`--profile`, then `APS_PROFILE`, then `$USER`). Other commands (`status`, `run`, `profile show`, ...) do not read it |
 | `APS_BUS_TOKEN` (or `BUS_TOKEN`), `APS_BUS_ADDR` | Event-bus auth token and address; without a token the bus is disabled and a warning is printed |
 | `APS_NO_BUS_WARN` | Suppress that warning |
 | `APS_ADAPTER_DISABLE_PREFIX_VALIDATION` | Set to `1` to accept adapter manifests whose `env_prefix` is not a valid variable name while migrating them |
@@ -407,7 +417,7 @@ $ aps profile list --format json
 - `--progress-format json`, the default alongside `--format json`, emits the exec and exit
   progress envelope as JSONL.
 - `aps toolspec --format json` prints every command, flag, error pattern, and workflow;
-  `aps status --format json` reports the active profile, workspace, version, and bus state.
+  `aps status --format json` reports the `--profile` and `--workspace` values passed, the version, and the bus state.
 - `aps listen --profile reviewer` streams bus events as JSONL (needs `APS_BUS_TOKEN`).
 
 Exit codes are listed above. A cheatsheet for scripts and LLMs is

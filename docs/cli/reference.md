@@ -9,10 +9,33 @@ These flags are available on every aps subcommand:
 
 | Flag | Description |
 |------|-------------|
-| `--profile` | Active profile id (overrides `$APS_PROFILE`) |
+| `-p`, `--profile` | Profile id. No default: `aps workspace` commands and the policy principal id fall back to `$APS_PROFILE` when it is not passed; other commands (`status`, `run`, `profile show`) do not read the variable |
 | `--format <text\|json\|yaml>` | Output format for list / show commands |
 | `--quiet` | Suppress progress / non-essential stderr |
 | `--no-redact` | Disable kit/core/redact egress filter (audit only) |
+
+## Confirmation token
+
+These commands refuse to run without `--confirm-token`, on a terminal and off one:
+`profile delete`, `session delete`, `session terminate`, `squad delete`,
+`squad members remove`, `workspace remove`, `workspace ctx delete`, `capability delete`,
+`bundle delete`, `adapter detach`, `adapter revoke`, and `directory delete`. `--yes`,
+`--force` and `--confirm=yes` do not replace it; they only skip a command's own yes/no
+question.
+
+1. Run the command without the token. Nothing changes and it exits with code 5
+   (`UNAUTHORIZED`). Human output prints the token on stderr; under `--format json` or
+   `yaml` the error carries it in `message` and `suggested_fix`.
+2. Run it again with `--confirm-token=<token>` (`--confirm-token <token>` also works).
+
+The token is the first 12 hex characters of the SHA-256 of the command path (for example
+`aps profile delete`), so it is the same on every run and does not depend on the arguments.
+A wrong token is refused with the expected one named.
+
+```bash
+aps profile delete noor --format json     # exit 5; suggested_fix names the token
+aps profile delete noor --confirm-token=90af62d5c895
+```
 
 ## Exit codes
 
@@ -49,8 +72,11 @@ without a note and exit 4.
 ```bash
 aps session delete sess-7c41 --note "stale; profile retired"
 aps workspace ctx delete CHANNEL_ID -n "redacted PII"
-aps profile delete noor -n "rotated identity to noor-2"
+aps profile delete noor -n "rotated identity to noor-2" --confirm-token <token>
 ```
+
+Destructive commands also need `--confirm-token`; see
+[Confirmation token](#confirmation-token).
 
 The shorthand `-n` resolves to `--note` on commands where it is not
 already taken by another flag (a small number of legacy commands
