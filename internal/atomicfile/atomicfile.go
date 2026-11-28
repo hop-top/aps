@@ -24,18 +24,39 @@ type OpenFunc func(path string, flag int, perm os.FileMode) (*os.File, error)
 // the rename removes the temp file and leaves path untouched.
 //
 // A symlink at path is resolved and the write lands beside its target, so the
-// link survives; a dangling link creates the file it points at. perm applies
-// to the new file (subject to umask on POSIX), so an existing file's mode is
-// replaced by perm, and hard links to the old file no longer follow writes.
-// A process killed mid-write can leave ".<name>.tmp-<random>" behind; it is
-// not swept (unsafe with concurrent writers).
-func Write(path string, data []byte, perm os.FileMode, open OpenFunc) (err error) {
+// link survives; a dangling link creates the file it points at. The result is
+// always a new file created with perm (subject to umask on POSIX), so an
+// existing file's broader mode is tightened to perm; this is the secret-file
+// behaviour. Hard links to the old file no longer follow writes. A process
+// killed mid-write can leave ".<name>.tmp-<random>" behind; it is not swept
+// (unsafe with concurrent writers).
+func Write(path string, data []byte, perm os.FileMode, open OpenFunc) error {
+	return write(path, data, perm, open, false)
+}
+
+// WriteKeepMode is Write for non-secret files: when the resolved target
+// already exists as a regular file, the replacement takes its permission bits
+// exactly (set with Chmod, so umask does not narrow them); otherwise the new
+// file gets perm minus umask. A Chmod failure is a pre-rename failure. On
+// Windows Chmod only toggles the read-only attribute.
+func WriteKeepMode(path string, data []byte, perm os.FileMode) error {
+	return write(path, data, perm, nil, true)
+}
+
+func write(path string, data []byte, perm os.FileMode, open OpenFunc, keepMode bool) (err error) {
 	if open == nil {
 		open = os.OpenFile
 	}
 	path, err = resolveLink(path)
 	if err != nil {
 		return err
+	}
+	carry := false
+	var mode os.FileMode
+	if keepMode {
+		if fi, serr := os.Stat(path); serr == nil && fi.Mode().IsRegular() {
+			carry, mode = true, fi.Mode().Perm()
+		}
 	}
 	dir := filepath.Dir(path)
 	f, tmp, err := createTemp(open, dir, filepath.Base(path), perm)
@@ -53,6 +74,11 @@ func Write(path string, data []byte, perm os.FileMode, open OpenFunc) (err error
 	}()
 	if err = hooks.write(f, data); err != nil {
 		return err
+	}
+	if carry {
+		if err = f.Chmod(mode); err != nil {
+			return err //nolint:wrapcheck // PathError passthrough
+		}
 	}
 	if err = hooks.sync(f); err != nil {
 		return err
