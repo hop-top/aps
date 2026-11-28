@@ -434,8 +434,9 @@ func eolOf(text string) string {
 	return ""
 }
 
-// lastEOL is the style of the last terminated line of the file, or def.
-func lastEOL(stmts []propStmt, def string) string {
+// lastEOL is the style of the last terminated line of the file, LF when
+// there is none.
+func lastEOL(stmts []propStmt) string {
 	for i := len(stmts) - 1; i >= 0; i-- {
 		if e := eolOf(stmts[i].text); e != "" {
 			return e
@@ -521,7 +522,7 @@ func propStep(ctx context.Context, r *rand.Rand, store *dotenvStore, stmts []pro
 	if len(stmts) > 0 && !strings.HasSuffix(stmts[len(stmts)-1].text, "\n") {
 		stmts[len(stmts)-1].text += eol
 	}
-	return append(stmts, propStmt{text: k + "=" + encodeSecretValue(v) + lastEOL(stmts, eol), key: k, val: v}), nil
+	return append(stmts, propStmt{text: k + "=" + encodeSecretValue(v) + lastEOL(stmts), key: k, val: v}), nil
 }
 
 // A rewritten line keeps its indentation and export keyword.

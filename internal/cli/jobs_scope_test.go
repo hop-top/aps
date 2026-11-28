@@ -139,8 +139,8 @@ func serveAndStop(t *testing.T, settle time.Duration) string {
 	}, 15*time.Second, 50*time.Millisecond)
 	if !healthy {
 		_ = cmd.Process.Kill()
-		<-done
-		t.Fatalf("serve never became healthy: %s", stderr.String())
+		werr := <-done
+		t.Fatalf("serve never became healthy (exit: %v): %s", werr, stderr.String())
 	}
 
 	// settle positions the signal inside a poll tick so a cancelled
@@ -153,8 +153,8 @@ func serveAndStop(t *testing.T, settle time.Duration) string {
 		require.NoError(t, err, stderr.String())
 	case <-time.After(20 * time.Second):
 		_ = cmd.Process.Kill()
-		<-done
-		t.Fatalf("serve did not exit after SIGTERM: %s", stderr.String())
+		werr := <-done
+		t.Fatalf("serve did not exit after SIGTERM (exit after kill: %v): %s", werr, stderr.String())
 	}
 	return stderr.String()
 }

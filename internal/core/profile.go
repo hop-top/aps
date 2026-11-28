@@ -501,7 +501,7 @@ func SaveProfile(profile *Profile) error {
 	}
 
 	path := filepath.Join(dir, "profile.yaml")
-	if err := atomicfile.WriteKeepMode(path, data, 0644); err != nil {
+	if err := atomicfile.WriteKeepMode(path, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write profile.yaml: %w", err)
 	}
 
