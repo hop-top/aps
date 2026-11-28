@@ -28,9 +28,8 @@ question.
    `yaml` the error carries it in `message` and `suggested_fix`.
 2. Run it again with `--confirm-token=<token>` (`--confirm-token <token>` also works).
 
-The token is the first 12 hex characters of the SHA-256 of the command path (for example
-`aps profile delete`), so it is the same on every run and does not depend on the arguments.
-A wrong token is refused with the expected one named.
+The token is fixed per command: it is the same on every run and does not depend on the
+arguments. A wrong token is refused with the expected one named.
 
 ```bash
 aps profile delete noor --format json     # exit 5; suggested_fix names the token

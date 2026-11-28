@@ -13,7 +13,5 @@ on a terminal and off one; --yes, --force and --confirm=yes do not
 replace it. Run the command once without the token: it changes nothing,
 exits with code 5 (UNAUTHORIZED), and prints the token (under --format
 json or yaml it is in the error's message and suggested_fix). Then run
-it again with --confirm-token=<token>. The token is the first 12 hex
-characters of the SHA-256 of the command path (for example
-"aps profile delete"), so it is the same on every run and does not
-depend on the arguments.`
+it again with --confirm-token=<token>. The token is fixed per command:
+it is the same on every run and does not depend on the arguments.`
