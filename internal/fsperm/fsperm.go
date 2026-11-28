@@ -30,6 +30,15 @@ func WriteSecret(path string, data []byte, perm os.FileMode) error {
 	return atomicfile.Write(path, data, perm, OpenSecret) //nolint:wrapcheck // error passthrough, same contract as os.WriteFile
 }
 
+// WriteSecretNoSync is WriteSecret without the file and directory sync: same
+// owner-only temp file and rename, so readers never see a partial file and a
+// killed writer cannot truncate path, but the content is not forced to disk
+// and may be lost on power failure. For high-frequency writes (queues,
+// caches) where per-write fsync costs more than durability is worth.
+func WriteSecretNoSync(path string, data []byte, perm os.FileMode) error {
+	return atomicfile.WriteNoSync(path, data, perm, OpenSecret) //nolint:wrapcheck // error passthrough, same contract as os.WriteFile
+}
+
 // CheckSecret audits path. It returns a non-empty warning phrase when access
 // is broader than owner-only, "" when the file is acceptable. The phrase reads
 // "insecure permissions (...)..." so callers can format

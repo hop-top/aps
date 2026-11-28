@@ -101,19 +101,19 @@ func TestWriteSecretFaultKeepsOldAndNoTemp(t *testing.T) {
 
 func TestWriteSecretSymlinkAndDangling(t *testing.T) {
 	dir := t.TempDir()
-	real := filepath.Join(dir, "dotfiles", "secrets.env")
-	if err := os.MkdirAll(filepath.Dir(real), 0o700); err != nil {
+	realPath := filepath.Join(dir, "dotfiles", "secrets.env")
+	if err := os.MkdirAll(filepath.Dir(realPath), 0o700); err != nil {
 		t.Fatal(err)
 	}
 	link := filepath.Join(dir, "secrets.env")
-	if err := os.Symlink(real, link); err != nil {
+	if err := os.Symlink(realPath, link); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
 	// dangling first: creates the file it points at
 	if err := WriteSecret(link, []byte("A=1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := os.ReadFile(real); string(got) != "A=1\n" {
+	if got, _ := os.ReadFile(realPath); string(got) != "A=1\n" {
 		t.Fatalf("real = %q", got)
 	}
 	if err := WriteSecret(link, []byte("A=2\n"), 0o600); err != nil {
@@ -122,7 +122,32 @@ func TestWriteSecretSymlinkAndDangling(t *testing.T) {
 	if fi, _ := os.Lstat(link); fi.Mode()&os.ModeSymlink == 0 {
 		t.Fatal("link replaced by file")
 	}
-	if got, _ := os.ReadFile(real); string(got) != "A=2\n" {
+	if got, _ := os.ReadFile(realPath); string(got) != "A=2\n" {
 		t.Fatalf("real = %q", got)
+	}
+}
+
+func TestWriteSecretNoSyncFaultKeepsOldAndNoTemp(t *testing.T) {
+	for _, stage := range []string{atomicfile.StageWrite, atomicfile.StageRename} {
+		t.Run(stage, func(t *testing.T) {
+			dir := t.TempDir()
+			p := filepath.Join(dir, "q.json")
+			if err := WriteSecretNoSync(p, []byte("old\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			boom := errors.New("boom")
+			restore := atomicfile.InjectFault(stage, boom)
+			err := WriteSecretNoSync(p, []byte("new-and-longer\n"), 0o600)
+			restore()
+			if !errors.Is(err, boom) {
+				t.Fatalf("err = %v", err)
+			}
+			if got, _ := os.ReadFile(p); string(got) != "old\n" {
+				t.Fatalf("target = %q", got)
+			}
+			if ents, _ := os.ReadDir(dir); len(ents) != 1 {
+				t.Fatalf("stray files: %v", ents)
+			}
+		})
 	}
 }

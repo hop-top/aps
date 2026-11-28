@@ -56,11 +56,11 @@ func TestSaveProfileKeepsSymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 	path, _ := GetProfilePath("linked")
-	real := filepath.Join(t.TempDir(), "profile.yaml")
-	if err := os.Rename(path, real); err != nil {
+	realPath := filepath.Join(t.TempDir(), "profile.yaml")
+	if err := os.Rename(path, realPath); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(real, path); err != nil {
+	if err := os.Symlink(realPath, path); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
 	p.DisplayName = "Changed"
@@ -70,7 +70,7 @@ func TestSaveProfileKeepsSymlink(t *testing.T) {
 	if fi, _ := os.Lstat(path); fi.Mode()&os.ModeSymlink == 0 {
 		t.Fatal("link replaced")
 	}
-	if got, _ := os.ReadFile(real); !strings.Contains(string(got), "Changed") {
-		t.Fatalf("real not updated: %s", got)
+	if got, _ := os.ReadFile(realPath); !strings.Contains(string(got), "Changed") {
+		t.Fatalf("realPath not updated: %s", got)
 	}
 }

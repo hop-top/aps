@@ -100,7 +100,7 @@ func (t *IPCTransport) Send(ctx context.Context, message *a2a.Message) error {
 	filename := fmt.Sprintf("%d_%s.json", timestamp, uuid.New().String())
 	messagePath := filepath.Join(t.config.QueuePath, filename)
 
-	if err := fsperm.WriteSecret(messagePath, messageData, 0o600); err != nil {
+	if err := fsperm.WriteSecretNoSync(messagePath, messageData, 0o600); err != nil {
 		return fmt.Errorf("failed to write message: %w", err)
 	}
 
@@ -171,7 +171,7 @@ func (t *IPCTransport) processQueuedMessages() {
 	}
 
 	for _, entry := range entries {
-		// Skip directories and hidden files: fsperm.WriteSecret stages
+		// Skip directories and hidden files: fsperm.WriteSecretNoSync stages
 		// ".<name>.tmp-<rand>" beside the target until the rename publishes it.
 		if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 			continue
